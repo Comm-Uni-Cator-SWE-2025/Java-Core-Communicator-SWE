@@ -22,14 +22,21 @@ We aim to provide the following features for the Comm-Uni-cator app.
 ## Design
 
 ### User Interface
+
+![ai_button](https://github.com/user-attachments/assets/9e4d4cf9-3b35-424e-aa63-8e888d7a7065)
+
 - A permanent button adjacent to the button to end the call, will be dedicated to the AI features. This will provide quick access to the following AI features.
     1. Take meeting notes
     2. Ask AI (answer questions based on the discussions in the meeting)
     3. Summarise discussion points as bulletin points
     4. Track down action items.
     5. Provide meeting insights.
+    6. 
+![ai_in_chats](https://github.com/user-attachments/assets/def326e7-9819-47e8-981a-6c71f3414c65)
 
 - In the chats, when mentioned as @ai, AI answers the questions based on the discussions in the meeting.
+
+![ai_in_canvas](https://github.com/user-attachments/assets/215d1615-4d11-4d11-8202-db4417ab584b)
 
 - In the canvas, when the user clicks on a shape, an AI button pops up. User can give prompts to edit the figure, create a new figure in place of the selected figure or give a description of the selected figure.
 
@@ -49,6 +56,8 @@ We aim to provide the following features for the Comm-Uni-cator app.
 ### UML Diagrams
 
 1. Overall UML
+   
+![full_uml](https://github.com/user-attachments/assets/c2b6bde5-2d82-42b7-916a-56e5e41a63eb)
 
 - Input Data intefaces include IAIRequest, IMeetingData, IWhiteboardData. IAIRequest contains the `requestType`, `prompt` and `metaData`. `IMeetingData` includes `ChatData` and `AudioData`. `IWhiteBoard` data defines the information regarding the images selected from the whiteboard.
 
@@ -61,7 +70,13 @@ We aim to provide the following features for the Comm-Uni-cator app.
 
 1. Abhirami R Iyer : Handles the image generation and image interpretaion part
 
+   ![ai_abhi](https://github.com/user-attachments/assets/d801caec-8c7d-4a77-9db4-720175b2230e)
+
 2. Berelli Gouthami and Nandhana Sunil : Handles the part related to Note taking, Summarising discussion points, Q&A Module
 
+![ai_gou_nand](https://github.com/user-attachments/assets/d771903e-28ea-4294-b3ec-d374569d4922)
+
 3. Vemula Veneela: Handles the part related to insight generation
+
+![ai_veneela](https://github.com/user-attachments/assets/f4b5e210-b55c-4618-a29a-880f905224b2)
 
