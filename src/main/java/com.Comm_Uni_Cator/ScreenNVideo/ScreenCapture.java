@@ -1,4 +1,49 @@
 package com.Comm_Uni_Cator.ScreenNVideo;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+
 public class ScreenCapture {
+    /**
+     * Captures the entire screen and returns it as a BufferedImage.
+     * Works on Windows, macOS, and Linux.
+     *
+     * @return BufferedImage containing the screenshot
+     * @throws AWTException if the platform configuration does not allow low-level input control
+     */
+    public static BufferedImage captureScreen() throws AWTException {
+        // Get screen size
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Rectangle screenRect = new Rectangle(screenSize);
+
+        // Create Robot instance and capture screen
+        Robot robot = new Robot();
+        return robot.createScreenCapture(screenRect);
+    }
+
+    /**
+     * Captures the screen and returns a 3D RGB matrix [height][width][3].
+     * Each pixel has {R, G, B} values (0–255).
+     *
+     * @return int[][][] RGB matrix of the screenshot
+     * @throws AWTException if screen capture is not supported
+     */
+    public static int[][][] captureScreenAsRGBMatrix() throws AWTException {
+        BufferedImage image = captureScreen();
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        int[][][] rgbMatrix = new int[height][width][3];
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int pixel = image.getRGB(x, y);
+                rgbMatrix[y][x][0] = (pixel >> 16) & 0xFF; // Red
+                rgbMatrix[y][x][1] = (pixel >> 8) & 0xFF;  // Green
+                rgbMatrix[y][x][2] = pixel & 0xFF;         // Blue
+            }
+        }
+
+        return rgbMatrix;
+    }
 }
