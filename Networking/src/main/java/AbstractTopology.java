@@ -7,5 +7,5 @@
 
 
 public interface AbstractTopology {
-    void sendPacket(byte[] data, String sourceIp, Integer sourcePort, String destIp, Integer destPort);
+    ClientNode GetServer(String dest);
 }
