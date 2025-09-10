@@ -423,3 +423,8 @@ target/
 
 # idea
 .idea
+
+# Eclipse/IDE metada
+.classpath
+.project
+.settings/
