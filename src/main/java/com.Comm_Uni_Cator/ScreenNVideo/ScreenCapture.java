@@ -3,7 +3,7 @@ package com.Comm_Uni_Cator.ScreenNVideo;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class ScreenCapture {
+public class ScreenCapture implements ICapture {
     /**
      * Captures the entire screen and returns it as a BufferedImage.
      * Works on Windows, macOS, and Linux.
@@ -11,7 +11,8 @@ public class ScreenCapture {
      * @return BufferedImage containing the screenshot
      * @throws AWTException if the platform configuration does not allow low-level input control
      */
-    public static BufferedImage captureScreen() throws AWTException {
+    @Override
+    public BufferedImage capture() throws AWTException {
         // Get screen size
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         Rectangle screenRect = new Rectangle(screenSize);
@@ -28,8 +29,9 @@ public class ScreenCapture {
      * @return int[][][] RGB matrix of the screenshot
      * @throws AWTException if screen capture is not supported
      */
-    public static int[][][] captureScreenAsRGBMatrix() throws AWTException {
-        BufferedImage image = captureScreen();
+    @Override
+    public int[][][] captureAsRGBMatrix() throws AWTException {
+        BufferedImage image = capture();
         int width = image.getWidth();
         int height = image.getHeight();
 
