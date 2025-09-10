@@ -1,15 +1,25 @@
 package com.Comm_Uni_Cator.chat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer; // Import Consumer for the listener
 
-public class ChatManager implements IChatService{
+public class ChatManager implements IChatService {
     private final abstractNetworking network;
+    private Consumer<ChatMessage> onMessageReceivedListener; // Listener for the UI
 
     public ChatManager(abstractNetworking network) {
         this.network = network;
-
-        // Subscribe to incoming network messages
+        // The original subscribe had an issue with the method reference type.
+        // It needs a MessageListener, which has a ReceiveData method.
         network.Subscribe("ChatManagerSubscription", this::receiveFromNetwork);
+    }
+
+    /**
+     * The UI Controller will call this method to listen for new messages.
+     * @param listener A function that accepts a ChatMessage.
+     */
+    public void setOnMessageReceived(Consumer<ChatMessage> listener) {
+        this.onMessageReceivedListener = listener;
     }
 
     @Override
@@ -22,10 +32,14 @@ public class ChatManager implements IChatService{
     @Override
     public void receiveMessage(String json) {
         ChatMessage message = MessageParser.deserialize(json);
-        System.out.println("Received message from " + message.getUserId()
-                + ": " + message.getContent());
+
+        // Instead of printing to the console, notify our UI listener
+        if (onMessageReceivedListener != null) {
+            onMessageReceivedListener.accept(message);
+        }
     }
 
+    // This method matches the MessageListener interface
     private void receiveFromNetwork(byte[] data) {
         String json = new String(data, StandardCharsets.UTF_8);
         receiveMessage(json);
