@@ -1,14 +1,9 @@
-package com.Comm_Uni_Cator.ScreenNVideo;
+package com.Comm_Uni_Cator.ScreenNVideo.PatchGenerator;
 
 import java.util.List;
 
-// Interface
-interface Stichable {
-    void applyOn(int[][][] canvas);
-}
 
-
-class Patch implements Stichable {
+class Patch implements Stitchable {
     private int[][][] pixels;
     private int x;
     private int y;
@@ -30,9 +25,7 @@ class Patch implements Stichable {
                 if (targetX >= 0 && targetX < canvas.length &&
                     targetY >= 0 && targetY < canvas[0].length) {
 
-                    for (int c = 0; c < pixels[i][j].length; c++) {
-                        canvas[targetX][targetY][c] = pixels[i][j][c];
-                    }
+                    System.arraycopy(pixels[i][j], 0, canvas[targetX][targetY], 0, pixels[i][j].length);
                 }
             }
         }
@@ -41,14 +34,14 @@ class Patch implements Stichable {
 
 
 public class ImageStitcher {
-    private int[][][] canvas;
+    private final int[][][] canvas;
 
     public ImageStitcher(int[][][] canvas) {
         this.canvas = canvas;
     }
 
-    public void stitch(List<Stichable> patches) {
-        for (Stichable patch : patches) {
+    public void stitch(List<Stitchable> patches) {
+        for (Stitchable patch : patches) {
             patch.applyOn(canvas);
         }
     }

@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.ScreenNVideo;
+package com.Comm_Uni_Cator.ScreenNVideo.Codec;
 
 import java.awt.image.BufferedImage;
 
@@ -17,7 +17,7 @@ public class JpegCodec implements Codec {
 
     //convert screenshot into YCbCr format (4:2:0) chroma sampling
     @Override
-    public String Encoder(int x,int y,int height,int width){
+    public String Encode(int x,int y,int height,int width){
 
         int[][] YMatrix  = new int[height][width];
         int[][] CbMatrix = new int[height/2][width/2];
@@ -63,7 +63,7 @@ public class JpegCodec implements Codec {
     }
 
     @Override
-    public BufferedImage Decoder(String encoded_image) {
+    public BufferedImage Decode(String encoded_image) {
         String[] parts = encoded_image.split(";");
         String[] dims = parts[0].split(",");
 
