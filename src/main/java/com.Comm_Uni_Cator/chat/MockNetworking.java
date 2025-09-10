@@ -23,4 +23,13 @@ public class MockNetworking implements abstractNetworking {
     public void RemoveSubscription(String name) {
 //        this.listener = null;
     }
+
+
+
+    public void simulateMessageFromServer(byte[] data) {
+        System.out.println("NETWORK_SIM: A message was received from the 'server'.");
+        for (MessageListener listener : listeners) {
+            listener.ReceiveData(data);
+        }
+    }
 }
