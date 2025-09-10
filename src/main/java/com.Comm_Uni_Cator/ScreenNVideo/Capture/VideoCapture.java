@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
  * VideoCapture class for capturing video frames from webcam using pure Java
  * Provides interface to capture images and convert them to matrix format
  */
-public class VideoCapture {
+public class VideoCapture extends ICapture {
 
     // Robot for screen capture (fallback method)
     private Robot robot;
@@ -119,7 +119,7 @@ public class VideoCapture {
      * Capture a single frame
      * @return BufferedImage of the captured frame
      */
-    public BufferedImage captureFrame() {
+    public BufferedImage capture() {
         if (!isCapturing || robot == null) {
             System.err.println("Capture not started or robot not available");
             return null;
