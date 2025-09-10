@@ -1,4 +1,5 @@
 package com.Comm_Uni_Cator.ScreenNVideo;
 
-public class Copmressor {
+interface Compressor {
+    String Encoder(int x,int y,int height,int width);
 }
