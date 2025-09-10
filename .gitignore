@@ -424,7 +424,7 @@ target/
 # idea
 .idea
 
-# Eclipse/IDE metadata
-.project
+# Eclipse/IDE metada
 .classpath
+.project
 .settings/
