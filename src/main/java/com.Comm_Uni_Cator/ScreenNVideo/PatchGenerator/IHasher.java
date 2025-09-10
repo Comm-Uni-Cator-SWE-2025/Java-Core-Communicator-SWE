@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.ScreenNVideo;
+package com.Comm_Uni_Cator.ScreenNVideo.PatchGenerator;
 
 public interface IHasher {
     /**

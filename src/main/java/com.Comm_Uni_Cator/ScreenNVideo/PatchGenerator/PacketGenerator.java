@@ -1,4 +1,6 @@
-package com.Comm_Uni_Cator.ScreenNVideo;
+package com.Comm_Uni_Cator.ScreenNVideo.PatchGenerator;
+
+import com.Comm_Uni_Cator.ScreenNVideo.Codec.Codec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,13 +8,13 @@ import java.util.List;
 public class PacketGenerator {
 
     private static final int TILE_SIZE = 64; // default tile size
-    private ICompressor compressor;
+    private Codec compressor;
     private IHasher hasher;
 
     // Values/Cache of last hashes per tile (grid of tiles, each storing long hash)
     private long[][] prevHashes;
 
-    public PacketGenerator(ICompressor compressor_arg, IHasher hasher_arg) {
+    public PacketGenerator(Codec compressor_arg, IHasher hasher_arg) {
         this.compressor = compressor_arg;
         this.hasher = hasher_arg;
     }
@@ -46,7 +48,7 @@ public class PacketGenerator {
 
                 long currHash = hasher.hash(curr, x, y, w, h);
                 if (currHash != prevHashes[tx][ty]) {
-                    String compressedString = compressor.compress(curr, x, y, w, h);
+                    String compressedString = this.compressor.Encode(x, y, w, h);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
                     prevHashes[tx][ty] = currHash;
                 }
