@@ -49,6 +49,42 @@ public class ClientServer {
      * @param dest Destination IP.
      * @param port Destination PORT.
      */
+    public void recieveFrom() {
+        // testing pending
+        try {
+            // Buffer to store incoming packet data
+            byte[] buffer = new byte[1024];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+            this.socket.receive(packet);
+
+            // Extracting data, destination, and port
+            String data = new String(packet.getData(), 0, packet.getLength());
+            String dest = packet.getAddress().getHostAddress();
+            int port = packet.getPort();
+
+            if (server) {
+                if (destInCluster(dest)) {
+                    DatagramPacket response = new DatagramPacket(
+                            data.getBytes(),
+                            data.getBytes().length,
+                            packet.getAddress(),
+                            port
+                    );
+                    this.socket.send(response);
+                } else {
+                    throw new RuntimeException("Destination not in cluster: " + dest);
+                }
+            } else {
+                // if it is client instead
+                // TODO: callMessageListener()
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void sendTo(final byte[] data, final String dest, final Integer port) {
         if (this.isServer) {
             if (destInCluster(dest)) {
