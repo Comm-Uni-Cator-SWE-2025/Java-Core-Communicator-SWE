@@ -5,8 +5,6 @@ import java.awt.image.BufferedImage;
 
 public abstract class ICapture {
     public abstract BufferedImage capture() throws AWTException;
-    public abstract boolean startCapture();
-    public abstract  void stopCapture();
 
 
     /**
