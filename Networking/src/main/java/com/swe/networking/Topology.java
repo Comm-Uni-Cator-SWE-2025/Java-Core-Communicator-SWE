@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
+import static java.lang.Math.floor;
+import static java.lang.Math.sqrt;
+
 /**
  * The main architecture of the networking module.
  * Implements the cluster networks
@@ -60,8 +63,65 @@ public class Topology implements AbstractTopology, AbstractController {
         return null;
     }
 
+    /**
+     * Add a user to the topology.
+     * Logic: choose a cluster, add the user, and update bookkeeping.
+     *
+     * @param ip   Destination IP
+     * @param port Destination port
+     */
     @Override
     public void addUser(final String ip, final Integer port) {
-        numClients += 1;
+        final Cluster cluster = chooseCluster();
+        cluster.addClient(ip, port);
+
+        clientIP.computeIfAbsent(cluster, k -> new ArrayList<>())
+                .add(new ClientNode(ip, port));
+        numClients++;
+
+        System.out.println("User added: "
+                + ip + ":"
+                + port
+                + " -> Cluster#" + clusters.indexOf(cluster));
+    }
+
+    /**
+     * Choose a cluster based on √N rule and least loaded cluster.
+     * @return best chosen Cluster
+     */
+    private Cluster chooseCluster() {
+        final int totalClients = numClients;
+        final int maxClientPerCluster = (int) floor(sqrt(totalClients)) + 1;
+
+        if (clusters.isEmpty()) {
+            final Cluster newCluster = new Cluster();
+            clusters.add(newCluster);
+            clientIP.put(newCluster, new ArrayList<>());
+            numClusters++;
+            return newCluster;
+        }
+
+        // Find the least loaded cluster
+        Cluster minCluster = clusters.get(0);
+        int minSize = clientIP.getOrDefault(minCluster, new ArrayList<>()).size();
+
+        for (Cluster candidate : clusters) {
+            final int size = clientIP.getOrDefault(candidate, new ArrayList<>()).size();
+            if (size < minSize) {
+                minCluster = candidate;
+                minSize = size;
+            }
+        }
+
+        // Create new cluster if allowed and needed
+        if (minSize >= maxClientPerCluster) {
+            final Cluster newCluster = new Cluster();
+            clusters.add(newCluster);
+            clientIP.put(newCluster, new ArrayList<>());
+            numClusters++;
+            return newCluster;
+        }
+
+        return minCluster;
     }
 }
