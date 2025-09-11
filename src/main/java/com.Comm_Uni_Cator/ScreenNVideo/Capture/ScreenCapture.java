@@ -5,7 +5,6 @@ import java.awt.image.BufferedImage;
 
 public class ScreenCapture extends ICapture {
 
-    private boolean isCaptureOn;
     /**
      * Captures the entire screen and returns it as a BufferedImage.
      * Works on Windows, macOS, and Linux.
@@ -15,9 +14,6 @@ public class ScreenCapture extends ICapture {
      */
     @Override
     public BufferedImage capture() throws AWTException {
-        if (!isCaptureOn) {
-            return null;
-        }
 
         // Get screen size
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -26,16 +22,5 @@ public class ScreenCapture extends ICapture {
         // Create Robot instance and capture screen
         Robot robot = new Robot();
         return robot.createScreenCapture(screenRect);
-    }
-
-    @Override
-    public boolean startCapture() {
-        isCaptureOn = true;
-        return true;
-    }
-
-    @Override
-    public void stopCapture() {
-        isCaptureOn = false;
     }
 }

@@ -13,7 +13,6 @@ public class VideoCapture extends ICapture {
     private Robot robot;
 
     // Capture parameters
-    private boolean isCapturing;
     private Dimension captureArea;
     private Point captureLocation;
 
@@ -30,7 +29,6 @@ public class VideoCapture extends ICapture {
      * Constructor - initializes with default screen capture area
      */
     public VideoCapture() {
-        this.isCapturing = false;
         this.captureArea = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         this.captureLocation = new Point(DEFAULT_X, DEFAULT_Y);
 
@@ -69,58 +67,11 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Start video capture
-     * @return true if capture started successfully, false otherwise
-     */
-    public boolean startCapture() {
-        if (robot == null) {
-            System.err.println("Capture not initialized properly");
-            return false;
-        }
-
-        try {
-            isCapturing = true;
-
-            if (listener != null) {
-                listener.onCaptureStarted();
-            }
-
-            System.out.println("Video capture started successfully");
-            return true;
-
-        } catch (Exception e) {
-            System.err.println("Error starting capture: " + e.getMessage());
-            if (listener != null) {
-                listener.onCaptureError("Failed to start capture: " + e.getMessage());
-            }
-            return false;
-        }
-    }
-
-    /**
-     * Stop video capture
-     */
-    public void stopCapture() {
-        try {
-            isCapturing = false;
-
-            if (listener != null) {
-                listener.onCaptureStopped();
-            }
-
-            System.out.println("Video capture stopped");
-
-        } catch (Exception e) {
-            System.err.println("Error stopping capture: " + e.getMessage());
-        }
-    }
-
-    /**
      * Capture a single frame
      * @return BufferedImage of the captured frame
      */
     public BufferedImage capture() {
-        if (!isCapturing || robot == null) {
+        if (robot == null) {
             System.err.println("Capture not started or robot not available");
             return null;
         }
