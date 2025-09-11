@@ -1,15 +1,7 @@
-// This File is changed by Vishal Rahangdale.
+package com.swe.networking;// This File is changed by Vishal Rahangdale.
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * A simple data class to hold client information (hostname and port).
- * This is the Java equivalent of a tuple(string, port).
- * @param hostName The IP address.
- * @param port The PORT.
- */
-record ClientNode(String hostName, int port) {}
 
 /**
  * Manages a collection of clients, designating the first one added as the server.
@@ -45,7 +37,7 @@ public class Cluster {
             this.serverPortNumber = port;
         }
 
-        // Create a new ClientNode and add it to the list.
+        // Create a new com.swe.networking.ClientNode and add it to the list.
         clients.add(new ClientNode(hostName, port));
 
         // TODO: Implement logic to send routing packet to each client with the server details.
@@ -54,7 +46,7 @@ public class Cluster {
     /**
      * Returns the client that was designated as the server (the first one added).
      *
-     * @return A ClientNode object representing the server, or null if the cluster is empty.
+     * @return A com.swe.networking.ClientNode object representing the server, or null if the cluster is empty.
      */
     public ClientNode getServerName() {
         if (clients.isEmpty()) {
