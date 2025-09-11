@@ -1,3 +1,5 @@
+package com.swe.networking;
+
 /**
  * Implement
  * > A simple transferPacket which receives packet from the
