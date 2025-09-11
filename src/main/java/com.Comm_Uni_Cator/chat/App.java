@@ -9,8 +9,9 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 /**
- * Hello world!
+ * Hello world!.
  */
+
 //public class App {
 //    public static void main(String[] args) {
 //        System.out.println("Hello World!");
@@ -24,12 +25,14 @@ public class App extends Application {
 
     // The start method is the main entry point for all JavaFX applications
     @Override
-    public void start(Stage primaryStage) {
+    public void start(final Stage primaryStage) {
         try {
 
             // Load the FXML file we created.
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com.Comm_Uni_Cator/chat/ChatView.fxml"));
-            Parent root = fxmlLoader.load();
+            final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(
+                    "/com.Comm_Uni_Cator/chat/ChatView.fxml")
+            );
+            final Parent root = fxmlLoader.load();
 
 
             // Set up the main window (called a "Stage")
@@ -43,7 +46,7 @@ public class App extends Application {
     }
 
     // The main method now just launches the JavaFX application
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         launch(args);
     }
 }
