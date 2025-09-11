@@ -1,3 +1,5 @@
+package com.swe.networking;
+
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.io.IOException;
@@ -36,7 +38,7 @@ public class ClientServer {
     // TODO: wait for routing packet from the server
 
     /**
-     * Topology server will implement this func.
+     * com.swe.networking.Topology server will implement this func.
      * @param dest Destination IP.
      */
     boolean destInCluster(final String dest) {
@@ -49,42 +51,6 @@ public class ClientServer {
      * @param dest Destination IP.
      * @param port Destination PORT.
      */
-    public void recieveFrom() {
-        // testing pending
-        try {
-            // Buffer to store incoming packet data
-            byte[] buffer = new byte[1024];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-            this.socket.receive(packet);
-
-            // Extracting data, destination, and port
-            String data = new String(packet.getData(), 0, packet.getLength());
-            String dest = packet.getAddress().getHostAddress();
-            int port = packet.getPort();
-
-            if (server) {
-                if (destInCluster(dest)) {
-                    DatagramPacket response = new DatagramPacket(
-                            data.getBytes(),
-                            data.getBytes().length,
-                            packet.getAddress(),
-                            port
-                    );
-                    this.socket.send(response);
-                } else {
-                    throw new RuntimeException("Destination not in cluster: " + dest);
-                }
-            } else {
-                // if it is client instead
-                // TODO: callMessageListener()
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public void sendTo(final byte[] data, final String dest, final Integer port) {
         if (this.isServer) {
             if (destInCluster(dest)) {
@@ -102,7 +68,9 @@ public class ClientServer {
                 }
             } else {
                 try {
-                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, getServer(dest), port); // TODO: getServer to be implemented by Topology.
+                    AbstractTopology topology = new Topology();
+                    String hostAddress = topology.GetServer(dest).hostName();
+                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port); // TODO: getServer to be implemented by com.swe.networking.Topology.
                     try {
                         this.socket.send(sendPacket);
                     }  catch (IOException e) {
