@@ -1,8 +1,7 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -11,12 +10,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import java.util.UUID; // Make sure you have this import at the top
-import java.time.Instant;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID; // Import for generating unique message IDs
 
 public class ChatController {
 

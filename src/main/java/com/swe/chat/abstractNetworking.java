@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 public interface abstractNetworking {
     void SendData(byte[] data, String[] dest,int[] port);

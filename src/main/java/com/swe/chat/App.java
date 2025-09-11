@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -28,7 +28,7 @@ public class App extends Application {
         try {
 
             // Load the FXML file we created.
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com.Comm_Uni_Cator/chat/ChatView.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/ChatView.fxml"));
             Parent root = fxmlLoader.load();
 
 

@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import java.util.ArrayList;
 import java.util.List;

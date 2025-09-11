@@ -1,4 +1,4 @@
-package com.chat;
+package com.swe.chat;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

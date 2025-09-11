@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
