@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 @FunctionalInterface
 public interface MessageListener {
