@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer; // Import Consumer for the listener

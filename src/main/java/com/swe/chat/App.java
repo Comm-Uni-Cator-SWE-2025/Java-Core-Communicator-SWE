@@ -1,4 +1,4 @@
-package com.Comm_Uni_Cator.chat;
+package com.swe.chat;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
