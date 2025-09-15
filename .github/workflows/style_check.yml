@@ -11,12 +11,26 @@ jobs:
   check-style:
     runs-on: ubuntu-latest
     steps:
-      - name: Style Check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+    
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'oracle'
+      
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      
+      - name: Change to java directory
+        run: cd java
+        
+      - name: Run Checkstyle
         run: |
           cd java
           mvn checkstyle:check
