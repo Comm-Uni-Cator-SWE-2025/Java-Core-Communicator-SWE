@@ -418,8 +418,8 @@ FodyWeavers.xsd
 *.msp
 
 # maven
-.mvn/
-target/
+**/.mvn/
+**/target/
 
 # idea
 .idea
