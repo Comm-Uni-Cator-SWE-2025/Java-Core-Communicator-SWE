@@ -1,13 +1,9 @@
 package com.swe.networking;
 
 /**
- * Implement
- * > A simple transferPacket which receives packet from the
- * other cluster servers and send it to the respective cluster
+ * Interface used between Cluster and the topology class.
  *
  */
-
-
 public interface AbstractTopology {
-    ClientNode GetServer(String dest);
+    ClientNode getServer(String dest);
 }
