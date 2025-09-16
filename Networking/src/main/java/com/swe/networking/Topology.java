@@ -32,9 +32,27 @@ public class Topology implements AbstractTopology, AbstractController {
      */
     private int numClients = 0;
 
+    /**
+     * Singleton design pattern to prevent repeating class instantiations.
+     *
+     */
+    private static Topology topology = null;
 
-    public Topology() {
+    private Topology() {
         clusters = new ArrayList<Cluster>();
+    }
+
+    /**
+     * Function to get the statically instantiated class object.
+     * @return Topology the statically instantiated class.
+     */
+    public static Topology getTopology() {
+        if (topology == null) {
+            System.out.println("Creating new Topology object...");
+            topology = new Topology();
+        }
+        System.out.println("Passing already instantiated Topology object...");
+        return topology;
     }
 
     /**
@@ -43,7 +61,7 @@ public class Topology implements AbstractTopology, AbstractController {
      * @param dest The ip address of the destination client
      */
     @Override
-    public ClientNode GetServer(final String dest) {
+    public ClientNode getServer(final String dest) {
         ClientNode node = null;
         for (Cluster cluster : clusters) {
             final ArrayList<ClientNode> clientIPs = clientIP.get(cluster);

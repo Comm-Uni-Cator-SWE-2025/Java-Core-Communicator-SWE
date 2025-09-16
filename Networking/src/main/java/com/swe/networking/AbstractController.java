@@ -1,11 +1,11 @@
 package com.swe.networking;
 
 /**
- * The addUser function here invokes a function on topology which in turn
- * adds the client to a cluster
- * */
+ * The interface between the controller and networking modules.
+ * Used to  send the joining clients address to the networking module
+ *
+ */
 
 public interface AbstractController {
-
     void addUser(String ip, Integer port);
 }

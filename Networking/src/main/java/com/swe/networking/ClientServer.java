@@ -1,3 +1,5 @@
+package com.swe.networking;
+
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.io.IOException;
@@ -9,7 +11,8 @@ import java.net.InetAddress;
  * > a receive function from the server
  * > The server send function can use the interface abstractTopology
  * to send it to the topology for sending to another cluster
- * */
+ *
+ */
 
 public class ClientServer {
     /**
@@ -22,8 +25,8 @@ public class ClientServer {
      */
     private DatagramSocket socket;
 
-    // open a udp server socket for this client
-    public  ClientServer() {
+    // open an udp server socket for this client
+    public ClientServer() {
         this.isServer = false;
         try {
             this.socket = new DatagramSocket();
@@ -37,18 +40,13 @@ public class ClientServer {
 
     /**
      * Topology server will implement this func.
+     *
      * @param dest Destination IP.
      */
     boolean destInCluster(final String dest) {
         return true;
     }
 
-    /**
-     * Function to send data to dest:port.
-     * @param data Data to be sent across
-     * @param dest Destination IP.
-     * @param port Destination PORT.
-     */
     public void recieveFrom() {
         // testing pending
         try {
@@ -63,7 +61,7 @@ public class ClientServer {
             String dest = packet.getAddress().getHostAddress();
             int port = packet.getPort();
 
-            if (server) {
+            if (this.isServer) {
                 if (destInCluster(dest)) {
                     DatagramPacket response = new DatagramPacket(
                             data.getBytes(),
@@ -85,6 +83,13 @@ public class ClientServer {
         }
     }
 
+    /**
+     * Function to send data to dest:port.
+     *
+     * @param data Data to be sent across
+     * @param dest Destination IP.
+     * @param port Destination PORT.
+     */
     public void sendTo(final byte[] data, final String dest, final Integer port) {
         if (this.isServer) {
             if (destInCluster(dest)) {
@@ -92,24 +97,27 @@ public class ClientServer {
                     final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
                     try {
                         this.socket.send(sendPacket);
-                    }  catch (IOException e) {
+                    } catch (IOException e) {
                         System.err.println("Client error: " + e.getMessage());
                         e.printStackTrace();
                     }
-                }  catch (IOException e) {
+                } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
                 try {
-                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, getServer(dest), port); // TODO: getServer to be implemented by Topology.
+                    Topology topology = Topology.getTopology();
+                    final String hostAddress = topology.getServer(dest).hostName();
+                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port);
+                    // TODO: getServer to be implemented by Topology.
                     try {
                         this.socket.send(sendPacket);
-                    }  catch (IOException e) {
+                    } catch (IOException e) {
                         System.err.println("Client error: " + e.getMessage());
                         e.printStackTrace();
                     }
-                }  catch (IOException e) {
+                } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
                 }
@@ -120,11 +128,11 @@ public class ClientServer {
                     final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
                     try {
                         this.socket.send(sendPacket);
-                    }  catch (IOException e) {
+                    } catch (IOException e) {
                         System.err.println("Client error: " + e.getMessage());
                         e.printStackTrace();
                     }
-                }  catch (IOException e) {
+                } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
                 }

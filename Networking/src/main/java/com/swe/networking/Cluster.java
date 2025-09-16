@@ -28,7 +28,7 @@ public class Cluster {
      * If this is the first client, it is designated as the server.
      *
      * @param hostName The hostname or IP address of the client.
-     * @param port The port number of the client.
+     * @param port     The port number of the client.
      */
     public void addClient(final String hostName, final int port) {
         // Check if the list is empty to see if this is the first client.
