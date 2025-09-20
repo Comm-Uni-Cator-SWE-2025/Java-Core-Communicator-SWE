@@ -1,0 +1,64 @@
+package com.swe.ScreenNVideo.Serializer;
+
+
+import com.swe.ScreenNVideo.Utils;
+import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Serializer class for communicating with networking layer.
+ */
+public class NetworkSerializer {
+
+    /**
+     * Serializes List of CompressedPackets for networking layer.
+     *
+     * @param packets Packets to be sent
+     * @return serialized byte array
+     * @throws IOException Can have exception while writing to the outputStream while creating the buffer data
+     */
+    public byte[] serializeCPackets(final List<CompressedPatch> packets) throws IOException {
+
+        final int len = packets.size();
+        final ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
+        bufferOut.write((byte) NetworkPacketType.LIST_CPACKETS.ordinal());
+        Utils.writeInt(bufferOut, len);
+        for (CompressedPatch packet : packets) {
+            bufferOut.write(packet.serializeCPacket());
+        }
+
+        return bufferOut.toByteArray();
+    }
+
+    /**
+     * get the Compressed packets.
+     *
+     * @param data incoming data
+     * @return list of CompressedPatch
+     */
+    public List<CompressedPatch> deserializeCPackets(final byte[] data)
+        throws IndexOutOfBoundsException, InvalidParameterException {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final byte packetType = buffer.get();
+        if (packetType != NetworkPacketType.LIST_CPACKETS.ordinal()) {
+            throw new InvalidParameterException(
+                "Invalid Data type: Expected " + NetworkPacketType.LIST_CPACKETS.ordinal() + " got : " + packetType);
+        }
+        final int len = buffer.getInt();
+        final List<CompressedPatch> patches = new ArrayList<>(len);
+        for (int i = 0; i < len; i++) {
+            final int patchLength = buffer.getInt();
+            // this will create the patch and
+            // advances the buffer internal currentPos pointer
+            patches.add(CompressedPatch.deserializeCPacket(buffer, patchLength));
+        }
+        return patches;
+    }
+
+}

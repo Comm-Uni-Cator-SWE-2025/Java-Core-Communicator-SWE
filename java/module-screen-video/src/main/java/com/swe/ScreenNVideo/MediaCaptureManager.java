@@ -15,70 +15,84 @@ import com.swe.ScreenNVideo.PatchGenerator.Hasher;
 import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
+import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
+import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Media Manager for Screen N Video.
+ * - Manages Screen Capture and Video Capture
+ */
 public class MediaCaptureManager implements CaptureManager {
 
     private boolean isVideoCaptureOn;
     private boolean isScreenCaptureOn;
 
-    private ICapture videoCapture;
-    private ICapture screenCapture;
+    private final ICapture videoCapture;
+    private final ICapture screenCapture;
 
-    private Codec videoCodec;
-    private PacketGenerator patchGenerator;
-    private IHasher hasher;
+    private final Codec videoCodec;
+    private final PacketGenerator patchGenerator;
+    private final IHasher hasher;
     private ImageStitcher imageStitcher;
 
-    private AbstractNetworking networking;
-    private AbstractRPC rpc;
+    private final AbstractNetworking networking;
+    private final AbstractRPC rpc;
 
-    public MediaCaptureManager(AbstractNetworking _networking, AbstractRPC _rpc) {
-        this.rpc = _rpc;
-        this.networking = _networking;
+    private final NetworkSerializer networkSerializer;
+    private final ArrayList<String> viewers;
+
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc) {
+        this.rpc = argRpc;
+        this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
         videoCodec = new JpegCodec();
-        hasher = new Hasher(ConstantProvider.HASH_STRIDE);
+        hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
+        networkSerializer = new NetworkSerializer();
+        viewers = new ArrayList<>();
         initializeHandlers();
     }
 
-    private int[][][] getFeedMatrix(BufferedImage videoFeed, BufferedImage screenFeed) {
+    // TODO: move to utils
+    private short[][][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
         if (videoFeed == null && screenFeed == null) {
             return null;
         }
         // TODO: stitch VideoFeed on ScreenFeed if both are on
         BufferedImage feed = screenFeed;
+
         if (feed == null) {
             feed = videoFeed;
         }
-        int[][][] matrix = new int[feed.getHeight()][feed.getWidth()][3];
+        final short[][][] matrix = new short[feed.getHeight()][feed.getWidth()][3];
         for (int i = 0; i < feed.getHeight(); i++) {
             for (int j = 0; j < feed.getWidth(); j++) {
                 int r = feed.getRGB(j, i);
                 int g = (r >> 8) & 0xFF;
                 int b = (r >> 16) & 0xFF;
-                matrix[i][j][0] = r;
-                matrix[i][j][1] = g;
-                matrix[i][j][2] = b;
+                matrix[i][j][0] = (short) r;
+                matrix[i][j][1] = (short) g;
+                matrix[i][j][2] = (short) b;
             }
         }
         return matrix;
     }
 
     /**
-     * Server-side of the ScreenNVideo
+     * Server-side of the ScreenNVideo.
      */
     @Override
     public void startCapture() {
         BufferedImage videoFeed = null;
         BufferedImage screenFeed = null;
-        int[][][] feed;
+        short[][][] feed;
 
         while (true) {
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
@@ -110,67 +124,105 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-            List<CompressedPatch> res = patchGenerator.generatePackets(feed);
+            final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
+
+            if (patches.isEmpty()) {
+                continue;
+            }
 
             // TODO : send packets to the client
+            byte[] encodedPatches = null;
+            int tries = 3;
+            while (tries-- > 0) {
+                // maxtries 3 times to convert the patch
+                try {
+                    encodedPatches = networkSerializer.serializeCPackets(patches);
+                    break;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (tries < 0 || encodedPatches == null) {
+                System.err.println("Error: Unable to serialize compressed packets");
+                continue;
+            }
+
+
 
         }
     }
 
+
     private void initializeHandlers() {
-        rpc.subscribe(ConstantProvider.START_VIDEO_CAPTURE, new RProcedure() {
+        rpc.subscribe(Utils.START_VIDEO_CAPTURE, new RProcedure() {
             @Override
-            public byte[] call(byte[] args) {
+            public byte[] call(final byte[] args) {
                 isVideoCaptureOn = true;
-                byte[] res = new byte[1];
+                final byte[] res = new byte[1];
                 res[0] = 1;
                 return res;
             }
         });
 
-        rpc.subscribe(ConstantProvider.STOP_VIDEO_CAPTURE, new RProcedure() {
+        rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, new RProcedure() {
             @Override
-            public byte[] call(byte[] args) {
+            public byte[] call(final byte[] args) {
                 isVideoCaptureOn = false;
-                byte[] res = new byte[1];
+                final byte[] res = new byte[1];
                 res[0] = 1;
                 return res;
             }
         });
 
-        rpc.subscribe(ConstantProvider.START_SCREEN_CAPTURE, new RProcedure() {
+        rpc.subscribe(Utils.START_SCREEN_CAPTURE, new RProcedure() {
             @Override
-            public byte[] call(byte[] args) {
+            public byte[] call(final byte[] args) {
                 isScreenCaptureOn = true;
-                byte[] res = new byte[1];
+                final byte[] res = new byte[1];
                 res[0] = 1;
                 return res;
             }
         });
 
-        rpc.subscribe(ConstantProvider.STOP_SCREEN_CAPTURE, new RProcedure() {
+        rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, new RProcedure() {
             @Override
-            public byte[] call(byte[] args) {
+            public byte[] call(final byte[] args) {
                 isScreenCaptureOn = false;
-                byte[] res = new byte[1];
+                final byte[] res = new byte[1];
                 res[0] = 1;
                 return res;
             }
         });
 
-        networking.Subscribe(ConstantProvider.MODULE_REMOTE_KEY, new ClientHandler());
+        networking.Subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
 
     }
 
     class ClientHandler implements MessageListener {
         @Override
         public void ReceiveData(byte[] data) {
-            System.out.println("Data recieved: " + Arrays.toString(data));
-            // TODO: parse the data
+            if (data.length == 0) {
+                return;
+            }
 
-            // TODO: get the Image
+            byte packetType = data[0];
+            switch (packetType) {
+                case NetworkPacketType.LIST_CPACKETS -> {
+                    List<CompressedPatch> patches = networkSerializer.deserializeCPackets(data);
 
-            // TODO: send the image to the frontend
+                    int[][] image = null;
+                    // TODO: get the Image
+                    // int[][] image = synchronizer.getImage(patches);
+
+                    // TODO: send the image to the frontend
+                    rpc.Call(Utils.UPDATE_UI, );
+
+                }
+                default -> {
+                    return;
+                }
+            }
 
         }
     }

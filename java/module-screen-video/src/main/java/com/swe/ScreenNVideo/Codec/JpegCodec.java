@@ -17,7 +17,7 @@ public class JpegCodec implements Codec {
 
     //convert screenshot into YCbCr format (4:2:0) chroma sampling
     @Override
-    public String Encode(int x,int y,int height,int width){
+    public byte[] Encode(int x,int y,int height,int width){
 
         int[][] YMatrix  = new int[height][width];
         int[][] CbMatrix = new int[height/2][width/2];
@@ -45,7 +45,6 @@ public class JpegCodec implements Codec {
                         YMatrix[i+ii][j+jj] = Y;
                         cb_pixel += Cb;
                         cr_pixel += Cr;
-        
                     }
                 }
     
@@ -63,7 +62,7 @@ public class JpegCodec implements Codec {
     }
 
     @Override
-    public BufferedImage Decode(String encoded_image) {
+    public BufferedImage Decode(byte[] encoded_image) {
         String[] parts = encoded_image.split(";");
         String[] dims = parts[0].split(",");
 
@@ -108,7 +107,7 @@ public class JpegCodec implements Codec {
         return image;
     }
 
-    private int[][][] convertYCbCrToRGB(int[][] Y, int[][] Cb, int[][] Cr) {
+    private int[][] convertYCbCrToRGB(int[][] Y, int[][] Cb, int[][] Cr) {
         int height = Y.length;
         int width = Y[0].length;
 
