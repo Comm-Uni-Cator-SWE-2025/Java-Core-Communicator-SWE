@@ -11,14 +11,17 @@ public class Hasher implements IHasher {
     }
 
     @Override
-    public long hash(final short[][][] img, int x, int y, int w, int h) {
+    public long hash(final int[][] img, int x, int y, int w, int h) {
         long hash = 0;
         for (int i = 0; i < w; i += stride) {
             for (int j = 0; j < h; j += stride) {
-                short[] pixel = img[x + i][y + j];
-                hash += pixel[0];
-                hash += (long) pixel[1] << 20;
-                hash += (long) pixel[2] << 40;
+                int pixel = img[x + i][y + j];
+                int r = (pixel>>16) & 0xff;
+                int g = (pixel>>8) & 0xff;
+                int b = pixel & 0xff;
+                hash += r;
+                hash += (long) g << 20;
+                hash += (long) b << 40;
             }
         }
         return hash;

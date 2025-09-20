@@ -60,8 +60,7 @@ public class MediaCaptureManager implements CaptureManager {
         initializeHandlers();
     }
 
-    // TODO: move to utils
-    private short[][][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
+    private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
         if (videoFeed == null && screenFeed == null) {
             return null;
         }
@@ -71,15 +70,10 @@ public class MediaCaptureManager implements CaptureManager {
         if (feed == null) {
             feed = videoFeed;
         }
-        final short[][][] matrix = new short[feed.getHeight()][feed.getWidth()][3];
+        final int[][] matrix = new int[feed.getHeight()][feed.getWidth()];
         for (int i = 0; i < feed.getHeight(); i++) {
             for (int j = 0; j < feed.getWidth(); j++) {
-                int r = feed.getRGB(j, i);
-                int g = (r >> 8) & 0xFF;
-                int b = (r >> 16) & 0xFF;
-                matrix[i][j][0] = (short) r;
-                matrix[i][j][1] = (short) g;
-                matrix[i][j][2] = (short) b;
+                matrix[i][j] = feed.getRGB(j, i);
             }
         }
         return matrix;
@@ -92,7 +86,7 @@ public class MediaCaptureManager implements CaptureManager {
     public void startCapture() {
         BufferedImage videoFeed = null;
         BufferedImage screenFeed = null;
-        short[][][] feed;
+        int[][] feed;
 
         while (true) {
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
