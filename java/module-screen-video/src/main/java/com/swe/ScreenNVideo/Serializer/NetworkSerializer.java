@@ -23,7 +23,7 @@ public class NetworkSerializer {
      * @return serialized byte array
      * @throws IOException Can have exception while writing to the outputStream while creating the buffer data
      */
-    public byte[] serializeCPackets(final List<CompressedPatch> packets) throws IOException {
+    public static byte[] serializeCPackets(final List<CompressedPatch> packets) throws IOException {
 
         final int len = packets.size();
         final ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
@@ -42,7 +42,7 @@ public class NetworkSerializer {
      * @param data incoming data
      * @return list of CompressedPatch
      */
-    public List<CompressedPatch> deserializeCPackets(final byte[] data)
+    public static List<CompressedPatch> deserializeCPackets(final byte[] data)
         throws IndexOutOfBoundsException, InvalidParameterException {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
         final byte packetType = buffer.get();
@@ -59,6 +59,23 @@ public class NetworkSerializer {
             patches.add(CompressedPatch.deserializeCPacket(buffer, patchLength));
         }
         return patches;
+    }
+
+    public static byte[] serializeString(final  String data) {
+        int len = data.length();
+        ByteBuffer buffer = ByteBuffer.allocate(len + 1);
+        buffer.put((byte) (NetworkPacketType.SUBSCRIBE_AS_VIEWER.ordinal()));
+        buffer.put(data.getBytes());
+        return buffer.array();
+    }
+
+    public static String deserializeString(final byte[] data) {
+        final byte packetType = data[0];
+        if (packetType != NetworkPacketType.SUBSCRIBE_AS_VIEWER.ordinal()) {
+            throw new InvalidParameterException(
+                "Invalid Data type: Expected " + NetworkPacketType.SUBSCRIBE_AS_VIEWER.ordinal() + " got : " + packetType);
+        }
+        return new String(data, 1, data.length - 1);
     }
 
 }

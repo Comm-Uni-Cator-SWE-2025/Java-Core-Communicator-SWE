@@ -12,6 +12,7 @@ public class Utils {
     public static final String STOP_VIDEO_CAPTURE = "stopVideoCapture";
     public static final String START_SCREEN_CAPTURE = "startScreenCapture";
     public static final String STOP_SCREEN_CAPTURE = "stopScreenCapture";
+    public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
     public static final String UPDATE_UI = "updateUI";
     public static final String MODULE_REMOTE_KEY = "screenNVideo";
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
