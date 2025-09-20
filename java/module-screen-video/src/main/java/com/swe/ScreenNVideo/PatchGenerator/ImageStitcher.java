@@ -4,32 +4,99 @@ import java.util.List;
 
 /**
  * Handles stitching multiple patches together into a single canvas.
- *
- * @param canvas The target canvas for image stitching.
  */
-public record ImageStitcher(int[][][] canvas) {
+public class ImageStitcher {
 
     /**
-     * Creates a new {@code ImageStitcher}.
-     *
-     * @param canvas is the target canvas
+     * The target canvas for image stitching.
      */
-    public ImageStitcher {
+    private int[][] canvas;
+
+    private int currentHeight;
+    private int currentWidth;
+
+    /**
+     * Assigns new canvas.
+     *
+     * @param height of target canvas
+     * @param width of target canvas
+     */
+    public void setCanvas(final int height, final int width) {
+        this.canvas = new int[height][width];
+        this.currentHeight = height;
+        this.currentWidth = width;
+    }
+
+    /**
+     * Assigns new canvas.
+     *
+     * @param initialCanvas to be assigned to canvas
+     */
+    public void setCanvas(final int[][] initialCanvas) {
+        this.canvas = initialCanvas;
+        this.currentHeight = initialCanvas.length;
+        this.currentWidth = initialCanvas[0].length;
+    }
+
+    /**
+     * Resets the canvas to a empty canvas.
+     */
+    public void resetCanvas() {
+        this.canvas = new int[0][0];
+        this.currentHeight = 0;
+        this.currentWidth = 0;
     }
 
     /**
      * Stitches the provided patches list onto the canvas.
-     *
+     * Stretches the canvas if necessary.
      * @param patches the list of patches to apply
      */
     public void stitch(final List<Stitchable> patches) {
         for (Stitchable patch : patches) {
-            patch.applyOn(canvas);
+            stitch(patch);
         }
     }
 
+    /**
+     * Stitches the provided patch onto the canvas.
+     * Stretches the canvas if necessary.
+     * @param patch
+     */
     public void stitch(final Stitchable patch) {
+        verifyDimensions(patch);
         patch.applyOn(canvas);
+    }
+
+    private void verifyDimensions(final Stitchable patch) {
+        int maxHeightWithPatch = Math.max( patch.getY() + patch.getHeight(), currentHeight);
+        int maxWidthWithPatch = Math.max(patch.getX() + patch.getWidth(), currentWidth);
+
+        if (maxHeightWithPatch > currentHeight || maxWidthWithPatch > currentWidth) {
+            resize(maxHeightWithPatch, maxWidthWithPatch, true);
+        }
+    }
+
+    /**
+     * Resize the canvas to the provided dimensions.
+     * @param fill Copies the first contents of the canvas to the new canvas.
+     * @param height of new canvas
+     * @param width of new canvas
+     */
+    private void resize(final int height, final int width, final boolean fill) {
+        int[][] new_canvas = new int[height][width];
+
+        if (fill) {
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    new_canvas[i][j] = this.canvas[i][j];
+                }
+            }
+        }
+
+        this.canvas = new_canvas;
+        this.currentHeight = height;
+        this.currentWidth = width;
     }
 
     /**
@@ -37,8 +104,7 @@ public record ImageStitcher(int[][][] canvas) {
      *
      * @return the canvas
      */
-    @Override
-    public int[][][] canvas() {
+    public int[][] getCanvas() {
         return canvas;
     }
 }
