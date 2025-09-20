@@ -6,7 +6,7 @@ package com.swe.ScreenNVideo.PatchGenerator;
 public class Patch implements Stitchable {
 
     /** Pixel data for this patch. */
-    private final int[][][] pixels;
+    private final int[][] pixels;
 
     /** X-coordinate to place patch. */
     private final int x;
@@ -21,7 +21,7 @@ public class Patch implements Stitchable {
      * @param posX the x-coordinate
      * @param posY the y-coordinate
      */
-    public Patch(final int[][][] patchPixels, final int posX, final int posY) {
+    public Patch(final int[][] patchPixels, final int posX, final int posY) {
         this.pixels = patchPixels;
         this.x = posX;
         this.y = posY;
@@ -34,7 +34,7 @@ public class Patch implements Stitchable {
      * @param canvas is the target canvas
      */
     @Override
-    public void applyOn(final int[][][] canvas) {
+    public void applyOn(final int[][] canvas) {
         for (int i = 0; i < pixels.length; i++) {
             for (int j = 0; j < pixels[0].length; j++) {
                 final int targetX = x + i;
@@ -46,9 +46,29 @@ public class Patch implements Stitchable {
                     && targetY >= 0
                     && targetY < canvas[0].length) {
 
-                    System.arraycopy(pixels[i][j], 0, canvas[targetX][targetY], 0, pixels[i][j].length);
+                    canvas[targetX][targetY] = pixels[i][j];
                 }
             }
         }
+    }
+
+    @Override
+    public int getHeight() {
+        return pixels.length;
+    }
+
+    @Override
+    public int getWidth() {
+        return pixels[0].length;
+    }
+
+    @Override
+    public int getX() {
+        return x;
+    }
+
+    @Override
+    public int getY() {
+        return y;
     }
 }
