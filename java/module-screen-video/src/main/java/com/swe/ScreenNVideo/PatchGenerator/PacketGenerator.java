@@ -24,7 +24,7 @@ public class PacketGenerator {
      * @param curr is the image frame (int[width][height][3] RGB array)
      * @return list of compressed patches
      */
-    public List<CompressedPatch> generatePackets(short[][][] curr) {
+    public List<CompressedPatch> generatePackets(int[][] curr) {
         int width = curr.length;
         int height = curr[0].length;
 

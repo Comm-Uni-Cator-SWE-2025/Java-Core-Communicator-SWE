@@ -6,5 +6,5 @@ public interface IHasher {
      * @param img->pixel data (int[][][]); (x, y)->location of the first corner; (w, h)->height and width
      * @return hash as a long
      */
-    long hash(short[][][] img, int x, int y, int w, int h);
+    long hash(int[][] img, int x, int y, int w, int h);
 }

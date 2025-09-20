@@ -1,5 +1,9 @@
 package com.swe.ScreenNVideo;
 
+import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
+import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
+
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
 public class Utils {
