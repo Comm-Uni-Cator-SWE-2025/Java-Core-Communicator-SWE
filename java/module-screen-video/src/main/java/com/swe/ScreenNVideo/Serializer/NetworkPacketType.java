@@ -5,4 +5,5 @@ public enum NetworkPacketType {
      * Depicts list of compressed packets.
      */
     LIST_CPACKETS,
+    SUBSCRIBE_AS_VIEWER
 }
