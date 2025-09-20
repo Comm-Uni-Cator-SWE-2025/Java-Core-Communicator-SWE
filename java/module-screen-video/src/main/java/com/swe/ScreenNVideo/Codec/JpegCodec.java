@@ -1,17 +1,17 @@
 package com.swe.ScreenNVideo.Codec;
 
-import java.awt.image.BufferedImage;
+import java.nio.charset.StandardCharsets;
 
 public class JpegCodec implements Codec {
-    private BufferedImage screenshot;
+    private int[][] screenshot;
 
-    public JpegCodec(BufferedImage screenshot){
+    public JpegCodec(int[][] screenshot){
         this.screenshot = screenshot;
     }
 
     public JpegCodec(){}
 
-    public void setScreenshot(BufferedImage screenshot){
+    public void setScreenshot(int[][] screenshot){
         this.screenshot = screenshot;
     }
 
@@ -23,13 +23,14 @@ public class JpegCodec implements Codec {
         int[][] CbMatrix = new int[height/2][width/2];
         int[][] CrMatrix = new int[height/2][width/2];
 
+        
         for(int i = y;i-y<height;i+=2){
             for(int j = x;j-x<width;j+=2){
                 double cb_pixel = 0;
                 double cr_pixel = 0;
                 for(int ii = i;ii-i<2;++ii){
                     for(int jj = j;jj-j<2;++jj){
-                        int pixel = screenshot.getRGB(jj,ii);
+                        int pixel = screenshot[ii][jj];
     
                         int r = (pixel>>16) & 0xff;
                         int g = (pixel>>8) & 0xff;
@@ -58,12 +59,17 @@ public class JpegCodec implements Codec {
         sb.append("H:").append(height).append(",W:").append(width).append(";");
         sb.append("Y:").append(zigZagScan(YMatrix)).append("Cb:").append(zigZagScan(CbMatrix)).
             append("Cr:").append(zigZagScan(CrMatrix));
-        return sb.toString();
+  
+        String str = sb.toString();
+        byte[] imagebytes = str.getBytes(StandardCharsets.UTF_8);
+        return imagebytes;
     }
 
     @Override
-    public BufferedImage Decode(byte[] encoded_image) {
-        String[] parts = encoded_image.split(";");
+    public int[][] Decode(byte[] encoded_image) {
+        String recoveredImage = new String(encoded_image, StandardCharsets.UTF_8);
+
+        String[] parts = recoveredImage.split(";");
         String[] dims = parts[0].split(",");
 
         // Extracting height and width of the color matrix from string
@@ -79,39 +85,17 @@ public class JpegCodec implements Codec {
         int[][] Cb = reverseZigZagScan((int)height/2, (int)width/2, Cbstring);
         int[][] Cr = reverseZigZagScan((int)height/2, (int)width/2, Crstring);
 
-        int[][][] RGB = convertYCbCrToRGB(Y, Cb, Cr); 
+        int[][] RGB = convertYCbCrToRGB(Y, Cb, Cr); 
 
-        BufferedImage image = rgbToBufferedImage(RGB);
-
-        return image; 
+        return RGB; 
     }
 
-    private BufferedImage rgbToBufferedImage(int[][][] RGB) {
-        int height = RGB.length;
-        int width = RGB[0].length;
-
-        BufferedImage image = new BufferedImage(height, width, BufferedImage.TYPE_INT_RGB);
-
-        for (int i=0; i<height; ++i) {
-            for (int j=0 ; j<width; ++j) {
-                int r = RGB[i][j][0];
-                int g = RGB[i][j][1];
-                int b = RGB[i][j][2];
-
-                // Pack into a single 24-bit int (OxRRGGBB)
-                int pixel = (r<<16) | (g<<8) | b;
-                image.setRGB(j, i, pixel); // x=j , y=i
-            }
-        }
-
-        return image;
-    }
 
     private int[][] convertYCbCrToRGB(int[][] Y, int[][] Cb, int[][] Cr) {
         int height = Y.length;
         int width = Y[0].length;
 
-        int[][][] RGB = new int[height][width][3]; // [row][col][channel]
+        int[][] RGB = new int[height][width]; // [row][col]
         
         for (int i=0; i<height/2; ++i) {
             for (int j=0; j<width/2; ++j){
@@ -131,9 +115,7 @@ public class JpegCodec implements Codec {
                         g = Math.min(255, Math.max(0, g));
                         b = Math.min(255, Math.max(0, b));
 
-                        RGB[2*i+ii][2*j+jj][0] = r;
-                        RGB[2*i+ii][2*j+jj][1] = g;
-                        RGB[2*i+ii][2*j+jj][2] = b;
+                        RGB[2*i+ii][2*j+jj] = (r << 16) | (g << 8) | b;
                     }
                 }
             }
