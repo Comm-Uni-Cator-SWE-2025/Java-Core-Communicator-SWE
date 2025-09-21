@@ -2,19 +2,43 @@ package com.swe.ScreenNVideo.PatchGenerator;
 
 import java.util.List;
 
+/**
+ * Handles stitching multiple patches together into a single canvas.
+ *
+ * @param canvas The target canvas for image stitching.
+ */
+public record ImageStitcher(int[][][] canvas) {
 
-public class ImageStitcher {
-    private final int[][][] canvas;
-
-    public ImageStitcher(int[][][] canvas) {
-        this.canvas = canvas;
+    /**
+     * Creates a new {@code ImageStitcher}.
+     *
+     * @param canvas is the target canvas
+     */
+    public ImageStitcher {
     }
 
-    public void stitch(Stitchable patch) {
+    /**
+     * Stitches the provided patches list onto the canvas.
+     *
+     * @param patches the list of patches to apply
+     */
+    public void stitch(final List<Stitchable> patches) {
+        for (Stitchable patch : patches) {
+            patch.applyOn(canvas);
+        }
+    }
+
+    public void stitch(final Stitchable patch) {
         patch.applyOn(canvas);
     }
 
-    public int[][][] getCanvas() {
+    /**
+     * Returns the final stitched canvas.
+     *
+     * @return the canvas
+     */
+    @Override
+    public int[][][] canvas() {
         return canvas;
     }
 }
