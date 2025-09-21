@@ -17,7 +17,7 @@ public class JpegCodec implements Codec {
 
     //convert screenshot into YCbCr format (4:2:0) chroma sampling
     @Override
-    public byte[] Encode(int x,int y,int height,int width){
+    public byte[] encode(int x, int y, int height, int width){
 
         int[][] YMatrix  = new int[height][width];
         int[][] CbMatrix = new int[height/2][width/2];
@@ -55,19 +55,16 @@ public class JpegCodec implements Codec {
             }
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("H:").append(height).append(",W:").append(width).append(";");
-        sb.append("Y:").append(zigZagScan(YMatrix)).append("Cb:").append(zigZagScan(CbMatrix)).
-            append("Cr:").append(zigZagScan(CrMatrix));
-  
-        String str = sb.toString();
+        String str = "H:" + height + ",W:" + width + ";" +
+            "Y:" + zigZagScan(YMatrix) + "Cb:" + zigZagScan(CbMatrix) +
+            "Cr:" + zigZagScan(CrMatrix);
         byte[] imagebytes = str.getBytes(StandardCharsets.UTF_8);
         return imagebytes;
     }
 
     @Override
-    public int[][] Decode(byte[] encoded_image) {
-        String recoveredImage = new String(encoded_image, StandardCharsets.UTF_8);
+    public int[][] decode(byte[] encodedImage) {
+        String recoveredImage = new String(encodedImage, StandardCharsets.UTF_8);
 
         String[] parts = recoveredImage.split(";");
         String[] dims = parts[0].split(",");
@@ -82,8 +79,8 @@ public class JpegCodec implements Codec {
         String Crstring = parts[1].split("Cr:")[1];
 
         int[][] Y = reverseZigZagScan(height, width, Ystring);
-        int[][] Cb = reverseZigZagScan((int)height/2, (int)width/2, Cbstring);
-        int[][] Cr = reverseZigZagScan((int)height/2, (int)width/2, Crstring);
+        int[][] Cb = reverseZigZagScan(height /2, width /2, Cbstring);
+        int[][] Cr = reverseZigZagScan(height /2, width /2, Crstring);
 
         int[][] RGB = convertYCbCrToRGB(Y, Cb, Cr); 
 

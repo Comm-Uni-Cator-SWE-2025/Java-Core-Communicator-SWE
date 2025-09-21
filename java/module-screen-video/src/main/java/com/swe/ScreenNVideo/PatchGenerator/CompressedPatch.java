@@ -3,11 +3,11 @@ package com.swe.ScreenNVideo.PatchGenerator;
 import java.nio.ByteBuffer;
 
 public class CompressedPatch {
-    private int x;
-    private int y;
-    private int width;
-    private int height;
-    private byte[] data; // compressed tile as a string
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+    private final byte[] data; // compressed tile as a string
 
     public CompressedPatch(int x, int y, int width, int height, byte[] data) {
         this.x = x;
