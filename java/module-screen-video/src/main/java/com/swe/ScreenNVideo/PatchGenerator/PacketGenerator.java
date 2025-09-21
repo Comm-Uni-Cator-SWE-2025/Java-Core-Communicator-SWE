@@ -8,8 +8,8 @@ import java.util.List;
 public class PacketGenerator {
 
     private static final int TILE_SIZE = 64; // default tile size
-    private Codec compressor;
-    private IHasher hasher;
+    private final Codec compressor;
+    private final IHasher hasher;
 
     // Values/Cache of last hashes per tile (grid of tiles, each storing long hash)
     private long[][] prevHashes;
@@ -48,7 +48,7 @@ public class PacketGenerator {
 
                 long currHash = hasher.hash(curr, x, y, w, h);
                 if (currHash != prevHashes[tx][ty]) {
-                    String compressedString = this.compressor.Encode(x, y, w, h);
+                    byte[] compressedString = this.compressor.encode(x, y, w, h);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
                     prevHashes[tx][ty] = currHash;
                 }

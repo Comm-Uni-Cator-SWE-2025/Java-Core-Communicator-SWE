@@ -8,13 +8,16 @@ import com.swe.RPC.RProcedure;
 import com.swe.ScreenNVideo.Capture.ICapture;
 import com.swe.ScreenNVideo.Capture.ScreenCapture;
 import com.swe.ScreenNVideo.Capture.VideoCapture;
+import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.Codec;
+import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.Codec.JpegCodec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.PatchGenerator.Hasher;
 import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
+import com.swe.ScreenNVideo.PatchGenerator.Patch;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 import com.swe.ScreenNVideo.Serializer.Serializer;
@@ -40,28 +43,29 @@ public class MediaCaptureManager implements CaptureManager {
     private final ICapture videoCapture;
     private final ICapture screenCapture;
 
-    private final Codec videoCodec;
     private final PacketGenerator patchGenerator;
-    private final IHasher hasher;
     private ImageStitcher imageStitcher;
-    private ImageSynchronizer imageSynchronizer;
+    private final ImageSynchronizer imageSynchronizer;
+    private final ImageScaler scalar;
 
     private final AbstractNetworking networking;
     private final AbstractRPC rpc;
 
     private final ArrayList<String> viewers;
 
-    public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, int port) {
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
-        this.port = port;
+        this.port = portArgs;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
-        videoCodec = new JpegCodec();
-        hasher = new Hasher(Utils.HASH_STRIDE);
+        final Codec videoCodec = new JpegCodec();
+        final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
-        imageSynchronizer = new ImageSynchronizer();
+        imageStitcher = new ImageStitcher();
+        imageSynchronizer = new ImageSynchronizer(videoCodec, hasher, imageStitcher);
         viewers = new ArrayList<>();
+        scalar = new BilinearScaler();
         initializeHandlers();
     }
 
@@ -69,19 +73,32 @@ public class MediaCaptureManager implements CaptureManager {
         if (videoFeed == null && screenFeed == null) {
             return null;
         }
-        // TODO: stitch VideoFeed on ScreenFeed if both are on
-        BufferedImage feed = screenFeed;
 
-        if (feed == null) {
-            feed = videoFeed;
+        int[][] feed = null;
+        if (screenFeed != null) {
+            feed = Utils.convertToRGBMatrix(screenFeed);
         }
-        final int[][] matrix = new int[feed.getHeight()][feed.getWidth()];
-        for (int i = 0; i < feed.getHeight(); i++) {
-            for (int j = 0; j < feed.getWidth(); j++) {
-                matrix[i][j] = feed.getRGB(j, i);
+
+        if (videoFeed != null) {
+            final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
+            if (feed == null) {
+                feed = videoMatrix;
+            } else {
+                final int height = feed.length;
+                final int width = feed[0].length;
+                final int targetHeight =  height / Utils.SCALE_Y;
+                final int targetWidth = width / Utils.SCALE_X;
+                final int[][] scaledDownedFeed = scalar.Scale(videoMatrix, targetHeight, targetWidth);
+                final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
+                final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
+                final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
+                imageStitcher.setCanvas(feed);
+                imageStitcher.stitch(videoPatch);
+                feed = imageStitcher.getCanvas();
             }
         }
-        return matrix;
+
+        return feed;
     }
 
     /**
@@ -118,6 +135,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
             }
 
+            // get the feed to send
             feed = getFeedMatrix(videoFeed, screenFeed);
             if (feed == null) {
                 continue;
@@ -129,11 +147,10 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-            // TODO : send packets to the client
             byte[] encodedPatches = null;
             int tries = 3;
             while (tries-- > 0) {
-                // maxtries 3 times to convert the patch
+                // max tries 3 times to convert the patch
                 try {
                     encodedPatches = NetworkSerializer.serializeCPackets(patches);
                     break;
@@ -147,18 +164,16 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-
-
+            sendImageToViewers(encodedPatches);
         }
     }
 
-    private void sendImageToViewers(int[][] feed) {
-        final byte[] serializedImage = Serializer.serializeImage(feed);
-        int[] ports = new int[viewers.size()];
+    private void sendImageToViewers(final byte[] feed) {
+        final int[] ports = new int[viewers.size()];
         for (int i = 0; i < viewers.size(); i++) {
             ports[i] = port;
         }
-        networking.SendData(serializedImage, viewers.toArray(new String[viewers.size()]), ports);
+        networking.SendData(feed, viewers.toArray(new String[0]), ports);
     }
 
 
@@ -210,7 +225,7 @@ public class MediaCaptureManager implements CaptureManager {
                 final String destIP = NetworkSerializer.deserializeString(args);
                 
                 final String selfIP = networking.getSelfIP();
-                byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
+                final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
                 networking.SendData(subscribeData, new String[] {destIP}, new int[] {port});
 
                 final byte[] res = new byte[1];
@@ -224,6 +239,9 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     class ClientHandler implements MessageListener {
+        /**
+         * Cache for NetworkType enum.
+         */
         private final NetworkPacketType[] enumVals;
 
         ClientHandler() {
@@ -255,7 +273,6 @@ public class MediaCaptureManager implements CaptureManager {
                     viewers.add(viewerIP);
                 }
                 default -> {
-                    return;
                 }
             }
 
