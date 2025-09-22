@@ -30,7 +30,7 @@ public class App extends Application {
 
             // Load the FXML file we created.
             final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(
-                    "/com.Comm_Uni_Cator/chat/ChatView.fxml")
+                    "/ChatView.fxml")
             );
             final Parent root = fxmlLoader.load();
 
