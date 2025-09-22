@@ -2,22 +2,14 @@ package com.swe.ScreenNVideo.PatchGenerator;
 
 import java.nio.ByteBuffer;
 
-public class CompressedPatch {
-    private final int x;
-    private final int y;
-    private final int width;
-    private final int height;
-    private final byte[] data; // compressed tile as a string
+/**
+ * @param data compressed tile as a string
+ */
+public record CompressedPatch(int x, int y, int width, int height, byte[] data) {
 
-    public CompressedPatch(int x, int y, int width, int height, byte[] data) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.data = data;
-    }
-
-    /** Serializes this packet to be sent via network.
+    /**
+     * Serializes this packet to be sent via network.
+     *
      * @return byte[] to be sent
      */
     public byte[] serializeCPacket() {
@@ -37,6 +29,7 @@ public class CompressedPatch {
     /**
      * Creates a Compresses patch from incoming packet from networking module.
      * using byte[]
+     *
      * @param packet incoming data
      * @return CompressedPatch using the data
      */
@@ -66,26 +59,5 @@ public class CompressedPatch {
         return new CompressedPatch(
             x, y, width, height, data
         );
-    }
-
-    // getters
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public byte[] getData() {
-        return data;
     }
 }

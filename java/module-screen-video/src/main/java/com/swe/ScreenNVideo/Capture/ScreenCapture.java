@@ -7,7 +7,7 @@ public class ScreenCapture extends ICapture {
 
     /**
      * Captures the entire screen and returns it as a BufferedImage.
-     * Works on Windows, macOS, and Linux.
+     * Works on Windows, macOS, and Linux.t
      *
      * @return BufferedImage containing the screenshot
      * @throws AWTException if the platform configuration does not allow low-level input control
@@ -16,11 +16,12 @@ public class ScreenCapture extends ICapture {
     public BufferedImage capture() throws AWTException {
 
         // Get screen size
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Rectangle screenRect = new Rectangle(screenSize);
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        final Rectangle screenRect = new Rectangle(screenSize);
 
         // Create Robot instance and capture screen
-        Robot robot = new Robot();
+        final Robot robot = new Robot();
+
         return robot.createScreenCapture(screenRect);
     }
 }

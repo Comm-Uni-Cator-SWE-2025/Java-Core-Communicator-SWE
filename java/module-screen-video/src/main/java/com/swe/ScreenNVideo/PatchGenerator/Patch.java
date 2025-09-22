@@ -37,16 +37,15 @@ public class Patch implements Stitchable {
     public void applyOn(final int[][] canvas) {
         for (int i = 0; i < pixels.length; i++) {
             for (int j = 0; j < pixels[0].length; j++) {
-                final int targetX = x + i;
-                final int targetY = y + j;
+                final int targetX = x + j;
+                final int targetY = y + i;
 
 
-                if (targetX >= 0
-                    && targetX < canvas.length
-                    && targetY >= 0
-                    && targetY < canvas[0].length) {
-
-                    canvas[targetX][targetY] = pixels[i][j];
+                if (targetY >= 0
+                    && targetY < canvas.length
+                    && targetX >= 0
+                    && targetX < canvas[0].length) {
+                    canvas[targetY][targetX] = pixels[i][j];
                 }
             }
         }

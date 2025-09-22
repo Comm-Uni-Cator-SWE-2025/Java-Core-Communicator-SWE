@@ -13,10 +13,10 @@ public class Utils {
     public static final String UPDATE_UI = "updateUI";
     public static final String MODULE_REMOTE_KEY = "screenNVideo";
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
-    public static final int SCALE_X = 8;
+    public static final int SCALE_X = 7;
     public static final int SCALE_Y = 5;
-    public static final int VIDEO_PADDING_X = 5;
-    public static final int VIDEO_PADDING_Y = 5;
+    public static final int VIDEO_PADDING_X = 20;
+    public static final int VIDEO_PADDING_Y = 20;
 
 
     public  static  void writeInt(final ByteArrayOutputStream bufferOut, int data) {

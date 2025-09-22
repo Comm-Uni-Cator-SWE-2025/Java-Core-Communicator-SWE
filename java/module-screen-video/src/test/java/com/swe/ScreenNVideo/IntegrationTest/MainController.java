@@ -9,8 +9,10 @@ import com.swe.ScreenNVideo.Serializer.Serializer;
 import com.swe.ScreenNVideo.Utils;
 import javafx.application.Application;
 
+import java.util.concurrent.ExecutionException;
+
 public class MainController {
-    public static void main(String[] args) throws InterruptedException {
+    static void main(String[] args) throws InterruptedException {
         AbstractNetworking networking = new DummyNetworking();
         AbstractRPC rpc = new DummyRPC();
 
@@ -19,14 +21,19 @@ public class MainController {
             public byte[] call(byte[] args) {
                 int[][] image = Serializer.deserializeImage(args);
                 VideoUI.displayFrame(image);
-                System.out.println("Image Updated");
                 return new byte[0];
             }
         });
 
         CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, 30000);
 
-        Thread screenNVideoThread = new Thread(screenNVideo::startCapture);
+        Thread screenNVideoThread = new Thread(() -> {
+            try {
+                screenNVideo.startCapture();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         screenNVideoThread.start();
 
