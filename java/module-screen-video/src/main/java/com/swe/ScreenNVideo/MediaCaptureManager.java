@@ -59,7 +59,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.rpc = argRpc;
         this.port = portArgs;
         isScreenCaptureOn = true;
-        isVideoCaptureOn = true;
+        isVideoCaptureOn = false;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
@@ -70,6 +70,7 @@ public class MediaCaptureManager implements CaptureManager {
         imageSynchronizer = new ImageSynchronizer(videoCodec, hasher, imageStitcher);
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
+        viewers.add(networking.getSelfIP());
         initializeHandlers();
     }
 
@@ -82,7 +83,7 @@ public class MediaCaptureManager implements CaptureManager {
         if (videoFeed != null) {
             final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
             if (feed == null) {
-                System.out.println("Here");
+//                System.out.println("Here");
                 feed = videoMatrix;
             } else {
                 final int height = feed.length;
@@ -93,7 +94,7 @@ public class MediaCaptureManager implements CaptureManager {
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
                 final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
-                System.out.println(videoPosX + " " + videoPosY + " " + targetWidth + " " + targetHeight);
+//                System.out.println(videoPosX + " " + videoPosY + " " + targetWidth + " " + targetHeight);
                 imageStitcher.setCanvas(feed);
                 imageStitcher.stitch(videoPatch);
                 feed = imageStitcher.getCanvas();
@@ -114,7 +115,18 @@ public class MediaCaptureManager implements CaptureManager {
         BufferedImage screenFeed = null;
         int[][] feed;
 
+        final int fps = 30;
+        final double timeDelay = (1.0 / fps) * 1_000_000_000;
+        long start = 0;
         while (true) {
+            long currTime = System.nanoTime();
+            long diff = currTime - start;
+            if (diff < timeDelay) {
+                continue;
+            }
+
+            System.out.println("Server FPS : "  + (int)(1000.0 / ((currTime - start) / 1_000_000.0)) );
+            start = System.nanoTime();
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
                 try {
                     Thread.sleep(1000);
@@ -144,13 +156,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (feed == null) {
                 continue;
             }
-
-//            System.out.println(feed.length + "," + feed[0].length);
             videoCodec.setScreenshot(feed);
-            final byte[] serializedImage1 = Serializer.serializeImage(feed);
-
-            rpc.Call(Utils.UPDATE_UI, serializedImage1);
-//            Thread.sleep(10000);
 
             final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
 
@@ -158,31 +164,26 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-//            byte[] encodedPatches = null;
-//            int tries = 3;
-//            while (tries-- > 0) {
-//                // max tries 3 times to convert the patch
-//                try {
-//                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
-//                    break;
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            if (tries < 0 || encodedPatches == null) {
-//                System.err.println("Error: Unable to serialize compressed packets");
-//                continue;
-//            }
+            byte[] encodedPatches = null;
+            int tries = 3;
+            while (tries-- > 0) {
+                // max tries 3 times to convert the patch
+                try {
+                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
+                    break;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
-            // send to others who have subscribed
-//            sendImageToViewers(encodedPatches);
-            // send to UI of current machine to display
-            final int[][] image = imageSynchronizer.synchronize(patches, feed);
-            final byte[] serializedImage = Serializer.serializeImage(image);
+            if (tries < 0 || encodedPatches == null) {
+                System.err.println("Error: Unable to serialize compressed packets");
+                continue;
+            }
 
-            rpc.Call(Utils.UPDATE_UI, serializedImage);
-            Thread.sleep(5000);
+//             send to others who have subscribed
+            sendImageToViewers(encodedPatches);
+            // TODO: send to UI of current machine to display. Remove selfIP from viewers list and directly send the data from here to UI
         }
     }
 
@@ -282,10 +283,14 @@ public class MediaCaptureManager implements CaptureManager {
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
                     final List<CompressedPatch> patches = NetworkSerializer.deserializeCPackets(data);
-                    final int[][] image = imageSynchronizer.synchronize(patches, null);
+                    final int[][] image = imageSynchronizer.synchronize(patches);
                     final byte[] serializedImage = Serializer.serializeImage(image);
                     // Do not wait for result
-                    rpc.Call(Utils.UPDATE_UI, serializedImage);
+                    try {
+                        rpc.Call(Utils.UPDATE_UI, serializedImage).get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeString(data);

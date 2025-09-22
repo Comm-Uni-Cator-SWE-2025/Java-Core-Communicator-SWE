@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 
 public class MainController {
     static void main(String[] args) throws InterruptedException {
-        AbstractNetworking networking = new DummyNetworking();
+        AbstractNetworking networking = new DummyNetworkingWithQueue();
         AbstractRPC rpc = new DummyRPC();
 
         rpc.subscribe(Utils.UPDATE_UI, new RProcedure() {

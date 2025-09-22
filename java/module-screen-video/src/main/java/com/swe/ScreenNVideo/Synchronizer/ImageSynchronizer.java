@@ -21,27 +21,17 @@ public class ImageSynchronizer {
         previousImage = null;
     }
 
-    public int[][] synchronize(final List<CompressedPatch> compressedPatches, int[][] feed) {
+    public int[][] synchronize(final List<CompressedPatch> compressedPatches) {
         if (previousImage != null) {
-            System.out.println("Using previous Image");
             imageStitcher.setCanvas(previousImage);
         } else {
-            imageStitcher.setCanvas(1080, 1920);
+            imageStitcher.resetCanvas();
         }
         for (CompressedPatch compressedPatch : compressedPatches) {
             final int[][] decodedImage = videoCodec.decode(compressedPatch.data());
-//            int[][] dImage = new int[64][64];
-//            for (int i = 0; i < 64; i++) {
-//                for (int j = 0; j < 64; j++) {
-//                    dImage[i][j] = feed[i][j];
-//                    if (decodedImage[i][j] != feed[i][j]) {
-//                        throw new RuntimeException("Mis Match");
-//                    }
-//                }
-//            }
             final Patch patch = new Patch(decodedImage, compressedPatch.x(), compressedPatch.y());
             imageStitcher.stitch(patch);
-            break;
+//            break;
         }
         previousImage = imageStitcher.getCanvas();
         return previousImage;

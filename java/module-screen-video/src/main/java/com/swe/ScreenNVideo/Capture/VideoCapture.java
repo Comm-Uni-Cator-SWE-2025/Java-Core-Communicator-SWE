@@ -66,7 +66,7 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Capture a single frame
+     * Capture a single frame.
      * @return BufferedImage of the captured frame
      */
     public BufferedImage capture() {
@@ -76,11 +76,12 @@ public class VideoCapture extends ICapture {
         }
 
         try {
+            Robot robot1 = new Robot();
             final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             final Rectangle screenRect = new Rectangle(screenSize);
 
             // Create Robot instance and capture screen
-            return robot.createScreenCapture(screenRect);
+            return robot1.createScreenCapture(screenRect);
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());
