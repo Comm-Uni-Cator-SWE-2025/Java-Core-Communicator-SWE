@@ -10,15 +10,7 @@ import java.util.ArrayList;
 
 public class PriorityQueue {
     /**
-     * Deadline for video packets in milliseconds.
-     */
-    private static final int VIDEO_DEADLINE_MS = 200;
-    /**
-     * Deadline for screen share packets in milliseconds.
-     */
-    private static final int SCREEN_DEADLINE_MS = 250;
-    /**
-     * Deadline for other packets like chat, file in Multi Level Queue.
+     * Deadline for least priority packets in Multi Level Queue.
      */
     private static final long AGING_THRESHOLD_MS = 2000;
     /**
@@ -26,7 +18,7 @@ public class PriorityQueue {
      */
     private static final int MLFQ_LEVELS = 3;
     /**
-     *  Time for each epoch.
+     * Time for each epoch.
      */
     private static final int EPOCH_MS = 100;
     /**
@@ -34,55 +26,52 @@ public class PriorityQueue {
      */
     private static final int TOTAL_BUDGET = 100;
     /**
-     * Queue for video packet.
+     * Queue for video packet (highest priority).
      */
-    private final Deque<Packet> videoQueue = new ArrayDeque<>();
+    private final Deque<Packet> highestPriorityQueue = new ArrayDeque<>();
     /**
-     * Queue for screen share packet.
+     * Queue for screen share packet (mid-priority).
      */
-    private final Deque<Packet> screenQueue = new ArrayDeque<>();
+    private final Deque<Packet> midPriorityQueue = new ArrayDeque<>();
     /**
-     * Multilevel Feedback queue for other packets.
+     * Multilevel Feedback Queue (MLFQ) for other packets (low priority).
      */
     private final List<Deque<Packet>> mlfq = new ArrayList<>();
     /**
-     * Bandwidth for different priority levels.
+     * Bandwidth share for different priority levels.
      */
     private final Map<String, Integer> budgetShare = Map.of(
-            "video", 50,
-            "screen", 25,
-            "chat", 15,
-            "file", 10
+            "priority1", 50,
+            "priority2", 30,
+            "priority3", 20
     );
+
     /**
-     * A map which keeps track of current bandwidth of different packets.
+     * A map which keeps track of current bandwidth of different priorities.
      */
     private final Map<String, Integer> currentBudget = new HashMap<>();
+
     /**
-     * Deadline for video packets in milliseconds.
+     * Last time budgets were reset (epoch marker).
      */
     private long lastEpochReset = System.currentTimeMillis();
-    /**
-     * Priority Number for Video Packet.
-     */
-    private static final int PRIORITY_VIDEO = 1;
-    /**
-     * Priority Number for screen share Packet.
-     */
-    private static final int PRIORITY_SCREEN = 2;
-    /**
-     * Priority Number for chat Packet.
-     */
-    private static final int PRIORITY_CHAT = 3;
-    /**
-     * Priority Number for File Packet.
-     */
-    private static final int PRIORITY_FILE = 4;
-    /**
-     * Total Number of priority.
-     */
-    private static final int PRIORITY_RANGE = 4;
 
+    /**
+     * Priority Number for Highest Priority Packet.
+     */
+    private static final int PRIORITY_ONE = 1;
+    /**
+     * Priority Number for Mid-Priority Packet.
+     */
+    private static final int PRIORITY_TWO = 2;
+    /**
+     * Priority Number for Low-Priority Packet.
+     */
+    private static final int PRIORITY_THREE = 3;
+    /**
+     * Total Number of priorities.
+     */
+    private static final int PRIORITY_RANGE = 3;
 
     /**
      * Creates a priority queue and initializes budgets and queues.
@@ -111,10 +100,27 @@ public class PriorityQueue {
      * Returns the priority of a received packet.
      *
      * @param rcvdPkt the packet data
-     * @return priority value between PRIORITY_VIDEO and PRIORITY_FILE
+     * @return priority value between PRIORITY_ONE and PRIORITY_THREE
      */
     private int getPriority(final byte[] rcvdPkt) {
+        // Dummy function
         return (int) System.currentTimeMillis() % PRIORITY_RANGE + 1;
+    }
+
+    /**
+     * @return whether all queues are empty.
+     */
+    private boolean isQueueEmpty() {
+        boolean mlfqEmpty = true;
+        for (final Deque<Packet> q : mlfq) {
+            if (!q.isEmpty()) {
+                mlfqEmpty = false;
+                break;
+            }
+        }
+        return highestPriorityQueue.isEmpty()
+                && midPriorityQueue.isEmpty()
+                && mlfqEmpty;
     }
 
     /**
@@ -124,37 +130,29 @@ public class PriorityQueue {
      */
     public void addPacket(final byte[] data) {
         final int priority = getPriority(data);
-        final Packet pkt;
+        final Packet pkt = new Packet(data, priority);
         switch (priority) {
-            case PRIORITY_VIDEO:
-                pkt = new Packet(data, priority, VIDEO_DEADLINE_MS);
-                videoQueue.add(pkt);
-                System.out.println("Packet added to video queue");
+            case PRIORITY_ONE:
+                highestPriorityQueue.add(pkt);
+                System.out.println("Packet added to highest priority queue");
                 break;
-            case PRIORITY_SCREEN:
-                pkt = new Packet(data, priority, SCREEN_DEADLINE_MS);
-                System.out.println("Packet added to Screen queue");
-                screenQueue.add(pkt);
+            case PRIORITY_TWO:
+                midPriorityQueue.add(pkt);
+                System.out.println("Packet added to mid priority queue");
                 break;
-            case PRIORITY_CHAT: // chat
-                pkt = new Packet(data, priority, -1);
-                System.out.println("Packet added to MLFQ queue");
+            case PRIORITY_THREE:
                 mlfq.get(0).add(pkt);
-                break;
-            case PRIORITY_FILE: // file
-                pkt = new Packet(data, priority, -1);
-                System.out.println("Packet added to MLFQ queue");
-                mlfq.get(0).add(pkt);
+                System.out.println("Packet added to MLFQ level 0");
                 break;
             default:
-                System.out.println("Unknown priority " + priority);
+                System.out.println("Incorrect Priority");
                 break;
         }
     }
 
     /**
      * Applies aging to MLFQ packets.
-     *  By moving them up a level if they wait too long.
+     * Moves them up a level if they wait too long.
      */
     private void applyAging() {
         final long now = System.currentTimeMillis();
@@ -173,7 +171,7 @@ public class PriorityQueue {
 
     /**
      * Retrieves the next packet to process.
-     * By considering deadlines, budgets, and MLFQ.
+     * By considering budgets and MLFQ.
      *
      * @return the next packet's data, or null if none available
      */
@@ -184,71 +182,41 @@ public class PriorityQueue {
             resetBudgets();
         }
 
-        Packet pkt = pollRealtimeQueue(videoQueue, now, "video");
-        if (pkt != null) {
-            System.out.println("Video Packet sent");
-            return pkt.data;
+        // Highest priority first
+        if (!highestPriorityQueue.isEmpty()
+                && currentBudget.get("priority1") > 0) {
+            currentBudget.put("priority1", currentBudget.get("priority1") - 1);
+            System.out.println("Highest Priority Packet sent");
+            return highestPriorityQueue.pollFirst().data;
         }
 
-        pkt = pollRealtimeQueue(screenQueue, now, "screen");
-        if (pkt != null) {
-            System.out.println("Video Packet sent");
-            return pkt.data;
+        // Mid-priority next
+        if (!midPriorityQueue.isEmpty() && currentBudget.get("priority2") > 0) {
+            currentBudget.put("priority2", currentBudget.get("priority2") - 1);
+            System.out.println("Mid Priority Packet sent");
+            return midPriorityQueue.pollFirst().data;
         }
 
+        // Apply aging before serving MLFQ
         applyAging();
 
+        // MLFQ (low priority, multiple levels)
         for (int i = 0; i < mlfq.size(); i++) {
             final Deque<Packet> q = mlfq.get(i);
-            if (!q.isEmpty()) {
-                final Packet p = q.pollFirst();
-                final String key =
-                        (p.priority == PRIORITY_CHAT) ? "chat" : "file";
-
-                if (currentBudget.get(key) > 0) {
-                    currentBudget.put(key, currentBudget.get(key) - 1);
-                    if (i + 1 < mlfq.size()) {
-                        mlfq.get(i + 1).add(p);
-                    }
-                    return p.data;
-                } else {
-                    q.addFirst(p);
-                }
+            if (!q.isEmpty() && currentBudget.get("priority3") > 0) {
+                currentBudget.put("priority3",
+                        currentBudget.get("priority3") - 1);
+                System.out.println(
+                        "Low Priority Packet sent from MLFQ level " + i);
+                return q.pollFirst().data; // remove it, no demotion after send
             }
         }
-        return null;
-    }
 
-    /**
-     * Retrieves the next packet from a real-time queue.
-     * By checking if it meets deadline and budget.
-     *
-     * @param queue the queue to poll
-     * @param now   current time
-     * @param type  traffic type (video/screen)
-     * @return a packet or null if not available
-     */
-    private Packet pollRealtimeQueue(final Deque<Packet> queue,
-                                     final long now,
-                                     final String type) {
-        while (!queue.isEmpty()) {
-            final Packet pkt = queue.pollFirst();
-            if (now <= pkt.deadline) {
-                if (currentBudget.get(type) > 0) {
-                    currentBudget.put(type, currentBudget.get(type) - 1);
-                    return pkt;
-                } else {
-                    queue.addFirst(pkt);
-                    return null;
-                }
-            }
-        }
-        return null;
+        return null; // nothing available
     }
 
     /**
      * Representation of a packet.
-     * Represented with data, priority, arrival time, and deadline.
      */
     static class Packet {
         /**
@@ -263,27 +231,19 @@ public class PriorityQueue {
          * Arrival time of the packet.
          */
         private final long arrivalTime;
-        /**
-         * The deadline of the received packet.
-         */
-        private final long deadline;
 
         /**
          * Creates a new packet.
          *
          * @param rcvdData     the packet payload
          * @param rcvdPriority the priority level
-         * @param rcvdDeadline the deadline in ms (or -1 for no deadline)
          */
         Packet(final byte[] rcvdData,
-               final int rcvdPriority,
-               final long rcvdDeadline) {
+               final int rcvdPriority) {
             System.out.println("Packet Created");
             this.data = rcvdData;
             this.priority = rcvdPriority;
             this.arrivalTime = System.currentTimeMillis();
-            this.deadline = (rcvdDeadline > 0)
-                    ? this.arrivalTime + rcvdDeadline : Long.MAX_VALUE;
         }
     }
 }
