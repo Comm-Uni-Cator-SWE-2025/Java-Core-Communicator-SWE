@@ -9,16 +9,21 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class VideoUI extends Application {
 
     private static ImageView imageView;
     private static long start = 0;
 
+    // flag to track if an update is in progress
+    private static final AtomicBoolean updating = new AtomicBoolean(false);
+
     @Override
     public void start(Stage stage) {
         imageView = new ImageView();
         imageView.setPreserveRatio(true);
-        imageView.setFitWidth(800);  // adjust as needed
+        imageView.setFitWidth(800);
         imageView.setFitHeight(600);
 
         StackPane root = new StackPane(imageView);
@@ -31,10 +36,16 @@ public class VideoUI extends Application {
 
     /**
      * Display a frame from byte[] (converted to int[][] outside).
+     * Drops new frames if the previous one is still being processed.
      */
     public static void displayFrame(int[][] pixels) {
         if (imageView == null) {
             System.err.println("No Image View");
+            return;
+        }
+
+        // if already updating, drop this frame
+        if (!updating.compareAndSet(false, true)) {
             return;
         }
 
@@ -46,14 +57,19 @@ public class VideoUI extends Application {
 
         for (int x = 0; x < height; x++) {
             for (int y = 0; y < width; y++) {
-                pw.setArgb(y, x, pixels[x][y]); // assumes pixels contain ARGB ints
+                pw.setArgb(y, x, pixels[x][y]);
             }
         }
 
         Platform.runLater(() -> {
-            System.out.println((System.nanoTime() - start) / 1_000_000.0 + " ms");
-            imageView.setImage(writableImage);
-            start = System.nanoTime();
+            try {
+                System.out.println("Client FPS : "  + (int)(1000.0 / ((System.nanoTime() - start) / 1_000_000.0)) );
+                imageView.setImage(writableImage);
+                start = System.nanoTime();
+            } finally {
+                // release flag so next frame can proceed
+                updating.set(false);
+            }
         });
     }
 }

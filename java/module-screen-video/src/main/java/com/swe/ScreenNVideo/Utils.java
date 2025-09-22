@@ -20,10 +20,10 @@ public class Utils {
 
 
     public  static  void writeInt(final ByteArrayOutputStream bufferOut, int data) {
-        bufferOut.write(data & 0xFF);
-        bufferOut.write((data >> 8) & 0xFF);
-        bufferOut.write((data >> 16) & 0xFF);
         bufferOut.write((data >> 24) & 0xFF);
+        bufferOut.write((data >> 16) & 0xFF);
+        bufferOut.write((data >> 8) & 0xFF);
+        bufferOut.write(data & 0xFF);
     }
 
     /**

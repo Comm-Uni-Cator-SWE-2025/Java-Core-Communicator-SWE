@@ -14,7 +14,6 @@ public class JpegCodec implements Codec {
     }
 
     public void setScreenshot(int[][] screenshot) {
-        System.out.println("Dims : " + screenshot.length + " " + screenshot[0].length);
         this.screenshot = screenshot;
     }
 
@@ -72,29 +71,6 @@ public class JpegCodec implements Codec {
             + "Cr:" + zigZagScan(CrMatrix);
         final byte[] imagebytes = str.getBytes(StandardCharsets.UTF_8);
 
-        int[][] decodedImage = decode(imagebytes);
-
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                if (decodedImage[j][i] != screenshot[j + topLeftY][i + topLeftX]) {
-                    for (int jj = 0; jj < 1; jj++) {
-                        for (int ii = 0; ii < width; ii++) {
-                            System.out.printf("%02x ", decodedImage[jj][ii]);
-
-                        }
-                        System.out.println();
-                    }
-                    for (int jj = 0; jj < 1; jj++) {
-                        for (int ii = 0; ii < width; ii++) {
-                            System.out.printf("%02x ", screenshot[jj + topLeftY][ii + topLeftX]);
-                        }
-                        System.out.println();
-                    }
-                    throw new RuntimeException("Mis Match");
-                }
-            }
-        }
-
         return imagebytes;
     }
 
@@ -130,22 +106,23 @@ public class JpegCodec implements Codec {
         int height = Y.length;
         int width = Y[0].length;
 
-        int[][] RGB = new int[height][width]; // [row][col]
+        int[][] RGB = new int[height][width];
 
         for (int i = 0; i < height / 2; ++i) {
             for (int j = 0; j < width / 2; ++j) {
-                int cb = Cb[i][j];
-                int cr = Cr[i][j];
+                // stored Cb/Cr are biased by +128; convert to signed offsets
+                int cbOffset = Cb[i][j] - 128;
+                int crOffset = Cr[i][j] - 128;
 
                 for (int ii = 0; ii < 2; ++ii) {
                     for (int jj = 0; jj < 2; ++jj) {
                         int y = Y[2 * i + ii][2 * j + jj];
 
-                        int r = (int) Math.round(y + 1.402 * cr);
-                        int g = (int) Math.round(y - 0.344136 * cb - 0.714136 * cr);
-                        int b = (int) Math.round(y + 1.772 * cb);
+                        // use offsets in the reconstruction formula
+                        int r = (int) Math.round(y + 1.402 * crOffset);
+                        int g = (int) Math.round(y - 0.344136 * cbOffset - 0.714136 * crOffset);
+                        int b = (int) Math.round(y + 1.772 * cbOffset);
 
-                        // clamp to [0,255]
                         r = Math.min(255, Math.max(0, r));
                         g = Math.min(255, Math.max(0, g));
                         b = Math.min(255, Math.max(0, b));
@@ -155,7 +132,6 @@ public class JpegCodec implements Codec {
                 }
             }
         }
-
         return RGB;
     }
 

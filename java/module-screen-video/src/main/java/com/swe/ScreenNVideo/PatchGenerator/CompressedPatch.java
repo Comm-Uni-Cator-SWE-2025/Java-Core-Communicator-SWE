@@ -55,7 +55,7 @@ public record CompressedPatch(int x, int y, int width, int height, byte[] data) 
         final int variableSpaces = 16;
         final int dataLength = packetLength - variableSpaces;
         final byte[] data = new byte[dataLength];
-        packetBuffer.get(data, variableSpaces, dataLength);
+        packetBuffer.get(data, 0, dataLength);
         return new CompressedPatch(
             x, y, width, height, data
         );
