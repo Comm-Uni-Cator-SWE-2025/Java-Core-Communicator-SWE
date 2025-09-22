@@ -26,7 +26,7 @@ public class VideoCapture extends ICapture {
     private static final int DEFAULT_Y = 100;
 
     /**
-     * Constructor - initializes with default screen capture area
+     * Constructor - initializes with default screen capture area.
      */
     public VideoCapture() {
         this.captureArea = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -36,7 +36,7 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Constructor with custom capture area
+     * Constructor with custom capture area.
      * @param x X coordinate of capture area
      * @param y Y coordinate of capture area
      * @param width Width of capture area
@@ -49,15 +49,14 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Initialize capture mechanism
+     * Initialize capture mechanism.
      */
     private void initializeCapture() {
         try {
             // Initialize Robot for screen capture
             this.robot = new Robot();
             System.out.println("VideoCapture initialized with screen capture");
-            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height +
-                    " at (" + captureLocation.x + "," + captureLocation.y + ")");
+            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height + " at (" + captureLocation.x + "," + captureLocation.y + ")");
         } catch (AWTException e) {
             System.err.println("Error initializing Robot: " + e.getMessage());
             if (listener != null) {
@@ -78,17 +77,17 @@ public class VideoCapture extends ICapture {
 
         try {
             // Create rectangle for capture area
-            Rectangle captureRect = new Rectangle(
+            final Rectangle captureRect = new Rectangle(
                     captureLocation.x,
                     captureLocation.y,
                     captureArea.width,
                     captureArea.height
             );
 
-            // Capture screen area
-            BufferedImage bufferedImage = robot.createScreenCapture(captureRect);
+            System.out.println("Capturing");
 
-            return bufferedImage;
+            // Capture screen area
+            return robot.createScreenCapture(captureRect);
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());

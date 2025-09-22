@@ -47,6 +47,7 @@ public class MediaCaptureManager implements CaptureManager {
     private ImageStitcher imageStitcher;
     private final ImageSynchronizer imageSynchronizer;
     private final ImageScaler scalar;
+    final Codec videoCodec;
 
     private final AbstractNetworking networking;
     private final AbstractRPC rpc;
@@ -56,10 +57,12 @@ public class MediaCaptureManager implements CaptureManager {
     public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
         this.port = portArgs;
+        isScreenCaptureOn = false;
+        isVideoCaptureOn = true;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
-        final Codec videoCodec = new JpegCodec();
+        videoCodec = new JpegCodec();
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         imageStitcher = new ImageStitcher();
@@ -106,6 +109,8 @@ public class MediaCaptureManager implements CaptureManager {
      */
     @Override
     public void startCapture() {
+
+        System.out.println("Starting capture");
         BufferedImage videoFeed = null;
         BufferedImage screenFeed = null;
         int[][] feed;
@@ -141,6 +146,8 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
+            System.out.println(feed.length + "," + feed[0].length);
+            videoCodec.setScreenshot(feed);
             final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
 
             if (patches.isEmpty()) {
@@ -164,7 +171,13 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
+            // send to others who have subscribed
             sendImageToViewers(encodedPatches);
+            // send to UI of current machine to display
+            final int[][] image = imageSynchronizer.synchronize(patches);
+            final byte[] serializedImage = Serializer.serializeImage(image);
+
+            rpc.Call(Utils.UPDATE_UI, serializedImage);
         }
     }
 
@@ -266,6 +279,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final List<CompressedPatch> patches = NetworkSerializer.deserializeCPackets(data);
                     final int[][] image = imageSynchronizer.synchronize(patches);
                     final byte[] serializedImage = Serializer.serializeImage(image);
+                    // Do not wait for result
                     rpc.Call(Utils.UPDATE_UI, serializedImage);
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {

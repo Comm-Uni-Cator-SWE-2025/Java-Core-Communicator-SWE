@@ -23,4 +23,19 @@ public class Serializer {
         }
         return buffer.array();
     }
+    public static int[][] deserializeImage(byte[] data) {
+        int height = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+        int width = data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7];
+        int[][] image = new int[height][width];
+        for (int i = 0; i < height; i ++) {
+            for (int j = 0; j < width; j ++) {
+                int pixel = 0;
+                pixel |= data[8 + (i * width + j) * 3] << 16;
+                pixel |= data[8 + (i * width + j) * 3 + 1] << 8;
+                pixel |= data[8 + (i * width + j) * 3 + 2];
+                image[i][j] = pixel;
+            }
+        }
+        return image;
+    }
 }
