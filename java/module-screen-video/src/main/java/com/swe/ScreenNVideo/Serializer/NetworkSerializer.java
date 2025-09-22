@@ -27,8 +27,11 @@ public class NetworkSerializer {
 
         final int len = packets.size();
         final ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
+        // Write the packet Type
         bufferOut.write((byte) NetworkPacketType.LIST_CPACKETS.ordinal());
+        // Write the patches length
         Utils.writeInt(bufferOut, len);
+        // write each packet
         for (CompressedPatch packet : packets) {
             bufferOut.write(packet.serializeCPacket());
         }
@@ -45,12 +48,16 @@ public class NetworkSerializer {
     public static List<CompressedPatch> deserializeCPackets(final byte[] data)
         throws IndexOutOfBoundsException, InvalidParameterException {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
+        // get packet type
         final byte packetType = buffer.get();
+
         if (packetType != NetworkPacketType.LIST_CPACKETS.ordinal()) {
             throw new InvalidParameterException(
                 "Invalid Data type: Expected " + NetworkPacketType.LIST_CPACKETS.ordinal() + " got : " + packetType);
         }
+        // get patches length
         final int len = buffer.getInt();
+
         final List<CompressedPatch> patches = new ArrayList<>(len);
         for (int i = 0; i < len; i++) {
             final int patchLength = buffer.getInt();

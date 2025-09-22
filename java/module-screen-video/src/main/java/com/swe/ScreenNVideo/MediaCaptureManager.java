@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Media Manager for Screen N Video.
@@ -44,7 +45,7 @@ public class MediaCaptureManager implements CaptureManager {
     private final ICapture screenCapture;
 
     private final PacketGenerator patchGenerator;
-    private ImageStitcher imageStitcher;
+    private final ImageStitcher imageStitcher;
     private final ImageSynchronizer imageSynchronizer;
     private final ImageScaler scalar;
     final Codec videoCodec;
@@ -57,7 +58,7 @@ public class MediaCaptureManager implements CaptureManager {
     public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
         this.port = portArgs;
-        isScreenCaptureOn = false;
+        isScreenCaptureOn = true;
         isVideoCaptureOn = true;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
@@ -73,10 +74,6 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
-        if (videoFeed == null && screenFeed == null) {
-            return null;
-        }
-
         int[][] feed = null;
         if (screenFeed != null) {
             feed = Utils.convertToRGBMatrix(screenFeed);
@@ -85,6 +82,7 @@ public class MediaCaptureManager implements CaptureManager {
         if (videoFeed != null) {
             final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
             if (feed == null) {
+                System.out.println("Here");
                 feed = videoMatrix;
             } else {
                 final int height = feed.length;
@@ -95,6 +93,7 @@ public class MediaCaptureManager implements CaptureManager {
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
                 final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
+                System.out.println(videoPosX + " " + videoPosY + " " + targetWidth + " " + targetHeight);
                 imageStitcher.setCanvas(feed);
                 imageStitcher.stitch(videoPatch);
                 feed = imageStitcher.getCanvas();
@@ -108,7 +107,7 @@ public class MediaCaptureManager implements CaptureManager {
      * Server-side of the ScreenNVideo.
      */
     @Override
-    public void startCapture() {
+    public void startCapture() throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
         BufferedImage videoFeed = null;
@@ -146,38 +145,44 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-            System.out.println(feed.length + "," + feed[0].length);
+//            System.out.println(feed.length + "," + feed[0].length);
             videoCodec.setScreenshot(feed);
+            final byte[] serializedImage1 = Serializer.serializeImage(feed);
+
+            rpc.Call(Utils.UPDATE_UI, serializedImage1);
+//            Thread.sleep(10000);
+
             final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
 
             if (patches.isEmpty()) {
                 continue;
             }
 
-            byte[] encodedPatches = null;
-            int tries = 3;
-            while (tries-- > 0) {
-                // max tries 3 times to convert the patch
-                try {
-                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
-                    break;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (tries < 0 || encodedPatches == null) {
-                System.err.println("Error: Unable to serialize compressed packets");
-                continue;
-            }
+//            byte[] encodedPatches = null;
+//            int tries = 3;
+//            while (tries-- > 0) {
+//                // max tries 3 times to convert the patch
+//                try {
+//                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
+//                    break;
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            if (tries < 0 || encodedPatches == null) {
+//                System.err.println("Error: Unable to serialize compressed packets");
+//                continue;
+//            }
 
             // send to others who have subscribed
-            sendImageToViewers(encodedPatches);
+//            sendImageToViewers(encodedPatches);
             // send to UI of current machine to display
-            final int[][] image = imageSynchronizer.synchronize(patches);
+            final int[][] image = imageSynchronizer.synchronize(patches, feed);
             final byte[] serializedImage = Serializer.serializeImage(image);
 
             rpc.Call(Utils.UPDATE_UI, serializedImage);
+            Thread.sleep(5000);
         }
     }
 
@@ -277,7 +282,7 @@ public class MediaCaptureManager implements CaptureManager {
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
                     final List<CompressedPatch> patches = NetworkSerializer.deserializeCPackets(data);
-                    final int[][] image = imageSynchronizer.synchronize(patches);
+                    final int[][] image = imageSynchronizer.synchronize(patches, null);
                     final byte[] serializedImage = Serializer.serializeImage(image);
                     // Do not wait for result
                     rpc.Call(Utils.UPDATE_UI, serializedImage);

@@ -15,7 +15,7 @@ public class Hasher implements IHasher {
         long hash = 0;
         for (int i = 0; i < w; i += stride) {
             for (int j = 0; j < h; j += stride) {
-                int pixel = img[x + i][y + j];
+                int pixel = img[y + j][x + i];
                 int r = (pixel>>16) & 0xff;
                 int g = (pixel>>8) & 0xff;
                 int b = pixel & 0xff;

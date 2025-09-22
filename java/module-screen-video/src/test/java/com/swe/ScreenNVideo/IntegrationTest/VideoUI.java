@@ -12,6 +12,7 @@ import javafx.stage.Stage;
 public class VideoUI extends Application {
 
     private static ImageView imageView;
+    private static long start = 0;
 
     @Override
     public void start(Stage stage) {
@@ -32,20 +33,27 @@ public class VideoUI extends Application {
      * Display a frame from byte[] (converted to int[][] outside).
      */
     public static void displayFrame(int[][] pixels) {
-        if (imageView == null) return;
+        if (imageView == null) {
+            System.err.println("No Image View");
+            return;
+        }
 
-        int width = pixels.length;
-        int height = pixels[0].length;
+        int height = pixels.length;
+        int width = pixels[0].length;
 
         WritableImage writableImage = new WritableImage(width, height);
         PixelWriter pw = writableImage.getPixelWriter();
 
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                pw.setArgb(x, y, pixels[x][y]); // assumes pixels contain ARGB ints
+        for (int x = 0; x < height; x++) {
+            for (int y = 0; y < width; y++) {
+                pw.setArgb(y, x, pixels[x][y]); // assumes pixels contain ARGB ints
             }
         }
 
-        Platform.runLater(() -> imageView.setImage(writableImage));
+        Platform.runLater(() -> {
+            System.out.println((System.nanoTime() - start) / 1_000_000.0 + " ms");
+            imageView.setImage(writableImage);
+            start = System.nanoTime();
+        });
     }
 }

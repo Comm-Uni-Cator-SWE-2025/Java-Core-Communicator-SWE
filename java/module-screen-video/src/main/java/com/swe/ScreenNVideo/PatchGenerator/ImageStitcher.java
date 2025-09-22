@@ -69,8 +69,8 @@ public class ImageStitcher {
     }
 
     private void verifyDimensions(final Stitchable patch) {
-        int maxHeightWithPatch = Math.max( patch.getY() + patch.getHeight(), currentHeight);
-        int maxWidthWithPatch = Math.max(patch.getX() + patch.getWidth(), currentWidth);
+        final int maxHeightWithPatch = Math.max(patch.getY() + patch.getHeight(), currentHeight);
+        final int maxWidthWithPatch = Math.max(patch.getX() + patch.getWidth(), currentWidth);
 
         if (maxHeightWithPatch > currentHeight || maxWidthWithPatch > currentWidth) {
             resize(maxHeightWithPatch, maxWidthWithPatch, true);
@@ -85,12 +85,11 @@ public class ImageStitcher {
      */
     private void resize(final int height, final int width, final boolean fill) {
         int[][] new_canvas = new int[height][width];
+        System.out.println("Resizing to " + height + " " + width );
 
         if (fill) {
-            for (int i = 0; i < height; i++) {
-                for (int j = 0; j < width; j++) {
-                    new_canvas[i][j] = this.canvas[i][j];
-                }
+            for (int i = 0; i < currentHeight; i++) {
+                System.arraycopy(this.canvas[i], 0, new_canvas[i], 0, currentWidth);
             }
         }
 

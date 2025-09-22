@@ -24,15 +24,19 @@ public class Serializer {
         return buffer.array();
     }
     public static int[][] deserializeImage(byte[] data) {
-        int height = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
-        int width = data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7];
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        int height = buffer.getInt();
+        int width = buffer.getInt();
         int[][] image = new int[height][width];
-        for (int i = 0; i < height; i ++) {
-            for (int j = 0; j < width; j ++) {
-                int pixel = 0;
-                pixel |= data[8 + (i * width + j) * 3] << 16;
-                pixel |= data[8 + (i * width + j) * 3 + 1] << 8;
-                pixel |= data[8 + (i * width + j) * 3 + 2];
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                int r = buffer.get() & 0xFF;
+                int g = buffer.get() & 0xFF;
+                int b = buffer.get() & 0xFF;
+
+                // ARGB pixel with full alpha (0xFF000000)
+                int pixel = (0xFF << 24) | (r << 16) | (g << 8) | b;
+
                 image[i][j] = pixel;
             }
         }
