@@ -192,7 +192,7 @@ public class MediaCaptureManager implements CaptureManager {
         for (int i = 0; i < viewers.size(); i++) {
             ports[i] = port;
         }
-        networking.SendData(feed, viewers.toArray(new String[0]), ports);
+        networking.sendData(feed, viewers.toArray(new String[0]), ports);
     }
 
 
@@ -245,7 +245,7 @@ public class MediaCaptureManager implements CaptureManager {
                 
                 final String selfIP = networking.getSelfIP();
                 final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
-                networking.SendData(subscribeData, new String[] {destIP}, new int[] {port});
+                networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
 
                 final byte[] res = new byte[1];
                 res[0] = 1;
@@ -253,7 +253,7 @@ public class MediaCaptureManager implements CaptureManager {
             }
         });
 
-        networking.Subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
+        networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
 
     }
 
@@ -268,7 +268,7 @@ public class MediaCaptureManager implements CaptureManager {
         }
 
         @Override
-        public void ReceiveData(final byte[] data) {
+        public void receiveData(final byte[] data) {
             if (data.length == 0) {
                 return;
             }
@@ -287,7 +287,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final byte[] serializedImage = Serializer.serializeImage(image);
                     // Do not wait for result
                     try {
-                        rpc.Call(Utils.UPDATE_UI, serializedImage).get();
+                        rpc.call(Utils.UPDATE_UI, serializedImage).get();
                     } catch (InterruptedException | ExecutionException e) {
                         throw new RuntimeException(e);
                     }

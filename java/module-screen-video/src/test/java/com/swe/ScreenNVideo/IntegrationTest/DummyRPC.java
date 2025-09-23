@@ -19,7 +19,7 @@ public class DummyRPC implements AbstractRPC {
     }
 
     @Override
-    public CompletableFuture<byte[]> Call(String name, byte[] args) {
+    public CompletableFuture<byte[]> call(String name, byte[] args) {
         RProcedure procedure = procedures.get(name);
         if (procedure == null) {
             return null;

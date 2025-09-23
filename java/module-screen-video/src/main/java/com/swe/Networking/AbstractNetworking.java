@@ -1,8 +1,16 @@
 package com.swe.Networking;
 
+/**
+ * Interface.
+ */
 public interface AbstractNetworking {
-    void SendData(byte[] data, String[] dest,int[] port);
+    
+    void sendData(byte[] data, String[] dest, int[] port);
+    
     String getSelfIP();
-    void Subscribe(String name, MessageListener function);
-    void RemoveSubscription(String name);
+    
+    void subscribe(String name, MessageListener function);
+    
+    void removeSubscription(String name);
+
 }

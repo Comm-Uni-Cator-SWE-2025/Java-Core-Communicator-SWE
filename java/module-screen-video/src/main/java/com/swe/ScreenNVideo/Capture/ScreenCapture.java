@@ -1,8 +1,19 @@
 package com.swe.ScreenNVideo.Capture;
 
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.Rectangle;
+import java.awt.Robot;
 import java.awt.image.BufferedImage;
 
+/**
+ * The {@code ScreenCapture} class is responsible for capturing
+ * the entire screen as a {@link BufferedImage}.
+ *
+ * <p>It uses the {@link Robot} class to create a screenshot of the
+ * current display. Works on Windows, macOS, and Linux.
+ */
 public class ScreenCapture extends ICapture {
 
     /**
