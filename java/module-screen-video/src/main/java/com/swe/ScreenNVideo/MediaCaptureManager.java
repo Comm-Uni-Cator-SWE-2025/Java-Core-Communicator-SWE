@@ -90,7 +90,7 @@ public class MediaCaptureManager implements CaptureManager {
                 final int width = feed[0].length;
                 final int targetHeight =  height / Utils.SCALE_Y;
                 final int targetWidth = width / Utils.SCALE_X;
-                final int[][] scaledDownedFeed = scalar.Scale(videoMatrix, targetHeight, targetWidth);
+                final int[][] scaledDownedFeed = scalar.scale(videoMatrix, targetHeight, targetWidth);
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
                 final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
