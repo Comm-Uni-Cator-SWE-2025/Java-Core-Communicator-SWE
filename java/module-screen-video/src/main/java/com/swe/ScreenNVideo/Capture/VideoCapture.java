@@ -1,28 +1,37 @@
 package com.swe.ScreenNVideo.Capture;
 
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 
 /**
- * VideoCapture class for capturing video frames from webcam using pure Java
- * Provides interface to capture images and convert them to matrix format
+ * VideoCapture class for capturing video frames from webcam using pure Java.
+ * Provides interface to capture images and convert them to matrix format.
  */
 public class VideoCapture extends ICapture {
 
-    // Robot for screen capture (fallback method)
+    /** Robot for screen capture (fallback method). */
     private Robot robot;
 
-    // Capture parameters
+    /** Capture parameters. */
     private Dimension captureArea;
+    /** Capture parameters. */
     private Point captureLocation;
 
-    // Listener for frame capture events
+    /** Listener for frame capture events. */
     private FrameCaptureListener listener;
 
-    // Default capture settings
+    /** Default capture settings. */
     private static final int DEFAULT_WIDTH = 640;
+    /** Default capture settings. */
     private static final int DEFAULT_HEIGHT = 480;
+    /** Default capture settings. */
     private static final int DEFAULT_X = 100;
+    /** Default capture settings. */
     private static final int DEFAULT_Y = 100;
 
     /**
@@ -42,7 +51,7 @@ public class VideoCapture extends ICapture {
      * @param width Width of capture area
      * @param height Height of capture area
      */
-    public VideoCapture(int x, int y, int width, int height) {
+    public VideoCapture(final int x, final int y, final int width, final int height) {
         this();
         this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
@@ -69,6 +78,7 @@ public class VideoCapture extends ICapture {
      * Capture a single frame.
      * @return BufferedImage of the captured frame
      */
+    @SuppressWarnings("checkstyle:FinalLocalVariable")
     public BufferedImage capture() {
         if (robot == null) {
             System.err.println("Capture not started or robot not available");
@@ -76,7 +86,7 @@ public class VideoCapture extends ICapture {
         }
 
         try {
-            Robot robot1 = new Robot();
+            final Robot robot1 = new Robot();
             final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             final Rectangle screenRect = new Rectangle(screenSize);
 
@@ -93,34 +103,33 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Set capture area and location
+     * Set capture area and location.
      * @param x X coordinate
      * @param y Y coordinate
      * @param width Width of capture area
      * @param height Height of capture area
      */
-    public void setCaptureArea(int x, int y, int width, int height) {
+    public void setCaptureArea(final int x, final int y, final int width, final int height) {
         this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
-        System.out.println("Capture area updated: " + width + "x" + height +
-                " at (" + x + "," + y + ")");
+        System.out.println("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
     }
 
     /**
-     * Set frame capture listener
-     * @param listener FrameCaptureListener implementation
+     * Set frame capture listener.
+     * @param newListener FrameCaptureListener implementation.
      */
-    public void setFrameCaptureListener(FrameCaptureListener listener) {
-        this.listener = listener;
+    public void setFrameCaptureListener(final FrameCaptureListener newListener) {
+        this.listener = newListener;
     }
 
 
     /**
-     * Get screen dimensions
-     * @return Dimension of the screen
+     * Get screen dimensions.
+     * @return Dimension of the screen.
      */
     public static Dimension getScreenDimensions() {
-        Toolkit toolkit = Toolkit.getDefaultToolkit();
+        final Toolkit toolkit = Toolkit.getDefaultToolkit();
         return toolkit.getScreenSize();
     }
 }

@@ -35,7 +35,7 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     }
 
     @Override
-    public void SendData(byte[] data, String[] dest, int[] port) {
+    public void sendData(byte[] data, String[] dest, int[] port) {
         if (data == null) return;
 
         // Build header: 4 bytes for length
@@ -53,12 +53,12 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     }
 
     @Override
-    public void Subscribe(String name, MessageListener function) {
+    public void subscribe(String name, MessageListener function) {
         subscriptions.put(name, function);
     }
 
     @Override
-    public void RemoveSubscription(String name) {
+    public void removeSubscription(String name) {
         subscriptions.remove(name);
     }
 
@@ -80,7 +80,7 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
                 // Send to "screen_share" subscription
                 MessageListener listener = subscriptions.get(Utils.MODULE_REMOTE_KEY);
                 if (listener != null) {
-                    listener.ReceiveData(payload);
+                    listener.receiveData(payload);
                 }
             }
         } catch (InterruptedException e) {
