@@ -3,9 +3,7 @@ package chat_summary;
 
 import java.time.LocalDateTime;
 
-/**
- * Represents a single message in a meeting
- */
+
 public class MeetingMessage {
     private String sender;
     private String text;
@@ -17,7 +15,7 @@ public class MeetingMessage {
         this.timestamp = timestamp;
     }
 
-    // Getters
+
     public String getSender() { return sender; }
     public String getText() { return text; }
     public LocalDateTime getTimestamp() { return timestamp; }

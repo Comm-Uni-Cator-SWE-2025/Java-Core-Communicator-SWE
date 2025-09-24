@@ -3,9 +3,6 @@ package chat_summary;
 
 import java.util.List;
 
-/**
- * Interface for meeting data
- */
 public interface IMeetingData {
     List<MeetingMessage> getMessages();
     List<String> getParticipants();

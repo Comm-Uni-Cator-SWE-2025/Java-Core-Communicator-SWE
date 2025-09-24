@@ -5,9 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * MeetingData class - implements IMeetingData interface as per UML diagram
- */
+
 public class MeetingData implements IMeetingData {
     private List<MeetingMessage> messages;
     private List<String> participants;
@@ -29,12 +27,12 @@ public class MeetingData implements IMeetingData {
 
     @Override
     public void addMessage(String sender, String message) {
-        // Add sender to participants if not already present
+
         if (!participants.contains(sender)) {
             participants.add(sender);
         }
 
-        // Create new MeetingMessage with current timestamp
+
         MeetingMessage meetingMessage = new MeetingMessage(sender, message, LocalDateTime.now());
         messages.add(meetingMessage);
     }

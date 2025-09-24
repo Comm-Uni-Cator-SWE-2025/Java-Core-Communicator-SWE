@@ -8,11 +8,8 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-/**
- * Implementation of ILLMService using Gemini API
- */
 public class GeminiLLMService implements ILLMService {
-    // Put your API key here directly
+
     private static final String API_KEY = "AIzaSyA2Av1dTg9DWmlKDlNskffj0nGn9fisjoI";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
@@ -70,7 +67,7 @@ public class GeminiLLMService implements ILLMService {
             int textStart = response.indexOf("\"text\": \"");
             if (textStart == -1) return "Could not find text field in response.";
 
-            textStart += 9; // skip "text": "
+            textStart += 9;
             int textEnd = textStart;
             boolean inEscape = false;
 
