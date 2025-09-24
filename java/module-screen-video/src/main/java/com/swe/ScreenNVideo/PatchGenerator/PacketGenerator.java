@@ -5,48 +5,59 @@ import com.swe.ScreenNVideo.Codec.Codec;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Generates packets for image/patch transmission by dividing images into tiles.
+ * Uses a compressor to encode patches and a hasher to detect changes between frames.
+ * Maintains a cache of previous hashes for efficient patch generation.
+ */
 public class PacketGenerator {
 
-    private static final int TILE_SIZE = 64; // default tile size
+    /** Default size of each tile in pixels. */
+    private static final int TILE_SIZE = 64;
+
+    /** Compressor used to encode image patches. */
     private final Codec compressor;
+
+    /** Hasher used to compute hashes of image patches. */
     private final IHasher hasher;
 
-    // Values/Cache of last hashes per tile (grid of tiles, each storing long hash)
+    /** Stores previous hash values for each tile in the grid. */
     private long[][] prevHashes;
 
-    public PacketGenerator(Codec compressor_arg, IHasher hasher_arg) {
-        this.compressor = compressor_arg;
-        this.hasher = hasher_arg;
+
+    public PacketGenerator(final Codec compressorArg, final IHasher hasherArg) {
+        this.compressor = compressorArg;
+        this.hasher = hasherArg;
     }
 
     /**
-     * Split frames into tiles, compare hashes, compress dirty tiles
+     * Split frames into tiles, compare hashes, compress dirty tiles.
      * @param curr is the image frame (int[width][height][3] RGB array)
      * @return list of compressed patches
      */
     public List<CompressedPatch> generatePackets(final int[][] curr) {
-        int height = curr.length;
-        int width = curr[0].length;
+        final int height = curr.length;
+        final int width = curr[0].length;
 
         // Tile grid size
-        int tilesX = (int) Math.ceil((double) width / TILE_SIZE);
-        int tilesY = (int) Math.ceil((double) height / TILE_SIZE);
+        final int tilesX = (int) Math.ceil((double) width / TILE_SIZE);
+        final int tilesY = (int) Math.ceil((double) height / TILE_SIZE);
 
         // Initialize hash cache if first frame
         if (prevHashes == null) {
             prevHashes = new long[tilesX][tilesY];
         }
 
-        List<CompressedPatch> patches = new ArrayList<>();
+        final List<CompressedPatch> patches = new ArrayList<>();
 
         for (int ty = 0; ty < tilesY; ty++) {
             for (int tx = 0; tx < tilesX; tx++) {
-                int x = tx * TILE_SIZE;
-                int y = ty * TILE_SIZE;
-                int w = Math.min(TILE_SIZE, width - x);
-                int h = Math.min(TILE_SIZE, height - y);
+                final int x = tx * TILE_SIZE;
+                final int y = ty * TILE_SIZE;
+                final int w = Math.min(TILE_SIZE, width - x);
+                final int h = Math.min(TILE_SIZE, height - y);
 
-                long currHash = hasher.hash(curr, x, y, w, h);
+                final long currHash = hasher.hash(curr, x, y, w, h);
                 if (currHash != prevHashes[tx][ty]) {
                     final byte[] compressedString = this.compressor.encode(x, y, h, w);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
