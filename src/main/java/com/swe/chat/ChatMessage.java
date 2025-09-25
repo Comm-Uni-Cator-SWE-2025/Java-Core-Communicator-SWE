@@ -20,20 +20,25 @@ public class ChatMessage {
     /** Timestamp when the message was created, in epoch seconds (UTC). */
     private final long timestamp;
 
+    /** The ID of the message this message is replying to*/
+    private final String replyToMessageId;
+
     /**
      * Creates a new chat message.
      *
      * @param messageIdd unique ID for the message
      * @param userIdd ID of the user who sent the message
      * @param contentt the message content
+     * @param replyToId ID of the message being replied to, or null
      */
     public ChatMessage(final String messageIdd, final String userIdd,
-                       final String contentt) {
+                       final String contentt,final String replyToId) {
         this.messageId = messageIdd;
         this.userId = userIdd;
         this.content = contentt;
         final LocalDateTime timestp = LocalDateTime.now();
         this.timestamp = timestp.toEpochSecond(ZoneOffset.UTC);
+        this.replyToMessageId=replyToId;
     }
 
     /**
@@ -72,6 +77,14 @@ public class ChatMessage {
         return LocalDateTime.ofEpochSecond(this.timestamp, 0, ZoneOffset.UTC);
     }
 
+    /**
+     * Returns the message id to whose message is replied
+     *
+     * @return messageId
+     */
+    public String getReplyToMessageId(){
+        return replyToMessageId;
+    }
     /**
      * Updates the content of this message.
      *

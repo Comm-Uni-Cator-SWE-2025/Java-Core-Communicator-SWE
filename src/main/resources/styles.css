@@ -23,9 +23,8 @@
 }
 
 /* Style for bubbles sent by the user */
-.sent-bubble {
-    -fx-background-color: #dcf8c6; /* Light green for sent messages */
-    -fx-background-radius: 18px 18px 5px 18px; /* Creates a 'tail' on the bottom-left */
+.sent-bubble .reply-quote-label {
+    -fx-background-color: #d1ffc9; /* Lighter green for sent quote */
 }
 
 /* Style for bubbles received from others */
@@ -80,4 +79,37 @@
     -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-padding: 0 0 0 4px; /* ADD THIS LINE to nudge the icon to the center */
+}
+
+.reply-quote-box {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #ccc;
+    -fx-border-width: 0 0 1px 0;
+    -fx-font-size: 11px;
+}
+
+/* Style for the text in the quote box */
+.reply-quote-box Label {
+    -fx-font-style: italic;
+    -fx-text-fill: #555;
+}
+
+/* Style for the cancel button */
+.reply-quote-box .button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #555;
+    -fx-font-weight: bold;
+    -fx-padding: 0 5 0 5;
+}
+
+/* Style for the quoted content within the message bubble */
+.reply-quote-label {
+    -fx-background-color: #e0e0e0;
+    -fx-padding: 3px 5px;
+    -fx-border-radius: 3px;
+    -fx-font-style: italic;
+    -fx-font-size: 11px;
+    -fx-text-fill: #555;
+    -fx-max-width: 200; /* Constrain width */
+    -fx-wrap-text: true;
 }
