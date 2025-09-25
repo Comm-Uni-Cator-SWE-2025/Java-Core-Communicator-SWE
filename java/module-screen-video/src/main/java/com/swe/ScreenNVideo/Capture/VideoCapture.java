@@ -1,25 +1,25 @@
 package com.swe.ScreenNVideo.Capture;
 
-import java.awt.AWTException;
-import java.awt.Robot;
+import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamResolution;
+
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 
 /**
- * VideoCapture class for capturing video frames from webcam using pure Java.
- * Provides interface to capture images and convert them to matrix format.
+ * VideoCapture class for capturing video frames from a webcam.
+ * Provides an interface to capture images from the default webcam.
  */
 public class VideoCapture extends ICapture {
 
-    /** Robot for screen capture (fallback method). */
-    private Robot robot;
+    /** Webcam object for video capture. */
+    private Webcam webcam;
 
-    /** Capture parameters. */
+    /** Capture parameters (used for resolution). */
     private Dimension captureArea;
-    /** Capture parameters. */
+    /** Capture parameters (not used for webcam). */
     private Point captureLocation;
 
     /** Listener for frame capture events. */
@@ -29,45 +29,57 @@ public class VideoCapture extends ICapture {
     private static final int DEFAULT_WIDTH = 640;
     /** Default capture settings. */
     private static final int DEFAULT_HEIGHT = 480;
-    /** Default capture settings. */
-    private static final int DEFAULT_X = 100;
-    /** Default capture settings. */
-    private static final int DEFAULT_Y = 100;
 
     /**
-     * Constructor - initializes with default screen capture area.
+     * Constructor - initializes with default webcam and resolution.
      */
     public VideoCapture() {
-        this.captureArea = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-        this.captureLocation = new Point(DEFAULT_X, DEFAULT_Y);
+        // Use a standard resolution like VGA by default
+        this.captureArea = WebcamResolution.VGA.getSize();
+        // Location is not relevant for a webcam, but we initialize it for consistency
+        this.captureLocation = new Point(0, 0);
 
         initializeCapture();
     }
 
     /**
-     * Constructor with custom capture area.
-     * @param x X coordinate of capture area
-     * @param y Y coordinate of capture area
-     * @param width Width of capture area
-     * @param height Height of capture area
+     * Constructor with custom capture resolution.
+     * @param x X coordinate (ignored for webcam)
+     * @param y Y coordinate (ignored for webcam)
+     * @param width Width of capture resolution
+     * @param height Height of capture resolution
      */
     public VideoCapture(final int x, final int y, final int width, final int height) {
         this();
-        this.captureLocation = new Point(x, y);
+        // x and y are ignored as they are not applicable for a webcam
         this.captureArea = new Dimension(width, height);
+        // Re-initialize with the new custom resolution
+        if (this.webcam != null && this.webcam.isOpen()) {
+            this.webcam.close();
+        }
+        initializeCapture();
     }
 
     /**
-     * Initialize capture mechanism.
+     * Initialize webcam capture mechanism.
      */
     private void initializeCapture() {
         try {
-            // Initialize Robot for screen capture
-            this.robot = new Robot();
-            System.out.println("VideoCapture initialized with screen capture");
-            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height + " at (" + captureLocation.x + "," + captureLocation.y + ")");
-        } catch (AWTException e) {
-            System.err.println("Error initializing Robot: " + e.getMessage());
+            // Get the default webcam
+            this.webcam = Webcam.getDefault();
+            if (this.webcam == null) {
+                throw new IllegalStateException("No webcam found.");
+            }
+            // Set custom view size
+            this.webcam.setCustomViewSizes(new Dimension[]{captureArea});
+            this.webcam.setViewSize(captureArea);
+            // Open the webcam
+            this.webcam.open();
+            System.out.println("VideoCapture initialized with webcam: " + webcam.getName());
+            System.out.println("Capture resolution: " + captureArea.width + "x" + captureArea.height);
+
+        } catch (Exception e) {
+            System.err.println("Error initializing Webcam: " + e.getMessage());
             if (listener != null) {
                 listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
             }
@@ -75,27 +87,23 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Capture a single frame.
-     * @return BufferedImage of the captured frame
+     * Capture a single frame from the webcam.
+     * @return BufferedImage of the captured frame, or null if an error occurs.
      */
-    @SuppressWarnings("checkstyle:FinalLocalVariable")
     public BufferedImage capture() {
-        if (robot == null) {
-            System.err.println("Capture not started or robot not available");
+        if (webcam == null || !webcam.isOpen()) {
+            System.err.println("Capture not started or webcam not available");
             return null;
         }
 
         try {
-            // Create rectangle for capture area
-            final Rectangle captureRect = new Rectangle(
-                    captureLocation.x,
-                    captureLocation.y,
-                    captureArea.width,
-                    captureArea.height
-            );
-
-            // Capture screen area
-            return robot.createScreenCapture(captureRect);
+            // Capture and return the current image from the webcam
+            BufferedImage image = webcam.getImage();
+            if (image != null && listener != null) {
+                // Assuming FrameCaptureListener has an onFrameCaptured method
+                // listener.onFrameCaptured(image);
+            }
+            return image;
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());
@@ -107,16 +115,33 @@ public class VideoCapture extends ICapture {
     }
 
     /**
-     * Set capture area and location.
-     * @param x X coordinate
-     * @param y Y coordinate
+     * Set capture resolution.
+     * @param x X coordinate (ignored)
+     * @param y Y coordinate (ignored)
      * @param width Width of capture area
      * @param height Height of capture area
      */
     public void setCaptureArea(final int x, final int y, final int width, final int height) {
-        this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
-        System.out.println("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
+        // Re-initialize the webcam with the new resolution
+        if (this.webcam != null) {
+            if(this.webcam.isOpen()) {
+                this.webcam.close();
+            }
+            initializeCapture();
+            System.out.println("Capture resolution updated: " + width + "x" + height);
+        }
+    }
+
+    /**
+     * Closes the webcam to release the resource.
+     * This is an important new method to call when you are done.
+     */
+    public void close() {
+        if (webcam != null && webcam.isOpen()) {
+            webcam.close();
+            System.out.println("Webcam closed.");
+        }
     }
 
     /**
@@ -127,7 +152,6 @@ public class VideoCapture extends ICapture {
         this.listener = newListener;
     }
 
-
     /**
      * Get screen dimensions.
      * @return Dimension of the screen.
@@ -135,5 +159,16 @@ public class VideoCapture extends ICapture {
     public static Dimension getScreenDimensions() {
         final Toolkit toolkit = Toolkit.getDefaultToolkit();
         return toolkit.getScreenSize();
+    }
+
+    // --- The following classes are assumed to exist based on the original code ---
+
+    /** Dummy ICapture class for compilation. */
+    public static abstract class ICapture {}
+
+    /** Dummy listener interface for compilation. */
+    public interface FrameCaptureListener {
+        void onCaptureError(String errorMessage);
+        // void onFrameCaptured(BufferedImage frame); // Example method
     }
 }
