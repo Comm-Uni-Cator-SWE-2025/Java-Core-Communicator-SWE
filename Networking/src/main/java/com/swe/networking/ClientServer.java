@@ -21,13 +21,24 @@ public class ClientServer {
     private boolean isServer;
 
     /**
+     * A variable for : Is this client a main server? 
+    */
+    private boolean isMainServer;
+
+    /**
      * Socket reserver for this client/server.
      */
     private DatagramSocket socket;
 
+    // topology singleton
+    private Topology topology = Topology.getTopology();
+
     // open an udp server socket for this client
-    public ClientServer() {
+    public ClientServer(ClientNode destination, ClientNode mainServer) {
         this.isServer = false;
+        if(destination == mainServer) {
+            this.isMainServer = true;
+        }
         try {
             this.socket = new DatagramSocket();
         } catch (IOException e) {
@@ -60,8 +71,16 @@ public class ClientServer {
             String data = new String(packet.getData(), 0, packet.getLength());
             String dest = packet.getAddress().getHostAddress();
             int port = packet.getPort();
+            PacketParser parser = PacketParser.getPacketParser();
 
-            if (this.isServer) {
+            if(this.isMainServer){
+                int type = parser.getType(packet.getData());
+                int connectionType = parser.getConnectionType(packet.getData());
+                if(type == 3 && connectionType == 0){
+                    byte[] networkData = topology.getNetwork().toString().getBytes();
+                    sendTo(networkData, dest, port);
+                }
+            }else if (this.isServer) {
                 if (destInCluster(dest)) {
                     DatagramPacket response = new DatagramPacket(
                             data.getBytes(),
@@ -107,7 +126,6 @@ public class ClientServer {
                 }
             } else {
                 try {
-                    Topology topology = Topology.getTopology();
                     final String hostAddress = topology.getServer(dest).hostName();
                     final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port);
                     // TODO: getServer to be implemented by Topology.
