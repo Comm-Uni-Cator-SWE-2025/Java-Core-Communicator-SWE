@@ -18,6 +18,10 @@ public class Utils {
     public static final int VIDEO_PADDING_X = 20;
     public static final int VIDEO_PADDING_Y = 20;
 
+    public static final int SERVER_WIDTH = 1280;
+    public static final int SERVER_HEIGHT = 800;
+
+
 
     public  static  void writeInt(final ByteArrayOutputStream bufferOut, int data) {
         bufferOut.write((data >> 24) & 0xFF);

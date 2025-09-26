@@ -59,7 +59,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.rpc = argRpc;
         this.port = portArgs;
         isScreenCaptureOn = true;
-        isVideoCaptureOn = false;
+        isVideoCaptureOn = true;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
@@ -67,7 +67,7 @@ public class MediaCaptureManager implements CaptureManager {
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         imageStitcher = new ImageStitcher();
-        imageSynchronizer = new ImageSynchronizer(videoCodec, hasher, imageStitcher);
+        imageSynchronizer = new ImageSynchronizer(videoCodec, hasher);
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
         viewers.add(networking.getSelfIP());
@@ -94,10 +94,11 @@ public class MediaCaptureManager implements CaptureManager {
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
                 final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
-//                System.out.println(videoPosX + " " + videoPosY + " " + targetWidth + " " + targetHeight);
                 imageStitcher.setCanvas(feed);
                 imageStitcher.stitch(videoPatch);
-                feed = imageStitcher.getCanvas();
+                final int[][] stitchedFeed = imageStitcher.getCanvas();
+                feed = scalar.scale(stitchedFeed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+//                feed = stitchedFeed;
             }
         }
 
@@ -125,7 +126,7 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
-            System.out.println("Server FPS : "  + (int)(1000.0 / ((currTime - start) / 1_000_000.0)) );
+            System.out.println("Server FPS : "  + (int)(1000.0 / ((currTime - start) / 1_000_000.0)));
             start = System.nanoTime();
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
                 try {
@@ -180,7 +181,6 @@ public class MediaCaptureManager implements CaptureManager {
                 System.err.println("Error: Unable to serialize compressed packets");
                 continue;
             }
-
 //             send to others who have subscribed
             sendImageToViewers(encodedPatches);
             // TODO: send to UI of current machine to display. Remove selfIP from viewers list and directly send the data from here to UI

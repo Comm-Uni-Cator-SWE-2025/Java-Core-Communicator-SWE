@@ -1,5 +1,6 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
+import com.swe.ScreenNVideo.Utils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -23,11 +24,11 @@ public class VideoUI extends Application {
     public void start(Stage stage) {
         imageView = new ImageView();
         imageView.setPreserveRatio(true);
-        imageView.setFitWidth(800);
-        imageView.setFitHeight(600);
+        imageView.setFitWidth(Utils.SERVER_WIDTH);
+        imageView.setFitHeight(Utils.SERVER_HEIGHT);
 
         StackPane root = new StackPane(imageView);
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, Utils.SERVER_WIDTH, Utils.SERVER_HEIGHT);
 
         stage.setTitle("Screen & Video Display");
         stage.setScene(scene);

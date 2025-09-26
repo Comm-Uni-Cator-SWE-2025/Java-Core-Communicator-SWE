@@ -55,9 +55,9 @@ public class BilinearScaler implements ImageScaler {
                 final double yIn = (yOut + 0.5) * scaleY - 0.5;
 
                 // Locate 4 surrounding neighbours
-                final int x0 = (int) Math.floor(xIn);
+                final int x0 = Math.max((int) Math.floor(xIn), 0);
                 final int x1 = Math.min(x0 + 1, inputWidth - 1);
-                final int y0 = (int) Math.floor(yIn);
+                final int y0 = Math.max(0, (int) Math.floor(yIn));
                 final int y1 = Math.min(y0 + 1, inputHeight - 1);
 
                 final double dx = xIn - x0;
