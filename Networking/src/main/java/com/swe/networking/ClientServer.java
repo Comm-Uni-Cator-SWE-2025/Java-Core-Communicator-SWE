@@ -1,9 +1,9 @@
 package com.swe.networking;
 
-import java.net.DatagramSocket;
-import java.net.DatagramPacket;
-import java.io.IOException;
-import java.net.InetAddress;
+import javax.xml.crypto.Data;
+import java.io.*;
+import java.net.*;
+import java.util.Arrays;
 
 /**
  * Implement the following.
@@ -21,26 +21,37 @@ public class ClientServer {
     private boolean isServer;
 
     /**
-     * A variable for : Is this client a main server? 
-    */
+     * A variable for : Is this client a main server?
+     */
     private boolean isMainServer;
 
     /**
      * Socket reserver for this client/server.
      */
-    private DatagramSocket socket;
+//    private DatagramSocket socket;
 
     // topology singleton
     private Topology topology = Topology.getTopology();
 
+    private ClientNode deviceIp = null;
+    private ClientNode mainServerIp = null;
+
+    private ServerSocket recieveSocket;
+    private Socket sendSocket = new Socket();
+    private BufferedReader readData;
+    private PrintWriter writeData;
+
     // open an udp server socket for this client
-    public ClientServer(ClientNode destination, ClientNode mainServer) {
+    public ClientServer(ClientNode deviceAddress, ClientNode mainServerAddress) {
         this.isServer = false;
-        if(destination == mainServer) {
+        deviceIp = deviceAddress;
+        mainServerIp = mainServerAddress;
+
+        if (deviceAddress == mainServerAddress) {
             this.isMainServer = true;
         }
         try {
-            this.socket = new DatagramSocket();
+            this.recieveSocket = new ServerSocket(deviceAddress.port());
         } catch (IOException e) {
             System.err.println("Client error: " + e.getMessage());
             e.printStackTrace();
@@ -63,39 +74,43 @@ public class ClientServer {
         try {
             // Buffer to store incoming packet data
             byte[] buffer = new byte[1024];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+//            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            this.socket.receive(packet);
-
+            sendSocket = this.recieveSocket.accept();
+            DataInputStream dataIn = new DataInputStream(sendSocket.getInputStream());
+            byte[] packet = dataIn.readAllBytes();
             // Extracting data, destination, and port
-            String data = new String(packet.getData(), 0, packet.getLength());
-            String dest = packet.getAddress().getHostAddress();
-            int port = packet.getPort();
+            InetAddress dest = sendSocket.getInetAddress();
+            int port = sendSocket.getPort();
             PacketParser parser = PacketParser.getPacketParser();
-
-            if(this.isMainServer){
-                int type = parser.getType(packet.getData());
-                int connectionType = parser.getConnectionType(packet.getData());
-                if(type == 3 && connectionType == 0){
+            System.out.println(dest);
+            System.out.println(port);
+            System.out.println(dest);
+            System.out.println(port);
+            if (this.isMainServer) {
+                int type = parser.getType(packet);
+                int connectionType = parser.getConnectionType(packet);
+                if (type == 3 && connectionType == 0) {
                     byte[] networkData = topology.getNetwork().toString().getBytes();
-                    sendTo(networkData, dest, port);
+                    sendTo(networkData, dest.toString(), port);
                 }
-            }else if (this.isServer) {
-                if (destInCluster(dest)) {
-                    DatagramPacket response = new DatagramPacket(
-                            data.getBytes(),
-                            data.getBytes().length,
-                            packet.getAddress(),
-                            port
-                    );
-                    this.socket.send(response);
-                } else {
-                    throw new RuntimeException("Destination not in cluster: " + dest);
-                }
+            } else if (this.isServer) {
+//                if (destInCluster(dest)) {
+//                    DatagramPacket response = new DatagramPacket(
+//                            data.getBytes(),
+//                            data.getBytes().length,
+//                            packet.getAddress(),
+//                            port
+//                    );
+//                    writeData.println(Arrays.toString(packet.getData()));
+//                } else {
+//                    throw new RuntimeException("Destination not in cluster: " + dest);
+//                }
             } else {
                 // if it is client instead
                 // TODO: callMessageListener()
             }
+            System.out.println("Well it worked but dont know how....");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,17 +124,14 @@ public class ClientServer {
      * @param dest Destination IP.
      * @param port Destination PORT.
      */
-    public void sendTo(final byte[] data, final String dest, final Integer port) {
+    public int sendTo(final byte[] data, final String dest, final Integer port) throws IOException {
         if (this.isServer) {
             if (destInCluster(dest)) {
                 try {
-                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
-                    try {
-                        this.socket.send(sendPacket);
-                    } catch (IOException e) {
-                        System.err.println("Client error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
+//                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
+                    sendSocket.connect(new InetSocketAddress(dest, port));
+                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                    dataOut.write(data);
                 } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
@@ -129,12 +141,9 @@ public class ClientServer {
                     final String hostAddress = topology.getServer(dest).hostName();
                     final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port);
                     // TODO: getServer to be implemented by Topology.
-                    try {
-                        this.socket.send(sendPacket);
-                    } catch (IOException e) {
-                        System.err.println("Client error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
+                    sendSocket.connect(new InetSocketAddress(hostAddress, port));
+                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                    dataOut.write(data);
                 } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
@@ -144,20 +153,20 @@ public class ClientServer {
             if (destInCluster(dest)) {
                 try {
                     final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
-                    try {
-                        this.socket.send(sendPacket);
-                    } catch (IOException e) {
-                        System.err.println("Client error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
+                    sendSocket.connect(new InetSocketAddress(dest, port));
+                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                    dataOut.write(data);
                 } catch (IOException e) {
                     System.err.println("Client error: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
                 // TODO: get server ip from routing packet.
-                // send(data, clusterServerIP, port);
+                sendSocket.connect(new InetSocketAddress(dest, port));
+                DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                dataOut.write(data);
             }
         }
+        return 0;
     }
 }
