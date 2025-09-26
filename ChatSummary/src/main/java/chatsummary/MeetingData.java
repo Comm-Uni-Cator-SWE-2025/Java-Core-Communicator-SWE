@@ -1,15 +1,22 @@
-package chat_summary;
+package chatsummary;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+/**
+ * Real implementation of meeting data storage.
+ */
 public class MeetingData implements IMeetingData {
+    /** List of meeting messages. */
     private List<MeetingMessage> messages;
+    /** List of participants in the meeting. */
     private List<String> participants;
 
+    /**
+     * Constructor that initializes empty lists.
+     */
     public MeetingData() {
         this.messages = new ArrayList<>();
         this.participants = new ArrayList<>();
@@ -26,26 +33,27 @@ public class MeetingData implements IMeetingData {
     }
 
     @Override
-    public void addMessage(String sender, String message) {
-
+    public void addMessage(final String sender, final String message) {
+        // Add sender to participants if new
         if (!participants.contains(sender)) {
             participants.add(sender);
         }
 
-
-        MeetingMessage meetingMessage = new MeetingMessage(sender, message, LocalDateTime.now());
+        final MeetingMessage meetingMessage = new MeetingMessage(sender, message, LocalDateTime.now());
         messages.add(meetingMessage);
     }
 
     @Override
     public String getChatHistory() {
+        // Convert all messages to "Sender: Text" format
         return messages.stream()
                 .map(message -> message.getSender() + ": " + message.getText())
                 .collect(Collectors.joining("\n"));
     }
 
     @Override
-    public String getChatHistory(int maxMessages) {
+    public String getChatHistory(final int maxMessages) {
+        // Get only the last 'maxMessages' messages
         return messages.stream()
                 .skip(Math.max(0, messages.size() - maxMessages))
                 .map(message -> message.getSender() + ": " + message.getText())
