@@ -14,10 +14,10 @@ public class ImageSynchronizer {
     final IHasher hasher;
     final ImageStitcher imageStitcher;
 
-    public ImageSynchronizer(final Codec codec, final IHasher hasherArgs, final ImageStitcher imageStitcherArgs) {
+    public ImageSynchronizer(final Codec codec, final IHasher hasherArgs) {
         this.videoCodec = codec;
         this.hasher = hasherArgs;
-        this.imageStitcher = imageStitcherArgs;
+        this.imageStitcher = new ImageStitcher();
         previousImage = null;
     }
 
