@@ -10,33 +10,20 @@ import java.util.Properties;
  * Utility class to load configuration from environment file.
  */
 public final class EnvConfig {
-    /** Properties loaded from environment file. */
     private static Properties properties = new Properties();
-    /** Flag to track if configuration has been loaded. */
+
     private static boolean loaded = false;
 
-    /** Default environment file name. */
     private static final String DEFAULT_ENV_FILE = ".env.temp";
 
-    /**
-     * Private constructor to prevent instantiation.
-     */
     private EnvConfig() {
 
     }
 
-    /**
-     * Load environment variables from the default .env.temp file.
-     */
     public static void loadEnv() {
         loadEnv(DEFAULT_ENV_FILE);
     }
 
-    /**
-     * Load environment variables from specified file.
-     *
-     * @param envFileName Name of the environment file
-     */
     public static void loadEnv(final String envFileName) {
         if (loaded) {
             return; // Already loaded
@@ -91,12 +78,6 @@ public final class EnvConfig {
         }
     }
 
-    /**
-     * Get environment variable value.
-     *
-     * @param key Environment variable key
-     * @return Value from env file, system env, or null
-     */
     public static String getEnv(final String key) {
         if (!loaded) {
             loadEnv();
@@ -113,13 +94,7 @@ public final class EnvConfig {
         return value;
     }
 
-    /**
-     * Get environment variable with default value.
-     *
-     * @param key Environment variable key
-     * @param defaultValue Default value if not found
-     * @return Value from env file, system env, or default value
-     */
+
     public static String getEnv(final String key, final String defaultValue) {
         final String value = getEnv(key);
         if (value != null) {
@@ -129,13 +104,7 @@ public final class EnvConfig {
         }
     }
 
-    /**
-     * Get environment variable as integer.
-     *
-     * @param key Environment variable key
-     * @param defaultValue Default value if not found or not a valid integer
-     * @return Integer value from env or default
-     */
+
     public static int getEnvAsInt(final String key, final int defaultValue) {
         final String value = getEnv(key);
         if (value == null) {
@@ -150,12 +119,7 @@ public final class EnvConfig {
         }
     }
 
-    /**
-     * Check if a required environment variable is set.
-     *
-     * @param key Environment variable key
-     * @throws RuntimeException if the required variable is not set
-     */
+
     public static void requireEnv(final String key) {
         final String value = getEnv(key);
         if (value == null || value.trim().isEmpty()) {
@@ -163,9 +127,7 @@ public final class EnvConfig {
         }
     }
 
-    /**
-     * Reload environment configuration (useful for testing).
-     */
+
     public static void reload() {
         properties.clear();
         loaded = false;

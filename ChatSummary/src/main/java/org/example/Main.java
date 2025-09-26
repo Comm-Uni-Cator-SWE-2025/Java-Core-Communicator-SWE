@@ -15,15 +15,9 @@ import java.util.List;
  * Main class that runs the summary program.
  */
 public class Main {
-    /** Maximum messages for limited summary. */
+
     private static final int MAX_MESSAGES_LIMIT = 5;
 
-    /**
-     * Main method that demonstrates the chat summary functionality.
-     *
-     * @param args command line arguments
-     * @throws IOException if file reading fails
-     */
     public static void main(final String[] args) throws IOException {
 
         // 1. Create meeting notebook

@@ -4,24 +4,16 @@ package chatsummary;
  * Summarizer implementation that generates different types of summaries.
  */
 public class Summarizer implements ISummarizer {
-    /** The LLM service used for generating summaries. */
+
     private ILLMService llmService;
 
-    /** Default message limit for summaries. */
     private static final int DEFAULT_MESSAGE_LIMIT = 10;
 
-    /**
-     * Default constructor that creates a GeminiLLMService.
-     */
     public Summarizer() {
         this.llmService = new GeminiLLMService();
     }
 
-    /**
-     * Constructor that accepts an LLM service.
-     *
-     * @param llmServiceInstance the LLM service to use
-     */
+
     public Summarizer(final ILLMService llmServiceInstance) {
         this.llmService = llmServiceInstance;
     }
@@ -57,58 +49,30 @@ public class Summarizer implements ISummarizer {
         }
     }
 
-    /**
-     * Generate a paragraph summary for all messages.
-     *
-     * @param meetingData the meeting data
-     * @return generated summary
-     */
+
     private String generateParagraphSummary(final IMeetingData meetingData) {
         final String prompt = createParagraphSummaryPrompt(meetingData.getChatHistory());
         return llmService.generateContent(prompt);
     }
 
-    /**
-     * Generate a paragraph summary for limited messages.
-     *
-     * @param meetingData the meeting data
-     * @param maxMessages maximum number of messages
-     * @return generated summary
-     */
     private String generateParagraphSummary(final IMeetingData meetingData, final int maxMessages) {
         final String prompt = createParagraphSummaryPrompt(meetingData.getChatHistory(maxMessages));
         return llmService.generateContent(prompt);
     }
 
-    /**
-     * Generate a bullet summary for all messages.
-     *
-     * @param meetingData the meeting data
-     * @return generated summary
-     */
+
     private String generateBulletSummary(final IMeetingData meetingData) {
         final String prompt = createBulletSummaryPrompt(meetingData.getChatHistory());
         return llmService.generateContent(prompt);
     }
 
-    /**
-     * Generate a bullet summary for limited messages.
-     *
-     * @param meetingData the meeting data
-     * @param maxMessages maximum number of messages
-     * @return generated summary
-     */
+
     private String generateBulletSummary(final IMeetingData meetingData, final int maxMessages) {
         final String prompt = createBulletSummaryPrompt(meetingData.getChatHistory(maxMessages));
         return llmService.generateContent(prompt);
     }
 
-    /**
-     * Create a prompt for paragraph-style summary.
-     *
-     * @param chatHistory the chat history
-     * @return formatted prompt
-     */
+
     private String createParagraphSummaryPrompt(final String chatHistory) {
         return String.format(
                 "Based on the following meeting discussion, create a natural paragraph summary "
@@ -121,12 +85,7 @@ public class Summarizer implements ISummarizer {
         );
     }
 
-    /**
-     * Create a prompt for bullet-point summary.
-     *
-     * @param chatHistory the chat history
-     * @return formatted prompt
-     */
+
     private String createBulletSummaryPrompt(final String chatHistory) {
         return String.format(
                 "Based on the following meeting discussion, create a concise summary with bullet points. "

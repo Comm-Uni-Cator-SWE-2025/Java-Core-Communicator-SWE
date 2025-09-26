@@ -9,14 +9,10 @@ import java.util.stream.Collectors;
  * Real implementation of meeting data storage.
  */
 public class MeetingData implements IMeetingData {
-    /** List of meeting messages. */
     private List<MeetingMessage> messages;
-    /** List of participants in the meeting. */
     private List<String> participants;
 
-    /**
-     * Constructor that initializes empty lists.
-     */
+
     public MeetingData() {
         this.messages = new ArrayList<>();
         this.participants = new ArrayList<>();

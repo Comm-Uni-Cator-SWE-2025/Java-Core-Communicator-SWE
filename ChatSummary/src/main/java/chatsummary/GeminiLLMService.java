@@ -13,33 +13,21 @@ import java.time.Duration;
  */
 public class GeminiLLMService implements ILLMService {
 
-    /** The API key for Gemini service. */
     private final String apiKey;
-    /** The API URL for Gemini service. */
     private final String apiUrl;
-    /** Connection timeout in seconds. */
     private final int connectTimeoutSeconds;
-    /** Request timeout in seconds. */
     private final int requestTimeoutSeconds;
-    /** HTTP client for making requests. */
     private HttpClient httpClient;
 
-    /** Default connect timeout. */
+
     private static final int DEFAULT_CONNECT_TIMEOUT = 10;
-    /** Default request timeout. */
     private static final int DEFAULT_REQUEST_TIMEOUT = 30;
-    /** HTTP OK status code. */
     private static final int HTTP_OK = 200;
-    /** Text field start offset. */
     private static final int TEXT_FIELD_OFFSET = 9;
-    /** Minimum key length for masking. */
     private static final int MIN_KEY_LENGTH = 8;
-    /** Masked portion length. */
     private static final int MASK_PORTION = 4;
 
-    /**
-     * Constructor that initializes the Gemini LLM service.
-     */
+
     public GeminiLLMService() {
         // Load configuration from environment
         EnvConfig.loadEnv();
@@ -102,12 +90,6 @@ public class GeminiLLMService implements ILLMService {
         }
     }
 
-    /**
-     * Helper method to format text for JSON.
-     *
-     * @param text the text to escape
-     * @return escaped JSON text
-     */
     private String escapeJson(final String text) {
         return text.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
@@ -118,12 +100,7 @@ public class GeminiLLMService implements ILLMService {
                 .replace("\t", "\\t");
     }
 
-    /**
-     * Extract the actual text from Gemini's JSON response.
-     *
-     * @param response the JSON response
-     * @return extracted text
-     */
+
     private String extractTextFromResponse(final String response) {
         try {
             int textStart = response.indexOf("\"text\": \"");
@@ -155,12 +132,7 @@ public class GeminiLLMService implements ILLMService {
         }
     }
 
-    /**
-     * Helper method to mask API key for logging.
-     *
-     * @param key the API key
-     * @return masked key
-     */
+
     private String maskApiKey(final String key) {
         if (key == null || key.length() < MIN_KEY_LENGTH) {
             return "***";
