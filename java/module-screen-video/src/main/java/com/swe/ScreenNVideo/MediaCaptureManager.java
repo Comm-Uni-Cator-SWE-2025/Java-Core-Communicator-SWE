@@ -36,25 +36,70 @@ import java.util.concurrent.ExecutionException;
  * - Manages Screen Capture and Video Capture
  */
 public class MediaCaptureManager implements CaptureManager {
+    /**
+     * Port for the server.
+     */
     private final int port;
 
+    /**
+     * Flag for video capture.
+     */
     private boolean isVideoCaptureOn;
+    /**
+     * Flag for screen capture.
+     */
     private boolean isScreenCaptureOn;
 
+    /**
+     * Video capture object.
+     */
     private final ICapture videoCapture;
+    /**
+     * Screen capture object.
+     */
     private final ICapture screenCapture;
 
+    /**
+     * Patch generator object.
+     */
     private final PacketGenerator patchGenerator;
+    /**
+     * Image stitcher object.
+     */
     private final ImageStitcher imageStitcher;
+    /**
+     * Image synchronizer object.
+     */
     private final ImageSynchronizer imageSynchronizer;
+    /**
+     * Image scaler object.
+     */
     private final ImageScaler scalar;
-    final Codec videoCodec;
+    /**
+     * Video codec object.
+     */
+    private final Codec videoCodec;
 
+    /**
+     * Networking object.
+     */
     private final AbstractNetworking networking;
+    /**
+     * RPC object.
+     */
     private final AbstractRPC rpc;
 
+    /**
+     * List of viewers to send the video Feed.
+     */
     private final ArrayList<String> viewers;
 
+    /**
+     * Constructor for the MediaCaptureManager.
+     * @param argNetworking Networking object
+     * @param argRpc RPC object
+     * @param portArgs Port for the server
+     */
     public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
         this.port = portArgs;
@@ -67,7 +112,7 @@ public class MediaCaptureManager implements CaptureManager {
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         imageStitcher = new ImageStitcher();
-        imageSynchronizer = new ImageSynchronizer(videoCodec, hasher);
+        imageSynchronizer = new ImageSynchronizer(videoCodec);
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
         viewers.add(networking.getSelfIP());
@@ -83,7 +128,6 @@ public class MediaCaptureManager implements CaptureManager {
         if (videoFeed != null) {
             final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
             if (feed == null) {
-//                System.out.println("Here");
                 feed = videoMatrix;
             } else {
                 final int height = feed.length;
@@ -98,7 +142,6 @@ public class MediaCaptureManager implements CaptureManager {
                 imageStitcher.stitch(videoPatch);
                 final int[][] stitchedFeed = imageStitcher.getCanvas();
                 feed = scalar.scale(stitchedFeed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
-//                feed = stitchedFeed;
             }
         }
 
@@ -120,17 +163,19 @@ public class MediaCaptureManager implements CaptureManager {
         final double timeDelay = (1.0 / fps) * 1_000_000_000;
         long start = 0;
         while (true) {
-            long currTime = System.nanoTime();
-            long diff = currTime - start;
+            final long currTime = System.nanoTime();
+            final long diff = currTime - start;
             if (diff < timeDelay) {
                 continue;
             }
 
-            System.out.println("Server FPS : "  + (int)(1000.0 / ((currTime - start) / 1_000_000.0)));
+            System.out.println("Server FPS : "
+                + (int) ((double) (Utils.SEC_IN_MS) / ((currTime - start)
+                / ((double) (Utils.MSEC_IN_NS)))));
             start = System.nanoTime();
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(Utils.SEC_IN_MS);
                 } catch (InterruptedException e) {
                     System.out.println("Error : " + e.getMessage());
                 }
@@ -166,7 +211,7 @@ public class MediaCaptureManager implements CaptureManager {
             }
 
             byte[] encodedPatches = null;
-            int tries = 3;
+            int tries = Utils.MAX_TRIES_TO_SERIALIZE;
             while (tries-- > 0) {
                 // max tries 3 times to convert the patch
                 try {
@@ -183,7 +228,8 @@ public class MediaCaptureManager implements CaptureManager {
             }
 //             send to others who have subscribed
             sendImageToViewers(encodedPatches);
-            // TODO: send to UI of current machine to display. Remove selfIP from viewers list and directly send the data from here to UI
+            // TODO: send to UI of current machine to display.
+            //  Remove selfIP from viewers list and directly send the data from here to UI
         }
     }
 

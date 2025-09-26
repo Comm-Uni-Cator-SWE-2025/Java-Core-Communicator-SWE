@@ -2,25 +2,44 @@ package com.swe.ScreenNVideo.Synchronizer;
 
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
-import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
 
 import java.util.List;
 
+/**
+ * Synchronizer to synchronize the image from the patches.
+ */
 public class ImageSynchronizer {
-    int[][] previousImage;
-    final Codec videoCodec;
-    final IHasher hasher;
-    final ImageStitcher imageStitcher;
+    /**
+     * The previous image.
+     * The new patch will be stitched on this image.
+     */
+    private int[][] previousImage;
+    /**
+     * The codec to decode the patches.
+     */
+    private final Codec videoCodec;
+    /**
+     * The image stitcher to stitch the patches.
+     */
+    private final ImageStitcher imageStitcher;
 
-    public ImageSynchronizer(final Codec codec, final IHasher hasherArgs) {
+    /**
+     * Create a new image synchronizer.
+     * @param codec the codec to decode the patches.
+     */
+    public ImageSynchronizer(final Codec codec) {
         this.videoCodec = codec;
-        this.hasher = hasherArgs;
         this.imageStitcher = new ImageStitcher();
         previousImage = null;
     }
 
+    /**
+     * Synchronize the image from the patches.
+     * @param compressedPatches the patches to synchronize the image.
+     * @return the image.
+     */
     public int[][] synchronize(final List<CompressedPatch> compressedPatches) {
         if (previousImage != null) {
             imageStitcher.setCanvas(previousImage);

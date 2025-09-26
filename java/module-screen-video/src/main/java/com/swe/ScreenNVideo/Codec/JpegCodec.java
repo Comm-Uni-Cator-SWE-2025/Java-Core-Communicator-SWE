@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
+ * 
  * <p>
  * This class implements the {@link Codec} interface, offering methods to convert 
  * raw image data into compressed JPEG byte streams and to reconstruct images 
