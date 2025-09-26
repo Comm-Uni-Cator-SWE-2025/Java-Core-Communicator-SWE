@@ -24,15 +24,12 @@ public class AIRequest {
 
     /**
      * Constructor for AIRequest with type, prompt, and metadata.
+     *
+     * @param requestTypeName the type of request
+     * @param promptText the prompt text
+     * @param metaDataObj additional metadata
      */
     public AIRequest(final String requestTypeName, final String promptText, final Object metaDataObj) {
-        /**
-         * Constructor for AIRequest with type, prompt, and metadata.
-         *
-         * @param requestTypeName the type of request
-         * @param promptText the prompt text
-         * @param metaDataObj additional metadata
-         */
         this.requestType = requestTypeName;
         this.prompt = promptText;
         this.metaData = metaDataObj;
