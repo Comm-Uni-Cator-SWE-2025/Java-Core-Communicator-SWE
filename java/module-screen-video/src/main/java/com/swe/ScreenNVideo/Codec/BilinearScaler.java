@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.Codec;
 /**
  * Provides an implementation of the {@link ImageScaler} interface 
  * using Bilinear Interpolation.
+ *
  * <p>
  * Bilinear Interpolation computes the color of each pixel in the scaled 
  * image as a weighted average of the four nearest pixels in the original
@@ -15,7 +16,7 @@ package com.swe.ScreenNVideo.Codec;
 public class BilinearScaler implements ImageScaler {
     
     /** Offset for alpha component in the AARRGGBB value.*/
-    private static final int A_OFFEST = 24;
+    private static final int A_OFFSET = 24;
 
     /** Offset for red color component in the AARRGGBB value.*/
     private static final int R_OFFSET = 16;

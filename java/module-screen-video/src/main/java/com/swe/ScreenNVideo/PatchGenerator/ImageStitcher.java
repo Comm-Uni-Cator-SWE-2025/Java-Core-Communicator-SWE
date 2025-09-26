@@ -12,7 +12,14 @@ public class ImageStitcher {
      */
     private int[][] canvas;
 
+    /**
+     * Height of current canvas.
+     */
     private int currentHeight;
+
+    /**
+     * Width of current Canvas.
+     */
     private int currentWidth;
 
     /**
@@ -61,7 +68,7 @@ public class ImageStitcher {
     /**
      * Stitches the provided patch onto the canvas.
      * Stretches the canvas if necessary.
-     * @param patch
+     * @param patch Compressed Patch to apply on the Canvas
      */
     public void stitch(final Stitchable patch) {
         verifyDimensions(patch);
@@ -84,16 +91,16 @@ public class ImageStitcher {
      * @param width of new canvas
      */
     private void resize(final int height, final int width, final boolean fill) {
-        int[][] new_canvas = new int[height][width];
-        System.out.println("Resizing to " + height + " " + width );
+        final int[][] newCanvas = new int[height][width];
+        System.out.println("Resizing to " + height + " " + width);
 
         if (fill) {
             for (int i = 0; i < currentHeight; i++) {
-                System.arraycopy(this.canvas[i], 0, new_canvas[i], 0, currentWidth);
+                System.arraycopy(this.canvas[i], 0, newCanvas[i], 0, currentWidth);
             }
         }
 
-        this.canvas = new_canvas;
+        this.canvas = newCanvas;
         this.currentHeight = height;
         this.currentWidth = width;
     }

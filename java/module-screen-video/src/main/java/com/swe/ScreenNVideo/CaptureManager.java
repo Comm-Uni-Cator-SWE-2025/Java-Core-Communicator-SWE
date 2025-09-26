@@ -3,7 +3,7 @@ package com.swe.ScreenNVideo;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Interface to other modules
+ * Interface to other modules.
  */
 public interface CaptureManager {
     /**
