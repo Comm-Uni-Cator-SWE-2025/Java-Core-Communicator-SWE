@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 import static java.lang.Math.floor;
@@ -44,6 +45,7 @@ public class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get the statically instantiated class object.
+     *
      * @return Topology the statically instantiated class.
      */
     public static Topology getTopology() {
@@ -105,6 +107,7 @@ public class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Choose a cluster based on √N rule and least loaded cluster.
+     *
      * @return best chosen Cluster
      */
     private Cluster chooseCluster() {
@@ -141,5 +144,21 @@ public class Topology implements AbstractTopology, AbstractController {
         }
 
         return minCluster;
+    }
+
+    /**
+     *This function returns the current Network details.
+     *
+     * @return structure The Devices connected to the current network
+     */
+    public NetworkStructure getNetwork() {
+        final List<List<ClientNode>> clients = new ArrayList<>();
+        final List<ClientNode> servers = new ArrayList<>();
+        final NetworkStructure structure = new NetworkStructure(clients, servers);
+        for (Cluster cluster : clusters) {
+            structure.clusters().add(cluster.getClients());
+            structure.servers().add(cluster.getServerName());
+        }
+        return structure;
     }
 }

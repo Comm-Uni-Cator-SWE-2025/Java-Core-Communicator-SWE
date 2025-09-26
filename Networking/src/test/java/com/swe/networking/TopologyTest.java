@@ -6,9 +6,9 @@ class TopologyTest {
 
     @org.junit.jupiter.api.Test
     void getServer() {
-        Topology topology = new Topology();
+        Topology topology = Topology.getTopology();
         String destination = "localhost";
-        ClientNode client = topology.GetServer(destination);
+        ClientNode client = topology.getServer(destination);
         assertNull(client, "The output is not what is expected");
     }
 }
