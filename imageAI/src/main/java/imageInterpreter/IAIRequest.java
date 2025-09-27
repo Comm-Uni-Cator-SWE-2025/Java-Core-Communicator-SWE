@@ -1,10 +1,13 @@
-package imageInterpreter;
+package imageinterpreter;
 
-import java.util.Map;
-
+/**
+ * Defines an interface for making types of requests to AI.
+ */
 public interface IAIRequest {
-
-    Map<String, String> metaData = Map.of();
-
+    /**
+     * Returns the prompt for the particular AI request.
+     *
+     * @return the context as a String
+     */
     String getContext();
 }

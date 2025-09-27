@@ -1,24 +1,56 @@
-package imageInterpreter;
+package imageinterpreter;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * InterpreterResponse, represents the image interpretation.
+ */
 public class InterpreterResponse implements IAIResponse {
-    String type;
-    Map<String, String> metaData;
+    /**
+     * Type stores the type of the particular response.
+     */
+    private String type;
 
-    public InterpreterResponse(){
+    /**
+     *  metadata would contain the response details.
+     */
+    private Map<String, String> metaData;
+
+    /**
+     * Constructs an InterpreterResponse and initializes it to a default type.
+     */
+    public InterpreterResponse() {
         type = "Description Response";
         metaData = new HashMap<>();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getType() {
+        // to return the type of the response.
+        return type;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getResponse() {
+        // to return the contents of the response
         return metaData.get("Content");
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param content the content to set in the response
+     */
     @Override
-    public void setResponse(String content) {
+    public void setResponse(final String content) {
+        // to set the content incase of recieving resposne from the Ai model
         metaData.put("Content", content);
     }
 }

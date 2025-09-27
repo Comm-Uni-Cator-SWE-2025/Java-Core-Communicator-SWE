@@ -1,75 +1,117 @@
-package imageInterpreter;
+package imageinterpreter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.google.api.client.json.JsonFactory;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import okhttp3.*;
+import io.github.cdimascio.dotenv.Dotenv;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.MediaType;
+
+/**
+ * Class to implement the gemini api service.
+ */
 public class ImageInterpreterCloud implements IImageInterpreter {
-
-    private static final String GEMINI_API_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
+    /**
+     * Loads environment variables from the .env file.
+     */
+    private static Dotenv dotenv = Dotenv.load();
+    /**
+     * gets the GEMINI_URL_TEMPLATE from the .env file.
+     */
+    private static final String GEMINI_API_URL_TEMPLATE = dotenv.get("GEMINI_URL");
+    /**
+     *  Sets the Media type used for JSON requests.
+     */
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-
+    /**
+     * The Gemini API key used for request authentication.
+     */
     private final String geminiApiKey;
+    /**
+     * Json parser -- serialising and deserialising.
+     */
     private final ObjectMapper objectMapper;
+    /**
+     * http client for the requests.
+     */
     private final OkHttpClient httpClient;
 
-    public ImageInterpreterCloud(String geminiApiKey){
-        this.geminiApiKey = geminiApiKey;
+    /**
+     * Constructs the ImageInterpreterCloud with a Gemini API key.
+     *
+     * @param apiKey the API key for authentication
+     */
+    public ImageInterpreterCloud(final String apiKey) {
+        this.geminiApiKey = apiKey;
+        final int timeout = 30;
         this.httpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(timeout, TimeUnit.SECONDS)
+                .readTimeout(timeout, TimeUnit.SECONDS)
+                .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
+
     }
 
+    /**
+     * Sends an AI request with request data and receives a response.
+     *
+     * @param aiRequest the AI request containing metadata(which would have the prompt)
+     * @param whiteboardData the image data
+     * @return an IAIResponse containing AI-generated description
+     * @throws IOException if the HTTP request or response parsing fails
+     */
     @Override
-    public IAIResponse describeImage(IAIRequest aiRequest, WhiteBoardData whiteboardData) throws IOException {
-        String apiUrl = GEMINI_API_URL_TEMPLATE + geminiApiKey;
+    public IAIResponse describeImage(final IAIRequest aiRequest, final WhiteBoardData whiteboardData)
+            throws IOException {
 
-        IAIResponse returnResponse = new InterpreterResponse();
+        final IAIResponse returnResponse = new InterpreterResponse();
 
-        ObjectNode rootNode = objectMapper.createObjectNode();
-        ArrayNode contentsArray = rootNode.putArray("contents");
-        ObjectNode contentNode = contentsArray.addObject();
-        ArrayNode partsArray = contentNode.putArray("parts");
+        // building the json request body(as expected by gemini api)
+        final ObjectNode rootNode = objectMapper.createObjectNode();
+        final ArrayNode contentsArray = rootNode.putArray("contents");
+        final ObjectNode contentNode = contentsArray.addObject();
+        final ArrayNode partsArray = contentNode.putArray("parts");
 
         partsArray.addObject().put("text", aiRequest.getContext());
 
-        ObjectNode inlineDataNode = partsArray.addObject().putObject("inlineData");
+        final ObjectNode inlineDataNode = partsArray.addObject().putObject("inlineData");
         inlineDataNode.put("mimeType", "image/png");
         inlineDataNode.put("data", whiteboardData.getContent());
 
-        String jsonRequestBody = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
+        final String jsonRequestBody = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
 
-        RequestBody body = RequestBody.create(jsonRequestBody, JSON);
-        Request request = new Request.Builder()
+        final String apiUrl = GEMINI_API_URL_TEMPLATE + geminiApiKey;
+        final RequestBody body = RequestBody.create(jsonRequestBody, JSON);
+        final Request request = new Request.Builder()
                 .url(apiUrl)
                 .post(body)
                 .build();
 
         System.out.println("Sending request to GEMINI API");
 
-        try (Response response = httpClient.newCall(request).execute()){
-            if (!response.isSuccessful()){
+        // sending the request as an http post
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
                 throw new IOException("Unexpected code" + response + " - " + response.body().string());
             }
 
-            JsonNode responseJson = objectMapper.readTree(response.body().charStream());
+            // extracting the response and add to the response object
+            final JsonNode responseJson = objectMapper.readTree(response.body().charStream());
+            final JsonNode textNode = responseJson.at("/candidates/0/content/parts/0/text");
 
-            JsonNode textNode = responseJson.at("/candidates/0/content/parts/0/text");
-
-            if (textNode.isTextual()){
+            if (textNode.isTextual()) {
                 returnResponse.setResponse(textNode.asText());
                 return returnResponse;
-            }
-            else{
+            } else {
                 throw new IOException("Could not find text in Gemini api response : " + responseJson.toPrettyString());
             }
         }
