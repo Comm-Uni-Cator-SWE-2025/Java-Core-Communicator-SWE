@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /* Parser for the packets.
 The structure of the packet is given below
 - Type              : 2bits
@@ -8,14 +11,22 @@ The structure of the packet is given below
 - Connection Type   : 3bits
 - Broadcast         : 1bit
 - empty             : 3bits ( for future use )
+- IPv4 addr         : 32bits
+- port num          : 16bits
 
 
 0                             1
-0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5  6  7  8  9...
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--
-|Type |Priority|   Module  |Con Type|BC|  empty | Payload...
-+----------+-----------+----------------+-------------------
-2 bits  3 bits    4 bits          7 bits           variable
+0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5  6
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|Type |Priority|   Module  |Con Type|BC|  empty |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                  IPv4 Address                 |
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                 port number                   |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+| Payload....
++--+--+--+--+-
 */
 
 
@@ -55,16 +66,28 @@ public class PacketParser {
         return ( pkt[1] >> 3 ) & 0b1;
     }
 
+    public InetAddress getIpAddress( byte[] pkt ) throws UnknownHostException {
+        byte[] ipBytes = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            ipBytes[i] = (byte) (pkt[2 + i] & 0xFF);
+        }
+        return InetAddress.getByAddress(ipBytes);
+    }
+
+    public int getPortNum( byte[] pkt ){
+        return ( (pkt[6] & 0xFF) << 8 ) | (pkt[7] &0xFF);
+    }
 
     public byte[] getPayload( byte[] pkt ) {
-        byte[] payload = new byte[pkt.length - 2];
-        System.arraycopy(pkt, 2, payload, 0, payload.length);
+        byte[] payload = new byte[pkt.length - 8];
+        System.arraycopy(pkt, 8, payload, 0, payload.length);
         return payload;
     }
     
     public byte[] createPkt( int type, int priority, int module,
-                                    int connectionType, int broadCast, byte[] data ) {
-        byte[] pkt = new byte[data.length + 2];
+                             int connectionType, int broadCast, InetAddress ipAddr,
+                             int portNum, byte[] data ) {
+        byte[] pkt = new byte[data.length + 8];
         // Byte 0 = Type (2b) + Priority (3b) + Module[3:1] (3b)
         pkt[0] = ( byte )(
                     ( ( type & 0b11 ) << 6 ) |
@@ -72,14 +95,22 @@ public class PacketParser {
                     ( ( module & 0b1110 ) >> 1 )
                 );
 
-
         // Byte 1 = Module[0] (1b) + connectionType (3b) + broadCast (1b)  + Empty (3b)
         pkt[1] = ( byte )(
                     ( ( module & 0b1 ) << 7 ) |
                     ( ( connectionType & 0b111 ) << 4 ) |
                     ( ( broadCast & 0b1 ) << 3 )
                 );
-        System.arraycopy( data, 0, pkt, 2, data.length );
+        
+        // Byte 2..5
+        byte[] ipBytes = ipAddr.getAddress();
+        System.arraycopy(ipBytes, 0, pkt, 2, 4);
+
+        // Byte 6,7
+        pkt[6] = ( byte )(portNum >> 8);
+        pkt[7] = ( byte )(portNum & 0xFF);
+
+        System.arraycopy( data, 0, pkt, 8, data.length );
         return pkt;
     }
 }
