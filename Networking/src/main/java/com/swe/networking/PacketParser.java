@@ -2,6 +2,9 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 
 /* Parser for the packets.
 The structure of the packet is given below
@@ -13,6 +16,10 @@ The structure of the packet is given below
 - empty             : 3bits ( for future use )
 - IPv4 addr         : 32bits
 - port num          : 16bits
+- Message Id        : 32bits
+- Chunk Num         : 32bits
+- Chunk Length      : 32bits
+- Payload           : variable length
 
 
 0                             1
@@ -25,20 +32,28 @@ The structure of the packet is given below
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 |                 port number                   |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-| Payload....
-+--+--+--+--+-
+|                  Message Id                   |
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                  Chunk Number                 |
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                  Chunk Length                 |
+|                                               |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+| Payload....                                   
++--+--+--+--+--+
 */
 
 
 public class PacketParser {
-    private static PacketParser parser = null; 
+    private static PacketParser parser = null;
+    private static final int HEADER_SIZE = 20;
 
-    private PacketParser(){
+    private PacketParser() {}
 
-    }
-
-    public static PacketParser getPacketParser(){
-        if(parser == null) parser = new PacketParser();
+    public static PacketParser getPacketParser() {
+        if (parser == null) parser = new PacketParser();
         return parser;
     }
 
@@ -66,51 +81,76 @@ public class PacketParser {
         return ( pkt[1] >> 3 ) & 0b1;
     }
 
-    public InetAddress getIpAddress( byte[] pkt ) throws UnknownHostException {
-        byte[] ipBytes = new byte[4];
-        for (int i = 0; i < 4; i++) {
-            ipBytes[i] = (byte) (pkt[2 + i] & 0xFF);
-        }
+    public InetAddress getIpAddress(byte[] pkt) throws UnknownHostException {
+        byte[] ipBytes = Arrays.copyOfRange(pkt, 2, 6);
         return InetAddress.getByAddress(ipBytes);
     }
 
-    public int getPortNum( byte[] pkt ){
-        return ( (pkt[6] & 0xFF) << 8 ) | (pkt[7] &0xFF);
+    public int getPortNum(byte[] pkt) {
+        ByteBuffer bb = ByteBuffer.wrap(pkt, 6, 2);
+        return Short.toUnsignedInt(bb.getShort());
     }
 
-    public byte[] getPayload( byte[] pkt ) {
-        byte[] payload = new byte[pkt.length - 8];
-        System.arraycopy(pkt, 8, payload, 0, payload.length);
-        return payload;
+    public int getMessageId(byte[] pkt) {
+        ByteBuffer bb = ByteBuffer.wrap(pkt, 8, 4);
+        return bb.getInt();
     }
-    
-    public byte[] createPkt( int type, int priority, int module,
-                             int connectionType, int broadCast, InetAddress ipAddr,
-                             int portNum, byte[] data ) {
-        byte[] pkt = new byte[data.length + 8];
-        // Byte 0 = Type (2b) + Priority (3b) + Module[3:1] (3b)
-        pkt[0] = ( byte )(
-                    ( ( type & 0b11 ) << 6 ) |
-                    ( ( priority & 0b111 ) << 3 ) |
-                    ( ( module & 0b1110 ) >> 1 )
-                );
 
-        // Byte 1 = Module[0] (1b) + connectionType (3b) + broadCast (1b)  + Empty (3b)
-        pkt[1] = ( byte )(
-                    ( ( module & 0b1 ) << 7 ) |
-                    ( ( connectionType & 0b111 ) << 4 ) |
-                    ( ( broadCast & 0b1 ) << 3 )
-                );
-        
-        // Byte 2..5
-        byte[] ipBytes = ipAddr.getAddress();
-        System.arraycopy(ipBytes, 0, pkt, 2, 4);
+    public int getChunkNum(byte[] pkt) {
+        ByteBuffer bb = ByteBuffer.wrap(pkt, 12, 4);
+        return bb.getInt();
+    }
 
-        // Byte 6,7
-        pkt[6] = ( byte )(portNum >> 8);
-        pkt[7] = ( byte )(portNum & 0xFF);
+    public int getChunkLength(byte[] pkt) {
+        ByteBuffer bb = ByteBuffer.wrap(pkt, 16, 4);
+        return bb.getInt();
+    }
 
-        System.arraycopy( data, 0, pkt, 8, data.length );
+    public byte[] getPayload(byte[] pkt) {
+        return Arrays.copyOfRange(pkt, HEADER_SIZE, pkt.length);
+    }
+
+    public byte[] createPkt(int type, int priority, int module,
+                            int connectionType, int broadcast,
+                            InetAddress ipAddr, int portNum,
+                            int messageId, int chunkNum,
+                            int chunkLength, byte[] data) {
+
+        byte[] pkt = new byte[HEADER_SIZE + data.length];
+        ByteBuffer bb = ByteBuffer.wrap(pkt);
+
+        // Byte 0 = Type(2) + Priority(3) + Module 
+        bb.put((byte) (
+            ((type & 0b11) << 6) |
+            ((priority & 0b111) << 3) |
+            ((module & 0b1110) >> 1)
+        ));
+
+        // Byte 1 = Module  + ConnType(3) + Broadcast(1) + Empty(3)
+        bb.put((byte) (
+            ((module & 0b1) << 7) |
+            ((connectionType & 0b111) << 4) |
+            ((broadcast & 0b1) << 3)
+        ));
+
+        // Bytes 2–5
+        bb.put(ipAddr.getAddress());
+
+        // Bytes 6–7
+        bb.putShort((short) portNum);
+
+        // Bytes 8–11
+        bb.putInt(messageId);
+
+        // Bytes 12–15
+        bb.putInt(chunkNum);
+
+        // Bytes 16–19
+        bb.putInt(chunkLength);
+
+        // Bytes 20+
+        bb.put(data);
+
         return pkt;
     }
 }
