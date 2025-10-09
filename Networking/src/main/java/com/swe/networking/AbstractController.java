@@ -7,5 +7,5 @@ package com.swe.networking;
  */
 
 public interface AbstractController {
-    void addUser(String ip, Integer port);
+    void addUser(ClientNode deviceAddress, ClientNode mainServerAddress);
 }

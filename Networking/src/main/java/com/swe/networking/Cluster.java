@@ -55,4 +55,8 @@ public class Cluster {
         // The server is always the first element in the list.
         return clients.get(0);
     }
+
+    public List<ClientNode> getClients(){
+        return clients;
+    }
 }
