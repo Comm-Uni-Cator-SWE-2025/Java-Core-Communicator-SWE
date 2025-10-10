@@ -24,11 +24,11 @@ public class ChunkManager {
         for (int i = 0; i < data.length; i+=payloadSize){
             int pSize = Math.min(payloadSize, data.length-i);
             byte[] payloadChunk = new byte[pSize];
-            System.arraycopy(data, i, payloadChunk, 0, Math.min(payloadSize, pSize));
+            System.arraycopy(data, i, payloadChunk, 0, pSize);
             byte[] pkt = parser.createPkt(
                     0, priority, module,
                     connectionType, broadcast, ipAddr,
-                    portNum, messageId, i/payloadSize, payloadSize+20, payloadChunk
+                    portNum, messageId, i/payloadSize, pSize+20, payloadChunk
             );
             chunks.add(pkt);
         }
