@@ -79,7 +79,7 @@ public class PriorityQueue {
      * Rotates MLFQ levels every 1000 ms.
      * Level 0 → Level 1, Level 1 → Level 2, Level 2 → Level 0(recycled)
      */
-    private void rotateQueues() {
+    public void rotateQueues() {
         long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
             System.out.println("Rotating MLFQ levels...");
@@ -105,8 +105,9 @@ public class PriorityQueue {
      *
      * @param data the packet payload
      */
-    public void addPacket(final byte[] data) {
-        final int priorityLevel = PacketParser.getPriority(data);
+    public synchronized void addPacket(final byte[] data) {
+        PacketParser parser = PacketParser.getPacketParser();
+        final int priorityLevel = parser.getPriority(data);
         final PacketPriority priority
                 = PacketPriority.fromLevel(priorityLevel);
 
@@ -132,7 +133,7 @@ public class PriorityQueue {
      *
      * @return the next packet's data, or null if none available
      */
-    public byte[] nextPacket() {
+    public synchronized byte[] nextPacket() {
         long now = System.currentTimeMillis();
 
         // Reset budgets every epoch
