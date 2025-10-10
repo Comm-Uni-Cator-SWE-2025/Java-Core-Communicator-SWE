@@ -1,7 +1,9 @@
 package com.swe.networking;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Vector;
+import java.lang.Math;
 
 public class ChunkManager {
     int payloadSize; // size of payload in bytes
@@ -20,14 +22,15 @@ public class ChunkManager {
         // Type is currently set to 0 : Send Packet to Cluster
         // But we need a function in topology to identify the type
         for (int i = 0; i < data.length; i+=payloadSize){
-            byte[] payloadChunk = new byte[payloadSize];
-            System.arraycopy(data, i, payloadChunk, 0, payloadSize);
-            chunks.add(payloadChunk);
-            chunks.add(parser.createPkt(
+            int pSize = Math.min(payloadSize, data.length-i);
+            byte[] payloadChunk = new byte[pSize];
+            System.arraycopy(data, i, payloadChunk, 0, Math.min(payloadSize, pSize));
+            byte[] pkt = parser.createPkt(
                     0, priority, module,
                     connectionType, broadcast, ipAddr,
-                    portNum, messageId, i/payloadSize, payloadSize + 20, payloadChunk
-            ));
+                    portNum, messageId, i/payloadSize, payloadSize+20, payloadChunk
+            );
+            chunks.add(pkt);
         }
         return  chunks;
     }
