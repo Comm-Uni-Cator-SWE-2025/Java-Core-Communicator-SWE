@@ -12,8 +12,8 @@ public class ChunkManagerTest {
 
     @Test
     void messageChunkingTest() throws UnknownHostException {
-        int chunkSize = 4;
-        ChunkManager chunkManager = new ChunkManager(chunkSize);
+        int payloadSize = 4;
+        ChunkManager chunkManager = new ChunkManager(payloadSize);
         PacketParser parser = PacketParser.getPacketParser();
 
         String message = "Hello this is Networking Team";
@@ -30,21 +30,49 @@ public class ChunkManagerTest {
                 priority, module, connectionType,
                 broadcast, ipAddr, port, messageId, data
         );
-        for (int chunkNum = 0; chunkNum < chunks.size(); chunkNum++){
-            String chunkMsg = new String(parser.getPayload(chunks.get(chunkNum)), StandardCharsets.UTF_8);
-            String expectedMsg = message.substring(chunkNum*chunkSize, (chunkNum+1)*chunkSize);
-            Assertions.assertEquals(expectedMsg, chunkMsg);
-        }
+        String chunkMsg;
+        String expectedMsg;
+        // 0
+        chunkMsg = new String(parser.getPayload(chunks.get(0)), StandardCharsets.UTF_8);
+        expectedMsg = "Hell";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 1
+        chunkMsg = new String(parser.getPayload(chunks.get(1)), StandardCharsets.UTF_8);
+        expectedMsg = "o th";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 2
+        chunkMsg = new String(parser.getPayload(chunks.get(2)), StandardCharsets.UTF_8);
+        expectedMsg = "is i";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 3
+        chunkMsg = new String(parser.getPayload(chunks.get(3)), StandardCharsets.UTF_8);
+        expectedMsg = "s Ne";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 4
+        chunkMsg = new String(parser.getPayload(chunks.get(4)), StandardCharsets.UTF_8);
+        expectedMsg = "twor";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 5
+        chunkMsg = new String(parser.getPayload(chunks.get(5)), StandardCharsets.UTF_8);
+        expectedMsg = "king";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 6
+        chunkMsg = new String(parser.getPayload(chunks.get(6)), StandardCharsets.UTF_8);
+        expectedMsg = " Tea";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
+        // 7
+        chunkMsg = new String(parser.getPayload(chunks.get(7)), StandardCharsets.UTF_8);
+        expectedMsg = "m";
+        Assertions.assertEquals(expectedMsg, chunkMsg);
     }
     @Test
     void chunkNumChunkingTest() throws UnknownHostException {
-        int chunkSize = 4;
-        ChunkManager chunkManager = new ChunkManager(chunkSize);
+        int payloadSize = 3;
+        ChunkManager chunkManager = new ChunkManager(payloadSize);
         PacketParser parser = PacketParser.getPacketParser();
 
         String message = "Hello this is Networking Team";
         byte[] data = message.getBytes();
-
         int priority = 3;
         int module = 0;
         int connectionType = 1;
@@ -63,8 +91,8 @@ public class ChunkManagerTest {
     }
     @Test
     void constFieldChunkingTest() throws UnknownHostException{
-        int chunkSize = 4;
-        ChunkManager chunkManager = new ChunkManager(chunkSize);
+        int payloadSize = 6;
+        ChunkManager chunkManager = new ChunkManager(payloadSize);
         PacketParser parser = PacketParser.getPacketParser();
 
         String message = "Hello this is Networking Team";
