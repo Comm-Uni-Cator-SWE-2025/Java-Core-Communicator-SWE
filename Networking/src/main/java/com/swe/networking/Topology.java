@@ -91,8 +91,10 @@ public class Topology implements AbstractTopology, AbstractController {
      * @param port Destination port
      */
     @Override
-    public void addUser(final String ip, final Integer port) {
+    public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
         final Cluster cluster = chooseCluster();
+        final String ip = deviceAddress.hostName();
+        final int port = deviceAddress.port();
         cluster.addClient(ip, port);
 
         clientIP.computeIfAbsent(cluster, k -> new ArrayList<>())
@@ -147,7 +149,7 @@ public class Topology implements AbstractTopology, AbstractController {
     }
 
     /**
-     *This function returns the current Network details.
+     * This function returns the current Network details.
      *
      * @return structure The Devices connected to the current network
      */
