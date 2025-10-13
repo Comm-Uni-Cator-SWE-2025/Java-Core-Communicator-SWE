@@ -3,7 +3,11 @@ package com.swe.networking;
 import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+
+import static com.swe.networking.Topology.topology;
 
 /**
  * Implement the following.
@@ -15,98 +19,112 @@ import java.util.Arrays;
  */
 
 public class ClientServer {
-    /**
-     * A variable for: Is this client a server?.
-     */
-    private boolean isServer;
 
-    /**
-     * A variable for : Is this client a main server?
-     */
-    private boolean isMainServer;
+    // record to hold client server information
+// own ip address
+// own port
 
-    /**
-     * Socket reserver for this client/server.
-     */
-//    private DatagramSocket socket;
+// manually done by now later done by controller
+// server ip address
+// server port
 
-    // topology singleton
-    private Topology topology = Topology.getTopology();
 
-    private ClientNode deviceIp = null;
-    private ClientNode mainServerIp = null;
+    private InetAddress hostName;
+    private int port;
 
-    private ServerSocket recieveSocket;
+    private InetAddress serverHostname;
+    private int serverPort;
+
+    record ClientNode(InetAddress hostName, int port) {};
+    private final List<ClientNode> clients;
+
+    private ServerSocket receiveSocket;
     private Socket sendSocket = new Socket();
     private BufferedReader readData;
     private PrintWriter writeData;
 
-    // open an udp server socket for this client
-    public ClientServer(ClientNode deviceAddress, ClientNode mainServerAddress) {
-        this.isServer = false;
-        deviceIp = deviceAddress;
-        mainServerIp = mainServerAddress;
 
-        if (deviceAddress == mainServerAddress) {
-            this.isMainServer = true;
-        }
+    public ClientServer(InetAddress _serverHostname, int _serverPort) {
+
         try {
-            this.recieveSocket = new ServerSocket(deviceAddress.port());
-        } catch (IOException e) {
-            System.err.println("Client error: " + e.getMessage());
+            hostName=InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            System.err.println("Could not get IP address: " + e.getMessage());
             e.printStackTrace();
         }
+        port=12000;
+
+        serverHostname = _serverHostname;
+        serverPort = _serverPort;
+
+        clients = new List<ClientNode>();
+;
+        try {
+            this.receiveSocket = new ServerSocket(port);
+        } catch (IOException e) {
+            System.err.println("TCP server error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+
+        if (serverHostname.equals(hostname)) {
+            clients.add(new ClientNode(hostname, port));
+        } else {
+            sendHello(serverHostname, serverPort);
+        }
     }
 
-    // TODO: wait for routing packet from the server
 
-    /**
-     * Topology server will implement this func.
-     *
-     * @param dest Destination IP.
-     */
-    boolean destInCluster(final String dest) {
-        return true;
+
+
+    private boolean destInCluster(InetAddress ip, int port) {
+        return clients.contains(new ClientNode(ip, port));
     }
 
-    public void recieveFrom() {
+
+
+
+    public void receiveFrom() {
         // testing pending
         try {
             // Buffer to store incoming packet data
             byte[] buffer = new byte[1024];
-//            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            sendSocket = this.recieveSocket.accept();
-            DataInputStream dataIn = new DataInputStream(sendSocket.getInputStream());
+            commSocket = this.receiveSocket.accept();
+            DataInputStream dataIn = new DataInputStream(commSocket.getInputStream());
             byte[] packet = dataIn.readAllBytes();
             // Extracting data, destination, and port
-            InetAddress dest = sendSocket.getInetAddress();
-            int port = sendSocket.getPort();
+            InetAddress dest = commSocket.getInetAddress();
+            int port = commSocket.getPort();
             PacketParser parser = PacketParser.getPacketParser();
             System.out.println(dest);
             System.out.println(port);
-            System.out.println(dest);
-            System.out.println(port);
-            if (this.isMainServer) {
-                int type = parser.getType(packet);
-                int connectionType = parser.getConnectionType(packet);
-                if (type == 3 && connectionType == 0) {
-                    byte[] networkData = topology.getNetwork().toString().getBytes();
-                    sendTo(networkData, dest.toString(), port);
-                }
-            } else if (this.isServer) {
-//                if (destInCluster(dest)) {
-//                    DatagramPacket response = new DatagramPacket(
-//                            data.getBytes(),
-//                            data.getBytes().length,
-//                            packet.getAddress(),
-//                            port
-//                    );
-//                    writeData.println(Arrays.toString(packet.getData()));
-//                } else {
-//                    throw new RuntimeException("Destination not in cluster: " + dest);
+
+//            if (this.MainServer) {
+//                int type = parser.getType(packet);
+//                int connectionType = parser.getConnectionType(packet);
+//                if (type == 3 && connectionType == 0) {
+//                    byte[] networkData = topology.getNetwork().toString().getBytes();
+//                    sendTo(networkData, dest.toString(), port);
 //                }
+//            }
+            if (serverHostname.equals(hostname)) {
+                int type= parser.getType(packet);
+                int connectionType = parser.getConnectionType(packet);
+
+                if (type==3 &&  connectionType==0) {
+                    receiveHello(parser.getPayload(packet));
+                }
+
             } else {
+
+                int type= parser.getType(packet);
+                int connectionType = parser.getConnectionType(packet);
+
+                if (type==3 &&  connectionType==0) {
+                    receiveHello(parser.getPayload(packet));
+                }
+
                 // if it is client instead
                 // TODO: callMessageListener()
             }
@@ -117,18 +135,11 @@ public class ClientServer {
         }
     }
 
-    /**
-     * Function to send data to dest:port.
-     *
-     * @param data Data to be sent across
-     * @param dest Destination IP.
-     * @param port Destination PORT.
-     */
-    public int sendTo(final byte[] data, final String dest, final Integer port) throws IOException {
-        if (this.isServer) {
-            if (destInCluster(dest)) {
+
+    public int sendTo(final byte[] data, final InetAddress dest, final int port) throws IOException {
+        if (serverHostname.equals(hostname)) {
+            if (destInCluster(dest,port)) {
                 try {
-//                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
                     sendSocket.connect(new InetSocketAddress(dest, port));
                     DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
                     dataOut.write(data);
@@ -137,22 +148,21 @@ public class ClientServer {
                     e.printStackTrace();
                 }
             } else {
-                try {
-                    final String hostAddress = topology.getServer(dest).hostName();
-                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port);
-                    // TODO: getServer to be implemented by Topology.
-                    sendSocket.connect(new InetSocketAddress(hostAddress, port));
-                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
-                    dataOut.write(data);
-                } catch (IOException e) {
-                    System.err.println("Client error: " + e.getMessage());
-                    e.printStackTrace();
-                }
+//                try {
+//                    final String hostAddress = topology.getServer(dest).hostName();
+//                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(hostAddress), port);
+//                    // TODO: getServer to be implemented by Topology.
+//                    sendSocket.connect(new InetSocketAddress(hostAddress, port));
+//                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+//                    dataOut.write(data);
+//                } catch (IOException e) {
+//                    System.err.println("Client error: " + e.getMessage());
+//                    e.printStackTrace();
+//                }
             }
         } else {
-            if (destInCluster(dest)) {
+            if (destInCluster(dest,port)) {
                 try {
-                    final DatagramPacket sendPacket = new DatagramPacket(data, data.length, InetAddress.getByName(dest), port);
                     sendSocket.connect(new InetSocketAddress(dest, port));
                     DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
                     dataOut.write(data);
@@ -161,12 +171,78 @@ public class ClientServer {
                     e.printStackTrace();
                 }
             } else {
-                // TODO: get server ip from routing packet.
-                sendSocket.connect(new InetSocketAddress(dest, port));
-                DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
-                dataOut.write(data);
+                try{
+                    sendSocket.connect(new InetSocketAddress(serverHostname, serverPort));
+                    DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                    dataOut.write(data);
+                } catch (IOException e) {
+                    System.err.println("Client error: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }
         return 0;
+    }
+
+    private long createPacketHeader(int type, int priority, int module, int connectionType, int broadcast, int empty, int ip, int port) {
+        long packetHeader = 0;
+        packetHeader |= ((long) type << 62);
+        packetHeader |= ((long) priority << 59);
+        packetHeader |= ((long) module << 55);
+        packetHeader |= ((long) connectionType << 52);
+        packetHeader |= ((long) broadcast << 51);
+        packetHeader |= ((long) empty << 48);
+        packetHeader |= ((long) ip << 16);
+        packetHeader |= port;
+
+        return packetHeader;
+    }
+
+    private void sendHello(InetAddress receiverIp, int receiverPort){
+        long packetHeader = createPacketHeader(3, 0, 0, 0, 0, 0, 0, 0);
+        byte[] addressBytes = receiverIp.getAddress();
+        int size = addressBytes.length;
+
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        buffer.putLong(packetHeader);
+        buffer.putInt(size);
+        buffer.put(addressBytes);
+        buffer.putInt(receiverPort);
+
+        this.sendTo(buffer.array(), serverHostname, serverPort);
+    }
+
+    private void receiveHello(byte[] data){
+        if(serverHostname.equals(hostname)){
+            long packetHeader = createPacketHeader(3, 0, 0, 0, 0, 0, 0, 0);
+
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            buffer.putLong(packetHeader);
+            buffer.put(data);
+
+            for(client in clients){
+                if (!client.hostName.equals(hostName)){
+                    this.sendTo(buffer.array(), client.hostName, client.port);
+                }
+            }
+        }
+
+        // Get Size of IP
+        byte[] sizeBytes = new byte[4];
+        System.arraycopy(data, 0, sizeBytes, 0, 4);
+        int size = Integer.parseInt(new String(sizeBytes, StandardCharsets.US_ASCII));
+
+        // Get IP Address
+        byte[] addressBytes = new byte[size];
+        System.arraycopy(data, 5, addressBytes, 0, size);
+        InetAddress ip = InetAddress.getByAddress(addressBytes);
+
+        // Get Port
+        byte[] portBytes = new byte[4];
+        System.arraycopy(data, 5 + size, portBytes, 0, 4);
+        int port = Integer.parseInt(new String(portBytes, StandardCharsets.US_ASCII));
+
+        clients.add(new ClientNode(ip, port));
+
     }
 }
