@@ -14,6 +14,7 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 
 public class Client implements IUser {
+
     private String deviceIp;
     private int devicePort;
     private Socket sendSocket = new Socket();
@@ -42,7 +43,7 @@ public class Client implements IUser {
             int port = client.port();
             try {
                 sendSocket = new Socket();
-                sendSocket.connect(new InetSocketAddress(ip, port), 5000);
+                sendSocket.connect(new InetSocketAddress(serverIp.hostName(), serverIp.port()), 5000);
                 DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
                 InetAddress addr = InetAddress.getByName(ip);
                 dataOut.write(parser.createPkt(0, 0, 7, 0, 0, addr, port, data));
