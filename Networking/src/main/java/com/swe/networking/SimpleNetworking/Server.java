@@ -15,6 +15,7 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 
 public class Server implements IUser {
+
     private String deviceIp;
     private int devicePort;
     private Socket sendSocket = new Socket();
@@ -22,7 +23,6 @@ public class Server implements IUser {
     private PacketParser parser;
     private SimpleNetworking simpleNetworking;
     private ModuleType moduleType = ModuleType.NETWORKING;
-
 
     public Server(ClientNode deviceAddr) {
         deviceIp = deviceAddr.hostName();
@@ -68,6 +68,23 @@ public class Server implements IUser {
         }
     }
 
+    public void sendPkt(byte[] packet, ClientNode[] destIp, ClientNode serverIp) {
+        for (ClientNode client : destIp) {
+            String ip = client.hostName();
+            int port = client.port();
+            try {
+                sendSocket = new Socket();
+                sendSocket.connect(new InetSocketAddress(ip, port), 5000);
+                DataOutputStream dataOut = new DataOutputStream(sendSocket.getOutputStream());
+                dataOut.write(packet);
+                System.out.println("Sent data succesfully...");
+                sendSocket.close();
+            } catch (IOException e) {
+                System.err.println("Server2 Error: " + e.getMessage());
+            }
+        }
+    }
+
     public void parsePacket(byte[] packet) throws UnknownHostException {
         int module = parser.getModule(packet);
         ModuleType type = moduleType.getType(module);
@@ -78,10 +95,10 @@ public class Server implements IUser {
             System.out.println("Data received : " + data);
             simpleNetworking.callSubscriber(packet, type);
         } else {
-            ClientNode dest = new ClientNode(address.toString(), port);
+            ClientNode dest = new ClientNode(address.getHostAddress(), port);
             System.out.println("Redirecting data : " + dest.toString());
-            ClientNode[] dests = { dest };
-            send(packet, dests, new ClientNode(deviceIp, port));
+            ClientNode[] dests = {dest};
+            sendPkt(packet, dests, dest);
         }
     }
 
