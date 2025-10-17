@@ -21,6 +21,13 @@
         <checkstyle.config.location>config/checkstyle.xml</checkstyle.config.location>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <!-- Define all modules -->
     <modules>
         <module>module-screen-video</module>
@@ -35,6 +42,13 @@
                 <version>4.13.2</version>
                 <scope>test</scope>
             </dependency>
+
+            <dependency>
+                <groupId>com.github.enchanteddev</groupId>
+                <artifactId>socketry</artifactId>
+                <version>V1</version>
+            </dependency>
+
             <!-- Add other common dependencies here -->
         </dependencies>
     </dependencyManagement>

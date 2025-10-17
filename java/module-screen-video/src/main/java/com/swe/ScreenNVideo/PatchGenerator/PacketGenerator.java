@@ -35,9 +35,9 @@ public class PacketGenerator {
      * @param curr is the image frame (int[width][height][3] RGB array)
      * @return list of compressed patches
      */
-    public List<CompressedPatch> generatePackets(final int[][][] curr) {
-        final int width = curr.length;
-        final int height = curr[0].length;
+    public List<CompressedPatch> generatePackets(final int[][] curr) {
+        final int height = curr.length;
+        final int width = curr[0].length;
 
         // Tile grid size
         final int tilesX = (int) Math.ceil((double) width / TILE_SIZE);
@@ -59,7 +59,7 @@ public class PacketGenerator {
 
                 final long currHash = hasher.hash(curr, x, y, w, h);
                 if (currHash != prevHashes[tx][ty]) {
-                    final String compressedString = this.compressor.Encode(x, y, w, h);
+                    final byte[] compressedString = this.compressor.encode(x, y, h, w);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
                     prevHashes[tx][ty] = currHash;
                 }

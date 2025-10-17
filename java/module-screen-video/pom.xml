@@ -27,6 +27,24 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version> <!-- Use the latest stable version -->
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.enchanteddev</groupId>
+            <artifactId>socketry</artifactId>
+            <version>V1</version>
+        </dependency>
 
     </dependencies>
     <build>
@@ -38,6 +56,14 @@
                     <source>24</source>
                     <target>24</target>
                     <compilerArgs>--enable-preview</compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.swe.ScreenNVideo.IntegrationTest.VideoUI</mainClass>
                 </configuration>
             </plugin>
         </plugins>
