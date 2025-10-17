@@ -18,8 +18,20 @@
     <name>Screen Video Module</name>
     <description>Module for screen capture and video processing</description>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Internal dependencies-->
+        <dependency>
+            <groupId>com.swe.networking</groupId>
+            <artifactId>module-networking</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- External dependencies -->
         <dependency>
@@ -43,8 +55,9 @@
         <dependency>
             <groupId>com.github.enchanteddev</groupId>
             <artifactId>socketry</artifactId>
-            <version>V1</version>
+            <version>V2</version>
         </dependency>
+
 
     </dependencies>
     <build>

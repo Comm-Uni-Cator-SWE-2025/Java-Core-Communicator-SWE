@@ -1,8 +1,8 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
-import com.swe.Networking.AbstractNetworking;
-import com.swe.Networking.MessageListener;
 import com.swe.ScreenNVideo.Utils;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
