@@ -4,7 +4,6 @@ package com.swe.ScreenNVideo;
 import com.swe.Networking.AbstractNetworking;
 import com.swe.Networking.MessageListener;
 import com.swe.RPC.AbstractRPC;
-import com.swe.RPC.RProcedure;
 import com.swe.ScreenNVideo.Capture.ICapture;
 import com.swe.ScreenNVideo.Capture.ScreenCapture;
 import com.swe.ScreenNVideo.Capture.VideoCapture;
@@ -26,6 +25,7 @@ import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.security.spec.RSAOtherPrimeInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -96,15 +96,16 @@ public class MediaCaptureManager implements CaptureManager {
 
     /**
      * Constructor for the MediaCaptureManager.
+     *
      * @param argNetworking Networking object
-     * @param argRpc RPC object
-     * @param portArgs Port for the server
+     * @param argRpc        RPC object
+     * @param portArgs      Port for the server
      */
     public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
         this.port = portArgs;
-        isScreenCaptureOn = true;
-        isVideoCaptureOn = true;
+        isScreenCaptureOn = false;
+        isVideoCaptureOn = false;
         this.networking = argNetworking;
         videoCapture = new VideoCapture();
         screenCapture = new ScreenCapture();
@@ -132,7 +133,7 @@ public class MediaCaptureManager implements CaptureManager {
             } else {
                 final int height = feed.length;
                 final int width = feed[0].length;
-                final int targetHeight =  height / Utils.SCALE_Y;
+                final int targetHeight = height / Utils.SCALE_Y;
                 final int targetWidth = width / Utils.SCALE_X;
                 final int[][] scaledDownedFeed = scalar.scale(videoMatrix, targetHeight, targetWidth);
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
@@ -140,10 +141,10 @@ public class MediaCaptureManager implements CaptureManager {
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
                 imageStitcher.setCanvas(feed);
                 imageStitcher.stitch(videoPatch);
-                final int[][] stitchedFeed = imageStitcher.getCanvas();
-                feed = scalar.scale(stitchedFeed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+                feed = imageStitcher.getCanvas();
             }
         }
+        feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
 
         return feed;
     }
@@ -173,6 +174,9 @@ public class MediaCaptureManager implements CaptureManager {
                 + (int) ((double) (Utils.SEC_IN_MS) / ((currTime - start)
                 / ((double) (Utils.MSEC_IN_NS)))));
             start = System.nanoTime();
+            screenFeed = null;
+            videoFeed = null;
+
             if (!isScreenCaptureOn && !isVideoCaptureOn) {
                 try {
                     Thread.sleep(Utils.SEC_IN_MS);
@@ -202,6 +206,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (feed == null) {
                 continue;
             }
+
             videoCodec.setScreenshot(feed);
 
             final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
@@ -243,60 +248,45 @@ public class MediaCaptureManager implements CaptureManager {
 
 
     private void initializeHandlers() {
-        rpc.subscribe(Utils.START_VIDEO_CAPTURE, new RProcedure() {
-            @Override
-            public byte[] call(final byte[] args) {
-                isVideoCaptureOn = true;
-                final byte[] res = new byte[1];
-                res[0] = 1;
-                return res;
-            }
+        rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
+            isVideoCaptureOn = true;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
         });
 
-        rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, new RProcedure() {
-            @Override
-            public byte[] call(final byte[] args) {
-                isVideoCaptureOn = false;
-                final byte[] res = new byte[1];
-                res[0] = 1;
-                return res;
-            }
+        rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, (final byte[] args) -> {
+            isVideoCaptureOn = false;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
         });
 
-        rpc.subscribe(Utils.START_SCREEN_CAPTURE, new RProcedure() {
-            @Override
-            public byte[] call(final byte[] args) {
-                isScreenCaptureOn = true;
-                final byte[] res = new byte[1];
-                res[0] = 1;
-                return res;
-            }
+        rpc.subscribe(Utils.START_SCREEN_CAPTURE, (final byte[] args) -> {
+            isScreenCaptureOn = true;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
         });
 
-        rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, new RProcedure() {
-            @Override
-            public byte[] call(final byte[] args) {
-                isScreenCaptureOn = false;
-                final byte[] res = new byte[1];
-                res[0] = 1;
-                return res;
-            }
+        rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, (final byte[] args) -> {
+            isScreenCaptureOn = false;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
         });
-        
-        rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, new RProcedure() {
-            @Override
-            public byte[] call(final byte[] args) {
-                // Get the destination user IP
-                final String destIP = NetworkSerializer.deserializeString(args);
-                
-                final String selfIP = networking.getSelfIP();
-                final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
-                networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
 
-                final byte[] res = new byte[1];
-                res[0] = 1;
-                return res;
-            }
+        rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
+            // Get the destination user IP
+            final String destIP = NetworkSerializer.deserializeString(args);
+
+            final String selfIP = networking.getSelfIP();
+            final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
+            networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
+
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
         });
 
         networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());

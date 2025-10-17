@@ -63,11 +63,11 @@ public class Utils {
     /**
      * Width of the server.
      */
-    public static final int SERVER_WIDTH = 1280;
+    public static final int SERVER_WIDTH = 800;
     /**
      * Height of the server.
      */
-    public static final int SERVER_HEIGHT = 800;
+    public static final int SERVER_HEIGHT = 600;
     /**
      * Width of the client.
      */

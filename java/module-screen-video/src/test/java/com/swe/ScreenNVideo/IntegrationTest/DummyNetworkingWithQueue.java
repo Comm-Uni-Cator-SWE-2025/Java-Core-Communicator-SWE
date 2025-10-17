@@ -30,7 +30,7 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     public DummyNetworkingWithQueue() {
         // Start a background thread to simulate receiving packets
         Thread receiverThread = new Thread(this::receiveLoop, "DummyReceiverThread");
-        receiverThread.setDaemon(true);
+//        receiverThread.setDaemon(true);
         receiverThread.start();
     }
 
@@ -84,6 +84,7 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
                 }
             }
         } catch (InterruptedException e) {
+            System.out.println("Thread died");
             Thread.currentThread().interrupt();
         }
     }
