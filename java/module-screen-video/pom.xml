@@ -34,6 +34,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version> <!-- Use the latest stable version -->
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.enchanteddev</groupId>
+            <artifactId>socketry</artifactId>
+            <version>V1</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>

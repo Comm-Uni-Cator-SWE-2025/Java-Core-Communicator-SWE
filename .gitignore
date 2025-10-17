@@ -428,3 +428,5 @@ FodyWeavers.xsd
 .classpath
 .project
 .settings/
+
+*.class

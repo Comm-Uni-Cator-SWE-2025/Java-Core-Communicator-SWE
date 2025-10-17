@@ -1,14 +1,13 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
+import com.socketry.SocketryServer;
 import com.swe.Networking.AbstractNetworking;
 import com.swe.RPC.AbstractRPC;
 import com.swe.RPC.RProcedure;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
-import com.swe.ScreenNVideo.Serializer.Serializer;
-import com.swe.ScreenNVideo.Utils;
-import javafx.application.Application;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 public class MainController {
@@ -16,16 +15,18 @@ public class MainController {
         AbstractNetworking networking = new DummyNetworkingWithQueue();
         AbstractRPC rpc = new DummyRPC();
 
-        rpc.subscribe(Utils.UPDATE_UI, new RProcedure() {
-            @Override
-            public byte[] call(byte[] args) {
-                int[][] image = Serializer.deserializeImage(args);
-                VideoUI.displayFrame(image);
-                return new byte[0];
-            }
-        });
-
         CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, 30000);
+
+        Thread handler = null;
+        try {
+            handler = rpc.connect();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
+
 
         Thread screenNVideoThread = new Thread(() -> {
             try {
@@ -38,8 +39,12 @@ public class MainController {
         screenNVideoThread.start();
 
         // Start UI
-        Application.launch(VideoUI.class, args);
+//        Thread uiThread = new Thread(() -> {
+//            Application.launch(VideoUI.class, args);
+//        });
 
+//        uiThread.join();
         screenNVideoThread.join();
+        handler.join();
     }
 }
