@@ -1,55 +1,69 @@
 package com.swe.ScreenNVideo.PatchGenerator;
 
+import java.nio.ByteBuffer;
+
 /**
  * Represents a compressed patch of an image or frame.
  * Contains coordinates (x, y), dimensions, and the compressed tile data.
+ * @param x X coordinate of the patch.
+ * @param y Y coordinate of the patch.
+ * @param width Width of the patch.
+ * @param height Height of the patch.
+ * @param data Compressed tile data as a string.
  */
-public class CompressedPatch {
-    /** X coordinate of the patch. */
-    private int x;
+public record CompressedPatch(int x, int y, int width, int height, byte[] data)  {
 
-    /** Y coordinate of the patch. */
-    private int y;
+    /**
+     * Serializes this packet to be sent via network.
+     *
+     * @return byte[] to be sent
+     */
+    public byte[] serializeCPacket() {
+        final int lenRequired = data.length + 16; // 4 * 4 variables + data
+        final ByteBuffer buffer = ByteBuffer.allocate(lenRequired + 4);
+        buffer.putInt(lenRequired);
+        buffer.putInt(x);
+        buffer.putInt(y);
+        buffer.putInt(width);
+        buffer.putInt(height);
 
-    /** Width of the patch. */
-    private int width;
+        buffer.put(data);
 
-    /** Height of the patch. */
-    private int height;
-
-    /** Compressed tile data as a string. */
-    private String data;
-
-    public CompressedPatch(final int xArg,
-                           final int yArg,
-                           final int widthArg,
-                           final int heightArg,
-                           final String dataArg) {
-        this.x = xArg;
-        this.y = yArg;
-        this.width = widthArg;
-        this.height = heightArg;
-        this.data = dataArg;
+        return buffer.array();
     }
 
-    // getters
-    public int getX() {
-        return x;
+    /**
+     * Creates a Compresses patch from incoming packet from networking module.
+     * using byte[]
+     *
+     * @param packet incoming data
+     * @return CompressedPatch using the data
+     */
+    public static CompressedPatch deserializeCPacket(final byte[] packet) {
+        final ByteBuffer buffer = ByteBuffer.wrap(packet);
+        return deserializeCPacket(buffer, packet.length);
     }
 
-    public int getY() {
-        return y;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public String getData() {
-        return data;
+    /**
+     * Creates a Compresses patch from incoming packet from networking module.
+     * using ByteBuffer.
+     * Side Effects: Advances the buffer internal currentPos pointer.
+     *
+     * @param packetBuffer incoming data
+     * @param packetLength length of data that corresponds to this packet
+     * @return CompressedPatch using the data
+     */
+    public static CompressedPatch deserializeCPacket(final ByteBuffer packetBuffer, final int packetLength) {
+        final int x = packetBuffer.getInt();
+        final int y = packetBuffer.getInt();
+        final int width = packetBuffer.getInt();
+        final int height = packetBuffer.getInt();
+        final int variableSpaces = 16;
+        final int dataLength = packetLength - variableSpaces;
+        final byte[] data = new byte[dataLength];
+        packetBuffer.get(data, 0, dataLength);
+        return new CompressedPatch(
+            x, y, width, height, data
+        );
     }
 }

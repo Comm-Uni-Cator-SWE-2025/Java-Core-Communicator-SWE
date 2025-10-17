@@ -3,84 +3,106 @@ package com.swe.ScreenNVideo.PatchGenerator;
 import java.util.List;
 
 /**
- *Represents a patch of pixels that can be applied to a canvas.
- */
-class Patch implements Stitchable {
-
-    /** Pixel data for this patch. */
-    private final int[][][] pixels;
-
-    /** X-coordinate to place patch. */
-    private final int x;
-
-    /** Y-coordinate to place patch. */
-    private final int y;
-
-    /**
-     * Creates a new {@code Patch}.
-     *
-     * @param patchPixels the pixel data of the patch
-     * @param posX the x-coordinate
-     * @param posY the y-coordinate
-     */
-    Patch(final int[][][] patchPixels, final int posX, final int posY) {
-        this.pixels = patchPixels;
-        this.x = posX;
-        this.y = posY;
-    }
-
-
-    /**
-     * Applies this patch onto the provided canvas.
-     *
-     * @param canvas is the target canvas
-     */
-    @Override
-    public void applyOn(final int[][][] canvas) {
-        for (int i = 0; i < pixels.length; i++) {
-            for (int j = 0; j < pixels[0].length; j++) {
-                final int targetX = x + i;
-                final int targetY = y + j;
-
-
-                if (targetX >= 0
-                    && targetX < canvas.length
-                    && targetY >= 0
-                    && targetY < canvas[0].length) {
-
-                    System.arraycopy(pixels[i][j], 0, canvas[targetX][targetY], 0, pixels[i][j].length);
-                }
-            }
-        }
-    }
-}
-
-/**
  * Handles stitching multiple patches together into a single canvas.
  */
 public class ImageStitcher {
 
-    /** The target canvas for image stitching. */
-    private final int[][][] canvas;
+    /**
+     * The target canvas for image stitching.
+     */
+    private int[][] canvas;
 
     /**
-     * Creates a new {@code ImageStitcher}.
-     *
-     * @param initialCanvas is the target canvas
+     * Height of current canvas.
      */
-    public ImageStitcher(final int[][][] initialCanvas) {
+    private int currentHeight;
+
+    /**
+     * Width of current Canvas.
+     */
+    private int currentWidth;
+
+    /**
+     * Assigns new canvas.
+     *
+     * @param height of target canvas
+     * @param width of target canvas
+     */
+    public void setCanvas(final int height, final int width) {
+        this.canvas = new int[height][width];
+        this.currentHeight = height;
+        this.currentWidth = width;
+    }
+
+    /**
+     * Assigns new canvas.
+     *
+     * @param initialCanvas to be assigned to canvas
+     */
+    public void setCanvas(final int[][] initialCanvas) {
         this.canvas = initialCanvas;
+        this.currentHeight = initialCanvas.length;
+        this.currentWidth = initialCanvas[0].length;
+    }
+
+    /**
+     * Resets the canvas to a empty canvas.
+     */
+    public void resetCanvas() {
+        this.canvas = new int[0][0];
+        this.currentHeight = 0;
+        this.currentWidth = 0;
     }
 
     /**
      * Stitches the provided patches list onto the canvas.
-     *
+     * Stretches the canvas if necessary.
      * @param patches the list of patches to apply
      */
     public void stitch(final List<Stitchable> patches) {
         for (Stitchable patch : patches) {
-            patch.applyOn(canvas);
+            stitch(patch);
         }
+    }
+
+    /**
+     * Stitches the provided patch onto the canvas.
+     * Stretches the canvas if necessary.
+     * @param patch Compressed Patch to apply on the Canvas
+     */
+    public void stitch(final Stitchable patch) {
+        verifyDimensions(patch);
+        patch.applyOn(canvas);
+    }
+
+    private void verifyDimensions(final Stitchable patch) {
+        final int maxHeightWithPatch = Math.max(patch.getY() + patch.getHeight(), currentHeight);
+        final int maxWidthWithPatch = Math.max(patch.getX() + patch.getWidth(), currentWidth);
+
+        if (maxHeightWithPatch > currentHeight || maxWidthWithPatch > currentWidth) {
+            resize(maxHeightWithPatch, maxWidthWithPatch, true);
+        }
+    }
+
+    /**
+     * Resize the canvas to the provided dimensions.
+     * @param fill Copies the first contents of the canvas to the new canvas.
+     * @param height of new canvas
+     * @param width of new canvas
+     */
+    private void resize(final int height, final int width, final boolean fill) {
+        final int[][] newCanvas = new int[height][width];
+        System.out.println("Resizing to " + height + " " + width);
+
+        if (fill) {
+            for (int i = 0; i < currentHeight; i++) {
+                System.arraycopy(this.canvas[i], 0, newCanvas[i], 0, currentWidth);
+            }
+        }
+
+        this.canvas = newCanvas;
+        this.currentHeight = height;
+        this.currentWidth = width;
     }
 
     /**
@@ -88,7 +110,7 @@ public class ImageStitcher {
      *
      * @return the canvas
      */
-    public int[][][] getCanvas() {
+    public int[][] getCanvas() {
         return canvas;
     }
 }
