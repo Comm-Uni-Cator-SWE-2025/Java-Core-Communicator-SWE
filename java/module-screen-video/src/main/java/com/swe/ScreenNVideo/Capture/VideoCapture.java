@@ -86,16 +86,12 @@ public class VideoCapture extends ICapture {
         }
 
         try {
-            // Create rectangle for capture area
-            final Rectangle captureRect = new Rectangle(
-                    captureLocation.x,
-                    captureLocation.y,
-                    captureArea.width,
-                    captureArea.height
-            );
+            final Robot robot1 = new Robot();
+            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            final Rectangle screenRect = new Rectangle(screenSize);
 
-            // Capture screen area
-            return robot.createScreenCapture(captureRect);
+            // Create Robot instance and capture screen
+            return robot1.createScreenCapture(screenRect);
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());

@@ -85,7 +85,9 @@
         <!-- Miscellaneous checks -->
         <module name="ArrayTypeStyle"/>
         <module name="FinalParameters"/>
-        <module name="TodoComment"/>
+        <module name="TodoComment">
+            <property name="severity" value="warning"/>
+        </module>
         <module name="UpperEll"/>
         <module name="MethodParamPad"/>
         <module name="NoWhitespaceAfter"/>
