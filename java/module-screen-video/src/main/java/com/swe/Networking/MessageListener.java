@@ -1,6 +1,9 @@
 package com.swe.Networking;
 
+/**
+ * Interface.
+ */
 @FunctionalInterface
 public interface MessageListener {
-    void ReceiveData(byte[] data);
+    void receiveData(byte[] data);
 }

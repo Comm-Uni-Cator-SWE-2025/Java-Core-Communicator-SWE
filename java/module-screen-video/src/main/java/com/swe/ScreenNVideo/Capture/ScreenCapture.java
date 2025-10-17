@@ -16,6 +16,15 @@ import java.awt.image.BufferedImage;
  */
 public class ScreenCapture extends ICapture {
 
+    final Robot robot;
+
+    public ScreenCapture() {
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            throw new RuntimeException(e);
+        }
+    }
     /**
      * Captures the entire screen and returns it as a BufferedImage.
      *
@@ -30,7 +39,7 @@ public class ScreenCapture extends ICapture {
         final Rectangle screenRect = new Rectangle(screenSize);
 
         // Create Robot instance and capture screen
-        final Robot robot = new Robot();
+
         return robot.createScreenCapture(screenRect);
     }
 }

@@ -13,5 +13,5 @@ public interface IHasher {
      * @param w -> width
      * @return hash as a long
      */
-    long hash(int[][][] img, int x, int y, int w, int h);
+    long hash(int[][] img, int x, int y, int w, int h);
 }
