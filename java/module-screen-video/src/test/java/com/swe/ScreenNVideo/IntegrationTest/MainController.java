@@ -1,11 +1,9 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
-import com.socketry.SocketryServer;
-import com.swe.Networking.AbstractNetworking;
 import com.swe.RPC.AbstractRPC;
-import com.swe.RPC.RProcedure;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.networking.AbstractNetworking;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

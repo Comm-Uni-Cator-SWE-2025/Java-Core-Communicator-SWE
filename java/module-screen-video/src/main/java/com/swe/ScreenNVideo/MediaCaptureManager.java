@@ -1,8 +1,6 @@
 package com.swe.ScreenNVideo;
 
 
-import com.swe.Networking.AbstractNetworking;
-import com.swe.Networking.MessageListener;
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.ICapture;
 import com.swe.ScreenNVideo.Capture.ScreenCapture;
@@ -21,11 +19,12 @@ import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 import com.swe.ScreenNVideo.Serializer.Serializer;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
 
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

@@ -10,5 +10,7 @@ public interface AbstractNetworking {
 
     void subscribe(String name, MessageListener function);
 
+    String getSelfIP();
+
     void removeSubscription(String name);
 }
