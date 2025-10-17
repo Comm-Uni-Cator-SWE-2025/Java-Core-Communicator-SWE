@@ -2,10 +2,8 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.lang.Math;
 
 public class ChunkManager {
@@ -14,7 +12,7 @@ public class ChunkManager {
         this.payloadSize = payloadSize;
     }
 
-    Map<Integer, Vector<byte[]>> groupChunks(Vector<byte[]> chunks){
+    Map<Integer, Vector<byte[]>> GroupChunks(Vector<byte[]> chunks){
         PacketParser parser = PacketParser.getPacketParser();
         Map<Integer, Vector<byte[]>> messageMap = new HashMap<>();
         for (byte[] chunk:chunks){
@@ -44,7 +42,7 @@ public class ChunkManager {
             data_size += parser.getChunkLength(chunk)-20;
         }
         byte[] completePayload = new byte[data_size];
-        Vector<byte[]> sortedChunks = new Vector<>(chunks.size());
+        Vector<byte[]> sortedChunks = new Vector<>(Collections.nCopies(chunks.size(), (byte[]) null));
         for (byte[] chunk:chunks){
             int i = parser.getChunkNum(chunk);
             if (i == 0){
@@ -56,8 +54,9 @@ public class ChunkManager {
         }
         int i = 0;
         for (byte[] chunk:sortedChunks){
-            int chunkSize = parser.getChunkNum(chunk);
-            System.arraycopy(chunk, 0, completePayload, i, chunkSize);
+            int chunkSize = parser.getChunkLength(chunk)-20;
+            byte[] chunkPayload = parser.getPayload(chunk);
+            System.arraycopy(chunkPayload, 0, completePayload, i, chunkSize);
             i += chunkSize;
         }
         int type = parser.getType(chunks.get(0));

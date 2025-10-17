@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Vector;
 
 
@@ -86,6 +89,12 @@ public class ChunkManagerTest {
         );
         for (int expectedChunkNum = 0; expectedChunkNum < chunks.size(); expectedChunkNum++){
             int chunkNum = parser.getChunkNum(chunks.get(expectedChunkNum));
+            if (chunkNum == 0){
+                chunkNum = chunks.size()-1;
+            }
+            else{
+                chunkNum--;
+            }
             Assertions.assertEquals(expectedChunkNum, chunkNum);
         }
     }
@@ -126,5 +135,88 @@ public class ChunkManagerTest {
             Assertions.assertEquals(messageId, chunkMessageId);
         }
     }
+    @Test
+    void mergeChunksTest() throws UnknownHostException{
+        int payloadSize = 3;
+        ChunkManager chunkManager = new ChunkManager(payloadSize);
+        PacketParser parser = PacketParser.getPacketParser();
 
+        String message = "Hello this is Networking Team";
+        byte[] data = message.getBytes();
+        int priority = 3;
+        int module = 0;
+        int connectionType = 1;
+        int broadcast = 1;
+        InetAddress ipAddr = InetAddress.getByName("0.0.0.0");
+        int port = 8000;
+        int messageId = 3;
+        Vector<byte[]> chunks = chunkManager.Chunk(
+                priority, module, connectionType,
+                broadcast, ipAddr, port, messageId, data
+        );
+        Collections.shuffle(chunks);
+        byte[] mergedPkt = chunkManager.MergeChunks(chunks);
+        Assertions.assertEquals(priority, parser.getPriority(mergedPkt));
+        Assertions.assertEquals(module, parser.getModule(mergedPkt));
+        Assertions.assertEquals(connectionType, parser.getConnectionType(mergedPkt));
+        Assertions.assertEquals(broadcast, parser.getBroadcast(mergedPkt));
+        Assertions.assertEquals(ipAddr, parser.getIpAddress(mergedPkt));
+        Assertions.assertEquals(messageId, parser.getMessageId(mergedPkt));
+        String mergedMessage = new String(parser.getPayload(mergedPkt), StandardCharsets.UTF_8);
+        Assertions.assertEquals(message, mergedMessage);
+    }
+    @Test
+    void mapChunksTest() throws  UnknownHostException{
+        int payloadSize = 3;
+        ChunkManager chunkManager = new ChunkManager(payloadSize);
+        PacketParser parser = PacketParser.getPacketParser();
+
+        String message = "This is Networking Team";
+        byte[] data = message.getBytes();
+        int priority = 3;
+        int module = 0;
+        int connectionType = 1;
+        int broadcast = 1;
+        InetAddress ipAddr = InetAddress.getByName("0.0.0.0");
+        int port = 8000;
+        int messageId = 3;
+        Vector<byte[]> chunks = chunkManager.Chunk(
+                priority, module, connectionType,
+                broadcast, ipAddr, port, messageId, data
+        );
+        Collections.shuffle(chunks);
+
+
+        String newMessage = "What is this team?";
+        byte[] newData = newMessage.getBytes();
+        int newPriority = 3;
+        int newModule = 0;
+        int newConnectionType = 1;
+        int newBroadcast = 1;
+        InetAddress newIpAddr = InetAddress.getByName("0.0.0.0");
+        int newPort = 8000;
+        int newMessageId = 4;
+        Vector<byte[]> newChunks = chunkManager.Chunk(
+                newPriority, newModule, newConnectionType,
+                newBroadcast, newIpAddr, newPort, newMessageId, newData
+        );
+        Collections.shuffle(newChunks);
+        Vector<byte[]> allChunks = new Vector<>();
+        allChunks.addAll(chunks); allChunks.addAll(newChunks);
+        Map<Integer, Vector<byte[]>> groupedChunks = chunkManager.groupChunks(allChunks);
+        for (Vector<byte[]> chunkGroup: groupedChunks.values()){
+            byte[] mergedPkt = chunkManager.MergeChunks(chunkGroup);
+            String msg = new String(parser.getPayload(mergedPkt), StandardCharsets.UTF_8);
+            int msgId = parser.getMessageId(mergedPkt);
+            if (msgId == 3){
+                Assertions.assertEquals(message, msg);
+            }
+            else if (msgId == 4){
+                Assertions.assertEquals(newMessage, msg);
+            }
+            else{
+                throw new UnknownError("message id " + msgId + " is not present");
+            }
+        }
+    }
 }
