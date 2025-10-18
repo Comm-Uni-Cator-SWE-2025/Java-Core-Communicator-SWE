@@ -1,0 +1,115 @@
+/* General Chat Background */
+.border-pane {
+    -fx-background-color: #e5ddd5; /* WhatsApp-like background color */
+}
+
+/* ScrollPane container for messages */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+/* VBox that holds all messages */
+.message-container {
+    -fx-padding: 10px;
+    -fx-spacing: 12px; /* Space between messages */
+}
+
+/* The main container for a single message bubble (the VBox) */
+.message-bubble {
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 6, 0.1, 0, 2);
+    -fx-max-width: 300px; /* Max width of a bubble */
+}
+
+/* Style for bubbles sent by the user */
+.sent-bubble .reply-quote-label {
+    -fx-background-color: #d1ffc9; /* Lighter green for sent quote */
+}
+
+/* Style for bubbles received from others */
+.received-bubble {
+    -fx-background-color: #ffffff; /* White for received messages */
+    -fx-background-radius: 18px 18px 18px 5px; /* Creates a 'tail' on the bottom-right */
+}
+
+/* Style for the username (or "You") */
+.username-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #007bff; /* Blue color for sender name */
+}
+
+/* Style for the main message content */
+.message-content-label {
+    -fx-font-size: 15px;
+    -fx-wrap-text: true;
+    -fx-text-fill: #333333;
+}
+
+/* Style for the timestamp */
+.timestamp-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #999999; /* Light gray for the time */
+    -fx-padding: 5px 0 0 0; /* Add some space above the timestamp */
+}
+
+/* --- Input Area --- */
+.input-area {
+    -fx-background-color: #f0f0f0;
+    -fx-padding: 8px;
+    -fx-spacing: 8px;
+    -fx-alignment: center;
+}
+
+.message-input-field {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-prompt-text-fill: #bbbbbb;
+    -fx-padding: 8px 15px;
+    -fx-font-size: 15px;
+}
+
+.send-button {
+    -fx-background-color: #007bff;
+    -fx-text-fill: white;
+    -fx-background-radius: 50%; /* Makes the button a circle */
+    -fx-pref-width: 45px;
+    -fx-pref-height: 45px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 0 4px; /* ADD THIS LINE to nudge the icon to the center */
+}
+
+.reply-quote-box {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #ccc;
+    -fx-border-width: 0 0 1px 0;
+    -fx-font-size: 11px;
+}
+
+/* Style for the text in the quote box */
+.reply-quote-box Label {
+    -fx-font-style: italic;
+    -fx-text-fill: #555;
+}
+
+/* Style for the cancel button */
+.reply-quote-box .button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #555;
+    -fx-font-weight: bold;
+    -fx-padding: 0 5 0 5;
+}
+
+/* Style for the quoted content within the message bubble */
+.reply-quote-label {
+    -fx-background-color: #e0e0e0;
+    -fx-padding: 3px 5px;
+    -fx-border-radius: 3px;
+    -fx-font-style: italic;
+    -fx-font-size: 11px;
+    -fx-text-fill: #555;
+    -fx-max-width: 200; /* Constrain width */
+    -fx-wrap-text: true;
+}

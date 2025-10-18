@@ -1,1 +1,1 @@
-# Java-Core-Communicator-SWE
+# Java-Core-Communicator-SWE Project
