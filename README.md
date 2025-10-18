@@ -1,2 +1,2 @@
 # Java-Core-Communicator-SWE
-# Edited this file for checking the commit in azure
+# Edited this file again for checking the commit in azure
