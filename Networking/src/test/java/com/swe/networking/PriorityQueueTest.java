@@ -40,6 +40,25 @@ class PriorityQueueTest {
     }
 
     @Test
+    void testFromLevelInvalid() {
+        // The enum defines levels 1 through 8.
+        final int invalidLevel = 9;
+
+        // The lambda expression inside assertThrows is the code being tested.
+        Exception exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    PriorityQueue.PacketPriority.fromLevel(invalidLevel);
+                },
+                "Should throw an IllegalArgumentException for an invalid priority level."
+        );
+
+        String expectedMessage = "Invalid priority level: " + invalidLevel;
+        assertTrue(exception.getMessage().contains(expectedMessage),
+                "The exception message should contain the invalid level.");
+    }
+
+    @Test
     void testMultiplePacketsDifferentPriorities() throws UnknownHostException {
         PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
