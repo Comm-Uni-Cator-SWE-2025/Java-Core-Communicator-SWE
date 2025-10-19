@@ -282,15 +282,6 @@ public class PriorityQueue {
         }
 
         /**
-         * Gets the priority level.
-         *
-         * @return the priority level
-         */
-        public int getLevel() {
-            return priorityLevel;
-        }
-
-        /**
          * Gets the budget share for this priority.
          *
          * @return percentage of total budget
