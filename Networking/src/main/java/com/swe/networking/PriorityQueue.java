@@ -18,7 +18,7 @@ public class PriorityQueue {
     /**
      * Time for each epoch (budget reset).
      */
-    private static final int EPOCH_MS = 100;
+    private static final int EPOCH_MS = 10;
     /**
      * Total number of packets to be sent in one epoch.
      */
@@ -57,11 +57,21 @@ public class PriorityQueue {
      * Creates a priority queue and initializes budgets and queues.
      */
     public PriorityQueue() {
-        System.out.println("MLFQ has been created");
+//        System.out.println("MLFQ has been created");
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
         resetBudgets();
+    }
+
+    /**
+     *  This function returns the current remaining total budget.
+     * @return the remaining total budget.
+     */
+    private int getTotalRemainingBudget() {
+        // Sums up all remaining tokens from the HIGHEST,HIGH,and MLFQ buckets.
+        return currentBudget.values().stream()
+                .mapToInt(Integer::intValue).sum();
     }
 
     /**
@@ -72,6 +82,7 @@ public class PriorityQueue {
             int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
+//        System.out.println("Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -114,16 +125,16 @@ public class PriorityQueue {
         switch (priority) {
             case HIGHEST:
                 highestPriorityQueue.add(data);
-                System.out.println("Packet added to highest priority queue");
+//                System.out.println("Packet added to highest priority queue");
                 break;
             case HIGH:
                 midPriorityQueue.add(data);
-                System.out.println("Packet added to mid priority queue");
+//                System.out.println("Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
                 mlfq.get(0).add(data);
-                System.out.println("Packet added to MLFQ level 0");
+//                System.out.println("Packet added to MLFQ level 0");
                 break;
         }
     }
@@ -137,45 +148,78 @@ public class PriorityQueue {
         long now = System.currentTimeMillis();
 
         // Reset budgets every epoch
-        if (now - lastEpochReset >= EPOCH_MS) {
+        if (now - lastEpochReset >= EPOCH_MS
+                || getTotalRemainingBudget() <= 0) {
             resetBudgets();
         }
 
-        // Rotate MLFQ every second
         rotateQueues();
 
-        // Highest priority first
         if (!highestPriorityQueue.isEmpty()
                 && currentBudget.get(PacketPriority.HIGHEST) > 0) {
             currentBudget.put(PacketPriority.HIGHEST,
                     currentBudget.get(PacketPriority.HIGHEST) - 1);
-            System.out.println("Highest Priority Packet sent");
+//            System.out.println("Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
 
-        // Mid-priority next
-        if (!midPriorityQueue.isEmpty()
-                && currentBudget.get(PacketPriority.HIGH) > 0) {
-            currentBudget.put(PacketPriority.HIGH,
-                    currentBudget.get(PacketPriority.HIGH) - 1);
-            System.out.println("Mid Priority Packet sent");
+    // ------------------------------------------------------------------
+    // Mid-priority next (Work-conserving: P2 uses P2, then P1 unused)
+    // ------------------------------------------------------------------
+
+    // Read current tokens for the TOTAL budget check
+        int p2Current = currentBudget.get(PacketPriority.HIGH);
+        int p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int totalP2Budget = p2Current + p1Current;
+
+        if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
+
+            // Check current tokens again
+            p2Current = currentBudget.get(PacketPriority.HIGH);
+            p1Current = currentBudget.get(PacketPriority.HIGHEST);
+
+            if (p2Current > 0) {
+                // Use P2's own budget
+                currentBudget.put(PacketPriority.HIGH, p2Current - 1);
+            } else {
+                // Use P1's unused budget
+                currentBudget.put(PacketPriority.HIGHEST, p1Current - 1);
+            }
+//            System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
 
-        // Low-priority (MLFQ, all share same pool)
-        if (currentBudget.get(PacketPriority.MLFQ) > 0) {
+    // ------------------------------------------------------------------
+    // Low-priority (MLFQ) - Work-conserving: P3 uses P3, then P2, then P1
+    // ------------------------------------------------------------------
+
+    // Always read the absolute current state of the map at this point
+        int p3Current = currentBudget.get(PacketPriority.MLFQ);
+        p2Current = currentBudget.get(PacketPriority.HIGH);
+        p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int totalP3Budget = p3Current + p2Current + p1Current;
+
+        if (totalP3Budget > 0) {
             for (int i = 0; i < mlfq.size(); i++) {
                 final Deque<byte[]> q = mlfq.get(i);
                 if (!q.isEmpty()) {
-                    currentBudget.put(PacketPriority.MLFQ,
-                            currentBudget.get(PacketPriority.MLFQ) - 1);
+
+                    // Decrement the budget in order: P3 -> P2 -> P1
+                    if (p3Current > 0) {
+                        currentBudget.put(PacketPriority.MLFQ, p3Current - 1);
+                    } else if (p2Current > 0) {
+                        currentBudget.put(PacketPriority.HIGH, p2Current - 1);
+                    } else { // Use P1's budget
+                        currentBudget.put(PacketPriority.HIGHEST,
+                                p1Current - 1);
+                    }
+
                     System.out.println(
                             "Low Priority Packet sent from MLFQ level " + i);
                     return q.pollFirst();
                 }
             }
         }
-
         return null; // nothing available
     }
 
