@@ -88,9 +88,6 @@ public class Topology implements AbstractTopology, AbstractController {
     /**
      * Add a user to the topology.
      * Logic: choose a cluster, add the user, and update bookkeeping.
-     *
-     * @param ip   Destination IP
-     * @param port Destination port
      */
     @Override
     public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
