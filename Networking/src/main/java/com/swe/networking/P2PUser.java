@@ -6,14 +6,19 @@ package com.swe.networking;
 public interface P2PUser {
     /**
      * Function to send data by the user.
-     * @param data the data to be sent
+     * 
+     * @param data   the data to be sent
      * @param destIp the detination to send the data
-     * @param serverIp the main server of the Cluster
      */
-    void send(byte[] data, ClientNode[] destIp, ClientNode serverIp);
+    void send(byte[] data, ClientNode[] destIp);
 
     /**
      * Function to receive data from other users.
      */
     void receive();
+
+    /**
+     * Function to handle socket closing at termination.
+     */
+    void close();
 }

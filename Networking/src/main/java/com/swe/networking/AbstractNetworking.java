@@ -6,7 +6,9 @@ package com.swe.networking;
  * using the sendData function
  * */
 public interface AbstractNetworking {
-    void sendData(byte[] data, String[] dest, int[] port);
+    void sendData(byte[] data, ClientNode[] dest, ModuleType module);
+
+    void sendData(byte[] data);
 
     void subscribe(String name, MessageListener function);
 
