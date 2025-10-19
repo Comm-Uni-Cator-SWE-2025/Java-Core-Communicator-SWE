@@ -16,49 +16,35 @@ import java.util.HashMap;
  */
 public final class TCPCommunicator implements ProtocolBase {
     /**
-     * The singleton TCP communicator class.
-     **/
-    private static TCPCommunicator tcpCommunicator = null;
-    /**
      * The server socket used to receive client connections.
      **/
     private ServerSocket receiveSocket;
     /**
      * The list of all connected clients and their sockets.
      **/
-    private final HashMap<String, Socket> clientSockets;
-    // HashMap<String, Long> clientSocketTimeouts;
+    private final HashMap<ClientNode, Socket> clientSockets;
 
     /**
      * The port where the server is instantiated.
      **/
-    private final Integer deviceServerPort = 8000;
+    private final Integer deviceServerPort;
     /**
      * The maximum time the socket must wait to connect to the destination.
      **/
     private final Integer clientConnectTimeout = 5000;
     // Integer clientSendTimeout = 2000;
 
+    /**
+     * The size of the buffer to read data Should be exactly the size of one chunk.
+     */
+    private final Integer byteBufferSize = 1536;
+
     // maintain list of clients and add timeouts
-    private TCPCommunicator() {
+    public TCPCommunicator(final int serverPort) {
         System.out.println("TCP communicator initialized...");
         clientSockets = new HashMap<>();
-        // clientSocketTimeouts = new HashMap<>();
+        deviceServerPort = serverPort;
         setServerPort();
-    }
-
-    /**
-     * The static class to get the TCP communicator object.
-     *
-     * @return the static object instantiated
-     */
-    public static ProtocolBase getTCPCommunicator() {
-        if (tcpCommunicator == null) {
-            System.out.println("Creating new TCP communicator object...");
-            tcpCommunicator = new TCPCommunicator();
-        }
-        System.out.println("Already instantiated TCP communicator object...");
-        return tcpCommunicator;
     }
 
     private void setServerPort() {
@@ -68,9 +54,7 @@ public final class TCPCommunicator implements ProtocolBase {
             System.out.println(
                     "Creating new server port at " + deviceServerPort + " ...");
         } catch (IOException ex) {
-            System.out.println(
-                    "An error occured while setting server port to "
-                            + deviceServerPort + " ...");
+            System.out.println("Error while opening a socket at this port");
         }
     }
 
@@ -81,7 +65,7 @@ public final class TCPCommunicator implements ProtocolBase {
     }
 
     @Override
-    public void closeSocket(final String client) {
+    public void closeSocket(final ClientNode client) {
         try {
             final Socket clientSocket = clientSockets.get(client);
             clientSockets.remove(client);
@@ -97,9 +81,9 @@ public final class TCPCommunicator implements ProtocolBase {
         final String destIp = dest.hostName();
         final Integer destPort = dest.port();
         try {
-            if (clientSockets.containsKey(destIp)) {
+            if (clientSockets.containsKey(dest)) {
                 System.out.println("Connection exists already...");
-                final Socket destSocket = clientSockets.get(destIp);
+                final Socket destSocket = clientSockets.get(dest);
                 final OutputStream output = destSocket.getOutputStream();
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 dataOut.write(data);
@@ -115,26 +99,41 @@ public final class TCPCommunicator implements ProtocolBase {
             final DataOutputStream dataOut = new DataOutputStream(output);
             dataOut.write(data);
             printIpAddr(destIp, destPort);
-            clientSockets.put(destIp, destSocket);
+            clientSockets.put(new ClientNode(destIp, destPort), destSocket);
         } catch (IOException ex) {
             System.out.println("Error occured while sending data.... ");
-            printIpAddr(destIp, destPort);
         }
     }
 
     @Override
-    public void receiveData() {
+    public byte[] receiveData() {
         try {
             // TODO Run the receiveData function in an infinite loop
+            final byte[] buffer = new byte[byteBufferSize];
             final Socket socket = receiveSocket.accept();
             final InputStream input = socket.getInputStream();
             final DataInputStream dataIn = new DataInputStream(input);
-            final byte[] packet = dataIn.readAllBytes();
+            final int bytesRead = dataIn.read(buffer, 0, byteBufferSize);
             System.out.println("Received data from "
-                    + socket.getInetAddress().getHostAddress() + " ...");
-            System.out.println("Data: " + new String(packet) + " ...");
-            // TODO call a method in chunk manager
-            // to parse the data or retrun the bytes
+                    + socket.getInetAddress().getHostAddress()
+                    + ":" + socket.getLocalPort() + " ...");
+            return buffer;
+        } catch (IOException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Function to handle socket on termination.
+     */
+    @Override
+    public void close() {
+        try {
+            System.out.println("Closing TCP communicator");
+            receiveSocket.close();
+            for (Socket socket : clientSockets.values()) {
+                socket.close();
+            }
         } catch (IOException ex) {
         }
     }

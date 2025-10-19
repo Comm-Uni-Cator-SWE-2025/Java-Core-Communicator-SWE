@@ -18,7 +18,7 @@ public interface ProtocolBase {
      *
      * @param client the client socket to close.
      */
-    void closeSocket(String client);
+    void closeSocket(ClientNode client);
 
     /**
      * To send data to given destination.
@@ -31,6 +31,12 @@ public interface ProtocolBase {
     /**
      * To receive data/socket form clients.
      *
+     * @return the received data
      */
-    void receiveData();
+    byte[] receiveData();
+
+    /**
+     * Function to handle socket closing at termination.
+     */
+    void close();
 }

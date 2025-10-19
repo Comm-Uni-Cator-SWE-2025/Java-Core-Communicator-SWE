@@ -1,13 +1,13 @@
 package com.swe.networking;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test class to test TCPCommunicator class.
@@ -24,13 +24,16 @@ public class TCPCommunicatorTest {
             recieveThread.start();
             final Integer sleepTime = 500;
             Thread.sleep(sleepTime);
-            final ProtocolBase tcp = TCPCommunicator.getTCPCommunicator();
+            final ProtocolBase tcp = new TCPCommunicator(8000);
             final String data = "Welcome to the new world!!!";
             final ClientNode dest = new ClientNode("127.0.0.1", 8001);
+            final ClientNode dest1 = new ClientNode("127.0.0.1", 8002);
             tcp.sendData(data.getBytes(), dest);
             tcp.sendData(data.getBytes(), dest);
+            tcp.sendData(data.getBytes(), dest1);
             System.out.println("Data sent successfully...");
-            tcp.closeSocket("127.0.0.1");
+            tcp.close();
+            tcp.closeSocket(dest);
             recieveThread.join();
         } catch (InterruptedException ex) {
         }
@@ -60,7 +63,7 @@ public class TCPCommunicatorTest {
     @org.junit.jupiter.api.Test
     public void testReceive() {
         try {
-            final ProtocolBase tcp = TCPCommunicator.getTCPCommunicator();
+            final ProtocolBase tcp = new TCPCommunicator(8000);
             final Thread receiveThread = new Thread(() -> {
                 try {
                     tcp.receiveData();
