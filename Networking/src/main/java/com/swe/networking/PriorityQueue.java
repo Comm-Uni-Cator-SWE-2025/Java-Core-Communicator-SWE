@@ -93,7 +93,7 @@ public class PriorityQueue {
     public void rotateQueues() {
         long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
-            System.out.println("Rotating MLFQ levels...");
+//            System.out.println("Rotating MLFQ levels...");
             Deque<byte[]> level2 = mlfq.get(2);
             Deque<byte[]> level1 = mlfq.get(1);
             Deque<byte[]> level0 = mlfq.get(0);
@@ -214,8 +214,8 @@ public class PriorityQueue {
                                 p1Current - 1);
                     }
 
-                    System.out.println(
-                            "Low Priority Packet sent from MLFQ level " + i);
+//                    System.out.println(
+//                            "Low Priority Packet sent from MLFQ level " + i);
                     return q.pollFirst();
                 }
             }
