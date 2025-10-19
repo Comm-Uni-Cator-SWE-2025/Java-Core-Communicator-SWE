@@ -1,12 +1,10 @@
 package com.swe.networking;
 
+import static java.lang.Math.floor;
+import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
-
-import static java.lang.Math.floor;
-import static java.lang.Math.sqrt;
 
 /**
  * The main architecture of the networking module.
@@ -16,7 +14,7 @@ public class Topology implements AbstractTopology, AbstractController {
     /**
      * The hashmap of all clients present separated per cluster.
      */
-    private HashMap<Cluster, ArrayList<ClientNode>> clientIP;
+    private HashMap<Cluster, ArrayList<ClientNode>> clientDetails;
     /**
      * The collection of all cluster objects.
      *
@@ -40,7 +38,7 @@ public class Topology implements AbstractTopology, AbstractController {
     private static Topology topology = null;
 
     private Topology() {
-        clusters = new ArrayList<Cluster>();
+        clusters = new ArrayList<>();
     }
 
     /**
@@ -65,22 +63,26 @@ public class Topology implements AbstractTopology, AbstractController {
     @Override
     public ClientNode getServer(final String dest) {
         ClientNode node = null;
+        int idx = -1;
         for (Cluster cluster : clusters) {
-            final ArrayList<ClientNode> clientIPs = clientIP.get(cluster);
-            int idx = -1;
-            for (int i = 0; i < clientIPs.size(); i++) {
-                if (Objects.equals(clientIPs.get(i).hostName(), dest)) {
-                    idx = i;
-                    node = clientIPs.get(i);
+            final ArrayList<ClientNode> clientDetailss = clientDetails.get(cluster);
+            for (ClientNode client : clientDetailss) {
+                if (dest.equals(client.hostName())) {
+                    idx = clusters.indexOf(cluster);
+                    node = cluster.getServerName();
+                    break;
                 }
             }
-            if (idx == -1) {
-                System.out.println("The client is not part of the network...");
-                return null;
+            if (node != null) {
+                break;
             }
-            return node;
         }
-        return null;
+        if (node == null) {
+            System.out.println("The client is not part of the network...");
+            return null;
+        }
+        System.out.println("Adding client to cluster " + idx + " ...");
+        return node;
     }
 
     /**
@@ -92,12 +94,14 @@ public class Topology implements AbstractTopology, AbstractController {
      */
     @Override
     public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
+        //update the network and add the client
+        updateNetwork();
         final Cluster cluster = chooseCluster();
         final String ip = deviceAddress.hostName();
         final int port = deviceAddress.port();
         cluster.addClient(ip, port);
 
-        clientIP.computeIfAbsent(cluster, k -> new ArrayList<>())
+        clientDetails.computeIfAbsent(cluster, k -> new ArrayList<>())
                 .add(new ClientNode(ip, port));
         numClients++;
 
@@ -119,17 +123,17 @@ public class Topology implements AbstractTopology, AbstractController {
         if (clusters.isEmpty()) {
             final Cluster newCluster = new Cluster();
             clusters.add(newCluster);
-            clientIP.put(newCluster, new ArrayList<>());
+            clientDetails.put(newCluster, new ArrayList<>());
             numClusters++;
             return newCluster;
         }
 
         // Find the least loaded cluster
         Cluster minCluster = clusters.get(0);
-        int minSize = clientIP.getOrDefault(minCluster, new ArrayList<>()).size();
+        int minSize = clientDetails.getOrDefault(minCluster, new ArrayList<>()).size();
 
         for (Cluster candidate : clusters) {
-            final int size = clientIP.getOrDefault(candidate, new ArrayList<>()).size();
+            final int size = clientDetails.getOrDefault(candidate, new ArrayList<>()).size();
             if (size < minSize) {
                 minCluster = candidate;
                 minSize = size;
@@ -140,7 +144,7 @@ public class Topology implements AbstractTopology, AbstractController {
         if (minSize >= maxClientPerCluster) {
             final Cluster newCluster = new Cluster();
             clusters.add(newCluster);
-            clientIP.put(newCluster, new ArrayList<>());
+            clientDetails.put(newCluster, new ArrayList<>());
             numClusters++;
             return newCluster;
         }
@@ -151,7 +155,7 @@ public class Topology implements AbstractTopology, AbstractController {
     /**
      * This function returns the current Network details.
      *
-     * @return structure The Devices connected to the current network
+     * @return structure - The Devices connected to the current network
      */
     public NetworkStructure getNetwork() {
         final List<List<ClientNode>> clients = new ArrayList<>();
@@ -162,5 +166,18 @@ public class Topology implements AbstractTopology, AbstractController {
             structure.servers().add(cluster.getServerName());
         }
         return structure;
+    }
+
+    // Ensure the receive is not working during updating the network or it could
+    // cause unpredicted results
+    public void updateNetwork() {
+        // List<List<ClientNode>> receivedClusters = network.clusters();
+        // ArrayList<ClientNode> clients = new ArrayList<>();
+        // clientDetails = new HashMap<>();
+        // clusters = new ArrayList<>();
+        // for (List<ClientNode> cluster : receivedClusters) {
+            
+        // }
+
     }
 }
