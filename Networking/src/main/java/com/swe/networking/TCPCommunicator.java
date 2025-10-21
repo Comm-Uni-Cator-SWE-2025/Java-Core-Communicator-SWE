@@ -35,11 +35,16 @@ public final class TCPCommunicator implements ProtocolBase {
     // Integer clientSendTimeout = 2000;
 
     /**
-     * The size of the buffer to read data Should be exactly the size of one chunk.
+     * The size of the buffer to read data.
+     * Should be exactly the size of one chunk.
      */
     private final Integer byteBufferSize = 1536;
 
     // maintain list of clients and add timeouts
+    /**
+     * Constructor function for TCP Communicator class.
+     * @param serverPort which port to start the TCP.
+     */
     public TCPCommunicator(final int serverPort) {
         System.out.println("TCP communicator initialized...");
         clientSockets = new HashMap<>();

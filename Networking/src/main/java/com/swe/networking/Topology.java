@@ -10,7 +10,7 @@ import java.util.List;
  * The main architecture of the networking module.
  * Implements the cluster networks
  */
-public class Topology implements AbstractTopology, AbstractController {
+public final class Topology implements AbstractTopology, AbstractController {
     /**
      * The hashmap of all clients present separated per cluster.
      */
@@ -65,7 +65,8 @@ public class Topology implements AbstractTopology, AbstractController {
         ClientNode node = null;
         int idx = -1;
         for (Cluster cluster : clusters) {
-            final ArrayList<ClientNode> clientDetailss = clientDetails.get(cluster);
+            final ArrayList<ClientNode> clientDetailss =
+                clientDetails.get(cluster);
             for (ClientNode client : clientDetailss) {
                 if (dest.equals(client.hostName())) {
                     idx = clusters.indexOf(cluster);
@@ -88,24 +89,17 @@ public class Topology implements AbstractTopology, AbstractController {
     /**
      * Add a user to the topology.
      * Logic: choose a cluster, add the user, and update bookkeeping.
+     *
+     * @param deviceAddress     Ip address of the current device
+     * @param mainServerAddress Ip address of the server device
      */
     @Override
-    public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
-        //update the network and add the client
-        updateNetwork();
-        final Cluster cluster = chooseCluster();
-        final String ip = deviceAddress.hostName();
-        final int port = deviceAddress.port();
-        cluster.addClient(ip, port);
-
-        clientDetails.computeIfAbsent(cluster, k -> new ArrayList<>())
-                .add(new ClientNode(ip, port));
-        numClients++;
-
-        System.out.println("User added: "
-                + ip + ":"
-                + port
-                + " -> Cluster#" + clusters.indexOf(cluster));
+    public void addUser(final ClientNode deviceAddress,
+            final ClientNode mainServerAddress) {
+        // update the network and add the client
+        if (deviceAddress.equals(mainServerAddress)) {
+            System.out.println("This device is considered as the main Server");
+        }
     }
 
     /**
@@ -127,10 +121,12 @@ public class Topology implements AbstractTopology, AbstractController {
 
         // Find the least loaded cluster
         Cluster minCluster = clusters.get(0);
-        int minSize = clientDetails.getOrDefault(minCluster, new ArrayList<>()).size();
+        int minSize = clientDetails.getOrDefault(minCluster,
+                new ArrayList<>()).size();
 
         for (Cluster candidate : clusters) {
-            final int size = clientDetails.getOrDefault(candidate, new ArrayList<>()).size();
+            final int size = clientDetails.getOrDefault(candidate,
+                    new ArrayList<>()).size();
             if (size < minSize) {
                 minCluster = candidate;
                 minSize = size;
@@ -157,7 +153,8 @@ public class Topology implements AbstractTopology, AbstractController {
     public NetworkStructure getNetwork() {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
-        final NetworkStructure structure = new NetworkStructure(clients, servers);
+        final NetworkStructure structure =
+            new NetworkStructure(clients, servers);
         for (Cluster cluster : clusters) {
             structure.clusters().add(cluster.getClients());
             structure.servers().add(cluster.getServerName());
@@ -167,13 +164,16 @@ public class Topology implements AbstractTopology, AbstractController {
 
     // Ensure the receive is not working during updating the network or it could
     // cause unpredicted results
+    /**
+     * Function to update the network.
+     */
     public void updateNetwork() {
         // List<List<ClientNode>> receivedClusters = network.clusters();
         // ArrayList<ClientNode> clients = new ArrayList<>();
         // clientDetails = new HashMap<>();
         // clusters = new ArrayList<>();
         // for (List<ClientNode> cluster : receivedClusters) {
-            
+
         // }
 
     }

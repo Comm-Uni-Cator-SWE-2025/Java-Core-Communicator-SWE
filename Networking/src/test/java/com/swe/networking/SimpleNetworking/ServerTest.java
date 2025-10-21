@@ -2,7 +2,7 @@ package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import org.junit.Test;
+
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 
@@ -17,21 +17,21 @@ public class ServerTest {
     private static final SimpleNetworking simpleNetworking = SimpleNetworking.getSimpleNetwork();
     private static final PacketParser parser = PacketParser.getPacketParser();
 
-    @Test
+    @org.junit.jupiter.api.Test
     public void testServerIf() {
-        
-        try {
-            ClientNode clientNode = new ClientNode(Client1, Client1Port);
-            ClientNode serverNode = new ClientNode(ServerIp, ServerPort);
 
-            Client sender = new Client(clientNode);
-            Server server = new Server(serverNode);
-            MessageListener func = (byte[] data) -> {
+        try {
+            final ClientNode clientNode = new ClientNode(Client1, Client1Port);
+            final ClientNode serverNode = new ClientNode(ServerIp, ServerPort);
+
+            final Client sender = new Client(clientNode);
+            final Server server = new Server(serverNode);
+            final MessageListener func = (byte[] data) -> {
                 System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
             };
             simpleNetworking.subscribe(ModuleType.CHAT, func);
 
-            Thread serverThread = new Thread(() -> {
+            final Thread serverThread = new Thread(() -> {
                 try {
                     server.receive();
                 } catch (IOException e) {
@@ -41,45 +41,45 @@ public class ServerTest {
             serverThread.start();
             Thread.sleep(500);
 
-            ClientNode[] destinations = {serverNode};
-            String msg = "Direct message to server";
-            byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
+            final ClientNode[] destinations = {serverNode };
+            final String msg = "Direct message to server";
+            final byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
 
-            sender.send(testData, destinations, serverNode);
+            sender.send(testData, destinations, serverNode, ModuleType.CHAT);
             serverThread.join(2000);
             System.out.println("Test1 completed");
-            
+
         } catch (Exception e) {
             System.err.println("Test1 failed: " + e.getMessage());
         }
     }
 
-    @Test
+    @org.junit.jupiter.api.Test
     public void testServerElse() {
-        
+
         try {
-            ClientNode serverNode = new ClientNode(ServerIp, ServerPort);
-            ClientNode clientNode1 = new ClientNode(Client1, Client1Port);
-            ClientNode clientNode2 = new ClientNode(Client2, Client2Port);
+            final ClientNode serverNode = new ClientNode(ServerIp, ServerPort);
+            final ClientNode clientNode1 = new ClientNode(Client1, Client1Port);
+            final ClientNode clientNode2 = new ClientNode(Client2, Client2Port);
 
-            Client sender = new Client(clientNode1);
-            Server server = new Server(serverNode);
-            Client receiver = new Client(clientNode2);
+            final Client sender = new Client(clientNode1);
+            final Server server = new Server(serverNode);
+            final Client receiver = new Client(clientNode2);
 
-            MessageListener func = (byte[] data) -> {
+            final MessageListener func = (byte[] data) -> {
                 System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
             };
             simpleNetworking.subscribe(ModuleType.CHAT, func);
 
-            Thread serverThread = new Thread(() -> {
+            final Thread serverThread = new Thread(() -> {
                 try {
                     server.receive();
                 } catch (IOException e) {
                     System.err.println("Server receive error: " + e.getMessage());
                 }
             });
-            Thread receThread = new Thread(() -> {
-                try{
+            final Thread receThread = new Thread(() -> {
+                try {
                     receiver.receive();
                 } catch (IOException e) {
                     System.err.println("Server receive error: " + e.getMessage());
@@ -89,11 +89,11 @@ public class ServerTest {
             receThread.start();
             Thread.sleep(500);
 
-            ClientNode[] destinations = {clientNode2};
-            String msg = "Message received via server";
-            byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
+            final ClientNode[] destinations = { clientNode2 };
+            final String msg = "Message received via server";
+            final byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
 
-            sender.send(testData, destinations, serverNode);
+            sender.send(testData, destinations, serverNode, ModuleType.CHAT);
             serverThread.join(2000);
             System.out.println("Test2 completed");
 
