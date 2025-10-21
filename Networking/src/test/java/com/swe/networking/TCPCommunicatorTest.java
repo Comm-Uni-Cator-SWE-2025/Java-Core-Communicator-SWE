@@ -87,7 +87,7 @@ public class TCPCommunicatorTest {
         final Socket destSocket = new Socket();
         try {
             final Integer port = 8000;
-            final Integer timeout = 8000;
+            final Integer timeout = 5000;
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";

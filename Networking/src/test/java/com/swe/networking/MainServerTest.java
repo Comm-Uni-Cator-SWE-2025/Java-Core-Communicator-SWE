@@ -29,7 +29,7 @@ public class MainServerTest {
             final MainServer mainServer = new MainServer();
             final ClientNode dest1 = new ClientNode("127.0.0.1", 8001);
             final ClientNode dest2 = new ClientNode("127.0.0.1", 8002);
-            final ClientNode[] dests = { dest1, dest2 };
+            final ClientNode[] dests = {dest1, dest2 };
             final String data = "Good morning !!!";
             mainServer.send(data.getBytes(), dests);
             mainServer.closeClient(dest1);

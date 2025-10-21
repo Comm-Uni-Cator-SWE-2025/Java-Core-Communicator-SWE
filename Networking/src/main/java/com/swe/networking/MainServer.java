@@ -25,11 +25,6 @@ public class MainServer implements P2PUser {
     private final Topology topology = Topology.getTopology();
 
     /**
-     * Packet type header magic number 3.
-     */
-    private final int packetType3 = 3;
-
-    /**
      * The port at which the TCP server runs.
      */
     private final int serverPort = 8000;
@@ -73,15 +68,18 @@ public class MainServer implements P2PUser {
             final int destinationPort = parser.getPortNum(packet);
             System.out.println("Packet received of type " + Integer.toBinaryString(type)
                     + " and connection type " + Integer.toBinaryString(connectionType) + "...");
-            if (connectionType == NetworkConnectionType.HELLO.ordinal() && type == 2) {
-                final NetworkStructure network = topology.getNetwork();
-                final ClientNode dest = new ClientNode(destinationIp, destinationPort);
-                final ClientNode[] dests = {dest };
-                final byte[] responsePacket = parser.createPkt(3, 0, 0,
-                        4, 0, destInet, destinationPort,
-                        (int) (Math.random() * 1000), 0, 1,
-                        network.toString().getBytes());
-                send(responsePacket, dests);
+            if (type == NetworkType.USE.ordinal()) {
+                if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
+                    final NetworkStructure network = topology.getNetwork();
+                    final ClientNode dest = new ClientNode(destinationIp, destinationPort);
+                    final ClientNode[] dests = {dest };
+                    final byte[] responsePacket = parser.createPkt(3, 0, 0,
+                            4, 0, destInet, destinationPort,
+                            (int) (Math.random() * 1000), 0, 1,
+                            network.toString().getBytes());
+                    send(responsePacket, dests);
+                    // Send add packet to all cluster servers
+                }
             }
         } catch (UnknownHostException ex) {
         }
