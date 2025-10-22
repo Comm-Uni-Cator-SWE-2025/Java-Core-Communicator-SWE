@@ -1,9 +1,6 @@
 package com.swe.networking;
 
-import static java.lang.Math.floor;
-import static java.lang.Math.sqrt;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -12,14 +9,14 @@ import java.util.List;
  */
 public final class Topology implements AbstractTopology, AbstractController {
     /**
-     * The hashmap of all clients present separated per cluster.
-     */
-    private HashMap<Cluster, ArrayList<ClientNode>> clientDetails;
-    /**
-     * The collection of all cluster objects.
+     * The List of all cluster clients.
      *
      */
-    private ArrayList<Cluster> clusters;
+    private final List<List<ClientNode>> clusters;
+    /**
+     * The List of all servers of all clusters.
+     */
+    private final List<ClientNode> clusterServers;
     /**
      * The total number of clusters.
      *
@@ -29,7 +26,15 @@ public final class Topology implements AbstractTopology, AbstractController {
      * The total number of clients.
      *
      */
-    private int numClients = 0;
+    private int numClients;
+    /**
+     * The maximum of clusters.
+     */
+    private final int maxClusters = 8;
+    /**
+     * The variable to iterate through the clusters.
+     */
+    private int clusterIndex = 0;
 
     /**
      * Singleton design pattern to prevent repeating class instantiations.
@@ -37,8 +42,14 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     private static Topology topology = null;
 
+    /**
+     * The variable to store the user of the device.
+     */
+    private P2PUser user = null;
+
     private Topology() {
         clusters = new ArrayList<>();
+        clusterServers = new ArrayList<>();
     }
 
     /**
@@ -57,20 +68,19 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function returns the cluster server in which the client is present.
-     *
+     * TODO Update all the functions.
+     * 
      * @param dest The ip address of the destination client
      */
     @Override
     public ClientNode getServer(final String dest) {
         ClientNode node = null;
         int idx = -1;
-        for (Cluster cluster : clusters) {
-            final ArrayList<ClientNode> clientDetailss =
-                clientDetails.get(cluster);
-            for (ClientNode client : clientDetailss) {
+        for (List<ClientNode> cluster : clusters) {
+            for (ClientNode client : cluster) {
                 if (dest.equals(client.hostName())) {
                     idx = clusters.indexOf(cluster);
-                    node = cluster.getServerName();
+                    node = null;
                     break;
                 }
             }
@@ -99,50 +109,14 @@ public final class Topology implements AbstractTopology, AbstractController {
         // update the network and add the client
         if (deviceAddress.equals(mainServerAddress)) {
             System.out.println("This device is considered as the main Server");
+            user = new MainServer(deviceAddress, mainServerAddress);
+            final List<ClientNode> cluster = new ArrayList<>();
+            cluster.add(deviceAddress);
+            clusters.add(cluster);
+            clusterServers.add(deviceAddress);
+            numClusters = 1;
+            numClients = 1;
         }
-    }
-
-    /**
-     * Choose a cluster based on √N rule and least loaded cluster.
-     *
-     * @return best chosen Cluster
-     */
-    private Cluster chooseCluster() {
-        final int totalClients = numClients;
-        final int maxClientPerCluster = (int) floor(sqrt(totalClients)) + 1;
-
-        if (clusters.isEmpty()) {
-            final Cluster newCluster = new Cluster();
-            clusters.add(newCluster);
-            clientDetails.put(newCluster, new ArrayList<>());
-            numClusters++;
-            return newCluster;
-        }
-
-        // Find the least loaded cluster
-        Cluster minCluster = clusters.get(0);
-        int minSize = clientDetails.getOrDefault(minCluster,
-                new ArrayList<>()).size();
-
-        for (Cluster candidate : clusters) {
-            final int size = clientDetails.getOrDefault(candidate,
-                    new ArrayList<>()).size();
-            if (size < minSize) {
-                minCluster = candidate;
-                minSize = size;
-            }
-        }
-
-        // Create new cluster if allowed and needed
-        if (minSize >= maxClientPerCluster) {
-            final Cluster newCluster = new Cluster();
-            clusters.add(newCluster);
-            clientDetails.put(newCluster, new ArrayList<>());
-            numClusters++;
-            return newCluster;
-        }
-
-        return minCluster;
     }
 
     /**
@@ -153,28 +127,76 @@ public final class Topology implements AbstractTopology, AbstractController {
     public NetworkStructure getNetwork() {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
-        final NetworkStructure structure =
-            new NetworkStructure(clients, servers);
-        for (Cluster cluster : clusters) {
-            structure.clusters().add(cluster.getClients());
-            structure.servers().add(cluster.getServerName());
+        final NetworkStructure structure = new NetworkStructure(clients, servers);
+        for (int i = 0; i < clusters.size(); i++) {
+            structure.clusters().add(clusters.get(i));
+            structure.servers().add(clusterServers.get(i));
         }
         return structure;
     }
 
-    // Ensure the receive is not working during updating the network or it could
-    // cause unpredicted results
     /**
-     * Function to update the network.
+     * Function to handle sockets while closing.
      */
-    public void updateNetwork() {
-        // List<List<ClientNode>> receivedClusters = network.clusters();
-        // ArrayList<ClientNode> clients = new ArrayList<>();
-        // clientDetails = new HashMap<>();
-        // clusters = new ArrayList<>();
-        // for (List<ClientNode> cluster : receivedClusters) {
+    public void closeTopology() {
+        user.close();
+        System.out.println("Closing topology...");
+    }
 
-        // }
+    /**
+     * Function to add a client to the network.
+     * 
+     * @param clientAddress the IP address details of the client.
+     * 
+     * @return the index of cluster it is added to
+     */
+    public int addClient(final ClientNode clientAddress) {
+        numClients += 1;
+        if (numClusters <= maxClusters) {
+            numClusters += 1;
+            final List<ClientNode> cluster = new ArrayList<>();
+            cluster.add(clientAddress);
+            clusters.add(cluster);
+            clusterServers.add(clientAddress);
+            System.out.println("Adding to a new cluster...");
+            return cluster.size() - 1;
+        } else {
+            clusters.get(clusterIndex).add(clientAddress);
+            final int idx = clusterIndex;
+            clusterIndex = (clusterIndex + 1) % maxClusters;
+            System.out.println("Added to cluster " + clusterIndex + " ...");
+            return idx;
+        }
+    }
 
+    /**
+     * Function to add a new client to the network.
+     * 
+     * @param client the details of the new client
+     */
+    public void updateNetwork(final ClientNetworkRecord client) {
+        final int idx = client.clusterIndex();
+        final ClientNode newClient = client.client();
+        clusters.get(idx).add(newClient);
+    }
+
+    /**
+     * Function to remove a new client from the network.
+     * 
+     * @param client the details of the client
+     */
+    public void removeClient(final ClientNetworkRecord client) {
+        final int idx = client.clusterIndex();
+        final ClientNode newClient = client.client();
+        clusters.get(idx).remove(newClient);
+    }
+
+    /**
+     * Function to get all the cluster servers.
+     * 
+     * @return list of all cluster servers.
+     */
+    public List<ClientNode> getAllClusterServers() {
+        return clusterServers;
     }
 }

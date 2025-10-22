@@ -26,7 +26,8 @@ public class MainServerTest {
             recieveThread2.start();
             final Integer sleepTime = 500;
             Thread.sleep(sleepTime);
-            final MainServer mainServer = new MainServer();
+            final ClientNode server = new ClientNode("127.0.0.1", 8000);
+            final MainServer mainServer = new MainServer(server, server);
             final ClientNode dest1 = new ClientNode("127.0.0.1", 8001);
             final ClientNode dest2 = new ClientNode("127.0.0.1", 8002);
             final ClientNode[] dests = {dest1, dest2 };
@@ -67,7 +68,8 @@ public class MainServerTest {
     public void testReceive() {
         try {
             final int sleepTime = 1000;
-            final MainServer mainServer = new MainServer();
+            final ClientNode server = new ClientNode("127.0.0.1", 8000);
+            final MainServer mainServer = new MainServer(server, server);
             send();
             Thread.sleep(sleepTime);
             mainServer.close();

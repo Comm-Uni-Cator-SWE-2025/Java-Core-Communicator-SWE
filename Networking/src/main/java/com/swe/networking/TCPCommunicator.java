@@ -43,6 +43,7 @@ public final class TCPCommunicator implements ProtocolBase {
     // maintain list of clients and add timeouts
     /**
      * Constructor function for TCP Communicator class.
+     * 
      * @param serverPort which port to start the TCP.
      */
     public TCPCommunicator(final int serverPort) {
@@ -97,6 +98,7 @@ public final class TCPCommunicator implements ProtocolBase {
             final Socket destSocket = openSocket();
             System.out.println("Waiting for "
                     + clientConnectTimeout + " s to connect to the client...");
+            System.out.println(destIp + destPort);
             destSocket.connect(new InetSocketAddress(destIp, destPort),
                     clientConnectTimeout);
             System.out.println("New connection created successfully...");
@@ -116,12 +118,13 @@ public final class TCPCommunicator implements ProtocolBase {
             // TODO Run the receiveData function in an infinite loop
             final byte[] buffer = new byte[byteBufferSize];
             final Socket socket = receiveSocket.accept();
+            // Add the received ports to the dictionary also.
+            final String socketIp = socket.getInetAddress().getHostAddress();
+            final int socketPort = socket.getPort();
+            clientSockets.put(new ClientNode(socketIp, socketPort), socket);
             final InputStream input = socket.getInputStream();
             final DataInputStream dataIn = new DataInputStream(input);
             final int bytesRead = dataIn.read(buffer, 0, byteBufferSize);
-            System.out.println("Received data from "
-                    + socket.getInetAddress().getHostAddress()
-                    + ":" + socket.getLocalPort() + " ...");
             return buffer;
         } catch (IOException ex) {
             return null;
