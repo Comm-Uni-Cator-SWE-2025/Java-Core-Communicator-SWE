@@ -22,7 +22,8 @@ public final class SimpleNetworking
     /**
      * The variable to store all the listeners subscribed to the module.
      */
-    private final HashMap<ModuleType, MessageListener> listeners = new HashMap<>();
+    private final HashMap<ModuleType, MessageListener> listeners =
+        new HashMap<>();
     /**
      * The variable to store the main host IP address.
      */
@@ -67,7 +68,7 @@ public final class SimpleNetworking
     /**
      * Function to add Ip address details about the current user.
      * Must be called only once
-     * 
+     *
      * @param deviceAddress     the IP address of the device
      * @param mainServerAddress the IP address of the mainServer
      */

@@ -113,7 +113,7 @@ public class Server implements IUser {
             final InputStream input = socket.getInputStream();
             final DataInputStream dataIn = new DataInputStream(input);
             final byte[] packet = dataIn.readAllBytes();
-            System.out.println("Message received from " + socket.toString() + " ...");
+            System.out.println("Message from " + socket.toString() + " ...");
             parsePacket(packet);
         } catch (SocketTimeoutException e) {
             System.err.println("Server3 Error: " + e.getMessage());

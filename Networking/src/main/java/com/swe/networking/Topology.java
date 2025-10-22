@@ -69,30 +69,22 @@ public final class Topology implements AbstractTopology, AbstractController {
     /**
      * Function returns the cluster server in which the client is present.
      * TODO Update all the functions.
-     * 
+     *
      * @param dest The ip address of the destination client
      */
     @Override
-    public ClientNode getServer(final String dest) {
+    public ClientNode getServer(final ClientNode dest) {
         ClientNode node = null;
-        int idx = -1;
-        for (List<ClientNode> cluster : clusters) {
-            for (ClientNode client : cluster) {
-                if (dest.equals(client.hostName())) {
-                    idx = clusters.indexOf(cluster);
-                    node = null;
-                    break;
+        for (int i = 0; i < numClusters; i++) {
+            final List<ClientNode> clients = clusters.get(i);
+            for (int j = 0; j < clients.size(); j++) {
+                final ClientNode client = clients.get(j);
+                if (client.equals(dest)) {
+                    node = clusterServers.get(i);
+                    return node;
                 }
             }
-            if (node != null) {
-                break;
-            }
         }
-        if (node == null) {
-            System.out.println("The client is not part of the network...");
-            return null;
-        }
-        System.out.println("Adding client to cluster " + idx + " ...");
         return node;
     }
 
@@ -127,7 +119,8 @@ public final class Topology implements AbstractTopology, AbstractController {
     public NetworkStructure getNetwork() {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
-        final NetworkStructure structure = new NetworkStructure(clients, servers);
+        final NetworkStructure structure =
+            new NetworkStructure(clients, servers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -145,9 +138,9 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to add a client to the network.
-     * 
+     *
      * @param clientAddress the IP address details of the client.
-     * 
+     *
      * @return the index of cluster it is added to
      */
     public int addClient(final ClientNode clientAddress) {
@@ -171,7 +164,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to add a new client to the network.
-     * 
+     *
      * @param client the details of the new client
      */
     public void updateNetwork(final ClientNetworkRecord client) {
@@ -182,7 +175,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to remove a new client from the network.
-     * 
+     *
      * @param client the details of the client
      */
     public void removeClient(final ClientNetworkRecord client) {
@@ -193,7 +186,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get all the cluster servers.
-     * 
+     *
      * @return list of all cluster servers.
      */
     public List<ClientNode> getAllClusterServers() {
