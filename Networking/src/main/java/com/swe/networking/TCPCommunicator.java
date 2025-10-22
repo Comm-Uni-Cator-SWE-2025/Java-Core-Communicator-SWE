@@ -43,7 +43,7 @@ public final class TCPCommunicator implements ProtocolBase {
     // maintain list of clients and add timeouts
     /**
      * Constructor function for TCP Communicator class.
-     * 
+     *
      * @param serverPort which port to start the TCP.
      */
     public TCPCommunicator(final int serverPort) {

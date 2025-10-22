@@ -8,8 +8,6 @@ import java.util.List;
  * The mainserver across all clusters.
  */
 public class MainServer implements P2PUser {
-    // TODO Must send on receiving a hello packet the current network to the
-    // destination
     /**
      * Communicator object to send and receive data.
      */
@@ -35,7 +33,14 @@ public class MainServer implements P2PUser {
      */
     private final Thread receiveThread;
 
-    public MainServer(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
+    /**
+     * Constructor function for the main server class.
+     *
+     * @param deviceAddress     the IP address of the device
+     * @param mainServerAddress the IP address of the main server
+     */
+    public MainServer(final ClientNode deviceAddress,
+            final ClientNode mainServerAddress) {
         System.out.println("Creating a new Main Server...");
         serverPort = deviceAddress.port();
         System.out.println("Listening at port:" + serverPort + " ...");
@@ -44,6 +49,12 @@ public class MainServer implements P2PUser {
         receiveThread.start();
     }
 
+    /**
+     * Function to send to list of a destinations.
+     *
+     * @param data   the data to be sent
+     * @param destIp the destination to which the data is sent
+     */
     @Override
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
@@ -52,6 +63,21 @@ public class MainServer implements P2PUser {
         }
     }
 
+    /**
+     * Function to send to a single destination.
+     *
+     * @param data   the data to be sent
+     * @param destIp the destination to which the data is sent
+     */
+    @Override
+    public void send(final byte[] data, final ClientNode destIp) {
+        System.out.println("Sending data");
+        communicator.sendData(data, destIp); // check of this should be dest
+    }
+
+    /**
+     * Function to receive the data from the sockets.
+     */
     @Override
     public void receive() {
         while (true) {
@@ -64,6 +90,11 @@ public class MainServer implements P2PUser {
         }
     }
 
+    /**
+     * Function to parse the packet received and take necessary action.
+     *
+     * @param packet the packet received
+     */
     private void parsePacket(final byte[] packet) {
         try {
             final int connectionType = parser.getConnectionType(packet);
@@ -71,42 +102,60 @@ public class MainServer implements P2PUser {
             final InetAddress destInet = parser.getIpAddress(packet);
             final String destinationIp = destInet.getHostAddress();
             final int destinationPort = parser.getPortNum(packet);
-            System.out.println("Packet received of type " + Integer.toBinaryString(type)
-                    + " and connection type " + Integer.toBinaryString(connectionType) + "...");
+            final ClientNode dest = new ClientNode(destinationIp,
+                    destinationPort);
+            System.out.println("Packet received of type "
+                    + Integer.toBinaryString(type)
+                    + " and connection type "
+                    + Integer.toBinaryString(connectionType) + "...");
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
-                    final ClientNode dest = new ClientNode(destinationIp, destinationPort);
                     final int clusterIdx = topology.addClient(dest);
                     final NetworkStructure network = topology.getNetwork();
-                    final ClientNode[] dests = {dest };
                     final byte[] responsePacket = parser.createPkt(3, 0, 0,
                             4, 0, destInet, destinationPort,
                             (int) (Math.random() * 1000), 0, 1,
                             network.toString().getBytes());
                     System.out.println("Sending current network details...");
-                    send(responsePacket, dests);
+                    send(responsePacket, dest);
                     final List<ClientNode> servers = topology.getAllClusterServers();
                     for (ClientNode server : servers) {
                         final ClientNetworkRecord addClient = new ClientNetworkRecord(dest, clusterIdx);
                         final byte[] addPacket = parser.createPkt(3, 0, 0,
                                 4, 0, InetAddress.getByName(server.hostName()),
-                                server.port(), (int) (Math.random() * 1000), 0, 1,
-                                addClient.toString().getBytes());
-                        final ClientNode[] responseDests = {server };
-                        send(addPacket, responseDests);
+                                server.port(), (int) (Math.random() * 1000),
+                                0, 1, addClient.toString().getBytes());
+                        send(addPacket, server);
                     }
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
-
+                    // TODO Create a timer class object
+                } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
+                    // TODO Decide whether to close the networking class
+                    System.out.println("Closing the Main Server");
                 }
+            } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
+                final ClientNode newDest = topology.getServer(dest);
+                send(packet, newDest);
+            } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
+                send(packet, dest);
             }
         } catch (UnknownHostException ex) {
         }
     }
 
+    /**
+     * Function to close the socekt of a client.
+     *
+     * @param client the client to close
+     */
     public void closeClient(final ClientNode client) {
         communicator.closeSocket(client);
     }
 
+    /**
+     * Function to close the main server class.
+     *
+     */
     @Override
     public void close() {
         receiveThread.interrupt();
