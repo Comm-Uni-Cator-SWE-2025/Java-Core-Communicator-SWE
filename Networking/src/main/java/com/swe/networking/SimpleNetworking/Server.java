@@ -86,7 +86,6 @@ public class Server implements IUser {
         for (ClientNode client : destIp) {
             final String ip = client.hostName();
             final int port = client.port();
-            System.out.println(ip + port);
             try {
                 sendSocket = new Socket();
                 sendSocket.connect(new InetSocketAddress(ip, port),

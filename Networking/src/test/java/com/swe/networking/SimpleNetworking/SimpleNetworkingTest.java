@@ -159,8 +159,8 @@ public class SimpleNetworkingTest {
         final ClientNode[] dests = {dest };
         network.sendData(data.getBytes(), dests, ModuleType.CHAT, 0);
         clientThread.interrupt();
-        client.closeUser();
         network.closeNetworking();
+        // client.closeUser();
     }
 
     /**
@@ -178,6 +178,6 @@ public class SimpleNetworkingTest {
         server.send(data.getBytes(), dests, device, ModuleType.CHAT);
         server.sendPkt(data.getBytes(), dests, device);
         server.closeUser();
-        network.closeNetworking();
+        // network.closeNetworking();
     }
 }
