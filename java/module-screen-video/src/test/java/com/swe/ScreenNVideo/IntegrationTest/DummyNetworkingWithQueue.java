@@ -16,30 +16,36 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class DummyNetworkingWithQueue implements AbstractNetworking {
 
-    // Simulated subscriptions
+    /** Simulated subscriptions. */
     private final Map<String, MessageListener> subscriptions = new ConcurrentHashMap<>();
 
-    // Queue for "network" packets
+    /** Queue for "network" pakcets. */
     private final BlockingQueue<byte[]> packetQueue = new LinkedBlockingQueue<>();
 
-    // Simulated self IP
+    /** Simulated self IP. */
     private final String selfIP = "127.0.0.1";
 
+    /** Flag indicating whether the recieve loop should continue running. */
     private volatile boolean running = true;
+
+    /** Number of bytes used to store the message length in the packet header. */
+    private static final int HEADER_LENGTH_BYTES = 4;
 
     public DummyNetworkingWithQueue() {
         // Start a background thread to simulate receiving packets
-        Thread receiverThread = new Thread(this::receiveLoop, "DummyReceiverThread");
+        final Thread receiverThread = new Thread(this::receiveLoop, "DummyReceiverThread");
 //        receiverThread.setDaemon(true);
         receiverThread.start();
     }
 
     @Override
-    public void sendData(byte[] data, String[] dest, int[] port) {
-        if (data == null) return;
+    public void sendData(final byte[] data, final String[] dest, final int[] port) {
+        if (data == null) {
+            return;
+        }
 
         // Build header: 4 bytes for length
-        ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
+        final ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
         buffer.putInt(data.length);
         buffer.put(data);
 
@@ -53,12 +59,12 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     }
 
     @Override
-    public void subscribe(String name, MessageListener function) {
+    public void subscribe(final String name, final MessageListener function) {
         subscriptions.put(name, function);
     }
 
     @Override
-    public void removeSubscription(String name) {
+    public void removeSubscription(final String name) {
         subscriptions.remove(name);
     }
 
@@ -69,16 +75,18 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     private void receiveLoop() {
         try {
             while (running) {
-                byte[] packet = packetQueue.take(); // blocks until available
-                if (packet.length < 4) continue;
+                final byte[] packet = packetQueue.take(); // blocks until available
+                if (packet.length < HEADER_LENGTH_BYTES) {
+                    continue;
+                }
 
-                ByteBuffer buffer = ByteBuffer.wrap(packet);
-                int length = buffer.getInt();
-                byte[] payload = new byte[length];
+                final ByteBuffer buffer = ByteBuffer.wrap(packet);
+                final int length = buffer.getInt();
+                final byte[] payload = new byte[length];
                 buffer.get(payload);
 
                 // Send to "screen_share" subscription
-                MessageListener listener = subscriptions.get(Utils.MODULE_REMOTE_KEY);
+                final MessageListener listener = subscriptions.get(Utils.MODULE_REMOTE_KEY);
                 if (listener != null) {
                     listener.receiveData(payload);
                 }
