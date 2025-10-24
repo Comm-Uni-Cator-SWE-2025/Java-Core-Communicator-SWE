@@ -119,8 +119,7 @@ public final class Topology implements AbstractTopology, AbstractController {
     public NetworkStructure getNetwork() {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
-        final NetworkStructure structure =
-            new NetworkStructure(clients, servers);
+        final NetworkStructure structure = new NetworkStructure(clients, servers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -191,5 +190,20 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public List<ClientNode> getAllClusterServers() {
         return clusterServers;
+    }
+
+    /**
+     * Function to get all clients in current cluster.
+     *
+     * @return all the clients
+     */
+    public List<ClientNode> getAllClients() {
+        final List<ClientNode> clients = new ArrayList<>();
+        for (List<ClientNode> cluster : clusters) {
+            for (ClientNode client : cluster) {
+                clients.add(client);
+            }
+        }
+        return clients;
     }
 }
