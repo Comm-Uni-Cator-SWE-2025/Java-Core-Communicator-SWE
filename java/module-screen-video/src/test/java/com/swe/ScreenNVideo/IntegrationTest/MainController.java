@@ -1,21 +1,27 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
-import com.socketry.SocketryServer;
 import com.swe.Networking.AbstractNetworking;
 import com.swe.RPC.AbstractRPC;
-import com.swe.RPC.RProcedure;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Entry point for the screen and video integration test.
+ * <p>
+ *     The {@code MainController} sets up dummy networking and RPC components,
+ *     initializes a {@link MediaCaptureManager}, and starts the screen capture process
+ *     in a separate thread for testing purposes.
+ * </p>
+ */
 public class MainController {
-    static void main(String[] args) throws InterruptedException {
-        AbstractNetworking networking = new DummyNetworkingWithQueue();
-        AbstractRPC rpc = new DummyRPC();
+    static void main(final String[] args) throws InterruptedException {
+        final AbstractNetworking networking = new DummyNetworkingWithQueue();
+        final AbstractRPC rpc = new DummyRPC();
 
-        CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, 30000);
+        final CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, 30000);
 
         Thread handler = null;
         try {
@@ -26,9 +32,7 @@ public class MainController {
             throw new RuntimeException(e);
         }
 
-
-
-        Thread screenNVideoThread = new Thread(() -> {
+        final Thread screenNVideoThread = new Thread(() -> {
             try {
                 screenNVideo.startCapture();
             } catch (ExecutionException | InterruptedException e) {

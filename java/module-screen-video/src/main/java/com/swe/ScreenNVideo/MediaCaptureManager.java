@@ -25,7 +25,6 @@ import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,62 +35,34 @@ import java.util.concurrent.ExecutionException;
  * - Manages Screen Capture and Video Capture
  */
 public class MediaCaptureManager implements CaptureManager {
-    /**
-     * Port for the server.
-     */
+    /** Port for the server. */
     private final int port;
 
-    /**
-     * Flag for video capture.
-     */
-    private boolean isVideoCaptureOn;
-    /**
-     * Flag for screen capture.
-     */
-    private boolean isScreenCaptureOn;
+    /** CaptureComponent object. */
+    private final CaptureComponents captureComponents;
 
-    /**
-     * Video capture object.
-     */
-    private final ICapture videoCapture;
-    /**
-     * Screen capture object.
-     */
-    private final ICapture screenCapture;
-
-    /**
-     * Patch generator object.
-     */
+    /** Patch generator object. */
     private final PacketGenerator patchGenerator;
-    /**
-     * Image stitcher object.
-     */
+
+    /** Image stitcher object. */
     private final ImageStitcher imageStitcher;
-    /**
-     * Image synchronizer object.
-     */
+
+    /** Image synchronizer object. */
     private final ImageSynchronizer imageSynchronizer;
-    /**
-     * Image scaler object.
-     */
+
+    /** Image scaler object. */
     private final ImageScaler scalar;
-    /**
-     * Video codec object.
-     */
+
+    /** Video codec object. */
     private final Codec videoCodec;
 
-    /**
-     * Networking object.
-     */
+    /** Networking object. */
     private final AbstractNetworking networking;
-    /**
-     * RPC object.
-     */
+
+    /** RPC object. */
     private final AbstractRPC rpc;
 
-    /**
-     * List of viewers to send the video Feed.
-     */
+    /** List of viewers to send the video Feed. */
     private final ArrayList<String> viewers;
 
     /**
@@ -104,11 +75,8 @@ public class MediaCaptureManager implements CaptureManager {
     public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
         this.rpc = argRpc;
         this.port = portArgs;
-        isScreenCaptureOn = false;
-        isVideoCaptureOn = false;
         this.networking = argNetworking;
-        videoCapture = new VideoCapture();
-        screenCapture = new ScreenCapture();
+        captureComponents = new CaptureComponents(networking);
         videoCodec = new JpegCodec();
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
@@ -117,36 +85,6 @@ public class MediaCaptureManager implements CaptureManager {
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
         viewers.add(networking.getSelfIP());
-        initializeHandlers();
-    }
-
-    private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
-        int[][] feed = null;
-        if (screenFeed != null) {
-            feed = Utils.convertToRGBMatrix(screenFeed);
-        }
-
-        if (videoFeed != null) {
-            final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
-            if (feed == null) {
-                feed = videoMatrix;
-            } else {
-                final int height = feed.length;
-                final int width = feed[0].length;
-                final int targetHeight = height / Utils.SCALE_Y;
-                final int targetWidth = width / Utils.SCALE_X;
-                final int[][] scaledDownedFeed = scalar.scale(videoMatrix, targetHeight, targetWidth);
-                final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
-                final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
-                final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
-                imageStitcher.setCanvas(feed);
-                imageStitcher.stitch(videoPatch);
-                feed = imageStitcher.getCanvas();
-            }
-        }
-        feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
-
-        return feed;
     }
 
     /**
@@ -156,8 +94,6 @@ public class MediaCaptureManager implements CaptureManager {
     public void startCapture() throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
-        BufferedImage videoFeed = null;
-        BufferedImage screenFeed = null;
         int[][] feed;
 
         final int fps = 30;
@@ -174,35 +110,8 @@ public class MediaCaptureManager implements CaptureManager {
                 + (int) ((double) (Utils.SEC_IN_MS) / ((currTime - start)
                 / ((double) (Utils.MSEC_IN_NS)))));
             start = System.nanoTime();
-            screenFeed = null;
-            videoFeed = null;
 
-            if (!isScreenCaptureOn && !isVideoCaptureOn) {
-                try {
-                    Thread.sleep(Utils.SEC_IN_MS);
-                } catch (InterruptedException e) {
-                    System.out.println("Error : " + e.getMessage());
-                }
-                continue;
-            }
-
-            if (isVideoCaptureOn) {
-                try {
-                    videoFeed = videoCapture.capture();
-                } catch (AWTException e) {
-                    videoFeed = null;
-                }
-            }
-            if (isScreenCaptureOn) {
-                try {
-                    screenFeed = screenCapture.capture();
-                } catch (AWTException e) {
-                    screenFeed = null;
-                }
-            }
-
-            // get the feed to send
-            feed = getFeedMatrix(videoFeed, screenFeed);
+            feed = captureComponents.getFeed();
             if (feed == null) {
                 continue;
             }
@@ -247,50 +156,132 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
 
-    private void initializeHandlers() {
-        rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
-            isVideoCaptureOn = true;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+    class CaptureComponents {
+        /** Flag for video capture. */
+        private boolean isVideoCaptureOn;
 
-        rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, (final byte[] args) -> {
-            isVideoCaptureOn = false;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+        /** Flag for screen capture. */
+        private boolean isScreenCaptureOn;
 
-        rpc.subscribe(Utils.START_SCREEN_CAPTURE, (final byte[] args) -> {
-            isScreenCaptureOn = true;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+        /** Video capture object. */
+        private final ICapture videoCapture;
 
-        rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, (final byte[] args) -> {
+        /** Screen capture object. */
+        private final ICapture screenCapture;
+
+        /** Networking object. */
+        private final AbstractNetworking networking;
+
+        CaptureComponents(final AbstractNetworking argNetworking) {
             isScreenCaptureOn = false;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+            isVideoCaptureOn = false;
+            this.networking = argNetworking;
+            videoCapture = new VideoCapture();
+            screenCapture = new ScreenCapture();
+            initializeHandlers();
+        }
 
-        rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
-            // Get the destination user IP
-            final String destIP = NetworkSerializer.deserializeString(args);
+        private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
+            int[][] feed = null;
+            if (screenFeed != null) {
+                feed = Utils.convertToRGBMatrix(screenFeed);
+            }
 
-            final String selfIP = networking.getSelfIP();
-            final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
-            networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
+            if (videoFeed != null) {
+                final int[][] videoMatrix = Utils.convertToRGBMatrix(videoFeed);
+                if (feed == null) {
+                    feed = videoMatrix;
+                } else {
+                    final int height = feed.length;
+                    final int width = feed[0].length;
+                    final int targetHeight = height / Utils.SCALE_Y;
+                    final int targetWidth = width / Utils.SCALE_X;
+                    final int[][] scaledDownedFeed = scalar.scale(videoMatrix, targetHeight, targetWidth);
+                    final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
+                    final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
+                    final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
+                    imageStitcher.setCanvas(feed);
+                    imageStitcher.stitch(videoPatch);
+                    feed = imageStitcher.getCanvas();
+                }
+            }
+            feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+            return feed;
+        }
 
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+        public int[][] getFeed() {
+            BufferedImage videoFeed = null;
+            BufferedImage screenFeed = null;
+            final int[][] feed;
 
-        networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
+            if (!isScreenCaptureOn && !isVideoCaptureOn) {
+                try {
+                    Thread.sleep(Utils.SEC_IN_MS);
+                } catch (InterruptedException e) {
+                    System.out.println("Error : " + e.getMessage());
+                }
+            } else if (isVideoCaptureOn) {
+                try {
+                    videoFeed = videoCapture.capture();
+                } catch (AWTException e) {
+                }
+            } else if (isScreenCaptureOn) {
+                try {
+                    screenFeed = screenCapture.capture();
+                } catch (AWTException e) {
+                }
+            }
 
+            // get the feed to send
+            feed = getFeedMatrix(videoFeed, screenFeed);
+            return feed;
+        }
+
+        private void initializeHandlers() {
+            rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
+                isVideoCaptureOn = true;
+                final byte[] res = new byte[1];
+                res[0] = 1;
+                return res;
+            });
+
+            rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, (final byte[] args) -> {
+                isVideoCaptureOn = false;
+                final byte[] res = new byte[1];
+                res[0] = 1;
+                return res;
+            });
+
+            rpc.subscribe(Utils.START_SCREEN_CAPTURE, (final byte[] args) -> {
+                isScreenCaptureOn = true;
+                final byte[] res = new byte[1];
+                res[0] = 1;
+                return res;
+            });
+
+            rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, (final byte[] args) -> {
+                isScreenCaptureOn = false;
+                final byte[] res = new byte[1];
+                res[0] = 1;
+                return res;
+            });
+
+            rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
+                // Get the destination user IP
+                final String destIP = NetworkSerializer.deserializeString(args);
+
+                final String selfIP = networking.getSelfIP();
+                final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
+                networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
+
+                final byte[] res = new byte[1];
+                res[0] = 1;
+                return res;
+            });
+
+            networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
+
+        }
     }
 
     class ClientHandler implements MessageListener {

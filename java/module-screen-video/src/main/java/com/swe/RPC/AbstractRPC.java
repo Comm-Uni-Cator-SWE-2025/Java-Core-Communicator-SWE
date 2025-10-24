@@ -14,6 +14,10 @@ public interface AbstractRPC {
 
     /**
      * Connects the other side.
+     * @return the {@link Thread} instance handling the connection loop
+     * @throws IOException if an I/O error occurs during connection
+     * @throws ExecutionException if the connection task encounters an exception
+     * @throws InterruptedException if the connection process is interrupted
      */
     Thread connect() throws IOException, ExecutionException, InterruptedException;
 
