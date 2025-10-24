@@ -25,7 +25,6 @@ public class SimpleNetworkingTest {
             final ClientNode device = new ClientNode("127.0.0.1", 8000);
             final ClientNode mainServer = new ClientNode("127.0.0.1", 8000);
             network.addUser(device, mainServer);
-            final PacketParser parser = PacketParser.getPacketParser();
             final MessageListener func = (byte[] data) -> {
                 System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
@@ -59,7 +58,6 @@ public class SimpleNetworkingTest {
             });
             serverThread.start();
             network.addUser(device, mainServer);
-            final PacketParser parser = PacketParser.getPacketParser();
             final MessageListener func = (byte[] data) -> {
                 System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
@@ -118,7 +116,6 @@ public class SimpleNetworkingTest {
     @org.junit.jupiter.api.Test
     public void simpleNetworkingSubscribeTest() {
         final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-        final PacketParser parser = PacketParser.getPacketParser();
         final MessageListener func = (byte[] data) -> {
             System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
         };
@@ -149,14 +146,13 @@ public class SimpleNetworkingTest {
         final ClientNode device = new ClientNode("127.0.0.1", 8100);
         final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
         network.addUser(device, mainServer);
-        final PacketParser parser = PacketParser.getPacketParser();
         final MessageListener func = (byte[] data) -> {
             System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
         };
         network.subscribe(ModuleType.CHAT, func);
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8101);
-        final ClientNode[] dests = { dest };
+        final ClientNode[] dests = {dest };
         network.sendData(data.getBytes(), dests, ModuleType.CHAT, 0);
         clientThread.interrupt();
         network.closeNetworking();
@@ -168,13 +164,11 @@ public class SimpleNetworkingTest {
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingIOTest() {
-        final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
         final ClientNode device = new ClientNode("127.0.0.1", 8100);
         final Server server = new Server(device);
-        final PacketParser parser = PacketParser.getPacketParser();
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8000);
-        final ClientNode[] dests = { dest };
+        final ClientNode[] dests = {dest };
         server.send(data.getBytes(), dests, device, ModuleType.CHAT);
         server.sendPkt(data.getBytes(), dests, device);
         server.closeUser();

@@ -21,6 +21,13 @@ public interface P2PUser {
     void send(byte[] data, ClientNode destIp);
 
     /**
+     * Function to send data to a single user.
+     *
+     * @param data the data to be sent
+     */
+    void send(byte[] data);
+
+    /**
      * Function to receive data from other users.
      */
     void receive();
