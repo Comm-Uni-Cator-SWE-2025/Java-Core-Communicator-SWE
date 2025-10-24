@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-  <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <!-- ===================================================== -->
   <!-- Parent Project Metadata -->
   <!-- ===================================================== -->
+  <modelVersion>4.0.0</modelVersion>
   <groupId>com.swe</groupId>
   <artifactId>java-core-communicator</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Core Communicator SWE - Parent</name>
-  <description>Parent POM for all SWE 2025 Java Modules</description>
+  <description>Parent POM for SWE modular communicator system</description>
+  <url>https://github.com/Comm-Uni-Cator-SWE-2025/Java-Core-Communicator-SWE</url>
 
   <!-- ===================================================== -->
-  <!-- Submodules Declaration -->
+  <!-- Modules (subprojects) -->
   <!-- ===================================================== -->
   <modules>
     <module>module-networking</module>
@@ -36,63 +36,66 @@
   <!-- ===================================================== -->
   <dependencyManagement>
     <dependencies>
+      <!-- JUnit 4 -->
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.13.1</version>
+        <version>4.13.2</version>
         <scope>test</scope>
       </dependency>
+
+      <!-- JUnit 5 -->
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.10.0</version>
+        <version>5.10.2</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <!-- ===================================================== -->
-  <!-- Build + Plugin Configuration -->
+  <!-- Build Configuration -->
   <!-- ===================================================== -->
   <build>
     <pluginManagement>
       <plugins>
 
-        <!-- ============================================== -->
-        <!-- Compiler Plugin (Java 16) -->
-        <!-- ============================================== -->
+        <!-- Maven Compiler -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.10.1</version>
           <configuration>
             <source>16</source>
             <target>16</target>
-            <encoding>UTF-8</encoding>
           </configuration>
         </plugin>
 
-        <!-- ============================================== -->
-        <!-- Checkstyle Plugin (Shared Config) -->
-        <!-- ============================================== -->
+        <!-- Checkstyle Plugin -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>3.3.1</version>
           <configuration>
-            <configLocation>../config/checkstyle/checkstyle.xml</configLocation>
-            <suppressionsLocation>../config/checkstyle/suppressions.xml</suppressionsLocation>
-            <consoleOutput>true</consoleOutput>
+            <configLocation>${session.executionRootDirectory}/config/checkstyle/checkstyle.xml</configLocation>
+            <suppressionsLocation>${session.executionRootDirectory}/config/checkstyle/suppressions.xml</suppressionsLocation>
             <encoding>UTF-8</encoding>
-            <failsOnError>false</failsOnError>  <!-- ✅ build continues -->
-            <failOnViolation>false</failOnViolation>
+            <consoleOutput>true</consoleOutput>
+            <failsOnError>true</failsOnError>
           </configuration>
+          <executions>
+            <execution>
+              <id>checkstyle-validation</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
 
-
-        <!-- ============================================== -->
-        <!-- JaCoCo Plugin (Coverage) -->
-        <!-- ============================================== -->
+        <!-- JaCoCo for Coverage -->
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
@@ -114,12 +117,33 @@
           </executions>
         </plugin>
 
+        <!-- Maven Site Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.12.1</version>
+          <configuration>
+            <reportPlugins>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+              </plugin>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.9.0</version>
+              </plugin>
+            </reportPlugins>
+          </configuration>
+        </plugin>
+
       </plugins>
     </pluginManagement>
   </build>
 
   <!-- ===================================================== -->
-  <!-- Reporting Configuration -->
+  <!-- Reporting Section -->
   <!-- ===================================================== -->
   <reporting>
     <plugins>
@@ -127,12 +151,36 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>3.3.1</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>checkstyle</report>
+              <report>checkstyle-aggregate</report>
+            </reports>
+          </reportSet>
+        </reportSets>
         <configuration>
-          <configLocation>config/checkstyle/checkstyle.xml</configLocation>
-          <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
+          <configLocation>${session.executionRootDirectory}/config/checkstyle/checkstyle.xml</configLocation>
+          <suppressionsLocation>${session.executionRootDirectory}/config/checkstyle/suppressions.xml</suppressionsLocation>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>3.9.0</version>
       </plugin>
     </plugins>
   </reporting>
+
+  <!-- ===================================================== -->
+  <!-- Properties -->
+  <!-- ===================================================== -->
+  <properties>
+    <maven.compiler.source>16</maven.compiler.source>
+    <maven.compiler.target>16</maven.compiler.target>
+    <encoding>UTF-8</encoding>
+    <checkstyle.version>3.3.1</checkstyle.version>
+  </properties>
 
 </project>
