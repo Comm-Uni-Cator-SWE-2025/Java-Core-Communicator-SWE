@@ -15,16 +15,24 @@ import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
+import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
-import com.swe.ScreenNVideo.Serializer.Serializer;
+import com.swe.ScreenNVideo.Serializer.RImage;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
-import com.swe.networking.AbstractNetworking;
-import com.swe.networking.MessageListener;
+import com.swe.networking.ClientNode;
+import com.swe.networking.ModuleType;
+import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.SimpleNetworking.PacketParser;
 
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -91,7 +99,7 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * List of viewers to send the video Feed.
      */
-    private final ArrayList<String> viewers;
+    private final ArrayList<ClientNode> viewers;
 
     /**
      * Constructor for the MediaCaptureManager.
@@ -115,7 +123,10 @@ public class MediaCaptureManager implements CaptureManager {
         imageSynchronizer = new ImageSynchronizer(videoCodec);
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
-        viewers.add(networking.getSelfIP());
+
+        System.out.println(getSelfIP());
+        final ClientNode selfNode = new ClientNode(getSelfIP(), port);
+        viewers.add(selfNode);
         initializeHandlers();
     }
 
@@ -146,6 +157,16 @@ public class MediaCaptureManager implements CaptureManager {
         feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
 
         return feed;
+    }
+
+    private static String getSelfIP() {
+        // Get IP address as string
+        try (DatagramSocket socket = new DatagramSocket()) {
+            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            return socket.getLocalAddress().getHostAddress();
+        } catch (SocketException | UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -214,12 +235,13 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
 
+            final CPackets networkPackets = new CPackets(getSelfIP(), patches);
             byte[] encodedPatches = null;
             int tries = Utils.MAX_TRIES_TO_SERIALIZE;
             while (tries-- > 0) {
                 // max tries 3 times to convert the patch
                 try {
-                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
+                    encodedPatches = networkPackets.serializeCPackets();
                     break;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -238,11 +260,7 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private void sendImageToViewers(final byte[] feed) {
-        final int[] ports = new int[viewers.size()];
-        for (int i = 0; i < viewers.size(); i++) {
-            ports[i] = port;
-        }
-        networking.sendData(feed, viewers.toArray(new String[0]), ports);
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
     }
 
 
@@ -277,18 +295,21 @@ public class MediaCaptureManager implements CaptureManager {
 
         rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
             // Get the destination user IP
-            final String destIP = NetworkSerializer.deserializeString(args);
+            final String destIP = NetworkSerializer.deserializeIP(args);
 
-            final String selfIP = networking.getSelfIP();
-            final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
-            networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
+            final ClientNode destNode = new ClientNode(destIP, port);
+
+            // Get IP address as string
+            String selfIP = getSelfIP();
+            final byte[] subscribeData = NetworkSerializer.serializeIP(selfIP);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
 
             final byte[] res = new byte[1];
             res[0] = 1;
             return res;
         });
 
-        networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
+        networking.subscribe(ModuleType.CHAT, new ClientHandler());
 
     }
 
@@ -303,23 +324,28 @@ public class MediaCaptureManager implements CaptureManager {
         }
 
         @Override
-        public void receiveData(final byte[] data) {
+        public void receiveData(byte[] data) {
+
+            System.out.println("Recieved");
+            data = PacketParser.getPacketParser().getPayload(data);
             if (data.length == 0) {
                 return;
             }
 
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
-                System.err.println("Error: Invalid packet type: " + packetType);
-                System.err.println("Error: Packet data: " + Arrays.toString(data));
+                System.err.println("Error: Invalid packet type: " + packetType + "  " + data.length);
+                System.err.println("Error: Packet data: " + (Arrays.toString(Arrays.copyOf(data, 20))));
                 return;
             }
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
-                    final List<CompressedPatch> patches = NetworkSerializer.deserializeCPackets(data);
+                    final CPackets networkPackets = CPackets.deserialize(data);
+                    final List<CompressedPatch> patches = networkPackets.getPackets();
                     final int[][] image = imageSynchronizer.synchronize(patches);
-                    final byte[] serializedImage = Serializer.serializeImage(image);
+                    final RImage rImage = new RImage(image, getSelfIP());
+                    final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage).get();
@@ -328,8 +354,9 @@ public class MediaCaptureManager implements CaptureManager {
                     }
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
-                    final String viewerIP = NetworkSerializer.deserializeString(data);
-                    viewers.add(viewerIP);
+                    final String viewerIP = NetworkSerializer.deserializeIP(data);
+                    final ClientNode viewerNode = new ClientNode(viewerIP, port);
+                    viewers.add(viewerNode);
                 }
                 default -> {
                 }
