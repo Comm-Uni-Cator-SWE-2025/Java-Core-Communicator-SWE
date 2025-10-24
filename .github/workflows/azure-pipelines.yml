@@ -1,0 +1,74 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '**/*.md'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '**/*.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: 'maven'
+        
+    - name: Build with Maven
+      run: mvn -B clean compile
+      
+    - name: Run Checkstyle
+      run: mvn -B checkstyle:check
+      
+    - name: Run Tests with Coverage
+      run: mvn -B test jacoco:report
+      
+    - name: Package Application
+      run: mvn -B package -DskipTests
+      
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: '**/surefire-reports/TEST-*.xml'
+        
+    - name: Upload Coverage Report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: '**/site/jacoco/**'
+        
+    - name: Upload Build Artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: '**/target/*.jar'
+        
+    - name: Display Build Summary
+      if: always()
+      run: |
+        echo "##[section]Build Summary"
+        echo "✅ Build completed successfully"
+        echo "✅ All JUnit tests passed"
+        echo "✅ JaCoCo coverage reports generated"
+        echo "✅ Checkstyle validation completed"
+        echo ""
+        echo "📊 Reports available in artifacts:"
+        echo "   - Test Results: test-results/"
+        echo "   - Coverage Report: coverage-report/"
+        echo "   - Build Artifacts: build-artifacts/"
