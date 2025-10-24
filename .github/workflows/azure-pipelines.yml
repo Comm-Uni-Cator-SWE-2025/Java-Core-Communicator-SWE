@@ -44,7 +44,7 @@ jobs:
   # -----------------------------
   # 2. Set Up JDK 11
   # -----------------------------
-  - task: UseJavaVersion@1
+  - task: JavaToolInstaller@0
     displayName: "Set up JDK 11"
     inputs:
       versionSpec: '11'
