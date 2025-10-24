@@ -94,11 +94,19 @@ public class Utils {
      * Milli-seconds in nanoseconds.
      */
     public static final int MSEC_IN_NS = 1_000_000;
-    
+    /**
+     * Seconds in nanoseconds.
+     */
+    public static final int SEC_IN_NS = 1_000_000_000;
+
     /**
      * Maximum tries to serialize the compressed packets.
      */
     public static final int MAX_TRIES_TO_SERIALIZE = 3;
+    /**
+     * Server Max FPS.
+     */
+    public static final int FPS = 40;
 
     /**
      * Writes the given int to the buffer in little endian.
