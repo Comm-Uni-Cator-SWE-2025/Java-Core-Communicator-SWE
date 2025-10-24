@@ -1,6 +1,5 @@
 # ==============================================================
 # Azure DevOps Pipeline: Java CI with Maven
-# Equivalent to the GitHub Actions workflow you pasted earlier
 # ==============================================================
 
 trigger:
@@ -21,9 +20,8 @@ pr:
       - README.md
       - '**/*.md'
 
-# Agent pool (can be Default or Ubuntu-based hosted)
 pool:
-  name: Default
+  name: Default   # self-hosted agent on your Mac
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -35,120 +33,119 @@ jobs:
   timeoutInMinutes: 30
 
   steps:
-  # -----------------------------
-  # 1. Checkout Code
-  # -----------------------------
-  - checkout: self
-    clean: true
+    # -----------------------------
+    # 1. Checkout Code
+    # -----------------------------
+    - checkout: self
+      clean: true
 
-  # -----------------------------
-  # 2. Set Up JDK 11
-  # -----------------------------
-- task: JavaToolInstaller@0
-  displayName: "Install and Set up JDK 11"
-  inputs:
-    versionSpec: '11'
-    jdkArchitectureOption: 'x64'
-    jdkSourceOption: 'AzureStorage'
-    jdkDestinationDirectory: '$(Agent.ToolsDirectory)/jdk'
-    cleanDestinationDirectory: true
+    # -----------------------------
+    # 2. Set Up JDK 11
+    # -----------------------------
+    - task: JavaToolInstaller@0
+      displayName: "Install and Set up JDK 11"
+      inputs:
+        versionSpec: '11'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'AzureStorage'
+        jdkDestinationDirectory: '$(Agent.ToolsDirectory)/jdk'
+        cleanDestinationDirectory: true
 
+    # -----------------------------
+    # 3. Verify Environment
+    # -----------------------------
+    - script: |
+        echo "Agent: $(Agent.Name)"
+        echo "Pool: $(Agent.PoolName)"
+        java -version
+        mvn -version
+      displayName: "Verify Environment"
 
-  # -----------------------------
-  # 3. Verify Environment
-  # -----------------------------
-- script: |
-    echo "Agent: $(Agent.Name)"
-    echo "Pool: $(Agent.PoolName)"
-    java -version
-    mvn -version
-  displayName: "Verify Environment"
+    # -----------------------------
+    # 4. Build and Compile
+    # -----------------------------
+    - script: mvn -B clean compile
+      displayName: "Build with Maven"
 
-  # -----------------------------
-  # 4. Build and Compile
-  # -----------------------------
-  - script: mvn -B clean compile
-    displayName: "Build with Maven"
+    # -----------------------------
+    # 5. Run Checkstyle
+    # -----------------------------
+    - script: mvn -B checkstyle:check
+      displayName: "Run Checkstyle"
 
-  # -----------------------------
-  # 5. Run Checkstyle
-  # -----------------------------
-  - script: mvn -B checkstyle:check
-    displayName: "Run Checkstyle"
+    # -----------------------------
+    # 6. Run Tests with JaCoCo Coverage
+    # -----------------------------
+    - script: mvn -B test jacoco:report
+      displayName: "Run Tests with Coverage"
 
-  # -----------------------------
-  # 6. Run Tests with JaCoCo Coverage
-  # -----------------------------
-  - script: mvn -B test jacoco:report
-    displayName: "Run Tests with Coverage"
+    # -----------------------------
+    # 7. Package Application
+    # -----------------------------
+    - script: mvn -B package -DskipTests
+      displayName: "Package Application"
 
-  # -----------------------------
-  # 7. Package Application
-  # -----------------------------
-  - script: mvn -B package -DskipTests
-    displayName: "Package Application"
+    # -----------------------------
+    # 8. Publish Test Results (JUnit)
+    # -----------------------------
+    - task: PublishTestResults@2
+      displayName: "Publish Test Results"
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
 
-  # -----------------------------
-  # 8. Publish Test Results (JUnit)
-  # -----------------------------
-  - task: PublishTestResults@2
-    displayName: "Publish Test Results"
-    condition: always()
-    inputs:
-      testResultsFormat: 'JUnit'
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      mergeTestResults: true
-      failTaskOnFailedTests: true
+    # -----------------------------
+    # 9. Publish Code Coverage (JaCoCo)
+    # -----------------------------
+    - task: PublishCodeCoverageResults@1
+      displayName: "Publish JaCoCo Coverage"
+      condition: succeededOrFailed()
+      inputs:
+        codeCoverageTool: 'JaCoCo'
+        summaryFileLocation: '**/jacoco.xml'
+        reportDirectory: '**/site/jacoco'
+        failIfCoverageEmpty: false
 
-  # -----------------------------
-  # 9. Publish Code Coverage (JaCoCo)
-  # -----------------------------
-  - task: PublishCodeCoverageResults@1
-    displayName: "Publish JaCoCo Coverage"
-    condition: succeededOrFailed()
-    inputs:
-      codeCoverageTool: 'JaCoCo'
-      summaryFileLocation: '**/jacoco.xml'
-      reportDirectory: '**/site/jacoco'
-      failIfCoverageEmpty: false
+    # -----------------------------
+    # 10. Copy Build Artifacts
+    # -----------------------------
+    - task: CopyFiles@2
+      displayName: "Copy Build Artifacts"
+      condition: succeeded()
+      inputs:
+        sourceFolder: '$(System.DefaultWorkingDirectory)'
+        contents: |
+          **/target/*.jar
+          **/site/**
+        targetFolder: '$(Build.ArtifactStagingDirectory)'
 
-  # -----------------------------
-  # 10. Copy Build Artifacts
-  # -----------------------------
-  - task: CopyFiles@2
-    displayName: "Copy Build Artifacts"
-    condition: succeeded()
-    inputs:
-      sourceFolder: '$(System.DefaultWorkingDirectory)'
-      contents: |
-        **/target/*.jar
-        **/site/**
-      targetFolder: '$(Build.ArtifactStagingDirectory)'
+    # -----------------------------
+    # 11. Publish Build Artifacts
+    # -----------------------------
+    - task: PublishBuildArtifacts@1
+      displayName: "Publish Build Artifacts"
+      condition: succeeded()
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'java-build-artifacts'
+        publishLocation: 'Container'
 
-  # -----------------------------
-  # 11. Publish Build Artifacts
-  # -----------------------------
-  - task: PublishBuildArtifacts@1
-    displayName: "Publish Build Artifacts"
-    condition: succeeded()
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: 'java-build-artifacts'
-      publishLocation: 'Container'
-
-  # -----------------------------
-  # 12. Build Summary
-  # -----------------------------
-  - script: |
-      echo "##[section]Build Summary"
-      echo "✅ Build completed successfully"
-      echo "✅ JUnit tests executed"
-      echo "✅ JaCoCo coverage report generated"
-      echo "✅ Checkstyle validation passed"
-      echo ""
-      echo "📊 Artifacts available under:"
-      echo "  - Test Results: in Azure DevOps build summary"
-      echo "  - Coverage Report: target/site/jacoco/index.html"
-      echo "  - JAR Files: under build artifacts"
-    displayName: "Display Build Summary"
-    condition: always()
+    # -----------------------------
+    # 12. Build Summary
+    # -----------------------------
+    - script: |
+        echo "##[section]Build Summary"
+        echo "✅ Build completed successfully"
+        echo "✅ JUnit tests executed"
+        echo "✅ JaCoCo coverage report generated"
+        echo "✅ Checkstyle validation passed"
+        echo ""
+        echo "📊 Artifacts available under:"
+        echo "  - Test Results: in Azure DevOps build summary"
+        echo "  - Coverage Report: target/site/jacoco/index.html"
+        echo "  - JAR Files: under build artifacts"
+      displayName: "Display Build Summary"
+      condition: always()
