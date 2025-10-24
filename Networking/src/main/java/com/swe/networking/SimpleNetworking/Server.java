@@ -164,7 +164,7 @@ public class Server implements IUser {
             final String data = new String(parser.getPayload(packet),
                     StandardCharsets.UTF_8);
             System.out.println("Server Data received : " + data);
-            simpleNetworking.callSubscriber(packet, type);
+            simpleNetworking.callSubscriber(parser.getPayload(packet), type);
         } else {
             final ClientNode dest = new ClientNode(address.getHostAddress(),
                     port);

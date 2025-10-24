@@ -27,7 +27,7 @@ public class SimpleNetworkingTest {
             network.addUser(device, mainServer);
             final PacketParser parser = PacketParser.getPacketParser();
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
             network.subscribe(ModuleType.CHAT, func);
             Thread.sleep(sleepTime);
@@ -61,7 +61,7 @@ public class SimpleNetworkingTest {
             network.addUser(device, mainServer);
             final PacketParser parser = PacketParser.getPacketParser();
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
             network.subscribe(ModuleType.CHAT, func);
             sendClient();
@@ -120,7 +120,7 @@ public class SimpleNetworkingTest {
         final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
         final PacketParser parser = PacketParser.getPacketParser();
         final MessageListener func = (byte[] data) -> {
-            System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+            System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
         };
         network.subscribe(ModuleType.CHAT, func);
         network.subscribe(ModuleType.CHAT, func);
@@ -151,12 +151,12 @@ public class SimpleNetworkingTest {
         network.addUser(device, mainServer);
         final PacketParser parser = PacketParser.getPacketParser();
         final MessageListener func = (byte[] data) -> {
-            System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+            System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
         };
         network.subscribe(ModuleType.CHAT, func);
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8101);
-        final ClientNode[] dests = {dest };
+        final ClientNode[] dests = { dest };
         network.sendData(data.getBytes(), dests, ModuleType.CHAT, 0);
         clientThread.interrupt();
         network.closeNetworking();
@@ -174,7 +174,7 @@ public class SimpleNetworkingTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8000);
-        final ClientNode[] dests = {dest };
+        final ClientNode[] dests = { dest };
         server.send(data.getBytes(), dests, device, ModuleType.CHAT);
         server.sendPkt(data.getBytes(), dests, device);
         server.closeUser();
