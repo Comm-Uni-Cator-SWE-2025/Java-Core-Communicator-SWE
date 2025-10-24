@@ -1,20 +1,18 @@
 package com.swe.networking.SimpleNetworking;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
+import com.swe.networking.ProtocolBase;
+import com.swe.networking.TCPCommunicator;
 
 /**
  * The main class for the server device.
@@ -24,11 +22,11 @@ public class Server implements IUser {
     /**
      * The variable to store the device IP address.
      */
-    private String deviceIp;
+    private final String deviceIp;
     /**
      * The variable to store the device port number.
      */
-    private int devicePort;
+    private final int devicePort;
     /**
      * The variable used by the server to connect to other devices.
      */
@@ -36,19 +34,19 @@ public class Server implements IUser {
     /**
      * The variable used by server to accept connections from clients.
      */
-    private ServerSocket receiveSocket;
+    private final ProtocolBase receiveSocket;
     /**
      * The singleton class object for packet parser.
      */
-    private PacketParser parser;
+    private final PacketParser parser;
     /**
      * The singleton class object for simplenetworking.
      */
-    private SimpleNetworking simpleNetworking;
+    private final SimpleNetworking simpleNetworking;
     /**
      * The variable to store the module type.
      */
-    private ModuleType moduleType = ModuleType.NETWORKING;
+    private final ModuleType moduleType = ModuleType.NETWORKING;
     /**
      * The variable isused to store connection timeout.
      */
@@ -64,12 +62,7 @@ public class Server implements IUser {
         devicePort = deviceAddr.port();
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
-        try {
-            receiveSocket = new ServerSocket(devicePort);
-            receiveSocket.setSoTimeout(0);
-        } catch (IOException e) {
-            System.err.println("Server1 Error: " + e.getMessage());
-        }
+        receiveSocket = new TCPCommunicator(devicePort);
     }
 
     /**
@@ -108,15 +101,13 @@ public class Server implements IUser {
      */
     @Override
     public void receive() throws IOException {
-        try {
-            final Socket socket = receiveSocket.accept();
-            final InputStream input = socket.getInputStream();
-            final DataInputStream dataIn = new DataInputStream(input);
-            final byte[] packet = dataIn.readAllBytes();
-            System.out.println("Message from " + socket.toString() + " ...");
-            parsePacket(packet);
-        } catch (SocketTimeoutException e) {
-            System.err.println("Server3 Error: " + e.getMessage());
+        while (true) {
+            final byte[] packet = receiveSocket.receiveData();
+            if (packet != null) {
+                final String payload = new String(parser.getPayload(packet));
+                System.out.println("Data received : " + payload);
+                parsePacket(packet);
+            }
         }
     }
 
@@ -179,9 +170,6 @@ public class Server implements IUser {
      */
     @Override
     public void closeUser() {
-        try {
-            receiveSocket.close();
-        } catch (IOException e) {
-        }
+        receiveSocket.close();
     }
 }
