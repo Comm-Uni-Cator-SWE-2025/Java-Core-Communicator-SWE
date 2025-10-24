@@ -1,14 +1,8 @@
 package com.swe.ScreenNVideo.Serializer;
 
 
-import com.swe.ScreenNVideo.Utils;
-import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
-import java.util.List;
 
 /**
  * Serializer class for communicating with networking layer.

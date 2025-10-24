@@ -65,7 +65,8 @@ public class VideoCapture extends ICapture {
             // Initialize Robot for screen capture
             this.robot = new Robot();
             System.out.println("VideoCapture initialized with screen capture");
-            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height + " at (" + captureLocation.x + "," + captureLocation.y + ")");
+            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height
+                    + " at (" + captureLocation.x + "," + captureLocation.y + ")");
         } catch (AWTException e) {
             System.err.println("Error initializing Robot: " + e.getMessage());
             if (listener != null) {

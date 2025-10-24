@@ -4,7 +4,6 @@ import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
@@ -14,42 +13,55 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Entry point for the screen and video integration test.
+ * <p>
+ *     The {@code MainController} sets up dummy networking and RPC components,
+ *     initializes a {@link MediaCaptureManager}, and starts the screen capture process
+ *     in a separate thread for testing purposes.
+ * </p>
+ */
 public class MainController {
+    /**
+     * Server port for ScreenNVideo.
+     */
+    static final int SERVERPORT = 40000;
+    /**
+     * Port where to ping to get self ip.
+     */
+    static final int PINGPORT = 10002;
+
     private static String getSelfIP() {
         // Get IP address as string
         try (DatagramSocket socket = new DatagramSocket()) {
-            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            socket.connect(InetAddress.getByName("8.8.8.8"), PINGPORT);
             return socket.getLocalAddress().getHostAddress();
         } catch (SocketException | UnknownHostException e) {
             throw new RuntimeException(e);
         }
     }
 
-    static void main(String[] args) throws InterruptedException {
-        SimpleNetworking networking =  SimpleNetworking.getSimpleNetwork();
+    static void main(final String[] args) throws InterruptedException {
+        final SimpleNetworking networking =  SimpleNetworking.getSimpleNetwork();
 
         // Get IP address as string
-        String ipAddress = getSelfIP();
-        ClientNode deviceNode = new ClientNode(ipAddress, 40000);
-        ClientNode serverNode = new ClientNode(ipAddress, 40000);
+        final String ipAddress = getSelfIP();
+        final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
+        final ClientNode serverNode = new ClientNode(ipAddress, SERVERPORT);
 
-        AbstractRPC rpc = new DummyRPC();
+        final AbstractRPC rpc = new DummyRPC();
 
-        CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, 40000);
+        final CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
-        networking.addUser(deviceNode,serverNode);
+        networking.addUser(deviceNode, serverNode);
         Thread handler = null;
         try {
             handler = rpc.connect();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
+        } catch (IOException | ExecutionException e) {
             throw new RuntimeException(e);
         }
 
-
-
-        Thread screenNVideoThread = new Thread(() -> {
+        final Thread screenNVideoThread = new Thread(() -> {
             try {
                 screenNVideo.startCapture();
             } catch (ExecutionException | InterruptedException e) {

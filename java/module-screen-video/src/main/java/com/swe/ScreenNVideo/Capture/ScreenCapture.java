@@ -16,7 +16,8 @@ import java.awt.image.BufferedImage;
  */
 public class ScreenCapture extends ICapture {
 
-    final Robot robot;
+    /** The {@link Robot} used to capture the screen image. */
+    private final Robot robot;
 
     public ScreenCapture() {
         try {
@@ -25,6 +26,7 @@ public class ScreenCapture extends ICapture {
             throw new RuntimeException(e);
         }
     }
+
     /**
      * Captures the entire screen and returns it as a BufferedImage.
      *
