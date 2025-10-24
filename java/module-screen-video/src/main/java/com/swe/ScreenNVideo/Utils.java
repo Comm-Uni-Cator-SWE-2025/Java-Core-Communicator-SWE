@@ -98,6 +98,12 @@ public class Utils {
      * Seconds in nanoseconds.
      */
     public static final int SEC_IN_NS = 1_000_000_000;
+    /**
+     * bytes in 1 kb.
+     */
+    public static final double KB = 1_024.0;
+
+
 
     /**
      * Maximum tries to serialize the compressed packets.
