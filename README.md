@@ -1,6 +1,6 @@
 
 
-# 🧩 Java Core Communicator SWE — Project Structure & Contribution Guidelines
+# Java Core Communicator SWE — Project Structure & Contribution Guidelines
  
 Welcome to the **SWE Java Monorepo**!
 This document defines the **directory structure**, **branching conventions**, **module ownership**, **testing & checkstyle rules**, and the **workflow every contributor must follow before merging code**.
