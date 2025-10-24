@@ -27,7 +27,7 @@ public class ServerTest {
             final Client sender = new Client(clientNode);
             final Server server = new Server(serverNode);
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
             simpleNetworking.subscribe(ModuleType.CHAT, func);
 
@@ -41,7 +41,7 @@ public class ServerTest {
             serverThread.start();
             Thread.sleep(500);
 
-            final ClientNode[] destinations = {serverNode };
+            final ClientNode[] destinations = { serverNode };
             final String msg = "Direct message to server";
             final byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
 
@@ -67,7 +67,7 @@ public class ServerTest {
             final Client receiver = new Client(clientNode2);
 
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(parser.getPayload(data), StandardCharsets.UTF_8));
+                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
             };
             simpleNetworking.subscribe(ModuleType.CHAT, func);
 

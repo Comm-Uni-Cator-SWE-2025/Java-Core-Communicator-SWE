@@ -129,7 +129,7 @@ public class Client implements IUser {
         final String data = new String(parser.getPayload(packet),
                 StandardCharsets.UTF_8);
         System.out.println("Client Data received : " + data);
-        simpleNetworking.callSubscriber(packet, type);
+        simpleNetworking.callSubscriber(parser.getPayload(packet), type);
     }
 
     /**
