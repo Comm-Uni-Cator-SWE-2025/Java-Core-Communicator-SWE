@@ -1,73 +1,151 @@
-name: Java CI with Maven
+# ==============================================================
+# Azure DevOps Pipeline: Java CI with Maven
+# Equivalent to the GitHub Actions workflow you pasted earlier
+# ==============================================================
 
-on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - 'README.md'
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - README.md
       - '**/*.md'
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - 'README.md'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - README.md
       - '**/*.md'
+
+# Agent pool (can be Default or Ubuntu-based hosted)
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-          cache: 'maven'
-          
-      - name: Build with Maven
-        run: mvn -B clean compile
-        
-      - name: Run Checkstyle
-        run: mvn -B checkstyle:check
-        
-      - name: Run Tests with Coverage
-        run: mvn -B test jacoco:report
-        
-      - name: Package Application
-        run: mvn -B package -DskipTests
-        
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: '**/surefire-reports/TEST-*.xml'
-          
-      - name: Upload Coverage Report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: '**/site/jacoco/**'
-          
-      - name: Upload Build Artifacts
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifacts
-          path: '**/target/*.jar'
-          
-      - name: Display Build Summary
-        if: always()
-        run: |
-          echo "##[section]Build Summary"
-          echo "✅ Build completed successfully"
-          echo "✅ All JUnit tests passed"
-          echo "✅ JaCoCo coverage reports generated"
-          echo "✅ Checkstyle validation completed"
-          echo ""
-          echo "📊 Reports available in artifacts:"
-          echo "   - Test Results: test-results/"
-          echo "   - Coverage Report: coverage-report/"
-          echo "   - Build Artifacts: build-artifacts/"
+- job: Build
+  displayName: "Java CI with Maven"
+  timeoutInMinutes: 30
+
+  steps:
+  # -----------------------------
+  # 1. Checkout Code
+  # -----------------------------
+  - checkout: self
+    clean: true
+
+  # -----------------------------
+  # 2. Set Up JDK 11
+  # -----------------------------
+  - task: UseJavaVersion@1
+    displayName: "Set up JDK 11"
+    inputs:
+      versionSpec: '11'
+      jdkArchitecture: 'x64'
+      jdkSourceOption: 'PreInstalled'
+
+  # -----------------------------
+  # 3. Verify Environment
+  # -----------------------------
+  - script: |
+      echo "Agent: $(Agent.Name)"
+      echo "Pool: $(Agent.PoolName)"
+      java -version
+      mvn -version
+    displayName: "Verify Environment"
+
+  # -----------------------------
+  # 4. Build and Compile
+  # -----------------------------
+  - script: mvn -B clean compile
+    displayName: "Build with Maven"
+
+  # -----------------------------
+  # 5. Run Checkstyle
+  # -----------------------------
+  - script: mvn -B checkstyle:check
+    displayName: "Run Checkstyle"
+
+  # -----------------------------
+  # 6. Run Tests with JaCoCo Coverage
+  # -----------------------------
+  - script: mvn -B test jacoco:report
+    displayName: "Run Tests with Coverage"
+
+  # -----------------------------
+  # 7. Package Application
+  # -----------------------------
+  - script: mvn -B package -DskipTests
+    displayName: "Package Application"
+
+  # -----------------------------
+  # 8. Publish Test Results (JUnit)
+  # -----------------------------
+  - task: PublishTestResults@2
+    displayName: "Publish Test Results"
+    condition: always()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+
+  # -----------------------------
+  # 9. Publish Code Coverage (JaCoCo)
+  # -----------------------------
+  - task: PublishCodeCoverageResults@1
+    displayName: "Publish JaCoCo Coverage"
+    condition: succeededOrFailed()
+    inputs:
+      codeCoverageTool: 'JaCoCo'
+      summaryFileLocation: '**/jacoco.xml'
+      reportDirectory: '**/site/jacoco'
+      failIfCoverageEmpty: false
+
+  # -----------------------------
+  # 10. Copy Build Artifacts
+  # -----------------------------
+  - task: CopyFiles@2
+    displayName: "Copy Build Artifacts"
+    condition: succeeded()
+    inputs:
+      sourceFolder: '$(System.DefaultWorkingDirectory)'
+      contents: |
+        **/target/*.jar
+        **/site/**
+      targetFolder: '$(Build.ArtifactStagingDirectory)'
+
+  # -----------------------------
+  # 11. Publish Build Artifacts
+  # -----------------------------
+  - task: PublishBuildArtifacts@1
+    displayName: "Publish Build Artifacts"
+    condition: succeeded()
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'java-build-artifacts'
+      publishLocation: 'Container'
+
+  # -----------------------------
+  # 12. Build Summary
+  # -----------------------------
+  - script: |
+      echo "##[section]Build Summary"
+      echo "✅ Build completed successfully"
+      echo "✅ JUnit tests executed"
+      echo "✅ JaCoCo coverage report generated"
+      echo "✅ Checkstyle validation passed"
+      echo ""
+      echo "📊 Artifacts available under:"
+      echo "  - Test Results: in Azure DevOps build summary"
+      echo "  - Coverage Report: target/site/jacoco/index.html"
+      echo "  - JAR Files: under build artifacts"
+    displayName: "Display Build Summary"
+    condition: always()
