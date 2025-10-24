@@ -1,5 +1,5 @@
 # ==============================================================
-# Azure DevOps Pipeline: Java CI with Maven
+# Azure DevOps Pipeline: Java CI with Maven (Self-Hosted Mac)
 # ==============================================================
 
 trigger:
@@ -20,8 +20,9 @@ pr:
       - README.md
       - '**/*.md'
 
+# Use your self-hosted agent pool
 pool:
-  name: Default   # self-hosted agent on your Mac
+  name: Default
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -40,53 +41,42 @@ jobs:
       clean: true
 
     # -----------------------------
-    # 2. Set Up JDK 11
-    # -----------------------------
-    - task: JavaToolInstaller@0
-      displayName: "Install and Set up JDK 11"
-      inputs:
-        versionSpec: '11'
-        jdkArchitectureOption: 'x64'
-        jdkSourceOption: 'AzureStorage'
-        jdkDestinationDirectory: '$(Agent.ToolsDirectory)/jdk'
-        cleanDestinationDirectory: true
-
-    # -----------------------------
-    # 3. Verify Environment
+    # 2. Verify Local Environment (Java + Maven)
     # -----------------------------
     - script: |
         echo "Agent: $(Agent.Name)"
         echo "Pool: $(Agent.PoolName)"
+        echo "Using pre-installed Java & Maven on the self-hosted agent"
         java -version
         mvn -version
       displayName: "Verify Environment"
 
     # -----------------------------
-    # 4. Build and Compile
+    # 3. Build and Compile
     # -----------------------------
     - script: mvn -B clean compile
       displayName: "Build with Maven"
 
     # -----------------------------
-    # 5. Run Checkstyle
+    # 4. Run Checkstyle
     # -----------------------------
     - script: mvn -B checkstyle:check
       displayName: "Run Checkstyle"
 
     # -----------------------------
-    # 6. Run Tests with JaCoCo Coverage
+    # 5. Run Tests with JaCoCo Coverage
     # -----------------------------
     - script: mvn -B test jacoco:report
       displayName: "Run Tests with Coverage"
 
     # -----------------------------
-    # 7. Package Application
+    # 6. Package Application
     # -----------------------------
     - script: mvn -B package -DskipTests
       displayName: "Package Application"
 
     # -----------------------------
-    # 8. Publish Test Results (JUnit)
+    # 7. Publish Test Results (JUnit)
     # -----------------------------
     - task: PublishTestResults@2
       displayName: "Publish Test Results"
@@ -98,7 +88,7 @@ jobs:
         failTaskOnFailedTests: true
 
     # -----------------------------
-    # 9. Publish Code Coverage (JaCoCo)
+    # 8. Publish Code Coverage (JaCoCo)
     # -----------------------------
     - task: PublishCodeCoverageResults@1
       displayName: "Publish JaCoCo Coverage"
@@ -110,7 +100,7 @@ jobs:
         failIfCoverageEmpty: false
 
     # -----------------------------
-    # 10. Copy Build Artifacts
+    # 9. Copy Build Artifacts
     # -----------------------------
     - task: CopyFiles@2
       displayName: "Copy Build Artifacts"
@@ -123,7 +113,7 @@ jobs:
         targetFolder: '$(Build.ArtifactStagingDirectory)'
 
     # -----------------------------
-    # 11. Publish Build Artifacts
+    # 10. Publish Build Artifacts
     # -----------------------------
     - task: PublishBuildArtifacts@1
       displayName: "Publish Build Artifacts"
@@ -134,7 +124,7 @@ jobs:
         publishLocation: 'Container'
 
     # -----------------------------
-    # 12. Build Summary
+    # 11. Build Summary
     # -----------------------------
     - script: |
         echo "##[section]Build Summary"
