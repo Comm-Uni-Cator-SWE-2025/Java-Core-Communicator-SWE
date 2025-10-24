@@ -1,19 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <checkstyle version="9.3">
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/ClientNetworkRecord.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/SimpleNetworking.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/Client.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/AbstractController.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/MessageListener.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/IUser.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/AbstractNetworking.java">
-</file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/PacketParser.java">
 <error line="33" column="1" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
 <error line="34" column="5" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
@@ -73,22 +59,8 @@
 <error line="107" column="41" severity="error" message="&apos;8&apos; is a magic number." source="com.puppycrawl.tools.checkstyle.checks.coding.MagicNumberCheck"/>
 <error line="107" column="56" severity="error" message="&apos;)&apos; is preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.ParenPadCheck"/>
 </file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/Server.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/SimpleNetworking/package-info.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/Topology.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/NetworkSerializer.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/NetworkType.java">
-</file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/MainServer.java">
 <error line="130" column="85" severity="error" message="Must have at least one statement." source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/AbstractController.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/P2PServer.java">
 </file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/ModulePriority.java">
 <error line="9" column="5" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
@@ -107,12 +79,6 @@
 <error line="36" column="5" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
 <error line="38" column="5" severity="error" message="Redundant &apos;private&apos; modifier." source="com.puppycrawl.tools.checkstyle.checks.modifier.RedundantModifierCheck"/>
 </file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/P2PUser.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/MessageListener.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/NetworkConnectionType.java">
-</file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/ClientServer.java">
 <error line="118" column="18" severity="warning" message="&apos;if&apos; child has incorrect indentation level 17, expected level should be 16." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
 <error line="119" column="18" severity="warning" message="&apos;if&apos; child has incorrect indentation level 17, expected level should be 16." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
@@ -123,10 +89,6 @@
 <error line="128" column="18" severity="warning" message="&apos;if&apos; has incorrect indentation level 17, expected level should be 16." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
 <error line="130" column="18" severity="warning" message="&apos;if rcurly&apos; has incorrect indentation level 17, expected level should be 16." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
 <error line="213" column="18" severity="error" message="More than 7 parameters (found 8)." source="com.puppycrawl.tools.checkstyle.checks.sizes.ParameterNumberCheck"/>
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/AbstractCluster.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/AbstractNetworking.java">
 </file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/Cluster.java">
 <error line="1" column="27" severity="error" message="&apos;;&apos; is not followed by whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
@@ -153,8 +115,6 @@
 <error line="28" column="5" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
 <error line="30" column="5" severity="error" message="Redundant &apos;private&apos; modifier." source="com.puppycrawl.tools.checkstyle.checks.modifier.RedundantModifierCheck"/>
 <error line="33" column="31" severity="error" message="Parameter n should be final." source="com.puppycrawl.tools.checkstyle.checks.FinalParametersCheck"/>
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/AbstractTopology.java">
 </file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/PacketParser.java">
 <error line="48" column="1" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
@@ -205,8 +165,6 @@
 <error line="197" column="13" severity="error" message="Variable &apos;p3Current&apos; should be declared final." source="com.puppycrawl.tools.checkstyle.checks.coding.FinalLocalVariableCheck"/>
 <error line="200" column="13" severity="error" message="Variable &apos;totalP3Budget&apos; should be declared final." source="com.puppycrawl.tools.checkstyle.checks.coding.FinalLocalVariableCheck"/>
 </file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/NetworkStructure.java">
-</file>
 <file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/Main.java">
 <error line="8" column="1" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
 <error line="9" column="5" severity="error" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
@@ -232,17 +190,5 @@
 <error line="29" column="20" severity="error" message="Variable &apos;input&apos; should be declared final." source="com.puppycrawl.tools.checkstyle.checks.coding.FinalLocalVariableCheck"/>
 <error line="30" column="13" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 <error line="30" column="29" severity="error" message="String literal expressions should be on the left side of an equals comparison." source="com.puppycrawl.tools.checkstyle.checks.coding.EqualsAvoidNullCheck"/>
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/Networking.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/P2PClient.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/ClientNode.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/P2PCluster.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/ProtocolBase.java">
-</file>
-<file name="/Users/aryanmathur/Desktop/Java-Core-Communicator-SWE/java/module-networking/src/main/java/com/swe/networking/TCPCommunicator.java">
 </file>
 </checkstyle>
