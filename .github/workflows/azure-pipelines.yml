@@ -20,9 +20,8 @@ pr:
       - README.md
       - '**/*.md'
 
-# Use your self-hosted agent pool
 pool:
-  name: Default
+  name: Default   # Self-hosted agent on your Mac
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -41,12 +40,12 @@ jobs:
       clean: true
 
     # -----------------------------
-    # 2. Verify Local Environment (Java + Maven)
+    # 2. Verify Environment
     # -----------------------------
     - script: |
         echo "Agent: $(Agent.Name)"
         echo "Pool: $(Agent.PoolName)"
-        echo "Using pre-installed Java & Maven on the self-hosted agent"
+        echo "Using pre-installed Java & Maven"
         java -version
         mvn -version
       displayName: "Verify Environment"
@@ -54,29 +53,29 @@ jobs:
     # -----------------------------
     # 3. Build and Compile
     # -----------------------------
-    - script: mvn -B clean compile
+    - script: mvn -f java/pom.xml -B clean compile
       displayName: "Build with Maven"
 
     # -----------------------------
     # 4. Run Checkstyle
     # -----------------------------
-    - script: mvn -B checkstyle:check
+    - script: mvn -f java/pom.xml -B checkstyle:check
       displayName: "Run Checkstyle"
 
     # -----------------------------
     # 5. Run Tests with JaCoCo Coverage
     # -----------------------------
-    - script: mvn -B test jacoco:report
+    - script: mvn -f java/pom.xml -B test jacoco:report
       displayName: "Run Tests with Coverage"
 
     # -----------------------------
     # 6. Package Application
     # -----------------------------
-    - script: mvn -B package -DskipTests
+    - script: mvn -f java/pom.xml -B package -DskipTests
       displayName: "Package Application"
 
     # -----------------------------
-    # 7. Publish Test Results (JUnit)
+    # 7. Publish Test Results
     # -----------------------------
     - task: PublishTestResults@2
       displayName: "Publish Test Results"
@@ -129,13 +128,12 @@ jobs:
     - script: |
         echo "##[section]Build Summary"
         echo "✅ Build completed successfully"
-        echo "✅ JUnit tests executed"
+        echo "✅ Tests executed"
         echo "✅ JaCoCo coverage report generated"
         echo "✅ Checkstyle validation passed"
         echo ""
-        echo "📊 Artifacts available under:"
-        echo "  - Test Results: in Azure DevOps build summary"
-        echo "  - Coverage Report: target/site/jacoco/index.html"
+        echo "📊 Artifacts available:"
+        echo "  - Coverage Report: java/target/site/jacoco/index.html"
         echo "  - JAR Files: under build artifacts"
       displayName: "Display Build Summary"
       condition: always()
