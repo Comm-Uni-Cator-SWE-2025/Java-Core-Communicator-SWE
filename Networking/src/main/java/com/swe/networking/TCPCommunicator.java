@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -125,7 +126,8 @@ public final class TCPCommunicator implements ProtocolBase {
             final InputStream input = socket.getInputStream();
             final DataInputStream dataIn = new DataInputStream(input);
             final int bytesRead = dataIn.read(buffer, 0, byteBufferSize);
-            return buffer;
+            final byte[] data = Arrays.copyOfRange(buffer, 0, bytesRead);
+            return data;
         } catch (IOException ex) {
             return null;
         }
