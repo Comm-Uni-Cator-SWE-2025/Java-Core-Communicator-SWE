@@ -44,22 +44,25 @@ jobs:
   # -----------------------------
   # 2. Set Up JDK 11
   # -----------------------------
-  - task: JavaToolInstaller@0
-    displayName: "Set up JDK 11"
-    inputs:
-      versionSpec: '11'
-      jdkArchitecture: 'x64'
-      jdkSourceOption: 'PreInstalled'
+- task: JavaToolInstaller@0
+  displayName: "Install and Set up JDK 11"
+  inputs:
+    versionSpec: '11'
+    jdkArchitectureOption: 'x64'
+    jdkSourceOption: 'AzureStorage'
+    jdkDestinationDirectory: '$(Agent.ToolsDirectory)/jdk'
+    cleanDestinationDirectory: true
+
 
   # -----------------------------
   # 3. Verify Environment
   # -----------------------------
-  - script: |
-      echo "Agent: $(Agent.Name)"
-      echo "Pool: $(Agent.PoolName)"
-      java -version
-      mvn -version
-    displayName: "Verify Environment"
+- script: |
+    echo "Agent: $(Agent.Name)"
+    echo "Pool: $(Agent.PoolName)"
+    java -version
+    mvn -version
+  displayName: "Verify Environment"
 
   # -----------------------------
   # 4. Build and Compile
