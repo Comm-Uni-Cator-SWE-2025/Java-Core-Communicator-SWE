@@ -23,7 +23,7 @@ pr:
 
 # Agent pool (can be Default or Ubuntu-based hosted)
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
