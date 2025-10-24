@@ -35,6 +35,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -77,7 +78,7 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * Image synchronizer object.
      */
-    private final ImageSynchronizer imageSynchronizer;
+    private final HashMap<String, ImageSynchronizer> imageSynchronizers;
     /**
      * Image scaler object.
      */
@@ -120,14 +121,20 @@ public class MediaCaptureManager implements CaptureManager {
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         imageStitcher = new ImageStitcher();
-        imageSynchronizer = new ImageSynchronizer(videoCodec);
+        imageSynchronizers = new HashMap<>();
         viewers = new ArrayList<>();
         scalar = new BilinearScaler();
 
         System.out.println(getSelfIP());
-        final ClientNode selfNode = new ClientNode(getSelfIP(), port);
-        viewers.add(selfNode);
+        addParticipant(getSelfIP());
+        addParticipant("10.32.11.242");
         initializeHandlers();
+    }
+
+    private void addParticipant(final String ip) {
+        final ClientNode node = new ClientNode(ip, port);
+        viewers.add(node);
+        imageSynchronizers.put(ip, new ImageSynchronizer(videoCodec));
     }
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
@@ -236,6 +243,7 @@ public class MediaCaptureManager implements CaptureManager {
             }
 
             final CPackets networkPackets = new CPackets(getSelfIP(), patches);
+            System.out.println("Sending to " + networkPackets.getIp());
             byte[] encodedPatches = null;
             int tries = Utils.MAX_TRIES_TO_SERIALIZE;
             while (tries-- > 0) {
@@ -260,6 +268,7 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private void sendImageToViewers(final byte[] feed) {
+        viewers.forEach(System.out::println);
         networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
     }
 
@@ -343,8 +352,12 @@ public class MediaCaptureManager implements CaptureManager {
                 case NetworkPacketType.LIST_CPACKETS -> {
                     final CPackets networkPackets = CPackets.deserialize(data);
                     final List<CompressedPatch> patches = networkPackets.getPackets();
+                    final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());
+                    if (imageSynchronizer == null) {
+                        return;
+                    }
                     final int[][] image = imageSynchronizer.synchronize(patches);
-                    final RImage rImage = new RImage(image, getSelfIP());
+                    final RImage rImage = new RImage(image, networkPackets.getIp());
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
@@ -355,8 +368,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
-                    final ClientNode viewerNode = new ClientNode(viewerIP, port);
-                    viewers.add(viewerNode);
+                    addParticipant(viewerIP);
                 }
                 default -> {
                 }

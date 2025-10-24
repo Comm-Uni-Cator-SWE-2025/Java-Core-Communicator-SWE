@@ -34,6 +34,10 @@ public class DummyRPC implements AbstractRPC {
 
     @Override
     public CompletableFuture<byte[]> call(String name, byte[] args) {
+        if (server == null) {
+            System.err.println("Server is null");
+            return CompletableFuture.supplyAsync(() -> {return new byte[0];});
+        }
         byte funcId = server.getRemoteProcedureId(name);
         try {
             return server.makeRemoteCall(funcId, args,0 );
