@@ -2,6 +2,7 @@
 
 # Java Core Communicator SWE — Project Structure & Contribution Guidelines
 
+ 
 Welcome to the **SWE Java Monorepo**!
 This document defines the **directory structure**, **branching conventions**, **module ownership**, **testing & checkstyle rules**, and the **workflow every contributor must follow before merging code**.
 
@@ -65,6 +66,35 @@ Java-Core-Communicator-SWE/
         ├── pom.xml
         └── src/test/java/com/swe/it/...
 ```
+
+Every module follows a **standard Maven structure**:
+
+```
+src/
+ ├─ main/java/...     → Java source files
+ ├─ main/resources/   → configs, assets
+ ├─ test/java/...     → unit/integration tests
+ └─ test/resources/   → test assets
+```
+
+---
+
+## 🌱 Branching & Collaboration Model
+
+### 🧭 Branches
+
+| Branch                 | Purpose                                                                         |
+| :--------------------- | :------------------------------------------------------------------------------ |
+| **`main`**             | Stable, production-ready code. No direct commits.                               |
+| **`dev`**              | Active development branch. All merges go here after review.                     |
+| **`module-*`** | Temporary branches for individual module work. Developers commit and test here. |
+
+**✅ Only Team Leads have push access to `dev`.**
+All other commits must be done via PRs (pull requests) from feature branches.
+
+The **CI/CD pipeline** automatically runs Checkstyle + JUnit tests for all modules when PRs are raised to `dev`.
+
+After stable builds, `main` is synced periodically from `dev`.
 
 Every module follows a **standard Maven structure**:
 
