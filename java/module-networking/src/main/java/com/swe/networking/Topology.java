@@ -184,6 +184,47 @@ public final class Topology implements AbstractTopology, AbstractController {
     }
 
     /**
+     * Function to replace the current network with a new one.
+     * @param network the new network structure
+    */
+    public void replaceNetwork(final NetworkStructure network) {
+        clusters.clear();
+        clusterServers.clear();
+        for (int i = 0; i < network.clusters().size(); i++) {
+            clusters.add(network.clusters().get(i));
+            clusterServers.add(network.servers().get(i));
+        }
+        numClusters = network.clusters().size();
+        numClients = 0;
+        for (List<ClientNode> cluster : clusters) {
+            numClients += cluster.size();
+        }
+    }
+
+    /**
+     * Function to get the cluster index of a client.
+     * @param client the client whose index is needed
+     * @return the cluster index of the client
+     */
+    public int getClusterIndex(final ClientNode client) {
+        for (int i = 0; i < clusters.size(); i++) {
+            if (clusters.get(i).contains(client)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Function to get all clients in a cluster.
+     * @param index the index of the cluster
+     * @return list of all clients in the cluster
+     */
+    public List<ClientNode> getClients(final int index) {
+        return clusters.get(index);
+    }
+
+    /**
      * Function to get all the cluster servers.
      *
      * @return list of all cluster servers.
