@@ -104,7 +104,8 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println(this.localIp);
 
 //        addParticipant(getSelfIP());
-        addParticipant("10.32.9.37");
+        addParticipant("10.32.11.242");
+//        addParticipant("10.32.9.37");
     }
 
     private void addParticipant(final String ip) {
@@ -137,7 +138,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (encodedPatches == null) {
                 continue;
             }
-//            sendImageToViewers(encodedPatches);
+            sendImageToViewers(encodedPatches);
         }
     }
 
@@ -189,7 +190,7 @@ public class MediaCaptureManager implements CaptureManager {
                         final byte[] serializedImage = rImage.serialize();
                         // Fire-and-forget; do not block capture thread — worker thread can block on network
                         try {
-                            rpc.call(Utils.UPDATE_UI, serializedImage).get();
+                            rpc.call(Utils.UPDATE_UI, serializedImage);
                         } catch (final Exception e) {
                             e.printStackTrace();
                         }
@@ -333,7 +334,7 @@ public class MediaCaptureManager implements CaptureManager {
         private final AbstractNetworking networking;
 
         CaptureComponents(final AbstractNetworking argNetworking) {
-            isScreenCaptureOn = true;
+            isScreenCaptureOn = false;
             isVideoCaptureOn = false;
             this.networking = argNetworking;
             videoCapture = new VideoCapture();

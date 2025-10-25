@@ -7,5 +7,10 @@ package com.swe.networking.SimpleNetworking;
  */
 @FunctionalInterface
 public interface MessageListener {
+    /**
+     * Method to invoke on receiving the data.
+     *
+     * @param data the data to be sent
+     */
     void receiveData(byte[] data);
 }
