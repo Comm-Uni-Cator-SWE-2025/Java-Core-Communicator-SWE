@@ -5,5 +5,5 @@ package com.swe.networking;
  *
  */
 public interface AbstractTopology {
-    ClientNode getServer(String dest);
+    ClientNode getServer(ClientNode dest);
 }
