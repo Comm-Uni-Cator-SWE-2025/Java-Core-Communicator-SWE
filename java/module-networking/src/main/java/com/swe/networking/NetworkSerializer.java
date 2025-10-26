@@ -2,6 +2,9 @@ package com.swe.networking;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Class for serializing network objects.
@@ -54,7 +57,7 @@ public class NetworkSerializer {
     /**
      * Function to deserialize ClientNetworkRecord.
      *
-     * @param data the data to desrialized
+     * @param data the data to deserialized
      * @return the ClientNetworkRecord object
      */
     public ClientNetworkRecord deserializeClientNetworkRecord(final byte[] data) {
@@ -111,7 +114,57 @@ public class NetworkSerializer {
     public byte[] serializeNetworkStructure(final NetworkStructure structure) {
         // Assume maximum 80 clients in 8 clusters
         // 1 Client -> max 10 bytes total -> 800 bytes
-        //
-        return null;
+        final int bufferSize = 1000;
+        final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+        buffer.put((byte) structure.clusters().size());
+        for (List<ClientNode> clusters : structure.clusters()) {
+            buffer.put((byte) clusters.size());
+            for (ClientNode client : clusters) {
+                buffer.put(serializeClientNode(client));
+            }
+        }
+        for (ClientNode server : structure.servers()) {
+            buffer.put(serializeClientNode(server));
+        }
+        final byte[] data = Arrays.copyOf(buffer.array(), buffer.position());
+        return data;
+    }
+
+    /**
+     * Function to deserialize NetworkStrucuture.
+     *
+     * @param data the data to deserialized
+     * @return the Network Structure object
+     */
+    public NetworkStructure deserializeNetworkStructure(final byte[] data) {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final int clustersLength = buffer.get();
+        final List<List<ClientNode>> clusters = new ArrayList<>();
+        for (int i = 0; i < clustersLength; i++) {
+            final int clientsLength = buffer.get();
+            final List<ClientNode> clients = new ArrayList<>();
+            for (int j = 0; j < clientsLength; j++) {
+                final int hostLength = buffer.get();
+                final byte[] hostName = new byte[hostLength];
+                buffer.get(hostName);
+                final String hostIp = new String(hostName, StandardCharsets.UTF_8);
+                final int hostPort = buffer.getInt();
+                final ClientNode record = new ClientNode(hostIp, hostPort);
+                clients.add(record);
+            }
+            clusters.add(clients);
+        }
+        final List<ClientNode> servers = new ArrayList<>();
+        for (int i = 0; i < clustersLength; i++) {
+            final int hostLength = buffer.get();
+            final byte[] hostName = new byte[hostLength];
+            buffer.get(hostName);
+            final String hostIp = new String(hostName, StandardCharsets.UTF_8);
+            final int hostPort = buffer.getInt();
+            final ClientNode record = new ClientNode(hostIp, hostPort);
+            servers.add(record);
+        }
+        final NetworkStructure network = new NetworkStructure(clusters, servers);
+        return network;
     }
 }

@@ -34,6 +34,11 @@ public class MainServer implements P2PUser {
     private final Thread receiveThread;
 
     /**
+     * variable to store the main cluster index.
+     */
+    private final int mainServerClusterIdx;
+
+    /**
      * Constructor function for the main server class.
      *
      * @param deviceAddress     the IP address of the device
@@ -43,6 +48,7 @@ public class MainServer implements P2PUser {
             final ClientNode mainServerAddress) {
         System.out.println("Creating a new Main Server...");
         serverPort = deviceAddress.port();
+        mainServerClusterIdx = 0;
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -83,7 +89,11 @@ public class MainServer implements P2PUser {
         while (true) {
             final byte[] packet = communicator.receiveData();
             if (packet != null) {
-                final String payload = new String(parser.getPayload(packet));
+                String payload = "";
+                try {
+                    payload = new String(parser.parsePacket(packet).getPayload());
+                } catch (UnknownHostException e) {
+                }
                 System.out.println("Data received : " + payload);
                 parsePacket(packet);
             }
@@ -97,11 +107,11 @@ public class MainServer implements P2PUser {
      */
     private void parsePacket(final byte[] packet) {
         try {
-            final int connectionType = parser.getConnectionType(packet);
-            final int type = parser.getType(packet);
-            final InetAddress destInet = parser.getIpAddress(packet);
+            final int connectionType = parser.parsePacket(packet).getConnectionType();
+            final int type = parser.parsePacket(packet).getType();
+            final InetAddress destInet = parser.parsePacket(packet).getIpAddress();
             final String destinationIp = destInet.getHostAddress();
-            final int destinationPort = parser.getPortNum(packet);
+            final int destinationPort = parser.parsePacket(packet).getPortNum();
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
             System.out.println("Packet received of type "
@@ -111,23 +121,21 @@ public class MainServer implements P2PUser {
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
                     final int clusterIdx = topology.addClient(dest);
-                    final NetworkStructure network = topology.getNetwork();
-                    final byte[] responsePacket = parser.createPkt(3, 0, 0,
-                            4, 0, destInet, destinationPort,
-                            (int) (Math.random() * 1000), 0, 1,
-                            network.toString().getBytes());
-                    System.out.println("Sending current network details...");
-                    send(responsePacket, dest);
+                    sendNetworkPktResponse(dest);
+                    // send add packet to all cluster servers.
                     final List<ClientNode> servers = topology.getAllClusterServers();
                     for (ClientNode server : servers) {
-                        final ClientNetworkRecord addClient = new ClientNetworkRecord(dest, clusterIdx);
-                        final byte[] addPacket = parser.createPkt(3, 0, 0,
-                                4, 0, InetAddress.getByName(server.hostName()),
-                                server.port(), (int) (Math.random() * 1000),
-                                0, 1, addClient.toString().getBytes());
-                        send(addPacket, server);
+                        sendAddPktResponse(dest, server, clusterIdx);
                     }
+
+                    // send add packet to all cluster clients of this cluster
+                    final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
+                    for (ClientNode client : clients) {
+                        sendAddPktResponse(dest, client, clusterIdx);
+                    }
+
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
+                    System.out.println("Received alive packet from " + dest);
                     // TODO Create a timer class object
                 } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                     // TODO Decide whether to close the networking class
@@ -139,6 +147,66 @@ public class MainServer implements P2PUser {
             } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
                 send(packet, dest);
             }
+        } catch (UnknownHostException ex) {
+        }
+    }
+
+    /**
+     * Function to send the network strcture to the requested client.
+     *
+     * @param dest the destination to send the packet
+     */
+    private void sendNetworkPktResponse(final ClientNode dest) {
+        try {
+            final NetworkStructure network = topology.getNetwork();
+            final int randomFactor = (int) Math.pow(10, 6);
+            final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+
+            final PacketInfo responsePacket = new PacketInfo();
+            responsePacket.setType(NetworkType.USE.ordinal());
+            responsePacket.setPriority(0);
+            responsePacket.setModule(ModuleType.NETWORKING.ordinal());
+            responsePacket.setConnectionType(NetworkConnectionType.NETWORK.ordinal());
+            responsePacket.setBroadcast(0);
+            responsePacket.setIpAddress(InetAddress.getByName(dest.hostName()));
+            responsePacket.setPortNum(dest.port());
+            responsePacket.setMessageId((int) (Math.random() * randomFactor));
+            responsePacket.setChunkNum(0);
+            responsePacket.setChunkLength(1);
+            responsePacket.setPayload(serializer.serializeNetworkStructure(network));
+            System.out.println("Sending current network details...");
+            final byte[] responsePkt = parser.createPkt(responsePacket);
+            send(responsePkt, dest);
+        } catch (UnknownHostException ex) {
+        }
+    }
+
+    /**
+     * Function to send add packet to the given destination.
+     *
+     * @param dest       the new client to add
+     * @param server     the server to send to
+     * @param clusterIdx the index of cluster it belongs to
+     */
+    private void sendAddPktResponse(final ClientNode dest, final ClientNode server, final int clusterIdx) {
+        try {
+            final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+            final int randomFactor = (int) Math.pow(10, 6);
+            final ClientNetworkRecord addClient = new ClientNetworkRecord(dest, clusterIdx);
+            final PacketInfo addPacket = new PacketInfo();
+            addPacket.setType(NetworkType.USE.ordinal());
+            addPacket.setPriority(0);
+            addPacket.setModule(ModuleType.NETWORKING.ordinal());
+            addPacket.setConnectionType(NetworkConnectionType.ADD.ordinal());
+            addPacket.setBroadcast(0);
+            addPacket.setIpAddress(InetAddress.getByName(server.hostName()));
+            addPacket.setPortNum(server.port());
+            addPacket.setMessageId((int) (Math.random() * randomFactor));
+            addPacket.setChunkNum(0);
+            addPacket.setChunkLength(1);
+            addPacket.setPayload(serializer.serializeClientNetworkRecord(addClient));
+            final byte[] addPkt = parser.createPkt(addPacket);
+            send(addPkt, server);
         } catch (UnknownHostException ex) {
         }
     }

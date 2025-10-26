@@ -1,18 +1,19 @@
 package com.swe.networking;
 
-import org.junit.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class PacketParserTest {
 
     @Test
     public void testTypeExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(2);
         ds.setPriority(0);
         ds.setModule(0);
@@ -24,16 +25,16 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(2, info.getType());
     }
 
     @Test
     public void testPriorityExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(5);
         ds.setModule(0);
@@ -45,16 +46,16 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(5, info.getPriority());
     }
 
     @Test
     public void testModuleExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(9); // 9 = 1001 (binary)
@@ -66,16 +67,16 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(9, info.getModule());
     }
 
     @Test
     public void testConnectionTypeExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -87,16 +88,16 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(6, info.getConnectionType());
     }
 
     @Test
     public void testBroadcastExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -108,16 +109,16 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(1, info.getBroadcast());
     }
 
     @Test
     public void testIpAddressExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("192.168.1.50");
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("192.168.1.50");
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -129,17 +130,17 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(ip, info.getIpAddress());
     }
 
     @Test
     public void testPortNumExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        int port = 8080;
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final int port = 8080;
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -151,17 +152,17 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(port, info.getPortNum());
     }
 
     @Test
     public void testMessageIdExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        int messageId = 123456;
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final int messageId = 123456;
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -173,17 +174,17 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(messageId, info.getMessageId());
     }
 
     @Test
     public void testChunkNumExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        int chunkNum = 654321;
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final int chunkNum = 654321;
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -195,17 +196,17 @@ public class PacketParserTest {
         ds.setChunkNum(chunkNum);
         ds.setChunkLength(0);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(chunkNum, info.getChunkNum());
     }
 
     @Test
     public void testChunkLengthExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        int chunkLength = 12345678;
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final int chunkLength = 12345678;
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -217,17 +218,17 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(chunkLength);
         ds.setPayload(new byte[0]);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertEquals(chunkLength, info.getChunkLength());
     }
 
     @Test
     public void testPayloadExtraction() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        byte[] payload = {10, 20, 30, 40};
-        PacketInfo ds = new PacketInfo();
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final byte[] payload = { 10, 20, 30, 40 };
+        final PacketInfo ds = new PacketInfo();
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -239,28 +240,28 @@ public class PacketParserTest {
         ds.setChunkNum(0);
         ds.setChunkLength(0);
         ds.setPayload(payload);
-        byte[] pkt = parser.createPkt(ds);
-        PacketInfo info = parser.parsePacket(pkt);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
         assertArrayEquals(payload, info.getPayload());
     }
 
     @Test
     public void testPkt() throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
+        final PacketParser parser = PacketParser.getPacketParser();
 
-        int type = 3;
-        int priority = 7;
-        int module = 15;
-        int connectionType = 5;
-        int broadcast = 1;
-        InetAddress ip = InetAddress.getByName("10.0.0.5");
-        int port = 65535;
-        int MessageId = 12345678;
-        int ChunkNum = 87654321;
-        int ChunkLength = 1024;
-        byte[] data = {1, 2, 3, 4, 5};
+        final int type = 3;
+        final int priority = 7;
+        final int module = 15;
+        final int connectionType = 5;
+        final int broadcast = 1;
+        final InetAddress ip = InetAddress.getByName("10.0.0.5");
+        final int port = 65535;
+        final int MessageId = 12345678;
+        final int ChunkNum = 87654321;
+        final int ChunkLength = 1024;
+        final byte[] data = { 1, 2, 3, 4, 5 };
 
-        PacketInfo ds = new PacketInfo();
+        final PacketInfo ds = new PacketInfo();
         ds.setType(type);
         ds.setPriority(priority);
         ds.setModule(module);
@@ -273,9 +274,9 @@ public class PacketParserTest {
         ds.setChunkLength(ChunkLength);
         ds.setPayload(data);
 
-        byte[] pkt = parser.createPkt(ds);
+        final byte[] pkt = parser.createPkt(ds);
 
-        PacketInfo info = parser.parsePacket(pkt);
+        final PacketInfo info = parser.parsePacket(pkt);
 
         assertEquals(type, info.getType());
         assertEquals(priority, info.getPriority());
