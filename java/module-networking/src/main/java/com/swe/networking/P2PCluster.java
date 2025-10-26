@@ -50,9 +50,11 @@ public class P2PCluster {
     public void addUser(final ClientNode client, final ClientNode server) {
         System.out.println("Adding new user to the network...");
         // send hello to server
-        final byte[] helloPacket = packetParser.createPkt(
-            NetworkType.USE.ordinal(), 0, 0, NetworkConnectionType.HELLO.ordinal(), 
-            0, null, 0, 0, 0, 0, null); 
+        PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setType(NetworkType.USE.ordinal());
+        packetInfo.setPriority(NetworkConnectionType.HELLO.ordinal());
+        packetInfo.setPayload(new byte[0]);
+        final byte[] helloPacket = packetParser.createPkt(packetInfo);
 
         try {
             final Socket socket = new Socket(client.hostName(), client.port());
@@ -72,7 +74,10 @@ public class P2PCluster {
                 System.out.println("Received structure from server: " + server.hostName());
                 clients.add(client);
                 // deserialize the object from packet
-                final NetworkStructure networkStructure = packetParser.getPayload(packet);
+                packetInfo = packetParser.parsePacket(packet);
+                final NetworkStructure networkStructure =
+                    NetworkSerializer.getNetworkSerializer()
+                        .deserializeNetworkStructure(packetInfo.getPayload());
                 for (int i = 0; i < networkStructure.servers().size(); i++) {
                     if (networkStructure.servers().get(i).equals(client)) {
                         clusterServer = client;
@@ -80,12 +85,27 @@ public class P2PCluster {
                         for (ClientNode c : networkStructure.clusters().get(i)) {
                             ((P2PServer) user).monitor(c);
                         }
+                        // send network packet to the P2P server
+                        final Socket serverSocket =
+                            new Socket(server.hostName(), server.port());
+                        final OutputStream serverOut = serverSocket.getOutputStream();
+                        PacketInfo netPacketInfo = new PacketInfo();
+                        netPacketInfo.setType(NetworkType.USE.ordinal());
+                        netPacketInfo.setPriority(NetworkConnectionType.NETWORK.ordinal());
+                        netPacketInfo.setPayload(
+                            NetworkSerializer.getNetworkSerializer()
+                                .serializeNetworkStructure(networkStructure));
+                        final byte[] networkPacket = packetParser.createPkt(netPacketInfo);
+                        serverOut.write(networkPacket);
+                        serverOut.flush();
+                        serverSocket.close();
+                        this.isServer = true;
                         break;
                     }
                     if (networkStructure.clusters().get(i).contains(client)) {
                         clusterServer = networkStructure.servers().get(i);
                         this.isServer = false;
-                        user = new P2PClient(client, server);
+                        // user = new P2PClient(client, server);
                         break;
                     }
                 }
