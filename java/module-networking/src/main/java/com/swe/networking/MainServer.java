@@ -39,6 +39,19 @@ public class MainServer implements P2PUser {
     private final int mainServerClusterIdx;
 
     /**
+     * The timer object to monitor client timeouts.
+     */
+    private final Timer timer;
+
+    /**
+     * Variable to start the timer.
+     */
+    private final int timerTimeoutMilliSeconds = 30 * 1000;
+
+    /** Variable to store the server IP address. */
+    private final ClientNode mainserver;
+
+    /**
      * Constructor function for the main server class.
      *
      * @param deviceAddress     the IP address of the device
@@ -48,7 +61,9 @@ public class MainServer implements P2PUser {
             final ClientNode mainServerAddress) {
         System.out.println("Creating a new Main Server...");
         serverPort = deviceAddress.port();
+        mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
+        this.timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -121,6 +136,7 @@ public class MainServer implements P2PUser {
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
                     final int clusterIdx = topology.addClient(dest);
+                    addClientToTimer(dest, clusterIdx);
                     sendNetworkPktResponse(dest);
                     // send add packet to all cluster servers.
                     final List<ClientNode> servers = topology.getAllClusterServers();
@@ -135,19 +151,33 @@ public class MainServer implements P2PUser {
                     }
 
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
+                    timer.updateTimeout(dest);
                     System.out.println("Received alive packet from " + dest);
-                    // TODO Create a timer class object
                 } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
-                    // TODO Decide whether to close the networking class
                     System.out.println("Closing the Main Server");
                 }
             } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
+                // might new to change the type to SAMECLUSTER
                 final ClientNode newDest = topology.getServer(dest);
                 send(packet, newDest);
             } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
                 send(packet, dest);
             }
         } catch (UnknownHostException ex) {
+        }
+    }
+
+    /**
+     * Function add client to timer.
+     *
+     * @param client the client to be added.
+     * @param idx    the index of the cluster it belongs
+     */
+    private void addClientToTimer(final ClientNode client, final int idx) {
+        if (idx == mainServerClusterIdx) {
+            timer.addClient(client);
+        } else if (topology.getAllClusterServers().contains(client)) {
+            timer.addClient(client);
         }
     }
 
@@ -228,5 +258,37 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+    }
+
+    /**
+     * Function to handle timeout of clients.
+     *
+     * @param client the client which was timeout
+     */
+    private void handleClientTimeout(final ClientNode client) {
+        // send remove packet to all clients in the cluster and main server
+        final ClientNetworkRecord remClient = new ClientNetworkRecord(client,
+                topology.getClusterIndex(client));
+        topology.removeClient(remClient);
+        timer.removeClient(client);
+        final PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setType(NetworkType.USE.ordinal());
+        packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+        packetInfo.setPayload(client.toString().getBytes());
+        final byte[] removePacket = parser.createPkt(packetInfo);
+        final List<ClientNode> servers = topology.getAllClusterServers();
+        for (ClientNode server : servers) {
+            if (server.equals(mainserver)) {
+                continue;
+            }
+            send(removePacket, server);
+        }
+        final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
+        for (ClientNode newClient : clients) {
+            if (newClient.equals(mainserver)) {
+                continue;
+            }
+            send(removePacket, newClient);
+        }
     }
 }

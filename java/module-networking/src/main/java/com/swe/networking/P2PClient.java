@@ -254,8 +254,6 @@ public class P2PClient implements P2PUser {
                 final NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
                 topology.replaceNetwork(newNetwork);
 
-                updateClusterServer();
-
                 break;
 
             case CLOSE: // 111 : close the client terminate
@@ -267,19 +265,6 @@ public class P2PClient implements P2PUser {
             default:
                 System.err.println("p2pclient received unknown packet type");
         }
-    }
-
-    /**
-     * this is helper function to update cluster server address.
-     * may be changed after changing network structure (add, remove, replace)
-     */
-
-    void updateClusterServer() {
-        this.clusterServerAddress = topology.getServer(this.deviceAddress);
-        if (this.clusterServerAddress == null) {
-            System.err.println("p2pclient: Not find my cluster server in topology.");
-        }
-        return;
     }
 
     @Override
