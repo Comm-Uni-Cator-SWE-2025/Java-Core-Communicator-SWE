@@ -24,6 +24,11 @@ public class P2PServer implements P2PUser {
     private final Topology topology = Topology.getTopology();
 
     /**
+     * Singleton Serializer object.
+     */
+    private final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+
+    /**
      * The port at which the TCP server runs.
      */
     private final int serverPort;
@@ -72,7 +77,6 @@ public class P2PServer implements P2PUser {
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
         
-        this.timer.start();
         sendThread.start();
         receiveThread.start();
 
@@ -131,12 +135,12 @@ public class P2PServer implements P2PUser {
      */
     private void handlePacket(final byte[] packet) throws UnknownHostException {
         // parse the packet
-        final String payload = new String(parser.getPayload(packet));
-        final int connectionType = parser.getConnectionType(packet);
-        final int type = parser.getType(packet);
-        final InetAddress destInet = parser.getIpAddress(packet);
+        PacketInfo packetInfo = parser.parsePacket(packet);
+        final int connectionType = packetInfo.getConnectionType();
+        final int type = packetInfo.getType();
+        final InetAddress destInet = packetInfo.getIpAddress();
         final String destinationIp = destInet.getHostAddress();
-        final int destinationPort = parser.getPortNum(packet);
+        final int destinationPort = packetInfo.getPortNum();
         final ClientNode dest = new ClientNode(destinationIp,
                 destinationPort);
 
@@ -144,7 +148,10 @@ public class P2PServer implements P2PUser {
         if (type == NetworkType.USE.ordinal() || type == NetworkType.CLUSTERSERVER.ordinal()) {
             handleUsePacket(connectionType, packet, dest);
         } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
-            send(packet, dest);
+            PacketInfo pktInfo = parser.parsePacket(packet);
+            pktInfo.setType(NetworkType.USE.ordinal());
+            final byte[] newPacket = parser.createPkt(pktInfo);
+            send(newPacket, dest);
         } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
             final ClientNode clusterServer = topology.getServer(dest);
             send(packet, clusterServer);
@@ -193,13 +200,20 @@ public class P2PServer implements P2PUser {
     }
 
     private void handleAdd(final byte[] packet, final ClientNode dest) throws UnknownHostException {
-        final ClientNetworkRecord client = parser.getPayload(packet); // deserialize
+        PacketInfo packetInfo = parser.parsePacket(packet);
+        final ClientNetworkRecord client =
+            serializer.deserializeClientNetworkRecord(packetInfo.getPayload());
         topology.updateNetwork(client);
         if (client.clusterIndex() == topology.getClusterIndex(deviceNode)) {
             timer.addClient(dest);
+            System.out.println("Client " + client.client().hostName()
+                + " added to timer.");
         }
         final int myCluster = topology.getClusterIndex(deviceNode);
         for (ClientNode c : topology.getClients(myCluster)) {
+            if(c.equals(deviceNode)) {
+                continue;
+            }
             send(packet, c);
         }
         System.out.println("Client " + client.client().hostName()
@@ -208,13 +222,18 @@ public class P2PServer implements P2PUser {
     }
 
     private void handleRemove(final byte[] packet, final ClientNode dest) throws UnknownHostException {
-        final ClientNetworkRecord remClient = parser.getPayload(packet);
+        PacketInfo packetInfo = parser.parsePacket(packet);
+        final ClientNetworkRecord remClient = 
+            serializer.deserializeClientNetworkRecord(packetInfo.getPayload());
         topology.removeClient(remClient);
         if (remClient.clusterIndex() == topology.getClusterIndex(deviceNode)) {
             timer.removeClient(dest);
         }
         final int myCluster = topology.getClusterIndex(deviceNode);
         for (ClientNode c : topology.getClients(myCluster)) {
+            if(c.equals(deviceNode)) {
+                continue;
+            }
             send(packet, c);
         }
         System.out.println("Client " + remClient.client().hostName()
@@ -223,19 +242,31 @@ public class P2PServer implements P2PUser {
     }
 
     private void handleNetwork(final byte[] packet) throws UnknownHostException {
-        final NetworkStructure network = parser.getPayload(packet);
+        PacketInfo packetInfo = parser.parsePacket(packet);
+        final NetworkStructure network =
+            serializer.deserializeNetworkStructure(packetInfo.getPayload());
         topology.replaceNetwork(network);
         System.out.println("Network structure updated at server.");
     }
 
     /**
      * Function to send ALIVE packets to main server.
-     * 
+     *
      */
     private void sendAliveToMainServer() {
-        final byte[] alivePacket = parser.createPkt(NetworkType.USE.ordinal(), 0, 0, 
-                                                    NetworkConnectionType.ALIVE.ordinal(), 0, null, 
-                                                    0, 0, 0, 0, null);
+        final PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setType(NetworkType.USE.ordinal());
+        packetInfo.setConnectionType(NetworkConnectionType.ALIVE.ordinal());
+        packetInfo.setPayload(new byte[0]);
+        try {
+            packetInfo.setIpAddress(InetAddress.getByName(mainServer.hostName()));
+        } catch (UnknownHostException e) {
+            System.out.println("Unknown host: " + mainServer.hostName());
+            e.printStackTrace();
+            return;
+        }
+        packetInfo.setPortNum(mainServer.port());
+        final byte[] alivePacket = parser.createPkt(packetInfo);
         while (true) {
             send(alivePacket, mainServer);
             try {
@@ -258,9 +289,11 @@ public class P2PServer implements P2PUser {
                                                                       topology.getClusterIndex(client));
         topology.removeClient(remClient);
         timer.removeClient(client);
-        final byte[] removePacket = 
-            parser.createPkt(NetworkType.USE.ordinal(), 0, 0, NetworkConnectionType.REMOVE.ordinal(), 
-                            0, null, 0, 0, 0, 0, client.toString().getBytes());
+        PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setType(NetworkType.USE.ordinal());
+        packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+        packetInfo.setPayload(client.toString().getBytes());
+        final byte[] removePacket = parser.createPkt(packetInfo);
         send(removePacket, mainServer);
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
             send(removePacket, c);
