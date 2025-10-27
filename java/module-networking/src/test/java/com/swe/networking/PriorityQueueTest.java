@@ -1,7 +1,9 @@
 package com.swe.networking;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -19,8 +21,20 @@ class PriorityQueueTest {
     // Helper method for creating packets
     private byte[] createTestPkt(PacketParser parser, int priority, int chunkNum, String payload)
             throws UnknownHostException {
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        return parser.createPkt(0, priority, 0, 0, 0, ip, 0, 0, chunkNum, 0, payload.getBytes());
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
+        ds.setType(0);
+        ds.setPriority(priority);
+        ds.setModule(0);
+        ds.setBroadcast(0);
+        ds.setIpAddress(ip);
+        ds.setPortNum(0);
+        ds.setMessageId(0);
+        ds.setChunkNum(chunkNum);
+        ds.setChunkLength(0);
+        ds.setPayload(payload.getBytes());
+        final byte[] pkt = parser.createPkt(ds);
+        return pkt;
     }
 
     //-------------------------------------------------------------------------
@@ -131,7 +145,8 @@ class PriorityQueueTest {
         for(int i = 0; i < 2900; i++){
             byte[] pkt = pq.nextPacket();
             if (pkt != null) {
-                System.out.println(parser.getChunkNum(pkt));
+                final PacketInfo info = parser.parsePacket(pkt);
+                System.out.println(info.getChunkNum());
             }
         }
 
@@ -209,9 +224,10 @@ class PriorityQueueTest {
 
         // --- Assertions ---
         assertNotNull(survivorPkt, "The target packet must be sent after surviving rotations.");
-        assertEquals(3, parser.getPriority(survivorPkt), "The priority must be 3 (Low).");
-        assertEquals(500, parser.getChunkNum(survivorPkt),
-                "The chunk number must match the target survivor (500).");
+        PacketInfo info = parser.parsePacket(survivorPkt);
+        assertEquals(3, info.getPriority(), () -> "The packet should be from level 2.");
+        assertEquals(500, info.getChunkNum(),
+                () -> "The chunk number must match the target survivor (500).");
     }
 
     @Test
@@ -232,8 +248,9 @@ class PriorityQueueTest {
         byte[] pkt = pq.nextPacket(); // Triggers final rotation
 
         // Verify the first packet after the full cycle is P_60, and its budget is used.
-        int priority = parser.getPriority(pkt);
-        int chunkNum = parser.getChunkNum(pkt);
+        PacketInfo info = parser.parsePacket(pkt);
+        int priority = info.getPriority();
+        int chunkNum = info.getChunkNum();
 
         assertEquals(3, priority, "Priority must be 3 (Low)");
         assertEquals(99, chunkNum, "First packet after full cycle should be P_60");
@@ -272,7 +289,8 @@ class PriorityQueueTest {
             byte[] pkt = pq.nextPacket();
             if (pkt != null) {
                 sentCount++;
-                int priority = parser.getPriority(pkt);
+                PacketInfo info = parser.parsePacket(pkt);
+                int priority = info.getPriority();
                 if (priority == 1) hpSent++;
                 else if (priority == 2) mpSent++;
                 else if (priority == 3) lpSent++;
@@ -343,8 +361,9 @@ class PriorityQueueTest {
             for (int i = 0; i < 400; i++) { // Each receiver tries 400 times
                 byte[] pkt = pq.nextPacket();
                 if (pkt != null) {
-                    int priority = parser.getPriority(pkt);
-                    int chunkNum = parser.getChunkNum(pkt);
+                    PacketInfo info = parser.parsePacket(pkt);
+                    int priority = info.getPriority();
+                    int chunkNum = info.getChunkNum();
 
                     String logEntry = String.format("P: %d, Chunk: %d, Thread: %s",
                             priority, chunkNum, Thread.currentThread().getName());
@@ -391,6 +410,4 @@ class PriorityQueueTest {
 
         executor.shutdown();
     }
-
-
 }
