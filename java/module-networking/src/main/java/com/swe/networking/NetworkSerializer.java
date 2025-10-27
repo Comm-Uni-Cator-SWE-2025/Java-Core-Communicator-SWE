@@ -44,10 +44,10 @@ public class NetworkSerializer {
      * @return the serialized output
      */
     public byte[] serializeClientNetworkRecord(final ClientNetworkRecord record) {
-        final int bufferSize = 20;
+        final byte[] hostName = record.client().hostName().getBytes(StandardCharsets.UTF_8);
+        final int bufferSize = 1 + hostName.length + Integer.BYTES + Integer.BYTES;
         final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-        buffer.putShort((byte) record.client().hostName().length());
-        final byte[] hostName = record.client().hostName().getBytes();
+        buffer.put((byte) hostName.length);
         buffer.put(hostName);
         buffer.putInt(record.client().port());
         buffer.putInt(record.clusterIndex());
@@ -79,10 +79,10 @@ public class NetworkSerializer {
      * @return the serialized output
      */
     public byte[] serializeClientNode(final ClientNode record) {
-        final int bufferSize = 10;
+        final byte[] hostName = record.hostName().getBytes(StandardCharsets.UTF_8);
+        final int bufferSize = 1 + hostName.length + Integer.BYTES;
         final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-        buffer.putShort((byte) record.hostName().length());
-        final byte[] hostName = record.hostName().getBytes();
+        buffer.put((byte) hostName.length);
         buffer.put(hostName);
         buffer.putInt(record.port());
         return buffer.array();
@@ -114,7 +114,7 @@ public class NetworkSerializer {
     public byte[] serializeNetworkStructure(final NetworkStructure structure) {
         // Assume maximum 80 clients in 8 clusters
         // 1 Client -> max 10 bytes total -> 800 bytes
-        final int bufferSize = 1000;
+        final int bufferSize = 2000;
         final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
         buffer.put((byte) structure.clusters().size());
         for (List<ClientNode> clusters : structure.clusters()) {
@@ -123,6 +123,7 @@ public class NetworkSerializer {
                 buffer.put(serializeClientNode(client));
             }
         }
+        buffer.put((byte) structure.servers().size());
         for (ClientNode server : structure.servers()) {
             buffer.put(serializeClientNode(server));
         }
@@ -155,7 +156,8 @@ public class NetworkSerializer {
             clusters.add(clients);
         }
         final List<ClientNode> servers = new ArrayList<>();
-        for (int i = 0; i < clustersLength; i++) {
+        final int serversLength = buffer.get();
+        for (int i = 0; i < serversLength; i++) {
             final int hostLength = buffer.get();
             final byte[] hostName = new byte[hostLength];
             buffer.get(hostName);
