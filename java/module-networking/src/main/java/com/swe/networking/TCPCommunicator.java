@@ -37,9 +37,9 @@ public final class TCPCommunicator implements ProtocolBase {
 
     /**
      * The size of the buffer to read data.
-     * Should be exactly the size of one chunk.
+     * Let it be the size of 15KB.
      */
-    private final Integer byteBufferSize = 1536;
+    private final Integer byteBufferSize = 15 * 1024;
 
     // maintain list of clients and add timeouts
     /**

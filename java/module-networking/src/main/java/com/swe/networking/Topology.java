@@ -108,6 +108,9 @@ public final class Topology implements AbstractTopology, AbstractController {
             clusterServers.add(deviceAddress);
             numClusters = 1;
             numClients = 1;
+        } else {
+            final P2PCluster userP2P = new P2PCluster();
+            userP2P.addUser(deviceAddress, deviceAddress);
         }
     }
 
@@ -185,8 +188,9 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to replace the current network with a new one.
+     * 
      * @param network the new network structure
-    */
+     */
     public void replaceNetwork(final NetworkStructure network) {
         clusters.clear();
         clusterServers.clear();
@@ -203,6 +207,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get the cluster index of a client.
+     * 
      * @param client the client whose index is needed
      * @return the cluster index of the client
      */
@@ -217,6 +222,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get all clients in a cluster.
+     * 
      * @param index the index of the cluster
      * @return list of all clients in the cluster
      */
