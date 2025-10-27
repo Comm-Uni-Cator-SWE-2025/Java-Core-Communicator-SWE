@@ -2,11 +2,11 @@ package com.swe.networking;
 
 import java.net.UnknownHostException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.EnumMap;
 
 /**
  * Priority Queue with simple Multi-Level Feedback Queue (MLFQ).
@@ -80,10 +80,10 @@ public class PriorityQueue {
      */
     private void resetBudgets() {
         for (PacketPriority p : PacketPriority.values()) {
-            int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
+            final int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
-//        System.out.println("Reset Initiated...");
+        // System.out.println("Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -92,14 +92,14 @@ public class PriorityQueue {
      * Level 0 → Level 1, Level 1 → Level 2, Level 2 → Level 0(recycled)
      */
     public void rotateQueues() {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
-//            System.out.println("Rotating MLFQ levels...");
-            Deque<byte[]> level2 = mlfq.get(2);
-            Deque<byte[]> level1 = mlfq.get(1);
-            Deque<byte[]> level0 = mlfq.get(0);
+            // System.out.println("Rotating MLFQ levels...");
+            final Deque<byte[]> level2 = mlfq.get(2);
+            final Deque<byte[]> level1 = mlfq.get(1);
+            final Deque<byte[]> level0 = mlfq.get(0);
 
-            Deque<byte[]> recycled = new ArrayDeque<>(level2);
+            final Deque<byte[]> recycled = new ArrayDeque<>(level2);
 
             // Rotate down
             mlfq.set(2, level1);
@@ -117,30 +117,26 @@ public class PriorityQueue {
      *
      * @param data the packet payload
      */
-    public synchronized void addPacket(final byte[] data) throws UnknownHostException {
+    public synchronized void addPacket(final byte[] data) {
         PacketParser parser = PacketParser.getPacketParser();
-        final PacketInfo info = parser.parsePacket(data);
-        final int priorityLevel = info.getPriority();
+        final int priorityLevel = parser.getPriority(data);
         final PacketPriority priority
                 = PacketPriority.fromLevel(priorityLevel);
 
         switch (priority) {
-            case ZERO, ONE, TWO:
+            case HIGHEST:
                 highestPriorityQueue.add(data);
 //                System.out.println("Packet added to highest priority queue");
                 break;
-            case THREE, FOUR, FIVE:
+            case HIGH:
                 midPriorityQueue.add(data);
-//                System.out.println("Packet added to mid priority queue");
-                break;
-//                System.out.println("Packet added to mid priority queue");
-            case SIX, SEVEN:
-                mlfq.get(0).add(data);
 //                System.out.println("Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
-                throw new IllegalArgumentException("Packet has invalid priority level: " + priorityLevel);
+                mlfq.get(0).add(data);
+//                System.out.println("Packet added to MLFQ level 0");
+                break;
         }
     }
 
@@ -150,7 +146,7 @@ public class PriorityQueue {
      * @return the next packet's data, or null if none available
      */
     public synchronized byte[] nextPacket() {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
 
         // Reset budgets every epoch
         if (now - lastEpochReset >= EPOCH_MS
@@ -161,20 +157,20 @@ public class PriorityQueue {
         rotateQueues();
 
         if (!highestPriorityQueue.isEmpty()
-                && currentBudget.get(PacketPriority.ZERO) > 0) {
-            currentBudget.put(PacketPriority.ZERO,
-                    currentBudget.get(PacketPriority.ZERO) - 1);
+                && currentBudget.get(PacketPriority.HIGHEST) > 0) {
+            currentBudget.put(PacketPriority.HIGHEST,
+                    currentBudget.get(PacketPriority.HIGHEST) - 1);
 //            System.out.println("Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
 
-    // ------------------------------------------------------------------
-    // Mid-priority next (Work-conserving: P2 uses P2, then P1 unused)
-    // ------------------------------------------------------------------
+        // ------------------------------------------------------------------
+        // Mid-priority next (Work-conserving: P2 uses P2, then P1 unused)
+        // ------------------------------------------------------------------
 
     // Read current tokens for the TOTAL budget check
-        int p2Current = currentBudget.get(PacketPriority.ONE);
-        int p1Current = currentBudget.get(PacketPriority.ZERO);
+        int p2Current = currentBudget.get(PacketPriority.HIGH);
+        int p1Current = currentBudget.get(PacketPriority.HIGHEST);
         int totalP2Budget = p2Current + p1Current;
 
         if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
@@ -190,18 +186,18 @@ public class PriorityQueue {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
             }
-//            System.out.println("Mid Priority Packet sent");
+            // System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
 
-    // ------------------------------------------------------------------
-    // Low-priority (MLFQ) - Work-conserving: P3 uses P3, then P2, then P1
-    // ------------------------------------------------------------------
+        // ------------------------------------------------------------------
+        // Low-priority (MLFQ) - Work-conserving: P3 uses P3, then P2, then P1
+        // ------------------------------------------------------------------
 
     // Always read the absolute current state of the map at this point
-        int p3Current = currentBudget.get(PacketPriority.TWO);
-        p2Current = currentBudget.get(PacketPriority.ONE);
-        p1Current = currentBudget.get(PacketPriority.ZERO);
+        int p3Current = currentBudget.get(PacketPriority.MLFQ);
+        p2Current = currentBudget.get(PacketPriority.HIGH);
+        p1Current = currentBudget.get(PacketPriority.HIGHEST);
         int totalP3Budget = p3Current + p2Current + p1Current;
 
         if (totalP3Budget > 0) {

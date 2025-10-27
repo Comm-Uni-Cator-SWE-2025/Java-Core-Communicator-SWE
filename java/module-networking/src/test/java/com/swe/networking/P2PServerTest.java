@@ -8,8 +8,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 public class P2PServerTest {
@@ -22,28 +20,28 @@ public class P2PServerTest {
     final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
     final Topology topology = Topology.getTopology();
 
-    public NetworkStructure getNetworkStructure(ClientNode p2pServer) throws UnknownHostException {
-        List<List<ClientNode>> clusters = new ArrayList<>();
-        List<ClientNode> clusterServers = new ArrayList<>();
+    public NetworkStructure getNetworkStructure(final ClientNode p2pServer) throws UnknownHostException {
+        final List<List<ClientNode>> clusters = new ArrayList<>();
+        final List<ClientNode> clusterServers = new ArrayList<>();
         final NetworkStructure networkStructure = new NetworkStructure(clusters, clusterServers);
 
         for (int i = 0; i < 3; i++) {
-            List<ClientNode> clusterClients = new ArrayList<>();
+            final List<ClientNode> clusterClients = new ArrayList<>();
             for (int j = 0; j < 2; j++) {
                 final ClientNode client = new ClientNode(
-                    "127.0.0.1", 6000 + i * 10 + j);
+                        "127.0.0.1", 6000 + i * 10 + j);
                 clusterClients.add(client);
-                if( j == 0) {
+                if (j == 0) {
                     networkStructure.servers().add(client);
                 }
             }
             networkStructure.clusters().add(clusterClients);
         }
         // add one with device node
-        List<ClientNode> deviceCluster = new ArrayList<>();
-        for(int j = 0; j < 2; j++) {
+        final List<ClientNode> deviceCluster = new ArrayList<>();
+        for (int j = 0; j < 2; j++) {
             final ClientNode client = new ClientNode(
-                "127.0.0.1", 7000 + j);
+                    "127.0.0.1", 7000 + j);
             deviceCluster.add(client);
         }
         deviceCluster.add(p2pServer);
@@ -52,7 +50,7 @@ public class P2PServerTest {
         return networkStructure;
     }
 
-    public void sendPacket(byte[] packet) {
+    public void sendPacket(final byte[] packet) {
         try {
             final Socket socket = new Socket(deviceNode.hostName(), deviceNode.port());
             final OutputStream out = socket.getOutputStream();
@@ -61,14 +59,14 @@ public class P2PServerTest {
             socket.close();
         } catch (Exception e) {
             System.out.println("Exception in sending packet to " + deviceNode.hostName()
-                               + ":" + deviceNode.port());
+                    + ":" + deviceNode.port());
             e.printStackTrace();
         }
     }
 
     @Test
     public void testInitServer() throws UnknownHostException {
-        P2PServer server = new P2PServer(this.deviceNode, this.server);
+        final P2PServer server = new P2PServer(this.deviceNode, this.server);
         final NetworkStructure networkStructure = getNetworkStructure(this.deviceNode);
 
         for (int i = 0; i < networkStructure.servers().size(); i++) {
@@ -77,13 +75,13 @@ public class P2PServerTest {
             }
         }
         // send network structure packet
-        PacketInfo packetInfo = new PacketInfo();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.NETWORK.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
         packetInfo.setPortNum(deviceNode.port());
         packetInfo.setPayload(
-            serializer.serializeNetworkStructure(networkStructure));
+                serializer.serializeNetworkStructure(networkStructure));
         final byte[] networkPacket = packetParser.createPkt(packetInfo);
         sendPacket(networkPacket);
         topology.replaceNetwork(networkStructure);
@@ -95,7 +93,7 @@ public class P2PServerTest {
     }
 
     public P2PServer getServer() throws UnknownHostException {
-        P2PServer server = new P2PServer(this.deviceNode, this.server);
+        final P2PServer server = new P2PServer(this.deviceNode, this.server);
         final NetworkStructure networkStructure = getNetworkStructure(this.deviceNode);
 
         for (int i = 0; i < networkStructure.servers().size(); i++) {
@@ -104,13 +102,13 @@ public class P2PServerTest {
             }
         }
         // send network structure packet
-        PacketInfo packetInfo = new PacketInfo();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.NETWORK.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
         packetInfo.setPortNum(deviceNode.port());
         packetInfo.setPayload(
-            serializer.serializeNetworkStructure(networkStructure));
+                serializer.serializeNetworkStructure(networkStructure));
         final byte[] networkPacket = packetParser.createPkt(packetInfo);
         sendPacket(networkPacket);
         try {
@@ -123,12 +121,12 @@ public class P2PServerTest {
 
     @Test
     public void handleSAMECLUSTER() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // send data packet
         final ClientNode destNode = new ClientNode(
-            "127.0.0.1", 7000);
-        byte[] testData = "This is a test data packet.".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+                "127.0.0.1", 7000);
+        final byte[] testData = "This is a test data packet.".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.SAMECLUSTER.ordinal());
         packetInfo.setConnectionType(0);
         packetInfo.setPayload(testData);
@@ -137,19 +135,19 @@ public class P2PServerTest {
         final byte[] dataPacket = packetParser.createPkt(packetInfo);
         // listen for incoming packet at destNode in a separate thread
         new Thread(() -> {
-            byte[] receivedData = new byte[4096];
+            final byte[] receivedData = new byte[4096];
             try {
                 final ServerSocket serverSocket = new ServerSocket(destNode.port());
                 final Socket socket = serverSocket.accept();
                 final OutputStream out = socket.getOutputStream();
                 out.flush();
-                int bytesRead = socket.getInputStream().read(receivedData);
+                final int bytesRead = socket.getInputStream().read(receivedData);
                 socket.close();
                 serverSocket.close();
                 System.out.println("data is : " + new String(receivedData, 0, bytesRead));
             } catch (Exception e) {
                 System.out.println("Exception in receiving packet at " + destNode.hostName()
-                                   + ":" + destNode.port());
+                        + ":" + destNode.port());
                 e.printStackTrace();
             }
         }).start();
@@ -163,11 +161,11 @@ public class P2PServerTest {
 
     @Test
     public void handleOTHERCLUSTER() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // send data packet
         final ClientNode destNode = new ClientNode("127.0.0.1", 6000);
-        byte[] testData = "This is a test data packet.".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final byte[] testData = "This is a test data packet.".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
         packetInfo.setConnectionType(0);
         packetInfo.setPayload(testData);
@@ -176,19 +174,19 @@ public class P2PServerTest {
         final byte[] dataPacket = packetParser.createPkt(packetInfo);
         // listen for incoming packet at destNode in a separate thread
         new Thread(() -> {
-            byte[] receivedData = new byte[4096];
+            final byte[] receivedData = new byte[4096];
             try {
                 final ServerSocket serverSocket = new ServerSocket(destNode.port());
                 final Socket socket = serverSocket.accept();
                 final OutputStream out = socket.getOutputStream();
                 out.flush();
-                int bytesRead = socket.getInputStream().read(receivedData);
+                final int bytesRead = socket.getInputStream().read(receivedData);
                 socket.close();
                 serverSocket.close();
                 System.out.println("data is : " + new String(receivedData, 0, bytesRead));
             } catch (Exception e) {
                 System.out.println("Exception in receiving packet at " + destNode.hostName()
-                                   + ":" + destNode.port());
+                        + ":" + destNode.port());
                 e.printStackTrace();
             }
         }).start();
@@ -202,10 +200,10 @@ public class P2PServerTest {
 
     @Test
     public void handleUSEHello() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // send data packet
-        byte[] testData = "Hello guyssss.".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final byte[] testData = "Hello guyssss.".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -217,10 +215,10 @@ public class P2PServerTest {
 
     @Test
     public void handleUSEALIVE() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // send data packet
-        byte[] testData = "As you can see, I'm not dead.".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final byte[] testData = "As you can see, I'm not dead.".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.ALIVE.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -232,12 +230,12 @@ public class P2PServerTest {
 
     @Test
     public void handleUSEADD() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // same cluster
-        ClientNode clientNode = new ClientNode("127.0.0.1", 1234);
-        ClientNetworkRecord clientNetworkRecord = new ClientNetworkRecord(clientNode, 3);
-        byte[] testData = "Welcome guys!".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final ClientNode clientNode = new ClientNode("127.0.0.1", 1234);
+        final ClientNetworkRecord clientNetworkRecord = new ClientNetworkRecord(clientNode, 3);
+        final byte[] testData = "Welcome guys!".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.ADD.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -247,10 +245,10 @@ public class P2PServerTest {
         sendPacket(dataPacket);
 
         // different cluster
-        ClientNode newClientNode = new ClientNode("127.0.0.1", 1234);
-        ClientNetworkRecord newClientNetworkRecord = new ClientNetworkRecord(newClientNode, 0);
-        byte[] newTestData = "Welcome guys!".getBytes();
-        PacketInfo newPacketInfo = new PacketInfo();
+        final ClientNode newClientNode = new ClientNode("127.0.0.1", 1234);
+        final ClientNetworkRecord newClientNetworkRecord = new ClientNetworkRecord(newClientNode, 0);
+        final byte[] newTestData = "Welcome guys!".getBytes();
+        final PacketInfo newPacketInfo = new PacketInfo();
         newPacketInfo.setType(NetworkType.USE.ordinal());
         newPacketInfo.setConnectionType(NetworkConnectionType.ADD.ordinal());
         newPacketInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -267,12 +265,12 @@ public class P2PServerTest {
 
     @Test
     public void handleUSEREMOVE() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // same cluster
-        ClientNode clientNode = new ClientNode("127.0.0.1", 7001);
-        ClientNetworkRecord clientNetworkRecord = new ClientNetworkRecord(clientNode, 3);
-        byte[] testData = "Goodbye guys!".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final ClientNode clientNode = new ClientNode("127.0.0.1", 7001);
+        final ClientNetworkRecord clientNetworkRecord = new ClientNetworkRecord(clientNode, 3);
+        final byte[] testData = "Goodbye guys!".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -280,12 +278,12 @@ public class P2PServerTest {
         packetInfo.setPayload(serializer.serializeClientNetworkRecord(clientNetworkRecord));
         final byte[] dataPacket = packetParser.createPkt(packetInfo);
         sendPacket(dataPacket);
-        
+
         // different cluster
-        ClientNode newClientNode = new ClientNode("127.0.0.1", 6011);
-        ClientNetworkRecord newClientNetworkRecord = new ClientNetworkRecord(newClientNode, 1);
-        byte[] newTestData = "Goodbye guys!".getBytes();
-        PacketInfo newPacketInfo = new PacketInfo();
+        final ClientNode newClientNode = new ClientNode("127.0.0.1", 6011);
+        final ClientNetworkRecord newClientNetworkRecord = new ClientNetworkRecord(newClientNode, 1);
+        final byte[] newTestData = "Goodbye guys!".getBytes();
+        final PacketInfo newPacketInfo = new PacketInfo();
         newPacketInfo.setType(NetworkType.USE.ordinal());
         newPacketInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
         newPacketInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
@@ -302,10 +300,10 @@ public class P2PServerTest {
 
     @Test
     public void handleUSECLOSE() throws UnknownHostException {
-        P2PServer server = getServer();
+        final P2PServer server = getServer();
         // send data packet
-        byte[] testData = "Adios".getBytes();
-        PacketInfo packetInfo = new PacketInfo();
+        final byte[] testData = "Adios".getBytes();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.CLOSE.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));

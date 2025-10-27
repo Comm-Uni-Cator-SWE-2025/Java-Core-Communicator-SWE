@@ -89,7 +89,7 @@ public class P2PCluster {
                         final Socket serverSocket =
                             new Socket(server.hostName(), server.port());
                         final OutputStream serverOut = serverSocket.getOutputStream();
-                        PacketInfo netPacketInfo = new PacketInfo();
+                        final PacketInfo netPacketInfo = new PacketInfo();
                         netPacketInfo.setType(NetworkType.USE.ordinal());
                         netPacketInfo.setPriority(NetworkConnectionType.NETWORK.ordinal());
                         netPacketInfo.setPayload(

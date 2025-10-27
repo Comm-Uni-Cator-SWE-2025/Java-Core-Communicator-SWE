@@ -45,12 +45,12 @@ public class NetworkSerializer {
      */
     public byte[] serializeClientNetworkRecord(final ClientNetworkRecord record) {
         final byte[] hostName = record.client().hostName().getBytes(StandardCharsets.UTF_8);
-        final int bufferSize = 1 + hostName.length + Integer.BYTES + Integer.BYTES;
+        final int bufferSize = 1 + hostName.length + Integer.BYTES + 1;
         final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
         buffer.put((byte) hostName.length);
         buffer.put(hostName);
         buffer.putInt(record.client().port());
-        buffer.putInt(record.clusterIndex());
+        buffer.put((byte) record.clusterIndex());
         return buffer.array();
     }
 
@@ -67,7 +67,7 @@ public class NetworkSerializer {
         buffer.get(hostName);
         final String hostIp = new String(hostName, StandardCharsets.UTF_8);
         final int hostPort = buffer.getInt();
-        final int clusterIdx = buffer.getInt();
+        final int clusterIdx = buffer.get();
         final ClientNetworkRecord record = new ClientNetworkRecord(new ClientNode(hostIp, hostPort), clusterIdx);
         return record;
     }
