@@ -30,9 +30,9 @@ public class MainServerTest {
             final MainServer mainServer = new MainServer(server, server);
             final ClientNode dest1 = new ClientNode("127.0.0.1", 8001);
             final ClientNode dest2 = new ClientNode("127.0.0.1", 8002);
-            final ClientNode[] dests = {dest1, dest2 };
             final String data = "Good morning !!!";
-            mainServer.send(data.getBytes(), dests);
+            mainServer.send(data.getBytes(), dest1);
+            mainServer.send(data.getBytes(), dest2);
             mainServer.closeClient(dest1);
             mainServer.closeClient(dest2);
             recieveThread1.join();
@@ -85,18 +85,39 @@ public class MainServerTest {
             final Socket destSocket = new Socket();
             final Integer port = 8000;
             final Integer timeout = 5000;
+            final int randomFactor = (int) Math.pow(10, 6);
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(3, 0, 0, 0, 0,
-                    InetAddress.getByName("127.0.0.1"), port, (int) (Math.random() * 1000),
-                    0, 1, data.getBytes());
+            final PacketInfo pkt = new PacketInfo();
+            pkt.setType(NetworkType.USE.ordinal());
+            pkt.setPriority(0);
+            pkt.setModule(0);
+            pkt.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+            pkt.setBroadcast(0);
+            pkt.setIpAddress(InetAddress.getByName("127.0.0.1"));
+            pkt.setPortNum(port);
+            pkt.setMessageId((int) (Math.random() * randomFactor));
+            pkt.setChunkNum(0);
+            pkt.setChunkLength(1);
+            pkt.setPayload(data.getBytes());
+            final byte[] packet = parser.createPkt(pkt);
             dataOut.write(packet);
-            final byte[] packet1 = parser.createPkt(1, 0, 0, 0, 0,
-                    InetAddress.getByName("127.0.0.1"), destSocket.getLocalPort(), (int) (Math.random() * 1000),
-                    0, 1, data.getBytes());
-            dataOut.write(packet1);
+            final PacketInfo pkt1 = new PacketInfo();
+            pkt.setType(NetworkType.SAMECLUSTER.ordinal());
+            pkt.setPriority(0);
+            pkt.setModule(0);
+            pkt.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+            pkt.setBroadcast(0);
+            pkt.setIpAddress(InetAddress.getByName("127.0.0.1"));
+            pkt.setPortNum(port);
+            pkt.setMessageId((int) (Math.random() * randomFactor));
+            pkt.setChunkNum(0);
+            pkt.setChunkLength(1);
+            pkt.setPayload(data.getBytes());
+            // final byte[] packet1 = parser.createPkt(pkt1);
+            // dataOut.write(packet1);
             destSocket.close();
         } catch (IOException ex) {
         }

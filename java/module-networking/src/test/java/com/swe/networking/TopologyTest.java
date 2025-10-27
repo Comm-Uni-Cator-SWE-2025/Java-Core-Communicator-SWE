@@ -38,6 +38,7 @@ class TopologyTest {
             final Integer port = 8000;
             final Integer timeout = 5000;
             final int sleepTime = 1000;
+            final int randomFactor = (int) Math.pow(10, 6);
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final Thread receiveThread = new Thread(() -> receive(destSocket));
             receiveThread.start();
@@ -45,11 +46,19 @@ class TopologyTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(NetworkType.USE.ordinal(), 0, 0,
-                    NetworkConnectionType.HELLO.ordinal(), 0,
-                    InetAddress.getByName("127.0.0.1"),
-                    destSocket.getLocalPort(), (int) (Math.random() * 1000),
-                    0, 1, data.getBytes());
+            final PacketInfo pkt = new PacketInfo();
+            pkt.setType(NetworkType.USE.ordinal());
+            pkt.setPriority(0);
+            pkt.setModule(0);
+            pkt.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+            pkt.setBroadcast(0);
+            pkt.setIpAddress(InetAddress.getByName("127.0.0.1"));
+            pkt.setPortNum(destSocket.getLocalPort());
+            pkt.setMessageId((int) (Math.random() * randomFactor));
+            pkt.setChunkNum(0);
+            pkt.setChunkLength(1);
+            pkt.setPayload(data.getBytes());
+            final byte[] packet = parser.createPkt(pkt);
             dataOut.write(packet);
             // receiveThread.interrupt();
             // destSocket.close();
