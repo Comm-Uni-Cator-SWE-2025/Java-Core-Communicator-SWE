@@ -77,7 +77,7 @@ public class P2PClient implements P2PUser {
 
         // start a scheduled ALIVE packets to the cluster server
         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-        
+
         this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
                 ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
@@ -143,7 +143,6 @@ public class P2PClient implements P2PUser {
             System.out.println("p2pclient sending alive packet to: " + clusterServerAddress);
             final InetAddress selfIp = InetAddress.getByName(deviceAddress.hostName());
             final byte[] emptyPayload = new byte[0];
-
 
             final PacketInfo aliveInfo = new PacketInfo();
             aliveInfo.setType(NetworkType.USE.ordinal());
@@ -230,7 +229,7 @@ public class P2PClient implements P2PUser {
         final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
 
         switch (connection) {
-            case HELLO: // 000 drop it only to be received by  main server
+            case HELLO: // 000 drop it only to be received by main server
             case ALIVE: // 001 drop it only to received by cluster server and main server
 
                 System.out.println("p2pclient received HELLO packet");
@@ -239,24 +238,20 @@ public class P2PClient implements P2PUser {
             case ADD: // 010 : update the current network
                 System.out.println("p2pclient received ADD packet : updating network structure");
 
-                ClientNetworkRecord newClient = serializer.deserializeClientNetworkRecord(info.getPayload());
+                final ClientNetworkRecord newClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.updateNetwork(newClient);
-
-                updateClusterServer();
                 break;
             case REMOVE: // 011 : update the current network
 
                 System.out.println("p2pclient received ADD or REMOVE packet");
-                ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
+                final ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.removeClient(oldClient);
-
-                updateClusterServer();
                 break;
 
             case NETWORK: // 100 : replace the current network
 
                 System.out.println("p2pclient received NETWORK packet");
-                NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
+                final NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
                 topology.replaceNetwork(newNetwork);
 
                 updateClusterServer();
@@ -275,13 +270,13 @@ public class P2PClient implements P2PUser {
     }
 
     /**
-     * this is helper function to update cluster server address
+     * this is helper function to update cluster server address.
      * may be changed after changing network structure (add, remove, replace)
      */
 
-    void updateClusterServer(){
+    void updateClusterServer() {
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
-        if(this.clusterServerAddress == null){
+        if (this.clusterServerAddress == null) {
             System.err.println("p2pclient: Not find my cluster server in topology.");
         }
         return;
@@ -290,7 +285,7 @@ public class P2PClient implements P2PUser {
     @Override
     public void close() {
         if (!running) {
-            return; //  multiple closes
+            return; // multiple closes
         }
         running = false;
 
