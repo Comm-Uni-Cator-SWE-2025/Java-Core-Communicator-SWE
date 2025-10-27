@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import java.net.UnknownHostException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -116,26 +117,30 @@ public class PriorityQueue {
      *
      * @param data the packet payload
      */
-    public synchronized void addPacket(final byte[] data) {
+    public synchronized void addPacket(final byte[] data) throws UnknownHostException {
         PacketParser parser = PacketParser.getPacketParser();
-        final int priorityLevel = parser.getPriority(data);
+        final PacketInfo info = parser.parsePacket(data);
+        final int priorityLevel = info.getPriority();
         final PacketPriority priority
                 = PacketPriority.fromLevel(priorityLevel);
 
         switch (priority) {
-            case HIGHEST:
+            case ZERO, ONE, TWO:
                 highestPriorityQueue.add(data);
 //                System.out.println("Packet added to highest priority queue");
                 break;
-            case HIGH:
+            case THREE, FOUR, FIVE:
                 midPriorityQueue.add(data);
+//                System.out.println("Packet added to mid priority queue");
+                break;
+//                System.out.println("Packet added to mid priority queue");
+            case SIX, SEVEN:
+                mlfq.get(0).add(data);
 //                System.out.println("Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
-                mlfq.get(0).add(data);
-//                System.out.println("Packet added to MLFQ level 0");
-                break;
+                throw new IllegalArgumentException("Packet has invalid priority level: " + priorityLevel);
         }
     }
 
@@ -156,9 +161,9 @@ public class PriorityQueue {
         rotateQueues();
 
         if (!highestPriorityQueue.isEmpty()
-                && currentBudget.get(PacketPriority.HIGHEST) > 0) {
-            currentBudget.put(PacketPriority.HIGHEST,
-                    currentBudget.get(PacketPriority.HIGHEST) - 1);
+                && currentBudget.get(PacketPriority.ZERO) > 0) {
+            currentBudget.put(PacketPriority.ZERO,
+                    currentBudget.get(PacketPriority.ZERO) - 1);
 //            System.out.println("Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
@@ -168,22 +173,22 @@ public class PriorityQueue {
     // ------------------------------------------------------------------
 
     // Read current tokens for the TOTAL budget check
-        int p2Current = currentBudget.get(PacketPriority.HIGH);
-        int p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int p2Current = currentBudget.get(PacketPriority.ONE);
+        int p1Current = currentBudget.get(PacketPriority.ZERO);
         int totalP2Budget = p2Current + p1Current;
 
         if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
 
             // Check current tokens again
-            p2Current = currentBudget.get(PacketPriority.HIGH);
-            p1Current = currentBudget.get(PacketPriority.HIGHEST);
+            p2Current = currentBudget.get(PacketPriority.ONE);
+            p1Current = currentBudget.get(PacketPriority.ZERO);
 
             if (p2Current > 0) {
                 // Use P2's own budget
-                currentBudget.put(PacketPriority.HIGH, p2Current - 1);
+                currentBudget.put(PacketPriority.ONE, p2Current - 1);
             } else {
                 // Use P1's unused budget
-                currentBudget.put(PacketPriority.HIGHEST, p1Current - 1);
+                currentBudget.put(PacketPriority.ZERO, p1Current - 1);
             }
 //            System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
@@ -194,9 +199,9 @@ public class PriorityQueue {
     // ------------------------------------------------------------------
 
     // Always read the absolute current state of the map at this point
-        int p3Current = currentBudget.get(PacketPriority.MLFQ);
-        p2Current = currentBudget.get(PacketPriority.HIGH);
-        p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int p3Current = currentBudget.get(PacketPriority.TWO);
+        p2Current = currentBudget.get(PacketPriority.ONE);
+        p1Current = currentBudget.get(PacketPriority.ZERO);
         int totalP3Budget = p3Current + p2Current + p1Current;
 
         if (totalP3Budget > 0) {
@@ -206,11 +211,11 @@ public class PriorityQueue {
 
                     // Decrement the budget in order: P3 -> P2 -> P1
                     if (p3Current > 0) {
-                        currentBudget.put(PacketPriority.MLFQ, p3Current - 1);
+                        currentBudget.put(PacketPriority.TWO, p3Current - 1);
                     } else if (p2Current > 0) {
-                        currentBudget.put(PacketPriority.HIGH, p2Current - 1);
+                        currentBudget.put(PacketPriority.ONE, p2Current - 1);
                     } else { // Use P1's budget
-                        currentBudget.put(PacketPriority.HIGHEST,
+                        currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
                     }
 
@@ -230,35 +235,35 @@ public class PriorityQueue {
         /**
          * Highest priority packet (50% budget share).
          */
-        HIGHEST(1, 50),
+        ZERO(0, 50),
         /**
          * High priority packet (30% budget share).
          */
-        HIGH(2, 30),
+        ONE(1, 30),
         /**
          * Low priority packets handled by MLFQ (20% budget share).
          */
-        MLFQ(3, 20),
+        TWO(2, 20),
         /**
          * Future extension: low priority.
          */
-        LOW(4, 0),
+        THREE(3, 0),
         /**
          * Future extension: very low priority.
          */
-        VERY_LOW(5, 0),
+        FOUR(4, 0),
         /**
          * Future extension: bulk priority.
          */
-        BULK(6, 0),
+        FIVE(5, 0),
         /**
          * Future extension: background priority.
          */
-        BACKGROUND(7, 0),
+        SIX(6, 0),
         /**
          * Future extension: lowest priority.
          */
-        LOWEST(8, 0);
+        SEVEN(7, 0);
 
         /**
          * Priority level (1–8).
@@ -273,7 +278,7 @@ public class PriorityQueue {
         /**
          * Constructor for PacketPriority.
          *
-         * @param level priority level (1–8)
+         * @param level priority level (0-7)
          * @param share   percentage of total budget for this priority
          */
         PacketPriority(final int level, final int share) {
