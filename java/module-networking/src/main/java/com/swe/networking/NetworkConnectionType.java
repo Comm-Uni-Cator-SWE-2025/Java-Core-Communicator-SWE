@@ -52,7 +52,7 @@ public enum NetworkConnectionType {
     NetworkConnectionType() {
     }
 
-    public NetworkConnectionType getType(final int n) {
+    public static NetworkConnectionType getType(final int n) {
         return MAP.get(n);
     }
 }
