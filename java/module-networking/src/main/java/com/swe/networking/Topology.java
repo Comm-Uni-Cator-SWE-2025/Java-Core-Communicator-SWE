@@ -157,6 +157,10 @@ public final class Topology implements AbstractTopology, AbstractController {
             return cluster.size() - 1;
         } else {
             clusters.get(clusterIndex).add(clientAddress);
+            if (clusters.get(clusterIndex).size() == 1) {
+                System.out.println("Adding to a new cluster...");
+                clusterServers.add(clientAddress);
+            }
             final int idx = clusterIndex;
             clusterIndex = (clusterIndex + 1) % maxClusters;
             System.out.println("Added to cluster " + clusterIndex + " ...");
@@ -182,8 +186,15 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public void removeClient(final ClientNetworkRecord client) {
         final int idx = client.clusterIndex();
-        final ClientNode newClient = client.client();
-        clusters.get(idx).remove(newClient);
+        final ClientNode removeClient = client.client();
+        clusters.get(idx).remove(removeClient);
+        if (clusterServers.contains(removeClient)) {
+            if (!clusters.get(idx).isEmpty()) {
+                ClientNode newServer = clusters.get(idx).get(0);
+                clusterServers.set(idx, newServer);
+                System.out.println("A new server has been decided\n");
+            }
+        }
     }
 
     /**
