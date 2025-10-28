@@ -51,6 +51,9 @@ public class MainServer implements P2PUser {
     /** Variable to store the server IP address. */
     private final ClientNode mainserver;
 
+    /** Variable to store the static serializer. */
+    final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+
     /**
      * Constructor function for the main server class.
      *
@@ -151,9 +154,7 @@ public class MainServer implements P2PUser {
                     }
 
                 } else if (connectionType == NetworkConnectionType.REMOVE.ordinal()) {
-                    final int clientIdx = topology.getClusterIndex(dest);
-                    final ClientNetworkRecord clientRecord = new ClientNetworkRecord(dest, clientIdx);
-                    topology.removeClient(clientRecord);
+                    handleRemove(packet, dest);
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
                     timer.updateTimeout(dest);
                     System.out.println("Received alive packet from " + dest);
@@ -194,7 +195,6 @@ public class MainServer implements P2PUser {
         try {
             final NetworkStructure network = topology.getNetwork();
             final int randomFactor = (int) Math.pow(10, 6);
-            final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
 
             final PacketInfo responsePacket = new PacketInfo();
             responsePacket.setType(NetworkType.USE.ordinal());
@@ -224,7 +224,6 @@ public class MainServer implements P2PUser {
      */
     private void sendAddPktResponse(final ClientNode dest, final ClientNode server, final int clusterIdx) {
         try {
-            final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
             final int randomFactor = (int) Math.pow(10, 6);
             final ClientNetworkRecord addClient = new ClientNetworkRecord(dest, clusterIdx);
             final PacketInfo addPacket = new PacketInfo();
@@ -243,6 +242,32 @@ public class MainServer implements P2PUser {
             send(addPkt, server);
         } catch (UnknownHostException ex) {
         }
+    }
+
+    /**
+     * Function to remove client from the network.
+     *
+     * @param packet the packe containing data
+     * @param dest   the destination to be removed
+     * @throws UnknownHostException
+     */
+    private void handleRemove(final byte[] packet, final ClientNode dest) throws UnknownHostException {
+        final PacketInfo packetInfo = parser.parsePacket(packet);
+        final ClientNetworkRecord remClient = serializer.deserializeClientNetworkRecord(packetInfo.getPayload());
+        topology.removeClient(remClient);
+        if (remClient.clusterIndex() == topology.getClusterIndex(mainserver)) {
+            timer.removeClient(dest);
+        }
+        final int myCluster = topology.getClusterIndex(mainserver);
+        for (ClientNode c : topology.getClients(myCluster)) {
+            if (c.equals(mainserver)) {
+                continue;
+            }
+            send(packet, c);
+        }
+        System.out.println("Client " + remClient.client().hostName()
+                + " removed from cluster"
+                + remClient.clusterIndex());
     }
 
     /**
