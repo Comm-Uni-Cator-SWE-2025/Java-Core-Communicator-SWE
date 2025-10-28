@@ -83,7 +83,7 @@ public class PriorityQueue {
             final int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
-        // System.out.println("Reset Initiated...");
+//         System.out.println("Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -117,18 +117,19 @@ public class PriorityQueue {
      *
      * @param data the packet payload
      */
-    public synchronized void addPacket(final byte[] data) {
+    public synchronized void addPacket(final byte[] data) throws UnknownHostException {
         PacketParser parser = PacketParser.getPacketParser();
-        final int priorityLevel = parser.getPriority(data);
+        PacketInfo info = parser.parsePacket(data);
+        final int priorityLevel = info.getPriority();
         final PacketPriority priority
                 = PacketPriority.fromLevel(priorityLevel);
 
         switch (priority) {
-            case HIGHEST:
+            case ZERO, ONE, TWO:
                 highestPriorityQueue.add(data);
 //                System.out.println("Packet added to highest priority queue");
                 break;
-            case HIGH:
+            case THREE, FOUR, FIVE, SIX:
                 midPriorityQueue.add(data);
 //                System.out.println("Packet added to mid priority queue");
                 break;
@@ -157,9 +158,9 @@ public class PriorityQueue {
         rotateQueues();
 
         if (!highestPriorityQueue.isEmpty()
-                && currentBudget.get(PacketPriority.HIGHEST) > 0) {
-            currentBudget.put(PacketPriority.HIGHEST,
-                    currentBudget.get(PacketPriority.HIGHEST) - 1);
+                && currentBudget.get(PacketPriority.ZERO) > 0) {
+            currentBudget.put(PacketPriority.ZERO,
+                    currentBudget.get(PacketPriority.ZERO) - 1);
 //            System.out.println("Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
@@ -169,8 +170,8 @@ public class PriorityQueue {
         // ------------------------------------------------------------------
 
     // Read current tokens for the TOTAL budget check
-        int p2Current = currentBudget.get(PacketPriority.HIGH);
-        int p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int p2Current = currentBudget.get(PacketPriority.ONE);
+        int p1Current = currentBudget.get(PacketPriority.ZERO);
         int totalP2Budget = p2Current + p1Current;
 
         if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
@@ -182,11 +183,13 @@ public class PriorityQueue {
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
+//                System.out.println(("mid priority sent from p2"));
             } else {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
+//                System.out.println(("Mid priority sent from p1"));
             }
-            // System.out.println("Mid Priority Packet sent");
+//             System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
 
@@ -195,9 +198,9 @@ public class PriorityQueue {
         // ------------------------------------------------------------------
 
     // Always read the absolute current state of the map at this point
-        int p3Current = currentBudget.get(PacketPriority.MLFQ);
-        p2Current = currentBudget.get(PacketPriority.HIGH);
-        p1Current = currentBudget.get(PacketPriority.HIGHEST);
+        int p3Current = currentBudget.get(PacketPriority.TWO);
+        p2Current = currentBudget.get(PacketPriority.ONE);
+        p1Current = currentBudget.get(PacketPriority.ZERO);
         int totalP3Budget = p3Current + p2Current + p1Current;
 
         if (totalP3Budget > 0) {
