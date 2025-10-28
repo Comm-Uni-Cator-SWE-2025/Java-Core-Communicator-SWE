@@ -118,8 +118,8 @@ public class PriorityQueue {
      * @param data the packet payload
      */
     public synchronized void addPacket(final byte[] data) throws UnknownHostException {
-        PacketParser parser = PacketParser.getPacketParser();
-        PacketInfo info = parser.parsePacket(data);
+        final PacketParser parser = PacketParser.getPacketParser();
+        final PacketInfo info = parser.parsePacket(data);
         final int priorityLevel = info.getPriority();
         final PacketPriority priority
                 = PacketPriority.fromLevel(priorityLevel);
@@ -142,21 +142,10 @@ public class PriorityQueue {
     }
 
     /**
-     * Retrieves the next packet to process.
-     *
-     * @return the next packet's data, or null if none available
+     * Processes and sends a packet from the Highest Priority Queue (P1/ZERO).
+     * @return The packet data, or null.
      */
-    public synchronized byte[] nextPacket() {
-        final long now = System.currentTimeMillis();
-
-        // Reset budgets every epoch
-        if (now - lastEpochReset >= EPOCH_MS
-                || getTotalRemainingBudget() <= 0) {
-            resetBudgets();
-        }
-
-        rotateQueues();
-
+    private byte[] processHighestPriority() {
         if (!highestPriorityQueue.isEmpty()
                 && currentBudget.get(PacketPriority.ZERO) > 0) {
             currentBudget.put(PacketPriority.ZERO,
@@ -164,44 +153,50 @@ public class PriorityQueue {
 //            System.out.println("Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
+        return null;
+    }
 
-        // ------------------------------------------------------------------
-        // Mid-priority next (Work-conserving: P2 uses P2, then P1 unused)
-        // ------------------------------------------------------------------
-
-    // Read current tokens for the TOTAL budget check
-        int p2Current = currentBudget.get(PacketPriority.ONE);
-        int p1Current = currentBudget.get(PacketPriority.ZERO);
-        int totalP2Budget = p2Current + p1Current;
+    /**
+     * Processes and sends a packet from the Mid-Priority Queue (P2/ONE).
+     * Work-conserving: uses P2's budget, then P1's unused budget.
+     * @return The packet data, or null.
+     */
+    private byte[] processMidPriority() {
+        final int p2Current = currentBudget.get(PacketPriority.ONE);
+        final int p1Current = currentBudget.get(PacketPriority.ZERO);
+        final int totalP2Budget = p2Current + p1Current;
 
         if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
-
             // Check current tokens again
-            p2Current = currentBudget.get(PacketPriority.ONE);
-            p1Current = currentBudget.get(PacketPriority.ZERO);
 
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
 //                System.out.println(("mid priority sent from p2"));
-            } else {
+            } else if (p1Current > 0) {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
 //                System.out.println(("Mid priority sent from p1"));
+            } else {
+                // Should not happen if totalP2Budget > 0, but as a safeguard:
+                return null;
             }
 //             System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
+        return null;
+    }
 
-        // ------------------------------------------------------------------
-        // Low-priority (MLFQ) - Work-conserving: P3 uses P3, then P2, then P1
-        // ------------------------------------------------------------------
-
-    // Always read the absolute current state of the map at this point
-        int p3Current = currentBudget.get(PacketPriority.TWO);
-        p2Current = currentBudget.get(PacketPriority.ONE);
-        p1Current = currentBudget.get(PacketPriority.ZERO);
-        int totalP3Budget = p3Current + p2Current + p1Current;
+    /**
+     * Processes and sends a packet from the Low Priority (MLFQ)Queues(P3/TWO).
+     * Work-conserving: uses P3, then P2, then P1 budget.
+     * @return The packet data, or null.
+     */
+    private byte[] processLowPriority() {
+        final int p3Current = currentBudget.get(PacketPriority.TWO);
+        final int p2Current = currentBudget.get(PacketPriority.ONE);
+        final int p1Current = currentBudget.get(PacketPriority.ZERO);
+        final int totalP3Budget = p3Current + p2Current + p1Current;
 
         if (totalP3Budget > 0) {
             for (int i = 0; i < mlfq.size(); i++) {
@@ -213,9 +208,15 @@ public class PriorityQueue {
                         currentBudget.put(PacketPriority.TWO, p3Current - 1);
                     } else if (p2Current > 0) {
                         currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                    } else { // Use P1's budget
+                    } else if (p1Current > 0) { // Use P1's budget
                         currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
+                    } else {
+                        // This case should be covered by
+                        // the totalP3Budget > 0 check,
+                        // but if budgets were zeroed between
+                        // the check and here, skip.
+                        continue;
                     }
 
 //                    System.out.println(
@@ -224,6 +225,46 @@ public class PriorityQueue {
                 }
             }
         }
+        return null; // nothing available or budget exhausted
+    }
+
+    /**
+     * Retrieves the next packet to process.
+     *
+     * @return the next packet's data, or null if none available
+     */
+    public synchronized byte[] nextPacket() {
+        final long now = System.currentTimeMillis();
+
+        // 1. Reset budgets every epoch
+        if (now - lastEpochReset >= EPOCH_MS
+                || getTotalRemainingBudget() <= 0) {
+            resetBudgets();
+        }
+
+        // 2. Rotate MLFQ queues
+        rotateQueues();
+
+        // 3. Process priorities in order: P1 > P2 > P3
+
+        // Highest Priority (P1/ZERO)
+        byte[] packet = processHighestPriority();
+        if (packet != null) {
+            return packet;
+        }
+
+        // Mid-Priority (P2/ONE)
+        packet = processMidPriority();
+        if (packet != null) {
+            return packet;
+        }
+
+        // Low Priority (P3/TWO - MLFQ)
+        packet = processLowPriority();
+        if (packet != null) {
+            return packet;
+        }
+
         return null; // nothing available
     }
 
