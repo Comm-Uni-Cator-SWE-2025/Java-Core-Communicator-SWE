@@ -17,12 +17,17 @@ class CoalescedPacket {
      */
     private long startTime;
 
-    public void addToQueue(final byte[] data) {
+    public void addToQueue(final byte[] packet) {
+        if (packet == null || packet.length == 0) {
+            return;
+        }
+
         if (totalSize == 0) {
             this.startTime = System.currentTimeMillis();
         }
-        queue.add(data);
-        totalSize += data.length;
+
+        queue.add(packet);
+        totalSize += packet.length;
     }
 
     public long getStartTime() {
