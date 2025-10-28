@@ -150,6 +150,10 @@ public class MainServer implements P2PUser {
                         sendAddPktResponse(dest, client, clusterIdx);
                     }
 
+                } else if (connectionType == NetworkConnectionType.REMOVE.ordinal()) {
+                    final int clientIdx = topology.getClusterIndex(dest);
+                    final ClientNetworkRecord clientRecord = new ClientNetworkRecord(dest, clientIdx);
+                    topology.removeClient(clientRecord);
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
                     timer.updateTimeout(dest);
                     System.out.println("Received alive packet from " + dest);
