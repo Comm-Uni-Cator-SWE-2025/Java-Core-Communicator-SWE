@@ -164,7 +164,7 @@ public class MainServer implements P2PUser {
      * @param idx    the index of the cluster it belongs
      */
     private void addClientToTimer(final ClientNode client, final int idx) {
-        if (idx == mainServerClusterIdx) {
+        if (idx == mainServerClusterIdx && !client.equals(mainserver)) {
             timer.addClient(client);
         } else if (topology.getAllClusterServers().contains(client)) {
             timer.addClient(client);
