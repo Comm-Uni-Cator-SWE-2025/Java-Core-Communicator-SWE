@@ -20,6 +20,7 @@ public final class TCPCommunicator implements ProtocolBase {
      **/
     private ServerSocketChannel receiveSocket;
 
+    /** The selector for the sockets. */
     private Selector selector;
     /**
      * The list of all connected clients and their sockets.
@@ -63,14 +64,14 @@ public final class TCPCommunicator implements ProtocolBase {
     public byte[] receiveData() {
         try {
             selector.select();
-            Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+            final Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
             while (iter.hasNext()) {
-                SelectionKey key = iter.next();
+                final SelectionKey key = iter.next();
                 iter.remove();
                 if (key.isAcceptable()) {
                     acceptConnection(key);
                 } else if (key.isReadable()) {
-                    byte[] data = readData(key);
+                    final byte[] data = readData(key);
                     return data;
                 }
             }
@@ -97,7 +98,7 @@ public final class TCPCommunicator implements ProtocolBase {
     public SocketChannel openSocket() {
         System.out.println("Opening new socket...");
         try {
-            SocketChannel socket = SocketChannel.open();
+            final SocketChannel socket = SocketChannel.open();
             return socket;
         } catch (IOException ex) {
             System.out.println("Error occurred while opening socket...");
@@ -107,7 +108,7 @@ public final class TCPCommunicator implements ProtocolBase {
 
     @Override
     public void closeSocket(final ClientNode client) {
-        SocketChannel clientSocket = clientSockets.get(client);
+        final SocketChannel clientSocket = clientSockets.get(client);
         if (clientSocket != null) {
             try {
                 clientSocket.close();
@@ -124,7 +125,7 @@ public final class TCPCommunicator implements ProtocolBase {
         final String destIp = dest.hostName();
         final Integer destPort = dest.port();
         try {
-            SocketChannel destSocket;
+            final SocketChannel destSocket;
             if (clientSockets.containsKey(dest)) {
                 System.out.println("Connection exists already...");
                 destSocket = clientSockets.get(dest);
@@ -137,7 +138,7 @@ public final class TCPCommunicator implements ProtocolBase {
                 System.out.println("New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
-            ByteBuffer buffer = ByteBuffer.wrap(data);
+            final ByteBuffer buffer = ByteBuffer.wrap(data);
             while (buffer.hasRemaining()) {
                 destSocket.write(buffer);
             }
@@ -147,14 +148,19 @@ public final class TCPCommunicator implements ProtocolBase {
         }
     }
 
-    public void acceptConnection(SelectionKey key) {
+    /**
+     * Function to accept new connection.
+     *
+     * @param key the selection key for new connections
+     */
+    public void acceptConnection(final SelectionKey key) {
         try {
-            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
-            SocketChannel clientChannel = serverSocketChannel.accept();
+            final ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+            final SocketChannel clientChannel = serverSocketChannel.accept();
             clientChannel.configureBlocking(false);
             clientChannel.register(selector, SelectionKey.OP_READ);
-            String ip = clientChannel.getRemoteAddress().toString();
-            int port = ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort();
+            final String ip = clientChannel.getRemoteAddress().toString();
+            final int port = ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort();
             clientSockets.put(new ClientNode(ip, port), clientChannel);
             System.out.println("Accepted new connection from " + ip + ":" + port);
         } catch (IOException ex) {
@@ -162,16 +168,23 @@ public final class TCPCommunicator implements ProtocolBase {
         }
     }
 
-    public byte[] readData(SelectionKey key) {
+    /**
+     * Function to read data from available socket.
+     *
+     * @param key the key for the socket
+     * @return the data ead
+     */
+    public byte[] readData(final SelectionKey key) {
         try {
-            ByteBuffer buffer = ByteBuffer.allocate(byteBufferSize);
-            SocketChannel clientChannel = (SocketChannel) key.channel();
+            final ByteBuffer buffer = ByteBuffer.allocate(byteBufferSize);
+            final SocketChannel clientChannel = (SocketChannel) key.channel();
             final int bytesRead = clientChannel.read(buffer);
-            if (bytesRead == -1)
+            if (bytesRead == -1) {
                 return null;
+            }
             System.out.println("bytes read..." + bytesRead);
             buffer.flip();
-            byte[] data = new byte[bytesRead];
+            final byte[] data = new byte[bytesRead];
             buffer.get(data);
             return data;
         } catch (IOException ex) {

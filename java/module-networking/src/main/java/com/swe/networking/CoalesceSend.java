@@ -32,10 +32,11 @@ public class CoalesceSend {
 
     /**
      * Adds packets to coalescing lists based on their destination.
-     * @param data The payload of the packet.
-     * @param destIP The IP of the destination.
+     * 
+     * @param data     The payload of the packet.
+     * @param destIP   The IP of the destination.
      * @param destPort The port of the destination.
-     * @param module The module where the data is to be sent.
+     * @param module   The module where the data is to be sent.
      */
     public void handlePacket(final byte[] data, final InetAddress destIP, final int destPort, final byte module) {
         final String destination = destIP.getHostAddress() + ":" + destPort;
@@ -65,7 +66,8 @@ public class CoalesceSend {
         }
     }
 
-    private void sendCoalescedPacket(final String destination, final CoalescedPacket coalescedPacket) throws RuntimeException {
+    private void sendCoalescedPacket(final String destination, final CoalescedPacket coalescedPacket)
+            throws RuntimeException {
         final String ip = destination.split(":")[0];
         final int port = Integer.parseInt(destination.split(":")[1]);
         try {
@@ -81,7 +83,8 @@ public class CoalesceSend {
             buffer.flip();
             buffer.get(payload);
 
-            // Todo: Send the module: networking, destIP, port and payload to the chunk manager.
+            // Todo: Send the module: networking, destIP, port and payload to the chunk
+            // manager.
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
@@ -108,4 +111,3 @@ public class CoalesceSend {
         }
     }
 }
-
