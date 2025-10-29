@@ -190,7 +190,7 @@ public final class Topology implements AbstractTopology, AbstractController {
         clusters.get(idx).remove(removeClient);
         if (clusterServers.contains(removeClient)) {
             if (!clusters.get(idx).isEmpty()) {
-                ClientNode newServer = clusters.get(idx).get(0);
+                final ClientNode newServer = clusters.get(idx).get(0);
                 clusterServers.set(idx, newServer);
                 System.out.println("A new server has been decided\n");
             }

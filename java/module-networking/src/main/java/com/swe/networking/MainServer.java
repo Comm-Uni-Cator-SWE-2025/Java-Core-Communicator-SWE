@@ -52,7 +52,7 @@ public class MainServer implements P2PUser {
     private final ClientNode mainserver;
 
     /** Variable to store the static serializer. */
-    final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+    private final NetworkSerializer serializer;
 
     /**
      * Constructor function for the main server class.
@@ -66,6 +66,7 @@ public class MainServer implements P2PUser {
         serverPort = deviceAddress.port();
         mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
+        serializer = NetworkSerializer.getNetworkSerializer();
         timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
@@ -136,27 +137,7 @@ public class MainServer implements P2PUser {
                     + type + " and connection type " + connectionType + "...");
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
-                    final int clusterIdx = topology.addClient(dest);
-                    addClientToTimer(dest, clusterIdx);
-                    sendNetworkPktResponse(dest);
-                    // send add packet to all cluster servers.
-                    final List<ClientNode> servers = topology.getAllClusterServers();
-                    for (ClientNode server : servers) {
-                        if (server.equals(mainserver)) {
-                            continue;
-                        }
-                        sendAddPktResponse(dest, server, clusterIdx);
-                    }
-
-                    // send add packet to all cluster clients of this cluster
-                    final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
-                    for (ClientNode client : clients) {
-                        if (client.equals(mainserver)) {
-                            continue;
-                        }
-                        sendAddPktResponse(dest, client, clusterIdx);
-                    }
-
+                    handleHello(dest);
                 } else if (connectionType == NetworkConnectionType.REMOVE.ordinal()) {
                     handleRemove(packet, dest);
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
@@ -254,7 +235,7 @@ public class MainServer implements P2PUser {
      *
      * @param packet the packe containing data
      * @param dest   the destination to be removed
-     * @throws UnknownHostException
+     * @throws UnknownHostException when host is unknown
      */
     private void handleRemove(final byte[] packet, final ClientNode dest) throws UnknownHostException {
         final PacketInfo packetInfo = parser.parsePacket(packet);
@@ -279,6 +260,34 @@ public class MainServer implements P2PUser {
         System.out.println("Client " + remClient.client().hostName()
                 + " removed from cluster"
                 + remClient.clusterIndex());
+    }
+
+    /**
+     * Function to handel hello packets.
+     *
+     * @param dest the destination to the network structure to
+     */
+    private void handleHello(final ClientNode dest) {
+        final int clusterIdx = topology.addClient(dest);
+        addClientToTimer(dest, clusterIdx);
+        sendNetworkPktResponse(dest);
+        // send add packet to all cluster servers.
+        final List<ClientNode> servers = topology.getAllClusterServers();
+        for (ClientNode server : servers) {
+            if (server.equals(mainserver)) {
+                continue;
+            }
+            sendAddPktResponse(dest, server, clusterIdx);
+        }
+
+        // send add packet to all cluster clients of this cluster
+        final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
+        for (ClientNode client : clients) {
+            if (client.equals(mainserver)) {
+                continue;
+            }
+            sendAddPktResponse(dest, client, clusterIdx);
+        }
     }
 
     /**
