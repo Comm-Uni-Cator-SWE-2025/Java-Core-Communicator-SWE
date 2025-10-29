@@ -2,7 +2,9 @@ package com.swe.networking;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,29 +49,27 @@ public class P2PCluster {
      * @param client details of the current client
      * @param server details of the mainserver
      */
-    public void addUser(final ClientNode client, final ClientNode server) {
+    public void addUser(final ClientNode client, final ClientNode server) throws UnknownHostException {
         System.out.println("Adding new user to the network...");
         // send hello to server
         PacketInfo packetInfo = new PacketInfo();
         packetInfo.setType(NetworkType.USE.ordinal());
-        packetInfo.setPriority(NetworkConnectionType.HELLO.ordinal());
+        packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+        packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+        packetInfo.setPortNum(client.port());
         packetInfo.setPayload(new byte[0]);
         final byte[] helloPacket = packetParser.createPkt(packetInfo);
 
         try {
-            final Socket socket = new Socket(client.hostName(), client.port());
+            final Socket socket = new Socket(server.hostName(), server.port(), InetAddress.getByName(client.hostName()), client.port());
             final OutputStream out = socket.getOutputStream();
             out.write(helloPacket);
             out.flush();
-            socket.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            final Socket socket = new Socket(client.hostName(), client.port());
+            // read response from server
             final InputStream in = socket.getInputStream();
             final byte[] packet = new byte[4096];
             final int bytesRead = in.read(packet);
+            socket.close();
             if (bytesRead > 0) {
                 System.out.println("Received structure from server: " + server.hostName());
                 clients.add(client);
@@ -87,11 +87,13 @@ public class P2PCluster {
                         }
                         // send network packet to the P2P server
                         final Socket serverSocket =
-                            new Socket(server.hostName(), server.port());
+                            new Socket(client.hostName(), client.port());
                         final OutputStream serverOut = serverSocket.getOutputStream();
                         final PacketInfo netPacketInfo = new PacketInfo();
                         netPacketInfo.setType(NetworkType.USE.ordinal());
-                        netPacketInfo.setPriority(NetworkConnectionType.NETWORK.ordinal());
+                        netPacketInfo.setConnectionType(NetworkConnectionType.NETWORK.ordinal());
+                        netPacketInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+                        netPacketInfo.setPortNum(client.port());
                         netPacketInfo.setPayload(
                             NetworkSerializer.getNetworkSerializer()
                                 .serializeNetworkStructure(networkStructure));
@@ -110,7 +112,6 @@ public class P2PCluster {
                     }
                 }
             }
-            socket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
