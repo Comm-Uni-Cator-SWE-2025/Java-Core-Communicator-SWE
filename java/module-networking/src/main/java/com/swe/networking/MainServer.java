@@ -114,7 +114,10 @@ public class MainServer implements P2PUser {
                 } catch (UnknownHostException e) {
                 }
                 System.out.println("Data received : " + payload);
-                parsePacket(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    parsePacket(p);
+                }
             }
         }
     }
