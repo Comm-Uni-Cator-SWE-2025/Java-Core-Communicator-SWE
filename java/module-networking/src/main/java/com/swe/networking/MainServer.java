@@ -46,7 +46,7 @@ public class MainServer implements P2PUser {
     /**
      * Variable to start the timer.
      */
-    private final int timerTimeoutMilliSeconds = 30 * 1000;
+    private final int timerTimeoutMilliSeconds = 2 * 1000;
 
     /** Variable to store the server IP address. */
     private final ClientNode mainserver;
@@ -66,7 +66,7 @@ public class MainServer implements P2PUser {
         serverPort = deviceAddress.port();
         mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
-        this.timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -133,9 +133,7 @@ public class MainServer implements P2PUser {
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
             System.out.println("Packet received of type "
-                    + Integer.toBinaryString(type)
-                    + " and connection type "
-                    + Integer.toBinaryString(connectionType) + "...");
+                    + type + " and connection type " + connectionType + "...");
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
                     final int clusterIdx = topology.addClient(dest);
@@ -144,12 +142,18 @@ public class MainServer implements P2PUser {
                     // send add packet to all cluster servers.
                     final List<ClientNode> servers = topology.getAllClusterServers();
                     for (ClientNode server : servers) {
+                        if (server.equals(mainserver)) {
+                            continue;
+                        }
                         sendAddPktResponse(dest, server, clusterIdx);
                     }
 
                     // send add packet to all cluster clients of this cluster
                     final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
                     for (ClientNode client : clients) {
+                        if (client.equals(mainserver)) {
+                            continue;
+                        }
                         sendAddPktResponse(dest, client, clusterIdx);
                     }
 
@@ -209,6 +213,7 @@ public class MainServer implements P2PUser {
             responsePacket.setChunkLength(1);
             responsePacket.setPayload(serializer.serializeNetworkStructure(network));
             System.out.println("Sending current network details...");
+            System.out.println(network);
             final byte[] responsePkt = parser.createPkt(responsePacket);
             send(responsePkt, dest);
         } catch (UnknownHostException ex) {
@@ -265,6 +270,12 @@ public class MainServer implements P2PUser {
             }
             send(packet, c);
         }
+        for (ClientNode s : topology.getAllClusterServers()) {
+            if (s.equals(mainserver)) {
+                continue;
+            }
+            send(packet, s);
+        }
         System.out.println("Client " + remClient.client().hostName()
                 + " removed from cluster"
                 + remClient.clusterIndex());
@@ -276,6 +287,7 @@ public class MainServer implements P2PUser {
      * @param client the client to close
      */
     public void closeClient(final ClientNode client) {
+        timer.removeClient(client);
         communicator.closeSocket(client);
     }
 
@@ -287,6 +299,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+        timer.close();
     }
 
     /**
@@ -295,29 +308,37 @@ public class MainServer implements P2PUser {
      * @param client the client which was timeout
      */
     private void handleClientTimeout(final ClientNode client) {
-        // send remove packet to all clients in the cluster and main server
-        final ClientNetworkRecord remClient = new ClientNetworkRecord(client,
-                topology.getClusterIndex(client));
-        topology.removeClient(remClient);
-        timer.removeClient(client);
-        final PacketInfo packetInfo = new PacketInfo();
-        packetInfo.setType(NetworkType.USE.ordinal());
-        packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
-        packetInfo.setPayload(client.toString().getBytes());
-        final byte[] removePacket = parser.createPkt(packetInfo);
-        final List<ClientNode> servers = topology.getAllClusterServers();
-        for (ClientNode server : servers) {
-            if (server.equals(mainserver)) {
-                continue;
+        try {
+            System.out.println("Reached timeout for client " + client + " ...");
+            // send remove packet to all clients in the cluster and main server
+            final ClientNetworkRecord remClient = new ClientNetworkRecord(client,
+                    topology.getClusterIndex(client));
+            topology.removeClient(remClient);
+            timer.removeClient(client);
+            final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+            packetInfo.setPayload(client.toString().getBytes());
+            // used when removing clients the destination does not matter here but give to
+            // avoid error
+            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+            packetInfo.setPortNum(client.port());
+            final byte[] removePacket = parser.createPkt(packetInfo);
+            final List<ClientNode> servers = topology.getAllClusterServers();
+            for (ClientNode server : servers) {
+                if (server.equals(mainserver)) {
+                    continue;
+                }
+                send(removePacket, server);
             }
-            send(removePacket, server);
-        }
-        final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
-        for (ClientNode newClient : clients) {
-            if (newClient.equals(mainserver)) {
-                continue;
+            final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
+            for (ClientNode newClient : clients) {
+                if (newClient.equals(mainserver)) {
+                    continue;
+                }
+                send(removePacket, newClient);
             }
-            send(removePacket, newClient);
+        } catch (UnknownHostException ex) {
         }
     }
 }

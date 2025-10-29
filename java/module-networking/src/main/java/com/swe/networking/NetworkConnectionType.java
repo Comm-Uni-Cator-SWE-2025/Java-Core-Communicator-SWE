@@ -28,9 +28,9 @@ public enum NetworkConnectionType {
     /** REMOVE packet ID. */
     private static final int REMOVEID = 3;
     /** NETWORK packet ID. */
-    private static final int NETWORKID = 3;
+    private static final int NETWORKID = 4;
     /** CLOES packet ID. */
-    private static final int CLOSEID = 3;
+    private static final int CLOSEID = 7;
 
     /**
      * Hashmap storing the mapping from integer to NetworkConnectionType.
