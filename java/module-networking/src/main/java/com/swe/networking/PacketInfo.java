@@ -11,6 +11,9 @@ public class PacketInfo {
     /** Payload bytes (may be empty, copied on access). */
     private byte[] payload = new byte[0];
 
+    /** Length of the packet (2 bytes). */
+    private int length;
+
     /** Packet type (2 bits ). */
     private int type;
 
@@ -64,6 +67,20 @@ public class PacketInfo {
         } else {
             this.payload = Arrays.copyOf(payloadBytes, payloadBytes.length);
         }
+    }
+
+    /** Get the length of the packet.
+     * @return length the length of the packet
+     */
+    public int getLength() {
+        return length;
+    }
+
+    /** Set the length of the packet.
+     * @param lengthValue the length of the packet
+     */
+    public void setLength(final int lengthValue) {
+        this.length = lengthValue;
     }
 
     /** Get the packet type.
