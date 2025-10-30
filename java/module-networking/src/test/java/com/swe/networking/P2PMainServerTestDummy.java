@@ -1,11 +1,5 @@
 package com.swe.networking;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.junit.Test;
 
@@ -24,10 +18,11 @@ public class P2PMainServerTestDummy {
         // P2PServer p2pServer = new P2PServer(p2pserverNode, mainServerNode);
         cluster0.addUser(p2pserverNode, mainServerNode);
         try {
-            Thread.sleep(10000);
+            Thread.sleep(5000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
+        topology.closeTopology();
     }
 
 }

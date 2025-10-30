@@ -110,7 +110,7 @@ public final class Topology implements AbstractTopology, AbstractController {
             numClusters = 1;
             numClients = 1;
         } else {
-            try{
+            try {
                 final P2PCluster userP2P = new P2PCluster();
                 userP2P.addUser(deviceAddress, deviceAddress);
             } catch (UnknownHostException ex) {

@@ -16,6 +16,8 @@ public enum NetworkConnectionType {
     REMOVE,
     /** NETWORK packet type. */
     NETWORK,
+    /** MODULE packet type. */
+    MODULE,
     /** CLOSE packet type. */
     CLOSE;
 
@@ -29,6 +31,8 @@ public enum NetworkConnectionType {
     private static final int REMOVEID = 3;
     /** NETWORK packet ID. */
     private static final int NETWORKID = 4;
+    /** NETWORK packet ID. */
+    private static final int MODULEID = 4;
     /** CLOES packet ID. */
     private static final int CLOSEID = 7;
 
@@ -42,6 +46,7 @@ public enum NetworkConnectionType {
             put(ADDID, ADD);
             put(REMOVEID, REMOVE);
             put(NETWORKID, NETWORK);
+            put(MODULEID, MODULE);
             put(CLOSEID, CLOSE);
         }
     };
