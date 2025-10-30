@@ -1,6 +1,7 @@
 package com.swe.networking;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,21 @@ public class SplitPackets {
      *
      */
     private static SplitPackets splitPackets = null;
+
+    /**
+     * Variable to store the buffer size for incomplete buffer.
+     */
+    private final int bufferSize = 15 * 1024;
+
+    /**
+     * Buffer to store the incomplete packets from the data.
+     */
+    private final ByteBuffer incompleteBuffer = ByteBuffer.allocate(bufferSize);
+
+    /**
+     * Variable to store maximuum packet length size.
+     */
+    private static final int MAX_PACKET_SIZE = 65536;
 
     private SplitPackets() {
     }
@@ -39,13 +55,44 @@ public class SplitPackets {
      */
     public List<byte[]> split(final byte[] data) {
         final List<byte[]> packets = new ArrayList<>();
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final ByteBuffer buffer;
+
+        if (incompleteBuffer.position() > 0) {
+            incompleteBuffer.flip();
+            final byte[] oldData = new byte[incompleteBuffer.remaining()];
+            incompleteBuffer.get(oldData);
+
+            final byte[] combined = new byte[oldData.length + data.length];
+            System.out.println("Combined length " + combined.length + " ...");
+            System.arraycopy(oldData, 0, combined, 0, oldData.length);
+            System.arraycopy(data, 0, combined, oldData.length, data.length);
+            buffer = ByteBuffer.wrap(combined);
+            incompleteBuffer.clear();
+        } else {
+            buffer = ByteBuffer.wrap(data);
+        }
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
         while (buffer.hasRemaining()) {
+            buffer.mark();
             final int len = buffer.getShort();
+            System.out.println("Packet length " + len);
             buffer.position(buffer.position() - 2);
+            if (len <= 2 || len > MAX_PACKET_SIZE) {
+                System.out.println("Invalid packet length " + len);
+            }
+            if (buffer.remaining() < len) {
+                buffer.reset();
+                break;
+            }
             final byte[] packet = new byte[len];
+            buffer.reset();
             buffer.get(packet);
             packets.add(packet);
+        }
+
+        incompleteBuffer.clear();
+        if (buffer.hasRemaining()) {
+            incompleteBuffer.put(buffer);
         }
         return packets;
     }

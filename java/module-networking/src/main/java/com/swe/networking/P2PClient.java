@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -177,7 +178,10 @@ public class P2PClient implements P2PUser {
                     }
                     continue;
                 }
-                packetRedirection(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    packetRedirection(p);
+                }
 
             } catch (Exception e) {
                 if (running) {

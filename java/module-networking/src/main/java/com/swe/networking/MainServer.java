@@ -54,6 +54,9 @@ public class MainServer implements P2PUser {
     /** Variable to store the static serializer. */
     private final NetworkSerializer serializer;
 
+    /** Variable to store header size. */
+    private final int packetHeaderSize = 22;
+
     /**
      * Constructor function for the main server class.
      *
@@ -113,11 +116,11 @@ public class MainServer implements P2PUser {
                     payload = new String(parser.parsePacket(packet).getPayload());
                 } catch (UnknownHostException e) {
                 }
-                System.out.println("Data received : " + payload);
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {
                     parsePacket(p);
                 }
+                // parsePacket(packet);
             }
         }
     }
@@ -136,7 +139,7 @@ public class MainServer implements P2PUser {
             final int destinationPort = parser.parsePacket(packet).getPortNum();
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
-            System.out.println("Packet received of type "
+            System.out.println("Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
@@ -146,6 +149,8 @@ public class MainServer implements P2PUser {
                 } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
                     timer.updateTimeout(dest);
                     System.out.println("Received alive packet from " + dest);
+                } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
+                    System.out.println("Passing to chunk manager...");
                 } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                     System.out.println("Closing the Main Server");
                 }
@@ -183,8 +188,9 @@ public class MainServer implements P2PUser {
         try {
             final NetworkStructure network = topology.getNetwork();
             final int randomFactor = (int) Math.pow(10, 6);
-
+            final byte[] networkBytes = serializer.serializeNetworkStructure(network);
             final PacketInfo responsePacket = new PacketInfo();
+            responsePacket.setLength(packetHeaderSize + networkBytes.length);
             responsePacket.setType(NetworkType.USE.ordinal());
             responsePacket.setPriority(0);
             responsePacket.setModule(ModuleType.NETWORKING.ordinal());
@@ -195,7 +201,7 @@ public class MainServer implements P2PUser {
             responsePacket.setMessageId((int) (Math.random() * randomFactor));
             responsePacket.setChunkNum(0);
             responsePacket.setChunkLength(1);
-            responsePacket.setPayload(serializer.serializeNetworkStructure(network));
+            responsePacket.setPayload(networkBytes);
             System.out.println("Sending current network details...");
             System.out.println(network);
             final byte[] responsePkt = parser.createPkt(responsePacket);
@@ -216,6 +222,8 @@ public class MainServer implements P2PUser {
             final int randomFactor = (int) Math.pow(10, 6);
             final ClientNetworkRecord addClient = new ClientNetworkRecord(dest, clusterIdx);
             final PacketInfo addPacket = new PacketInfo();
+            final byte[] clientBytes = serializer.serializeClientNetworkRecord(addClient);
+            addPacket.setLength(packetHeaderSize + clientBytes.length);
             addPacket.setType(NetworkType.USE.ordinal());
             addPacket.setPriority(0);
             addPacket.setModule(ModuleType.NETWORKING.ordinal());
@@ -226,7 +234,7 @@ public class MainServer implements P2PUser {
             addPacket.setMessageId((int) (Math.random() * randomFactor));
             addPacket.setChunkNum(0);
             addPacket.setChunkLength(1);
-            addPacket.setPayload(serializer.serializeClientNetworkRecord(addClient));
+            addPacket.setPayload(clientBytes);
             final byte[] addPkt = parser.createPkt(addPacket);
             send(addPkt, server);
         } catch (UnknownHostException ex) {
@@ -271,6 +279,7 @@ public class MainServer implements P2PUser {
      * @param dest the destination to the network structure to
      */
     private void handleHello(final ClientNode dest) {
+        System.out.println("Responding " + dest + " with a Hello packet...");
         final int clusterIdx = topology.addClient(dest);
         addClientToTimer(dest, clusterIdx);
         sendNetworkPktResponse(dest);
@@ -328,6 +337,7 @@ public class MainServer implements P2PUser {
             topology.removeClient(remClient);
             timer.removeClient(client);
             final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(packetHeaderSize);
             packetInfo.setType(NetworkType.USE.ordinal());
             packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
             packetInfo.setPayload(client.toString().getBytes());
