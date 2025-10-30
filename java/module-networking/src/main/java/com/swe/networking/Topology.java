@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,8 +110,12 @@ public final class Topology implements AbstractTopology, AbstractController {
             numClusters = 1;
             numClients = 1;
         } else {
-            final P2PCluster userP2P = new P2PCluster();
-            userP2P.addUser(deviceAddress, deviceAddress);
+            try{
+                final P2PCluster userP2P = new P2PCluster();
+                userP2P.addUser(deviceAddress, deviceAddress);
+            } catch (UnknownHostException ex) {
+                System.out.println("Error while adding user to the P2P cluster...");
+            }
         }
     }
 
