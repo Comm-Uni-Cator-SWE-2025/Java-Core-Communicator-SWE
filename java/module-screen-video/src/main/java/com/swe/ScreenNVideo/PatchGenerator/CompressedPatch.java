@@ -61,7 +61,12 @@ public record CompressedPatch(int x, int y, int width, int height, byte[] data) 
         final int variableSpaces = 16;
         final int dataLength = packetLength - variableSpaces;
         final byte[] data = new byte[dataLength];
-        packetBuffer.get(data, 0, dataLength);
+        try {
+            packetBuffer.get(data, 0, dataLength);
+        } catch (final Exception e) {
+            System.err.println("Buffer Overflow : Required " + dataLength + " Got : " + packetBuffer.remaining());
+            return null;
+        }
         return new CompressedPatch(
             x, y, width, height, data
         );

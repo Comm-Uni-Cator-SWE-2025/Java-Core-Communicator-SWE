@@ -75,6 +75,11 @@ public class MainServer implements P2PUser {
         communicator.sendData(data, destIp); // check of this should be dest
     }
 
+    @Override
+    public void send(byte[] data) {
+
+    }
+
     /**
      * Function to receive the data from the sockets.
      */
