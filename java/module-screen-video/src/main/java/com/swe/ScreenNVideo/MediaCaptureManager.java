@@ -1,8 +1,6 @@
 package com.swe.ScreenNVideo;
 
 
-import com.swe.Networking.AbstractNetworking;
-import com.swe.Networking.MessageListener;
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.ICapture;
 import com.swe.ScreenNVideo.Capture.ScreenCapture;
@@ -17,53 +15,73 @@ import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
+import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
-import com.swe.ScreenNVideo.Serializer.Serializer;
+import com.swe.ScreenNVideo.Serializer.RImage;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
+import com.swe.networking.ClientNode;
+import com.swe.networking.ModuleType;
+import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.SimpleNetworking.PacketParser;
 
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Media Manager for Screen N Video.
  * - Manages Screen Capture and Video Capture
  */
 public class MediaCaptureManager implements CaptureManager {
-    /** Port for the server. */
+    /**
+     * Port for the server.
+     */
     private final int port;
 
-    /** CaptureComponent object. */
+    /**
+     * CaptureComponent object.
+     */
     private final CaptureComponents captureComponents;
+    /**
+     * VideoComponent object : manages the video overlay and diffing.
+     */
+    private final VideoComponents videoComponent;
+    /**
+     * Image synchronizer object.
+     */
+    private final HashMap<String, ImageSynchronizer> imageSynchronizers;
 
-    /** Patch generator object. */
-    private final PacketGenerator patchGenerator;
-
-    /** Image stitcher object. */
-    private final ImageStitcher imageStitcher;
-
-    /** Image synchronizer object. */
-    private final ImageSynchronizer imageSynchronizer;
-
-    /** Image scaler object. */
-    private final ImageScaler scalar;
-
-    /** Video codec object. */
-    private final Codec videoCodec;
-
-    /** Networking object. */
+    /**
+     * Networking object.
+     */
     private final AbstractNetworking networking;
-
-    /** RPC object. */
+    /**
+     * RPC object.
+     */
     private final AbstractRPC rpc;
 
-    /** List of viewers to send the video Feed. */
-    private final ArrayList<String> viewers;
+    /**
+     * Cached IP for this machine to avoid repeated socket calls.
+     */
+    private final String localIp;
+
+    /**
+     * List of viewers to send the video Feed.
+     */
+    private final ArrayList<ClientNode> viewers;
+
 
     /**
      * Constructor for the MediaCaptureManager.
@@ -77,14 +95,34 @@ public class MediaCaptureManager implements CaptureManager {
         this.port = portArgs;
         this.networking = argNetworking;
         captureComponents = new CaptureComponents(networking);
-        videoCodec = new JpegCodec();
-        final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
-        patchGenerator = new PacketGenerator(videoCodec, hasher);
-        imageStitcher = new ImageStitcher();
-        imageSynchronizer = new ImageSynchronizer(videoCodec);
+        videoComponent = new VideoComponents(Utils.FPS);
+        imageSynchronizers = new HashMap<>();
         viewers = new ArrayList<>();
-        scalar = new BilinearScaler();
-        viewers.add(networking.getSelfIP());
+
+        // Cache local IP once to avoid repeated socket operations during capture
+        this.localIp = getSelfIP();
+        System.out.println(this.localIp);
+
+//        addParticipant(getSelfIP());
+        addParticipant("10.32.11.242");
+//        addParticipant("10.32.9.37");
+    }
+
+    private void addParticipant(final String ip) {
+        final ClientNode node = new ClientNode(ip, port);
+        viewers.add(node);
+        imageSynchronizers.put(ip, new ImageSynchronizer(videoComponent.videoCodec));
+    }
+
+    private static String getSelfIP() {
+        // Get IP address as string
+        try (DatagramSocket socket = new DatagramSocket()) {
+            final int pingPort = 10002;
+            socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
+            return socket.getLocalAddress().getHostAddress();
+        } catch (SocketException | UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -94,42 +132,148 @@ public class MediaCaptureManager implements CaptureManager {
     public void startCapture() throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
-        int[][] feed;
-
-        final int fps = 30;
-        final double timeDelay = (1.0 / fps) * 1_000_000_000;
-        long start = 0;
+        //noinspection InfiniteLoopStatement
         while (true) {
+            final byte[] encodedPatches = videoComponent.captureScreenNVideo();
+            if (encodedPatches == null) {
+                continue;
+            }
+            sendImageToViewers(encodedPatches);
+        }
+    }
+
+    private void sendImageToViewers(final byte[] feed) {
+        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
+    }
+
+
+    class VideoComponents {
+        /**
+         * Video codec object.
+         */
+        private final Codec videoCodec;
+
+        /**
+         * Patch generator object.
+         */
+        private final PacketGenerator patchGenerator;
+
+        /**
+         * Keeps track of previous click.
+         */
+        private long start = 0L;
+
+//        /**
+//         * Limit the FPS at server.
+//         */
+//        private final double timeDelay;
+
+        VideoComponents(final int fps) {
+            final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
+            videoCodec = new JpegCodec();
+            patchGenerator = new PacketGenerator(videoCodec, hasher);
+            // initialize bounded queue and start worker thread that reads from the queue and updates the UI
+            this.uiQueue = new ArrayBlockingQueue<>(UI_QUEUE_CAPACITY);
+            final Thread uiWorkerThread = new Thread(this::uiWorkLoop, "MediaCaptureManager-UI-Worker");
+            uiWorkerThread.setDaemon(true);
+            uiWorkerThread.start();
+//            timeDelay = (1.0 / fps) * Utils.SEC_IN_NS;
+        }
+
+        private void uiWorkLoop() {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    final int[][] frame = uiQueue.take(); // blocks until a frame is available
+                    try {
+                        final RImage rImage = new RImage(frame, localIp);
+                        final byte[] serializedImage = rImage.serialize();
+                        // Fire-and-forget; do not block capture thread — worker thread can block on network
+                        try {
+                            rpc.call(Utils.UPDATE_UI, serializedImage);
+                        } catch (final Exception e) {
+                            e.printStackTrace();
+                        }
+                    } catch (final Exception e) {
+                        e.printStackTrace();
+                    }
+                } catch (final InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        /**
+         * Previous time stamp.
+         */
+        private long prev = 0;
+
+        /**
+         * limit the queue length.
+         */
+        private static final int UI_QUEUE_CAPACITY = 2;
+        /**
+         * Bounded queue for UI frames.
+         */
+        private final ArrayBlockingQueue<int[][]> uiQueue;
+
+        // Submit an RImage serialization + RPC task to the background worker queue. If the queue is full,
+        // this method will drop the frame (non-blocking) to keep capture smooth.
+        private void submitUIUpdate(final int[][] frame) {
+            // only add to the queue; worker thread handles serialization and sending
+            if (frame == null) {
+                return;
+            }
+            final boolean offered = uiQueue.offer(frame);
+            if (!offered) {
+                // drop the frame
+                System.err.println("UI queue full — dropping frame");
+            }
+        }
+
+        /**
+         * Captures the Video using CaptureComponents, handles overlay ,diffing and converting it to bytes  .
+         *
+         * @return encoded Patches to be sent through the network
+         */
+        protected byte[] captureScreenNVideo() {
             final long currTime = System.nanoTime();
             final long diff = currTime - start;
-            if (diff < timeDelay) {
-                continue;
-            }
-
-            System.out.println("Server FPS : "
-                + (int) ((double) (Utils.SEC_IN_MS) / ((currTime - start)
-                / ((double) (Utils.MSEC_IN_NS)))));
+//            if (diff < timeDelay) {
+//                return null;
+//            }
+            System.out.println("Time Delay " + ((currTime - prev)
+                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
+            System.out.println("\nServer FPS : "
+                + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
             start = System.nanoTime();
 
-            feed = captureComponents.getFeed();
+            final int[][] feed = captureComponents.getFeed();
             if (feed == null) {
-                continue;
+                return null;
             }
+
+            System.out.println("Time taken : Video | PacketGen");
+            final long curr1 = System.nanoTime();
+            System.out.print((curr1 - start) / (double) (Utils.MSEC_IN_NS) + " | ");
 
             videoCodec.setScreenshot(feed);
 
             final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
 
             if (patches.isEmpty()) {
-                continue;
+                prev = System.nanoTime();
+                return null;
             }
 
+            final CPackets networkPackets = new CPackets(localIp, patches);
             byte[] encodedPatches = null;
             int tries = Utils.MAX_TRIES_TO_SERIALIZE;
             while (tries-- > 0) {
                 // max tries 3 times to convert the patch
                 try {
-                    encodedPatches = NetworkSerializer.serializeCPackets(patches);
+                    encodedPatches = networkPackets.serializeCPackets();
                     break;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -138,38 +282,55 @@ public class MediaCaptureManager implements CaptureManager {
 
             if (tries < 0 || encodedPatches == null) {
                 System.err.println("Error: Unable to serialize compressed packets");
-                continue;
+                prev = System.nanoTime();
+                return null;
             }
-//             send to others who have subscribed
-            sendImageToViewers(encodedPatches);
-            // TODO: send to UI of current machine to display.
-            //  Remove selfIP from viewers list and directly send the data from here to UI
+
+            // Asynchronously send a serialized RImage to the UI so we don't block capture
+            // (frame is deep-copied inside submitUIUpdate)
+            submitUIUpdate(feed);
+
+            prev = System.nanoTime();
+            System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+            System.out.println("\nSending to " + networkPackets.getIp());
+            return encodedPatches;
         }
     }
-
-    private void sendImageToViewers(final byte[] feed) {
-        final int[] ports = new int[viewers.size()];
-        for (int i = 0; i < viewers.size(); i++) {
-            ports[i] = port;
-        }
-        networking.sendData(feed, viewers.toArray(new String[0]), ports);
-    }
-
 
     class CaptureComponents {
-        /** Flag for video capture. */
+        /**
+         * Flag for video capture.
+         */
         private boolean isVideoCaptureOn;
 
-        /** Flag for screen capture. */
+        /**
+         * Flag for screen capture.
+         */
         private boolean isScreenCaptureOn;
 
-        /** Video capture object. */
+        /**
+         * Video capture object.
+         */
         private final ICapture videoCapture;
 
-        /** Screen capture object. */
+        /**
+         * Screen capture object.
+         */
         private final ICapture screenCapture;
+        /**
+         * Image scaler object.
+         */
+        private final ImageScaler scalar;
 
-        /** Networking object. */
+
+        /**
+         * Image stitcher object.
+         */
+        private final ImageStitcher imageStitcher;
+
+        /**
+         * Networking object.
+         */
         private final AbstractNetworking networking;
 
         CaptureComponents(final AbstractNetworking argNetworking) {
@@ -178,6 +339,8 @@ public class MediaCaptureManager implements CaptureManager {
             this.networking = argNetworking;
             videoCapture = new VideoCapture();
             screenCapture = new ScreenCapture();
+            scalar = new BilinearScaler();
+            imageStitcher = new ImageStitcher();
             initializeHandlers();
         }
 
@@ -205,7 +368,9 @@ public class MediaCaptureManager implements CaptureManager {
                     feed = imageStitcher.getCanvas();
                 }
             }
-            feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+            if (feed != null) {
+                feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+            }
             return feed;
         }
 
@@ -223,12 +388,12 @@ public class MediaCaptureManager implements CaptureManager {
             } else if (isVideoCaptureOn) {
                 try {
                     videoFeed = videoCapture.capture();
-                } catch (AWTException e) {
+                } catch (AWTException _) {
                 }
             } else if (isScreenCaptureOn) {
                 try {
                     screenFeed = screenCapture.capture();
-                } catch (AWTException e) {
+                } catch (AWTException _) {
                 }
             }
 
@@ -268,18 +433,20 @@ public class MediaCaptureManager implements CaptureManager {
 
             rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
                 // Get the destination user IP
-                final String destIP = NetworkSerializer.deserializeString(args);
+                final String destIP = NetworkSerializer.deserializeIP(args);
 
-                final String selfIP = networking.getSelfIP();
-                final byte[] subscribeData = NetworkSerializer.serializeString(selfIP);
-                networking.sendData(subscribeData, new String[] {destIP}, new int[] {port});
+                final ClientNode destNode = new ClientNode(destIP, port);
+
+                // Get IP address as string
+                final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
+                networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
 
                 final byte[] res = new byte[1];
                 res[0] = 1;
                 return res;
             });
 
-            networking.subscribe(Utils.MODULE_REMOTE_KEY, new ClientHandler());
+            networking.subscribe(ModuleType.CHAT, new ClientHandler());
 
         }
     }
@@ -295,23 +462,33 @@ public class MediaCaptureManager implements CaptureManager {
         }
 
         @Override
-        public void receiveData(final byte[] data) {
+        public void receiveData(final byte[] dataArgs) {
+
+//            System.out.println("Recieved");
+            final byte[] data = PacketParser.getPacketParser().getPayload(dataArgs);
             if (data.length == 0) {
                 return;
             }
 
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
-                System.err.println("Error: Invalid packet type: " + packetType);
-                System.err.println("Error: Packet data: " + Arrays.toString(data));
+                final int printLen = 20;
+                System.err.println("Error: Invalid packet type: " + packetType + "  " + data.length);
+                System.err.println("Error: Packet data: " + (Arrays.toString(Arrays.copyOf(data, printLen))));
                 return;
             }
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
-                    final List<CompressedPatch> patches = NetworkSerializer.deserializeCPackets(data);
+                    final CPackets networkPackets = CPackets.deserialize(data);
+                    final List<CompressedPatch> patches = networkPackets.getPackets();
+                    final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());
+                    if (imageSynchronizer == null) {
+                        return;
+                    }
                     final int[][] image = imageSynchronizer.synchronize(patches);
-                    final byte[] serializedImage = Serializer.serializeImage(image);
+                    final RImage rImage = new RImage(image, networkPackets.getIp());
+                    final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage).get();
@@ -320,8 +497,8 @@ public class MediaCaptureManager implements CaptureManager {
                     }
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
-                    final String viewerIP = NetworkSerializer.deserializeString(data);
-                    viewers.add(viewerIP);
+                    final String viewerIP = NetworkSerializer.deserializeIP(data);
+                    addParticipant(viewerIP);
                 }
                 default -> {
                 }
