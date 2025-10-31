@@ -2,7 +2,9 @@ package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.ScreenNVideo.Utils;
 import com.swe.networking.AbstractNetworking;
+import com.swe.networking.ClientNode;
 import com.swe.networking.MessageListener;
+import com.swe.networking.ModuleType;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -38,7 +40,6 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
         receiverThread.start();
     }
 
-    @Override
     public void sendData(final byte[] data, final String[] dest, final int[] port) {
         if (data == null) {
             return;
@@ -56,6 +57,16 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     @Override
     public String getSelfIP() {
         return selfIP;
+    }
+
+    @Override
+    public void sendData(byte[] data, ClientNode[] dest, ModuleType module) {
+
+    }
+
+    @Override
+    public void sendData(byte[] data) {
+
     }
 
     @Override

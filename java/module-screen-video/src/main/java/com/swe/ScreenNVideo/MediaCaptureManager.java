@@ -24,7 +24,6 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
-import com.swe.networking.SimpleNetworking.PacketParser;
 
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
@@ -104,7 +103,7 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println(this.localIp);
 
 //        addParticipant(getSelfIP());
-        addParticipant("10.32.11.242");
+//        addParticipant("10.32.11.242");
 //        addParticipant("10.32.9.37");
     }
 
@@ -143,8 +142,10 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private void sendImageToViewers(final byte[] feed) {
-        System.out.println("Size : " + feed.length / Utils.KB + " KB");
-        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
+//        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+//        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
+//        SimpleNetworking.getSimpleNetwork().closeNetworking();
+//        System.out.println("Sent to viewers");
     }
 
 
@@ -390,7 +391,8 @@ public class MediaCaptureManager implements CaptureManager {
                     videoFeed = videoCapture.capture();
                 } catch (AWTException _) {
                 }
-            } else if (isScreenCaptureOn) {
+            }
+            if (isScreenCaptureOn) {
                 try {
                     screenFeed = screenCapture.capture();
                 } catch (AWTException _) {
@@ -462,10 +464,9 @@ public class MediaCaptureManager implements CaptureManager {
         }
 
         @Override
-        public void receiveData(final byte[] dataArgs) {
+        public void receiveData(final byte[] data) {
 
 //            System.out.println("Recieved");
-            final byte[] data = PacketParser.getPacketParser().getPayload(dataArgs);
             if (data.length == 0) {
                 return;
             }
@@ -480,6 +481,7 @@ public class MediaCaptureManager implements CaptureManager {
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
+//                    System.out.println("Received CPackets : " + data.length / Utils.KB);
                     final CPackets networkPackets = CPackets.deserialize(data);
                     final List<CompressedPatch> patches = networkPackets.getPackets();
                     final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());
