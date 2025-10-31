@@ -17,7 +17,7 @@ import java.util.function.Function;
 public class DummyRPC implements AbstractRPC {
 
     /** Map storing registered remote procedure names and their corresponding handler functions. */
-    private HashMap<String, Function<byte[], byte[]>> procedures;
+    private final HashMap<String, Function<byte[], byte[]>> procedures;
 
     /** The underlying {@link SocketryServer} instance used to handler RPC communication. */
     private SocketryServer server;
@@ -45,6 +45,12 @@ public class DummyRPC implements AbstractRPC {
 
     @Override
     public CompletableFuture<byte[]> call(final String name, final byte[] args) {
+        if (server == null) {
+            System.err.println("Server is null");
+            return CompletableFuture.supplyAsync(() -> {
+                return new byte[0];
+            });
+        }
         final byte funcId = server.getRemoteProcedureId(name);
         try {
             return server.makeRemoteCall(funcId, args, 0);

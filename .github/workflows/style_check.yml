@@ -27,10 +27,7 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
       
-      - name: Change to java directory
-        run: cd java
-        
       - name: Run Checkstyle
         run: |
-          cd java
+          cd java/module-screen-video
           mvn checkstyle:check

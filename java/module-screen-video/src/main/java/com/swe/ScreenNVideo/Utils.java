@@ -63,11 +63,11 @@ public class Utils {
     /**
      * Width of the server.
      */
-    public static final int SERVER_WIDTH = 800;
+    public static final int SERVER_WIDTH = 1200;
     /**
      * Height of the server.
      */
-    public static final int SERVER_HEIGHT = 600;
+    public static final int SERVER_HEIGHT = 800;
     /**
      * Width of the client.
      */
@@ -94,11 +94,25 @@ public class Utils {
      * Milli-seconds in nanoseconds.
      */
     public static final int MSEC_IN_NS = 1_000_000;
-    
+    /**
+     * Seconds in nanoseconds.
+     */
+    public static final int SEC_IN_NS = 1_000_000_000;
+    /**
+     * bytes in 1 kb.
+     */
+    public static final double KB = 1_024.0;
+
+
+
     /**
      * Maximum tries to serialize the compressed packets.
      */
     public static final int MAX_TRIES_TO_SERIALIZE = 3;
+    /**
+     * Server Max FPS.
+     */
+    public static final int FPS = 40;
 
     /**
      * Writes the given int to the buffer in little endian.
