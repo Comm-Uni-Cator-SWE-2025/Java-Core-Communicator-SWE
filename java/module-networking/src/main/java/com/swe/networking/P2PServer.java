@@ -49,6 +49,16 @@ public class P2PServer implements P2PUser {
     private final Thread sendThread;
 
     /**
+     * The thread to monitor client timeouts.
+     */
+    private final int timerTimeout = 30000;
+
+    /**
+     * Threshold for client timeout in milliseconds.
+     */
+    private final int timeoutThreshold = 10000;
+
+    /**
      * Main server Node.
      */
     private final ClientNode mainServer;
@@ -72,8 +82,8 @@ public class P2PServer implements P2PUser {
         
         this.deviceNode = deviceAddress;
         this.mainServer = mainServerAddress;
-        
-        this.timer = new Timer(30000, this::handleClientTimeout);
+
+        this.timer = new Timer(timerTimeout, this::handleClientTimeout);
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
         
@@ -268,7 +278,7 @@ public class P2PServer implements P2PUser {
         while (true) {
             send(alivePacket, mainServer);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(timeoutThreshold);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

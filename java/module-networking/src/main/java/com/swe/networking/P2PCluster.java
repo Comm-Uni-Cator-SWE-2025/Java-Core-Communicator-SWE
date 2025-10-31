@@ -34,6 +34,11 @@ public class P2PCluster {
     private boolean isServer = false;
 
     /**
+     * Maximum packet size.
+     */
+    private static final int MAX_PACKET_SIZE = 65536;
+
+    /**
      * Packet parser singleton object.
      */
     private static PacketParser packetParser = PacketParser.getPacketParser();
@@ -61,13 +66,14 @@ public class P2PCluster {
         final byte[] helloPacket = packetParser.createPkt(packetInfo);
 
         try {
-            final Socket socket = new Socket(server.hostName(), server.port(), InetAddress.getByName(client.hostName()), client.port());
+            final Socket socket = 
+                new Socket(server.hostName(), server.port(), InetAddress.getByName(client.hostName()), client.port());
             final OutputStream out = socket.getOutputStream();
             out.write(helloPacket);
             out.flush();
             // read response from server
             final InputStream in = socket.getInputStream();
-            final byte[] packet = new byte[4096];
+            final byte[] packet = new byte[MAX_PACKET_SIZE];
             final int bytesRead = in.read(packet);
             socket.close();
             if (bytesRead > 0) {

@@ -15,8 +15,8 @@ public class PacketParserSimpleTest {
     public void testTypeExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
-        final byte[] pkt = parser.createPkt(2, 0, 0, 0, 0, ip, 0, new byte[0]);
-        assertEquals(2, parser.getType(pkt));
+        final byte[] pkt = parser.createPkt(0, 0, 0, 0, ip, 0, new byte[0]);
+        assertEquals(0, parser.getType(pkt));
     }
 
     /**
@@ -27,7 +27,7 @@ public class PacketParserSimpleTest {
     public void testPriorityExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
-        final byte[] pkt = parser.createPkt(0, 5, 0, 0, 0, ip, 0, new byte[0]);
+        final byte[] pkt = parser.createPkt(5, 0, 0, 0, ip, 0, new byte[0]);
         assertEquals(5, parser.getPriority(pkt));
     }
 
@@ -39,7 +39,7 @@ public class PacketParserSimpleTest {
     public void testModuleExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
-        final byte[] pkt = parser.createPkt(0, 0, 9, 0, 0, ip, 0, new byte[0]); // 9 = 1001 (binary)
+        final byte[] pkt = parser.createPkt(0, 9, 0, 0, ip, 0, new byte[0]); // 9 = 1001 (binary)
         assertEquals(9, parser.getModule(pkt));
     }
 
@@ -51,7 +51,7 @@ public class PacketParserSimpleTest {
     public void testConnectionTypeExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
-        final byte[] pkt = parser.createPkt(0, 0, 0, 6, 0, ip, 0, new byte[0]);
+        final byte[] pkt = parser.createPkt(0, 0, 6, 0, ip, 0, new byte[0]);
         assertEquals(6, parser.getConnectionType(pkt));
     }
 
@@ -63,7 +63,7 @@ public class PacketParserSimpleTest {
     public void testBroadcastExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
-        final byte[] pkt = parser.createPkt(0, 0, 0, 0, 1, ip, 0, new byte[0]);
+        final byte[] pkt = parser.createPkt(0, 0, 0, 1, ip, 0, new byte[0]);
         assertEquals(1, parser.getBroadcast(pkt));
     }
 
@@ -75,7 +75,7 @@ public class PacketParserSimpleTest {
     public void testIpAddressExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("192.168.1.50");
-        final byte[] pkt = parser.createPkt(0, 0, 0, 0, 0, ip, 0, new byte[0]);
+        final byte[] pkt = parser.createPkt(0, 0, 0, 0, ip, 0, new byte[0]);
         assertEquals(ip, parser.getIpAddress(pkt));
     }
 
@@ -88,7 +88,7 @@ public class PacketParserSimpleTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final int port = 8080;
-        final byte[] pkt = parser.createPkt(0, 0, 0, 0, 0, ip, port, new byte[0]);
+        final byte[] pkt = parser.createPkt(0, 0, 0, 0, ip, port, new byte[0]);
         assertEquals(port, parser.getPortNum(pkt));
     }
 
@@ -101,7 +101,7 @@ public class PacketParserSimpleTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final byte[] payload = { 10, 20, 30, 40 };
-        final byte[] pkt = parser.createPkt(0, 0, 0, 0, 0, ip, 0, payload);
+        final byte[] pkt = parser.createPkt(0, 0, 0, 0, ip, 0, payload);
         assertArrayEquals(payload, parser.getPayload(pkt));
     }
 
@@ -113,7 +113,7 @@ public class PacketParserSimpleTest {
     public void testPkt() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
 
-        final int type = 3;
+        final int type = 0;
         final int priority = 7;
         final int module = 15;
         final int connectionType = 5;
@@ -122,7 +122,7 @@ public class PacketParserSimpleTest {
         final int port = 65535;
         final byte[] data = {1, 2, 3, 4, 5 };
 
-        final byte[] pkt = parser.createPkt(type, priority, module, connectionType, broadcast, ip, port, data);
+        final byte[] pkt = parser.createPkt(priority, module, connectionType, broadcast, ip, port, data);
 
         assertEquals(type, parser.getType(pkt));
         assertEquals(priority, parser.getPriority(pkt));
