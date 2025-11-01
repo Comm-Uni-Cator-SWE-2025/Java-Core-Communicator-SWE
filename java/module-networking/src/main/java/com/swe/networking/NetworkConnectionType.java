@@ -16,6 +16,8 @@ public enum NetworkConnectionType {
     REMOVE,
     /** NETWORK packet type. */
     NETWORK,
+    /** MODULE packet type. */
+    MODULE,
     /** CLOSE packet type. */
     CLOSE;
 
@@ -28,9 +30,11 @@ public enum NetworkConnectionType {
     /** REMOVE packet ID. */
     private static final int REMOVEID = 3;
     /** NETWORK packet ID. */
-    private static final int NETWORKID = 3;
+    private static final int NETWORKID = 4;
+    /** NETWORK packet ID. */
+    private static final int MODULEID = 4;
     /** CLOES packet ID. */
-    private static final int CLOSEID = 3;
+    private static final int CLOSEID = 7;
 
     /**
      * Hashmap storing the mapping from integer to NetworkConnectionType.
@@ -42,6 +46,7 @@ public enum NetworkConnectionType {
             put(ADDID, ADD);
             put(REMOVEID, REMOVE);
             put(NETWORKID, NETWORK);
+            put(MODULEID, MODULE);
             put(CLOSEID, CLOSE);
         }
     };
@@ -52,7 +57,7 @@ public enum NetworkConnectionType {
     NetworkConnectionType() {
     }
 
-    public NetworkConnectionType getType(final int n) {
+    public static NetworkConnectionType getType(final int n) {
         return MAP.get(n);
     }
 }

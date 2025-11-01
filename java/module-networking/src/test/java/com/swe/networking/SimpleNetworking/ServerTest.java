@@ -41,7 +41,7 @@ public class ServerTest {
             serverThread.start();
             Thread.sleep(500);
 
-            final ClientNode[] destinations = { serverNode };
+            final ClientNode[] destinations = {serverNode };
             final String msg = "Direct message to server";
             final byte[] testData = msg.getBytes(StandardCharsets.UTF_8);
 

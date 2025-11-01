@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,6 +109,13 @@ public final class Topology implements AbstractTopology, AbstractController {
             clusterServers.add(deviceAddress);
             numClusters = 1;
             numClients = 1;
+        } else {
+            try {
+                final P2PCluster userP2P = new P2PCluster();
+                userP2P.addUser(deviceAddress, deviceAddress);
+            } catch (UnknownHostException ex) {
+                System.out.println("Error while adding user to the P2P cluster...");
+            }
         }
     }
 
@@ -154,6 +162,10 @@ public final class Topology implements AbstractTopology, AbstractController {
             return cluster.size() - 1;
         } else {
             clusters.get(clusterIndex).add(clientAddress);
+            if (clusters.get(clusterIndex).size() == 1) {
+                System.out.println("Adding to a new cluster...");
+                clusterServers.add(clientAddress);
+            }
             final int idx = clusterIndex;
             clusterIndex = (clusterIndex + 1) % maxClusters;
             System.out.println("Added to cluster " + clusterIndex + " ...");
@@ -179,8 +191,59 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public void removeClient(final ClientNetworkRecord client) {
         final int idx = client.clusterIndex();
-        final ClientNode newClient = client.client();
-        clusters.get(idx).remove(newClient);
+        final ClientNode removeClient = client.client();
+        clusters.get(idx).remove(removeClient);
+        if (clusterServers.contains(removeClient)) {
+            if (!clusters.get(idx).isEmpty()) {
+                final ClientNode newServer = clusters.get(idx).get(0);
+                clusterServers.set(idx, newServer);
+                System.out.println("A new server has been decided\n");
+            }
+        }
+    }
+
+    /**
+     * Function to replace the current network with a new one.
+     * 
+     * @param network the new network structure
+     */
+    public void replaceNetwork(final NetworkStructure network) {
+        clusters.clear();
+        clusterServers.clear();
+        for (int i = 0; i < network.clusters().size(); i++) {
+            clusters.add(network.clusters().get(i));
+            clusterServers.add(network.servers().get(i));
+        }
+        numClusters = network.clusters().size();
+        numClients = 0;
+        for (List<ClientNode> cluster : clusters) {
+            numClients += cluster.size();
+        }
+    }
+
+    /**
+     * Function to get the cluster index of a client.
+     * 
+     * @param client the client whose index is needed
+     * @return the cluster index of the client
+     */
+    public int getClusterIndex(final ClientNode client) {
+        for (int i = 0; i < clusters.size(); i++) {
+            if (clusters.get(i).contains(client)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Function to get all clients in a cluster.
+     * 
+     * @param index the index of the cluster
+     * @return list of all clients in the cluster
+     */
+    public List<ClientNode> getClients(final int index) {
+        return clusters.get(index);
     }
 
     /**
