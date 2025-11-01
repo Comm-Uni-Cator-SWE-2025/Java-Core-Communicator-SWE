@@ -2,19 +2,8 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.RPC.AbstractRPC;
-import com.swe.ScreenNVideo.Capture.ICapture;
-import com.swe.ScreenNVideo.Capture.ScreenCapture;
-import com.swe.ScreenNVideo.Capture.VideoCapture;
-import com.swe.ScreenNVideo.Codec.BilinearScaler;
-import com.swe.ScreenNVideo.Codec.Codec;
-import com.swe.ScreenNVideo.Codec.ImageScaler;
-import com.swe.ScreenNVideo.Codec.JpegCodec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
-import com.swe.ScreenNVideo.PatchGenerator.Hasher;
-import com.swe.ScreenNVideo.PatchGenerator.IHasher;
-import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
-import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
-import com.swe.ScreenNVideo.PatchGenerator.Patch;
+
 import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
@@ -25,19 +14,11 @@ import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
 
-import java.awt.AWTException;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Media Manager for Screen N Video.
