@@ -71,7 +71,6 @@ public class VideoCapture extends ICapture {
      * Capture a single frame.
      * @return BufferedImage of the captured frame
      */
-    @SuppressWarnings({"checkstyle:FinalLocalVariable", "checkstyle:CyclomaticComplexity"})
     public BufferedImage capture() {
 
         // --- Start of MODIFIED/ADDED code ---
@@ -146,15 +145,6 @@ public class VideoCapture extends ICapture {
         System.out.println("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
     }
 
-    /**
-     * Set frame capture listener.
-     *
-     * @param newListener FrameCaptureListener implementation.
-     */
-    public void setFrameCaptureListener(final FrameCaptureListener newListener) {
-        this.listener = newListener;
-    }
-
 
     /**
      * Get screen dimensions.
@@ -180,14 +170,4 @@ public class VideoCapture extends ICapture {
 
 
     // Added here so the file could be self-contained for testing.
-
-    /** Dummy listener interface for compilation. */
-    public interface FrameCaptureListener {
-        /**
-         * Called when a capture error occurs.
-         * @param errorMessage The error message.
-         */
-        void onCaptureError(String errorMessage);
-        // void onFrameCaptured(BufferedImage frame); // Example method
-    }
 }
