@@ -3,6 +3,7 @@ package com.swe.networking;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +81,7 @@ public class P2PClient implements P2PUser {
 
         // start a scheduled ALIVE packets to the cluster server
         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-        
+
         this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
                 ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
@@ -115,7 +116,6 @@ public class P2PClient implements P2PUser {
             final InetAddress selfIp = InetAddress.getByName(deviceAddress.hostName());
             final byte[] emptyPayload = new byte[0];
 
-
             final PacketInfo aliveInfo = new PacketInfo();
             aliveInfo.setType(NetworkType.USE.ordinal());
             aliveInfo.setPriority(0);
@@ -146,7 +146,10 @@ public class P2PClient implements P2PUser {
                 if (packet == null) {
                     continue;
                 }
-                packetRedirection(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    packetRedirection(p);
+                }
 
             } catch (Exception e) {
                     System.err.println("p2pclient received exception while processing packet");
@@ -195,7 +198,7 @@ public class P2PClient implements P2PUser {
 //        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
         System.out.println("p2pclient received connection type: " + connection);
         switch (connection) {
-            case HELLO: // 000 drop it only to be received by  main server
+            case HELLO: // 000 drop it only to be received by main server
             case ALIVE: // 001 drop it only to received by cluster server and main server
 
                 System.out.println("p2pclient received HELLO or ALIVE packet");
@@ -234,8 +237,8 @@ public class P2PClient implements P2PUser {
                 close();
                 break;
 
-            case null:
-                System.err.println("p2pclient received unknown packet connection type");
+            default:
+                System.err.println("p2pclient received unknown packet type");
         }
     }
 
