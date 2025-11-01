@@ -1,7 +1,6 @@
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
@@ -193,7 +192,7 @@ public class JpegCodec implements Codec {
      */
     @Override
     public int[][] decode(final byte[] encodedImage) {
-        ByteBuffer buffer = ByteBuffer.wrap(encodedImage);
+        final ByteBuffer buffer = ByteBuffer.wrap(encodedImage);
         final int height = buffer.getInt();
         final int width = buffer.getInt();
 
@@ -278,7 +277,7 @@ public class JpegCodec implements Codec {
         // System.out.println(zigZagString);
         final int[][] reqMatrix = new int[height][width];
 
-        int cellCounter = 0;
+        final int cellCounter = 0;
 
         for (int diag = 0; diag < (height + width - 1); ++diag) {
             final int rowStart = Math.max(0, diag - (width - 1));

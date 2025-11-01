@@ -96,8 +96,9 @@ public class CPackets {
             // this will create the patch and
             // advances the buffer internal currentPos pointer
             final CompressedPatch patch = CompressedPatch.deserializeCPacket(buffer, patchLength);
-            if (patch != null)
+            if (patch != null) {
                 patches.add(patch);
+            }
         }
         return new CPackets(ip, patches);
     }
