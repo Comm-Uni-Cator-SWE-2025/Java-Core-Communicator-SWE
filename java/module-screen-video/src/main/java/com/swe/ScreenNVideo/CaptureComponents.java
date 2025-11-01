@@ -2,9 +2,6 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.RPC.AbstractRPC;
-import com.swe.ScreenNVideo.Capture.ICapture;
-import com.swe.ScreenNVideo.Capture.ScreenCapture;
-import com.swe.ScreenNVideo.Capture.VideoCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
@@ -137,8 +134,8 @@ public class CaptureComponents {
      * @return 2D RGB matrix of the feed
      */
     public int[][] getFeed() {
-        BufferedImage videoFeed = latestVideoFrame;
-        BufferedImage screenFeed = latestScreenFrame;
+        final BufferedImage videoFeed = latestVideoFrame;
+        final BufferedImage screenFeed = latestScreenFrame;
         final int[][] feed;
 //            long prev = System.nanoTime();
 
