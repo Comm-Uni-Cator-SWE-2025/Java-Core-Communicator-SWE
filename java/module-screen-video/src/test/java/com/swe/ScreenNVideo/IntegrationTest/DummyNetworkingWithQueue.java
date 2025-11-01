@@ -40,6 +40,17 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
         receiverThread.start();
     }
 
+    @Override
+    public String getSelfIP() {
+        return selfIP;
+    }
+
+    /**
+     * Deprecated.
+     * @param data data to send
+     * @param dest dest
+     * @param port port
+     */
     public void sendData(final byte[] data, final String[] dest, final int[] port) {
         if (data == null) {
             return;
@@ -55,17 +66,12 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
     }
 
     @Override
-    public String getSelfIP() {
-        return selfIP;
-    }
-
-    @Override
-    public void sendData(byte[] data, ClientNode[] dest, ModuleType module) {
+    public void sendData(final byte[] data, final ClientNode[] dest, final ModuleType module) {
 
     }
 
     @Override
-    public void sendData(byte[] data) {
+    public void sendData(final byte[] data) {
 
     }
 

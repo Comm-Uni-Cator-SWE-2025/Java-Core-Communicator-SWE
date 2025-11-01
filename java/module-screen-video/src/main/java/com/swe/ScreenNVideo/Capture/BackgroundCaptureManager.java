@@ -30,9 +30,10 @@ public final class BackgroundCaptureManager {
 
     /**
      * Private constructor to prevent instantiation.
+     * @param capComObjArgs CaptureComponents Object.
      */
-    public BackgroundCaptureManager(CaptureComponents capComObj) {
-        this.capCom = capComObj;
+    public BackgroundCaptureManager(final CaptureComponents capComObjArgs) {
+        this.capCom = capComObjArgs;
         screenCapture = new ScreenCapture();
         videoCapture = new VideoCapture();
     }

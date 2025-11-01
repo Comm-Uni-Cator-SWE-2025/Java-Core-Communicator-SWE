@@ -145,6 +145,10 @@ public class Utils {
         return matrix;
     }
 
+    /**
+     * Gives the IP address of self machine.
+     * @return IP address of self machine
+     */
     public static String getSelfIP() {
         // Get IP address as string
         try (DatagramSocket socket = new DatagramSocket()) {

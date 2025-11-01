@@ -65,6 +65,36 @@ public class VideoCapture extends ICapture {
         this.captureArea = new Dimension(width, height);
     }
 
+    private void openWebcam() {
+        try {
+            this.webcam = Webcam.getDefault();
+            if (this.webcam == null) {
+                throw new IllegalStateException("No webcam found.");
+            }
+
+            // Use the captureArea set by the constructor
+            Dimension resolution = this.captureArea;
+            // If default Robot values were used, switch to a standard webcam res
+            if (resolution.width == DEFAULT_WIDTH && resolution.height == DEFAULT_HEIGHT) {
+                resolution = WebcamResolution.VGA.getSize();
+                System.out.println("Using default VGA resolution: " + resolution.width + "x" + resolution.height);
+            } else {
+                System.out.println("Using custom resolution: " + resolution.width + "x" + resolution.height);
+            }
+
+            this.webcam.setCustomViewSizes(new Dimension[]{resolution});
+            this.webcam.setViewSize(resolution);
+            this.webcam.open();
+
+            System.out.println("VideoCapture initialized with webcam: " + webcam.getName());
+
+        } catch (Exception e) {
+            System.err.println("Error initializing Webcam: " + e.getMessage());
+            if (listener != null) {
+                listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
+            }
+        }
+    }
 
 
     /**
@@ -73,40 +103,11 @@ public class VideoCapture extends ICapture {
      */
     public BufferedImage capture() {
 
-        // --- Start of MODIFIED/ADDED code ---
 
         // Lazy initialization: Initialize webcam on first capture attempt
         if (this.webcam == null) {
             System.out.println("Initializing webcam for the first time...");
-            try {
-                this.webcam = Webcam.getDefault();
-                if (this.webcam == null) {
-                    throw new IllegalStateException("No webcam found.");
-                }
-
-                // Use the captureArea set by the constructor
-                Dimension resolution = this.captureArea;
-                // If default Robot values were used, switch to a standard webcam res
-                if (resolution.width == DEFAULT_WIDTH && resolution.height == DEFAULT_HEIGHT) {
-                    resolution = WebcamResolution.VGA.getSize();
-                    System.out.println("Using default VGA resolution: " + resolution.width + "x" + resolution.height);
-                } else {
-                    System.out.println("Using custom resolution: " + resolution.width + "x" + resolution.height);
-                }
-
-                this.webcam.setCustomViewSizes(new Dimension[]{resolution});
-                this.webcam.setViewSize(resolution);
-                this.webcam.open();
-
-                System.out.println("VideoCapture initialized with webcam: " + webcam.getName());
-
-            } catch (Exception e) {
-                System.err.println("Error initializing Webcam: " + e.getMessage());
-                if (listener != null) {
-                    listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
-                }
-                return null; // Failed to initialize, return null
-            }
+            openWebcam();
         }
 
         // --- Webcam capture logic ---
@@ -126,7 +127,6 @@ public class VideoCapture extends ICapture {
             }
             return null;
         }
-        // --- End of MODIFIED/ADDED code ---
     }
 
     /**
