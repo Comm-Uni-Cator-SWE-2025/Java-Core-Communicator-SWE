@@ -2,6 +2,10 @@ package com.swe.ScreenNVideo;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 /**
  * Utility class for ScreenN Video.
@@ -63,11 +67,11 @@ public class Utils {
     /**
      * Width of the server.
      */
-    public static final int SERVER_WIDTH = 1920;
+    public static final int SERVER_WIDTH = 1200;
     /**
      * Height of the server.
      */
-    public static final int SERVER_HEIGHT = 1200;
+    public static final int SERVER_HEIGHT = 800;
     /**
      * Width of the client.
      */
@@ -139,6 +143,21 @@ public class Utils {
             }
         }
         return matrix;
+    }
+
+    /**
+     * Gives the IP address of self machine.
+     * @return IP address of self machine
+     */
+    public static String getSelfIP() {
+        // Get IP address as string
+        try (DatagramSocket socket = new DatagramSocket()) {
+            final int pingPort = 10002;
+            socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
+            return socket.getLocalAddress().getHostAddress();
+        } catch (SocketException | UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
