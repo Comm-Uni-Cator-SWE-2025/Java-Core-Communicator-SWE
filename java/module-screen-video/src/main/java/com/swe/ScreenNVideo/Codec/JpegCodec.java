@@ -230,9 +230,9 @@ public class JpegCodec implements Codec {
         short[][] CbMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
         short[][] CrMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
 
-        _decompressor.DecompressLumin(YMatrix,(short)YMatrix.length,(short)YMatrix[0].length);
-        _decompressor.DecompressChrome(CbMatrix,(short)CbMatrix.length,(short)CbMatrix[0].length);
-        _decompressor.DecompressChrome(CrMatrix,(short)CrMatrix.length,(short)CrMatrix[0].length);
+        _decompressor.decompressLumin(YMatrix,(short)YMatrix.length,(short)YMatrix[0].length);
+        _decompressor.decompressChrome(CbMatrix,(short)CbMatrix.length,(short)CbMatrix[0].length);
+        _decompressor.decompressChrome(CrMatrix,(short)CrMatrix.length,(short)CrMatrix[0].length);
 
         return convertYCbCrToRGB(YMatrix, CbMatrix, CrMatrix);
     }

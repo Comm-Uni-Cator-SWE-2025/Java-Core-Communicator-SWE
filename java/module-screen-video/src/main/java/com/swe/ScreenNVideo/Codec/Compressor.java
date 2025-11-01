@@ -1,49 +1,88 @@
+/**
+ * contributed by Anup Kumar.
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
 
-class Compressor implements  ICompressor{
+class Compressor implements  ICompressor {
+    /**
+     * module which have implemented fdct and idct.
+     */
+    private IFIDCT dctmodule;
+    /**
+     * module which have Qunatisation table and implemented quantisation and dequantisation.
+     */
+    private QuantisationUtil quantmodule;
+    /**
+     * this is the module which will be used for encoding and decoding.
+     */
+    private IRLE enDeRLE;
 
-    IFIDCT _dctmodule;
-    QuantisationUtil _quantmodule;
-    IRLE _enDeRLE;
+    /**
+     * Unit Matrix Dimension (8x8).
+     */
 
-    Compressor(){
-        _dctmodule = AANdct.getInstance();
-        _quantmodule = QuantisationUtil.getInstance();
-        _quantmodule.scaleQuantTable(_dctmodule.getScaleFactor());
-        _enDeRLE = encodeDecodeRLE.getInstance();
+    private final int matrixDim = 8;
+
+    Compressor() {
+        dctmodule = AANdct.getInstance();
+        quantmodule = QuantisationUtil.getInstance();
+        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
+        enDeRLE = encodeDecodeRLE.getInstance();
     }
 
+    /**
+     *  Doing the Compression of Chrominance (Cb,Cr) Matrix of Dimension height X width
+     *  both height and width are divisible by 8
+     *  steps :
+     *  DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
+     * @param matrix : input matrix to be compressed
+     * @param height : height of matrix
+     * @param width : width of matrix
+     * @param resBuffer : The Resultant buffer where encoded matrix will be stored
+     */
     @Override
-    public void compressChrome(short[][] Matrix,short height,short width,ByteBuffer resBuffer){
+    public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        resBuffer.putShort((short) (height / 8));
-        resBuffer.putShort((short) (width / 8));
+        resBuffer.putShort((short) (height / matrixDim));
+        resBuffer.putShort((short) (width / matrixDim));
 
-        for(short i = 0;i<height;i+=8){
-            for(short j = 0;j<width;j+=8){
-                _dctmodule.Fdct(Matrix,i,j);
-                _quantmodule.QuantisationChrome(Matrix,i,j);
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
+                dctmodule.Fdct(matrix, i, j);
+                quantmodule.QuantisationChrome(matrix, i, j);
             }
         }
 
-        _enDeRLE.zigZagRLE(Matrix,height,width,resBuffer);
+        enDeRLE.zigZagRLE(matrix, height, width, resBuffer);
     }
 
+    /**
+     * Doing the Compression of Luminance Matrix (Y) of Dimension height X width
+     * both height and width are divisibel by 8
+     * steps :
+     * DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
+     *
+     * @param matrix    : input matrix to be compressed
+     * @param height    : height of matrix
+     * @param width     : width of matrix
+     * @param resBuffer : The Resultant buffer where encoded matrix will be stored
+     */
     @Override
-    public void compressLumin(short[][] Matrix,short height,short width,ByteBuffer resBuffer){
+    public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        resBuffer.putShort((short) (height / 8));
-        resBuffer.putShort((short) (width / 8));
+        resBuffer.putShort((short) (height / matrixDim));
+        resBuffer.putShort((short) (width / matrixDim));
 
-        for(short i = 0;i<height;i+=8){
-            for(short j = 0;j<width;j+=8){
-                _dctmodule.Fdct(Matrix,i,j);
-                _quantmodule.QuantisationLumin(Matrix,i,j);
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
+                dctmodule.Fdct(matrix, i, j);
+                quantmodule.QuantisationLumin(matrix, i, j);
             }
         }
 
-        _enDeRLE.zigZagRLE(Matrix,height,width,resBuffer);
+        enDeRLE.zigZagRLE(matrix, height, width, resBuffer);
     }
 }
