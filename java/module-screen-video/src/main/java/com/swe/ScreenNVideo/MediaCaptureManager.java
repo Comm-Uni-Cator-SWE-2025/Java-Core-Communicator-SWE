@@ -2,6 +2,7 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.RPC.AbstractRPC;
+import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 
 import com.swe.ScreenNVideo.Serializer.CPackets;
@@ -76,6 +77,8 @@ public class MediaCaptureManager implements CaptureManager {
         this.networking = argNetworking;
         captureComponents = new CaptureComponents(networking, rpc, port);
         videoComponent = new VideoComponents(Utils.FPS, rpc, captureComponents);
+        final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
+        backgroundCaptureManager.start();
 
         imageSynchronizers = new HashMap<>();
         viewers = new ArrayList<>();

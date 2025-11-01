@@ -22,12 +22,12 @@ import java.awt.image.BufferedImage;
 public class CaptureComponents {
 
 
-    public void setLatestScreenFrame(BufferedImage latestScreenFrame) {
-        this.latestScreenFrame = latestScreenFrame;
+    public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {
+        this.latestScreenFrame = latestScreenFrameArgs;
     }
 
-    public void setLatestVideoFrame(BufferedImage latestVideoFrame) {
-        this.latestVideoFrame = latestVideoFrame;
+    public void setLatestVideoFrame(final BufferedImage latestVideoFrameArgs) {
+        this.latestVideoFrame = latestVideoFrameArgs;
     }
 
     /**
@@ -129,20 +129,6 @@ public class CaptureComponents {
 //            curr = System.nanoTime();
 //            System.out.println("Scaling Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
         return feed;
-    }
-
-    /**
-     * Gets the latest captured screen frame.
-     */
-    public BufferedImage getLatestScreenFrame() {
-        return latestScreenFrame;
-    }
-
-    /**
-     * Gets the latest captured video frame.
-     */
-    public BufferedImage getLatestVideoFrame() {
-        return latestVideoFrame;
     }
 
 
