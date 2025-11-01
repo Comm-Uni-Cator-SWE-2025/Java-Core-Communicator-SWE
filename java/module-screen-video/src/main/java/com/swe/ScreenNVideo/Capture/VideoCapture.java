@@ -1,17 +1,13 @@
 package com.swe.ScreenNVideo.Capture;
 
-// Original imports
-//import java.awt.AWTException;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.Point;
-// import java.awt.Rectangle; // Removed unused import
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 
-// --- Imports ADDED from the 'another branch' code ---
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamResolution;
-// --- End of ADDED imports ---
 
 /**
  * VideoCapture class for capturing video frames from webcam.
@@ -96,6 +92,31 @@ public class VideoCapture extends ICapture {
         }
     }
 
+    /**
+     * Converts INT_RGB image to INT_ARGB image.
+     * @param src INT_ARGB image
+     * @return INT_ARGB image
+     */
+    public static BufferedImage ensureIntARGB(final BufferedImage src) {
+        if (src.getType() == BufferedImage.TYPE_INT_ARGB) {
+            final BufferedImage clone = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            final Graphics2D g = clone.createGraphics();
+            g.drawImage(src, 0, 0, null);
+            g.dispose();
+            return clone;
+        }
+
+        final BufferedImage converted = new BufferedImage(
+                src.getWidth(),
+                src.getHeight(),
+                BufferedImage.TYPE_INT_ARGB
+        );
+        final Graphics2D g = converted.createGraphics();
+        g.drawImage(src, 0, 0, null);
+        g.dispose();
+        return converted;
+    }
+
 
     /**
      * Capture a single frame.
@@ -118,7 +139,7 @@ public class VideoCapture extends ICapture {
 
         try {
             // Removed empty 'if' block that caused EmptyBlock error
-            return webcam.getImage();
+            return ensureIntARGB(webcam.getImage());
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());
