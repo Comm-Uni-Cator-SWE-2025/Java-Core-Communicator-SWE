@@ -1,8 +1,7 @@
 package com.swe.ScreenNVideo.Capture;
 
 // Original imports
-import java.awt.AWTException;
-import java.awt.Robot;
+//import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Point;
 // import java.awt.Rectangle; // Removed unused import
@@ -19,9 +18,6 @@ import com.github.sarxos.webcam.WebcamResolution;
  * Provides interface to capture images and convert them to matrix format.
  */
 public class VideoCapture extends ICapture {
-
-    /** Robot for screen capture (fallback method). */
-    private Robot robot;
 
     /** Capture parameters. */
     private Dimension captureArea;
@@ -48,20 +44,16 @@ public class VideoCapture extends ICapture {
     /**
      * Constructor - initializes with default screen capture area.
      *
-     * <p>(This constructor is UNMODIFIED, as per your request)
      */
     public VideoCapture() {
         this.captureArea = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         this.captureLocation = new Point(DEFAULT_X, DEFAULT_Y);
 
-        initializeCapture();
+
     }
 
     /**
      * Constructor with custom capture area.
-     *
-     * <p>(This constructor is UNMODIFIED, as per your request)
-     *
      * @param x X coordinate of capture area
      * @param y Y coordinate of capture area
      * @param width Width of capture area
@@ -73,33 +65,10 @@ public class VideoCapture extends ICapture {
         this.captureArea = new Dimension(width, height);
     }
 
-    /**
-     * Initialize capture mechanism.
-     *
-     * <p>(This method is UNMODIFIED, as per your request. The Robot will be
-     * initialized but will not be used by the modified capture() method.)
-     */
-    private void initializeCapture() {
-        try {
-            // Initialize Robot for screen capture
-            this.robot = new Robot();
-            System.out.println("VideoCapture initialized with screen capture (Robot created but will be unused)");
-            System.out.println("Default capture area: " + captureArea.width + "x" + captureArea.height
-                    + " at (" + captureLocation.x + "," + captureLocation.y + ")");
-        } catch (AWTException e) {
-            System.err.println("Error initializing Robot: " + e.getMessage());
-            if (listener != null) {
-                listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
-            }
-        }
-    }
+
 
     /**
      * Capture a single frame.
-     *
-     * <p>(This is the ONLY method whose body has been MODIFIED,
-     * as per your request, to use the webcam.)
-     *
      * @return BufferedImage of the captured frame
      */
     @SuppressWarnings({"checkstyle:FinalLocalVariable", "checkstyle:CyclomaticComplexity"})
@@ -148,11 +117,8 @@ public class VideoCapture extends ICapture {
         }
 
         try {
-            // Capture and return the current image from the webcam
-            final BufferedImage image = webcam.getImage();
-
             // Removed empty 'if' block that caused EmptyBlock error
-            return image;
+            return webcam.getImage();
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());
@@ -166,8 +132,6 @@ public class VideoCapture extends ICapture {
 
     /**
      * Set capture area and location.
-     *
-     * <p>(This method is UNMODIFIED, as per your request.
      * NOTE: Due to constraints, calling this will NOT update the webcam
      * resolution after the first capture.)
      *
@@ -185,8 +149,6 @@ public class VideoCapture extends ICapture {
     /**
      * Set frame capture listener.
      *
-     * <p>(This method is UNMODIFIED, as per your request)
-     *
      * @param newListener FrameCaptureListener implementation.
      */
     public void setFrameCaptureListener(final FrameCaptureListener newListener) {
@@ -196,9 +158,6 @@ public class VideoCapture extends ICapture {
 
     /**
      * Get screen dimensions.
-     *
-     * <p>(This method is UNMODIFIED, as per your request)
-     *
      * @return Dimension of the screen.
      */
     public static Dimension getScreenDimensions() {
@@ -220,11 +179,7 @@ public class VideoCapture extends ICapture {
     // --- End of ADDED method ---
 
 
-    // --- Dummy inner classes (assumed to exist elsewhere in your project) ---
     // Added here so the file could be self-contained for testing.
-
-    /** Dummy ICapture class for compilation. */
-    public abstract static class ICapture { }
 
     /** Dummy listener interface for compilation. */
     public interface FrameCaptureListener {
