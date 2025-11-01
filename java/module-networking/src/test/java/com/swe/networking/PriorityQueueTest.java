@@ -31,6 +31,7 @@ class PriorityQueueTest {
         ds.setPortNum(0);
         ds.setMessageId(0);
         ds.setChunkNum(chunkNum);
+        ds.setLength(22 + payload.getBytes().length);
         ds.setChunkLength(0);
         ds.setPayload(payload.getBytes());
         final byte[] pkt = parser.createPkt(ds);
