@@ -117,7 +117,7 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private void sendImageToViewers(final byte[] feed) {
-//        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        System.out.println("Size : " + feed.length / Utils.KB + " KB");
 //        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
 //        SimpleNetworking.getSimpleNetwork().closeNetworking();
 //        System.out.println("Sent to viewers");
