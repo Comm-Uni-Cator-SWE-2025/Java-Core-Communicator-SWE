@@ -154,12 +154,12 @@ public class Server implements IUser {
         if (addr.equals(deviceIp) && port == devicePort) {
             final String data = new String(parser.getPayload(packet),
                     StandardCharsets.UTF_8);
-            System.out.println("Server Data received : " + data);
+//            System.out.println("Server Data received : " + data);
             simpleNetworking.callSubscriber(parser.getPayload(packet), type);
         } else {
             final ClientNode dest = new ClientNode(address.getHostAddress(),
                     port);
-            System.out.println("Redirecting data : " + dest.toString());
+//            System.out.println("Redirecting data : " + dest.toString());
             final ClientNode[] dests = {dest };
             sendPkt(packet, dests, dest);
         }
