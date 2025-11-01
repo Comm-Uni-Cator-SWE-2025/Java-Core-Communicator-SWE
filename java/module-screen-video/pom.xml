@@ -55,7 +55,7 @@
         <dependency>
             <groupId>com.github.enchanteddev</groupId>
             <artifactId>socketry</artifactId>
-            <version>V2</version>
+            <version>V3</version>
         </dependency>
 
 
