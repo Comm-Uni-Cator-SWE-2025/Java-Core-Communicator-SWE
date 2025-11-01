@@ -14,13 +14,39 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 
-import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 
 /**
  * Class conatining Components to capture feed.
  */
 public class CaptureComponents {
+
+
+    public void setLatestScreenFrame(BufferedImage latestScreenFrame) {
+        this.latestScreenFrame = latestScreenFrame;
+    }
+
+    public void setLatestVideoFrame(BufferedImage latestVideoFrame) {
+        this.latestVideoFrame = latestVideoFrame;
+    }
+
+    /**
+     * The most recent screen capture frame.
+     */
+    private volatile BufferedImage latestScreenFrame = null;
+    /**
+     * The most recent video capture frame.
+     */
+    private volatile BufferedImage latestVideoFrame = null;
+
+    public boolean isVideoCaptureOn() {
+        return isVideoCaptureOn;
+    }
+
+    public boolean isScreenCaptureOn() {
+        return isScreenCaptureOn;
+    }
+
     /**
      * Flag for video capture.
      */
@@ -30,16 +56,6 @@ public class CaptureComponents {
      * Flag for screen capture.
      */
     private boolean isScreenCaptureOn;
-
-    /**
-     * Video capture object.
-     */
-    private final ICapture videoCapture;
-
-    /**
-     * Screen capture object.
-     */
-    private final ICapture screenCapture;
     /**
      * Image scaler object.
      */
@@ -72,8 +88,6 @@ public class CaptureComponents {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
         this.networking = argNetworking;
-        videoCapture = new VideoCapture();
-        screenCapture = new ScreenCapture();
         scalar = new BilinearScaler();
         imageStitcher = new ImageStitcher();
         initializeHandlers(rpc, port);
@@ -117,14 +131,28 @@ public class CaptureComponents {
         return feed;
     }
 
+    /**
+     * Gets the latest captured screen frame.
+     */
+    public BufferedImage getLatestScreenFrame() {
+        return latestScreenFrame;
+    }
+
+    /**
+     * Gets the latest captured video frame.
+     */
+    public BufferedImage getLatestVideoFrame() {
+        return latestVideoFrame;
+    }
+
 
     /**
      * Capture the feed from screen and video.
      * @return 2D RGB matrix of the feed
      */
     public int[][] getFeed() {
-        BufferedImage videoFeed = null;
-        BufferedImage screenFeed = null;
+        BufferedImage videoFeed = latestVideoFrame;
+        BufferedImage screenFeed = latestScreenFrame;
         final int[][] feed;
 //            long prev = System.nanoTime();
 
@@ -133,17 +161,6 @@ public class CaptureComponents {
                 Thread.sleep(Utils.SEC_IN_MS);
             } catch (InterruptedException e) {
                 System.out.println("Error : " + e.getMessage());
-            }
-        } else if (isVideoCaptureOn) {
-            try {
-                videoFeed = videoCapture.capture();
-            } catch (AWTException _) {
-            }
-        }
-        if (isScreenCaptureOn) {
-            try {
-                screenFeed = screenCapture.capture();
-            } catch (AWTException _) {
             }
         }
 
