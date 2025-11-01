@@ -82,8 +82,8 @@ public class VideoComponents {
                     // Fire-and-forget; do not block capture thread — worker thread can block on network
 //                        System.out.println("UI Serialization Time : "
 //                            + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
-                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
-                        / ((double) Utils.MSEC_IN_NS));
+//                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
+//                        / ((double) Utils.MSEC_IN_NS));
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage);
                     } catch (final Exception e) {
@@ -147,8 +147,8 @@ public class VideoComponents {
         }
 //            System.out.println("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
-        System.out.println("\nServer FPS : "
-            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+//        System.out.println("\nServer FPS : "
+//            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
         start = System.nanoTime();
 
         final int[][] feed = captureComponents.getFeed();
@@ -157,9 +157,9 @@ public class VideoComponents {
             return null;
         }
 
-//            System.out.println("Time taken : Video | PacketGen");
-//            final long curr1 = System.nanoTime();
-//            System.out.print((curr1 - start) / (double) (Utils.MSEC_IN_NS) + " | ");
+//        System.out.println("Time taken : Video | PacketGen");
+        final long curr1 = System.nanoTime();
+//        System.out.print((curr1 - start) / (double) (Utils.MSEC_IN_NS) + " | ");
 
 //            System.out.println("Feed Size : " + feed.length + " x " + feed[0].length);
         videoCodec.setScreenshot(feed);
@@ -195,8 +195,8 @@ public class VideoComponents {
         submitUIUpdate(feed);
 
         prev = System.nanoTime();
-//            System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
-//            System.out.println("\nSending to " + networkPackets.getIp());
+        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }
 }

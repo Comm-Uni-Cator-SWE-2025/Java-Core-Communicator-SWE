@@ -82,7 +82,7 @@ public class CaptureComponents {
      */
 
     CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
-        isScreenCaptureOn = false;
+        isScreenCaptureOn = true;
         isVideoCaptureOn = false;
         this.networking = argNetworking;
         scalar = new BilinearScaler();
@@ -120,9 +120,9 @@ public class CaptureComponents {
 //            long curr = System.nanoTime();
 //            System.out.println("Stitching Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
 //            prev = curr;
-//            if (feed != null) {
-//                feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
-//            }
+            if (feed != null) {
+                feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
+            }
 //            curr = System.nanoTime();
 //            System.out.println("Scaling Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
         return feed;

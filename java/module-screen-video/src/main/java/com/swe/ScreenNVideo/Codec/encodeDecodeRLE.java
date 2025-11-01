@@ -5,12 +5,16 @@
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 
 /**
  * Provides methods for ZigZag scanning and Run-Length Encoding (RLE)
  * compression and decompression for 8x8 short matrices.
  */
 public class encodeDecodeRLE implements IRLE {
+
+    public static int extraCount = 0;
+    public static int tcount = 0;
 
     /** Singleton instance. */
     public static final encodeDecodeRLE _encodeDecodeRLE = new encodeDecodeRLE();
@@ -38,6 +42,8 @@ public class encodeDecodeRLE implements IRLE {
         // Write matrix dimensions at the beginning.
         resRLEbuffer.putShort(height);
         resRLEbuffer.putShort(width);
+        extraCount = 0;
+        tcount = 0;
 
         // Process the matrix in 8x8 blocks.
         for (short rowBlock = 0; rowBlock < height; rowBlock += 8) {
@@ -46,6 +52,18 @@ public class encodeDecodeRLE implements IRLE {
                 encodeBlock(matrix, rowBlock, colBlock, resRLEbuffer);
             }
         }
+
+//        System.err.println("RLE Extra Count: " + extraCount + " Total Count: " + tcount);
+        int actualNeeded = matrix.length * matrix[0].length * 2;
+//        System.err.println("RLE Buffer Size: " + resRLEbuffer.position() + " Actual Needed: " + actualNeeded);
+        double ratio = (resRLEbuffer.position() * 1.0) / actualNeeded;
+        if (ratio > 1.0) {
+//            System.err.println("RLE Compression Ratio > 1.0 : " + ratio);
+//            System.err.println("Height: " + height + " Width: " + width);
+//            System.err.println("resRLEbuffer position: " + resRLEbuffer.position());
+//            System.err.println("Actual Needed: " + actualNeeded);
+        }
+
     }
 
     /**
@@ -85,7 +103,8 @@ public class encodeDecodeRLE implements IRLE {
                              final short startCol,
                              final ByteBuffer buffer) {
         short prevVal = matrix[startRow][startCol];
-        short count = 1;
+        short count = 0;
+        int prevPos = buffer.position();
 
         // ZigZag traversal
         for (short diag = 0; diag < 15; ++diag) {
@@ -100,13 +119,16 @@ public class encodeDecodeRLE implements IRLE {
                         continue;
                     }
                     short curr = matrix[r][c];
-                    if (curr == prevVal) {
-                        count++;
+                    if (curr != 0) {
+                        if (count > 0) {
+                            buffer.putShort((short)0);
+                            buffer.putShort(count);
+                            count = 0;
+                        }
+                        // directly store non-zero values
+                        buffer.putShort(curr);
                     } else {
-                        buffer.putShort(prevVal);
-                        buffer.putShort(count);
-                        prevVal = curr;
-                        count = 1;
+                        count ++;
                     }
                 }
             } else {
@@ -117,21 +139,30 @@ public class encodeDecodeRLE implements IRLE {
                         continue;
                     }
                     short curr = matrix[r][c];
-                    if (curr == prevVal) {
-                        count++;
+                    if (curr != 0) {
+                        if (count > 0) {
+                            buffer.putShort((short)0);
+                            buffer.putShort(count);
+                            count = 0;
+                        }
+                        // directly store non-zero values
+                        buffer.putShort(curr);
                     } else {
-                        buffer.putShort(prevVal);
-                        buffer.putShort(count);
-                        prevVal = curr;
-                        count = 1;
+                        count ++;
                     }
                 }
             }
         }
 
-        buffer.putShort(prevVal);
-        buffer.putShort(count);
+        if (count > 0) {
+            buffer.putShort((short)0);
+            buffer.putShort(count);
+        }
 
+        tcount ++;
+        if (buffer.position() - prevPos > 128) {
+            extraCount ++;
+        }
     }
 
 
@@ -148,9 +179,11 @@ public class encodeDecodeRLE implements IRLE {
                              final short startCol,
                              final ByteBuffer buffer) {
 
-        short pairIndex = 0;
         short currentVal = buffer.getShort();
-        short remaining = buffer.getShort();
+        short remaining = 1;
+        if (currentVal == 0) {
+            remaining = buffer.getShort();
+        }
 
         // Rebuild using reverse zigzag
         for (short diag = 0; diag < 15; ++diag) {
@@ -168,9 +201,13 @@ public class encodeDecodeRLE implements IRLE {
                     matrix[r][c] = currentVal;
                     remaining--;
 
-                    if (remaining == 0) {
+                    if (remaining == 0 && buffer.hasRemaining()) {
                         currentVal = buffer.getShort();
-                        remaining = buffer.getShort();
+                        if (currentVal == 0) {
+                            remaining = buffer.getShort();
+                        } else {
+                            remaining = 1;
+                        }
                     }
                 }
             } else {
@@ -184,9 +221,13 @@ public class encodeDecodeRLE implements IRLE {
                     matrix[r][c] = currentVal;
                     remaining--;
 
-                    if (remaining == 0) {
+                    if (remaining == 0 && buffer.hasRemaining()) {
                         currentVal = buffer.getShort();
-                        remaining = buffer.getShort();
+                        if (currentVal == 0) {
+                            remaining = buffer.getShort();
+                        } else {
+                            remaining = 1;
+                        }
                     }
                 }
             }
