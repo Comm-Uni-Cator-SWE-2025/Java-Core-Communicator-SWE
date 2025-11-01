@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
@@ -56,6 +57,11 @@ public class P2PClient implements P2PUser {
     private static final long ALIVE_INTERVAL_SECONDS = 2;
 
     /**
+     * serializer.
+     */
+    private final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+
+    /**
      * Creates a new P2PClient.
      *
      * @param device The ClientNode info for this device.
@@ -71,9 +77,6 @@ public class P2PClient implements P2PUser {
         this.receiveThread = new Thread(this::receive);
         this.receiveThread.setName("P2PClient-Receive-Thread");
         this.receiveThread.start();
-
-        // send the initial HELLO packet to the mainServer
-        sendHelloToMainServer();
 
         // start a scheduled ALIVE packets to the cluster server
         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
@@ -97,38 +100,6 @@ public class P2PClient implements P2PUser {
         System.out.println("p2pclient sending data to: " + destIp);
         communicator.sendData(data, destIp);
         return;
-    }
-
-    /**
-     * Sends the initial HELLO (000) packet to the MainServer.
-     */
-    private void sendHelloToMainServer() {
-        try {
-            System.out.println("p2pclient sending hello to main server");
-
-            final InetAddress selfIp = InetAddress.getByName(deviceAddress.hostName());
-
-            final byte[] emptyPayload = new byte[0];
-
-            final PacketInfo helloInfo = new PacketInfo();
-            helloInfo.setType(NetworkType.USE.ordinal());
-            helloInfo.setPriority(0);
-            helloInfo.setModule(ModuleType.NETWORKING.ordinal());
-            helloInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
-            helloInfo.setBroadcast(0);
-            helloInfo.setIpAddress(selfIp);
-            helloInfo.setPortNum(deviceAddress.port());
-            helloInfo.setMessageId(0);
-            helloInfo.setChunkNum(0);
-            helloInfo.setChunkLength(0);
-            helloInfo.setPayload(emptyPayload);
-
-            final byte[] helloPacket = parser.createPkt(helloInfo);
-            communicator.sendData(helloPacket, mainServerAddress);
-
-        } catch (UnknownHostException e) {
-            System.err.println("p2pclient failed to send hello to main server");
-        }
     }
 
     /**
@@ -173,17 +144,12 @@ public class P2PClient implements P2PUser {
             try {
                 final byte[] packet = communicator.receiveData();
                 if (packet == null) {
-                    if (running) {
-                        System.err.println("p2pclient received empty packet");
-                    }
                     continue;
                 }
                 packetRedirection(packet);
 
             } catch (Exception e) {
-                if (running) {
                     System.err.println("p2pclient received exception while processing packet");
-                }
             }
         }
     }
@@ -194,6 +160,7 @@ public class P2PClient implements P2PUser {
      * @param packet The raw packet data.
      */
     private void packetRedirection(final byte[] packet) {
+        System.out.println("p2pclient received packet from: " + deviceAddress.hostName());
         try {
             final PacketInfo info = parser.parsePacket(packet);
 
@@ -205,14 +172,12 @@ public class P2PClient implements P2PUser {
                 case SAMECLUSTER:
                 case OTHERCLUSTER:
                     // dropping the packet
+                    System.out.println("p2pclient received packet and dropping of type :" + type);
                     break;
 
                 case USE:
                     parseUsePacket(info);
                     break;
-
-                default:
-                    System.err.println("p2pclient received unknown packet type");
             }
         } catch (UnknownHostException e) {
             System.err.println("p2pclient failed to parse packet IP: " + e.getMessage());
@@ -227,13 +192,13 @@ public class P2PClient implements P2PUser {
     private void parseUsePacket(final PacketInfo info) {
         final int connType = info.getConnectionType();
         final NetworkConnectionType connection = NetworkConnectionType.getType(connType);
-        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
-
+//        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+        System.out.println("p2pclient received connection type: " + connection);
         switch (connection) {
             case HELLO: // 000 drop it only to be received by  main server
             case ALIVE: // 001 drop it only to received by cluster server and main server
 
-                System.out.println("p2pclient received HELLO packet");
+                System.out.println("p2pclient received HELLO or ALIVE packet");
                 break;
 
             case ADD: // 010 : update the current network
@@ -269,8 +234,8 @@ public class P2PClient implements P2PUser {
                 close();
                 break;
 
-            default:
-                System.err.println("p2pclient received unknown packet type");
+            case null:
+                System.err.println("p2pclient received unknown packet connection type");
         }
     }
 
@@ -280,6 +245,7 @@ public class P2PClient implements P2PUser {
      */
 
     void updateClusterServer(){
+        System.out.println("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
         if(this.clusterServerAddress == null){
             System.err.println("p2pclient: Not find my cluster server in topology.");
