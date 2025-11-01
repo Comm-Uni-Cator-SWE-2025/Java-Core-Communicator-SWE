@@ -38,10 +38,11 @@ public class VideoComponents {
      */
     private long start = 0L;
 
-//        /**
-//         * Limit the FPS at server.
-//         */
-//        private final double timeDelay;
+    /**
+     * Limit the FPS at server.
+     */
+    private final double timeDelay;
+
     /**
      * Local IP address.
      */
@@ -63,7 +64,7 @@ public class VideoComponents {
         final Thread uiWorkerThread = new Thread(this::uiWorkLoop, "MediaCaptureManager-UI-Worker");
         uiWorkerThread.setDaemon(true);
         uiWorkerThread.start();
-//            timeDelay = (1.0 / fps) * Utils.SEC_IN_NS;
+        timeDelay = (1.0 / fps) * Utils.SEC_IN_NS;
     }
 
     private void uiWorkLoop() {
@@ -141,9 +142,9 @@ public class VideoComponents {
     protected byte[] captureScreenNVideo() {
         final long currTime = System.nanoTime();
         final long diff = currTime - start;
-//            if (diff < timeDelay) {
-//                return null;
-//            }
+        if (diff < timeDelay) {
+            return null;
+        }
 //            System.out.println("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
         System.out.println("\nServer FPS : "
@@ -152,6 +153,7 @@ public class VideoComponents {
 
         final int[][] feed = captureComponents.getFeed();
         if (feed == null) {
+//            System.err.println("No feed");
             return null;
         }
 
