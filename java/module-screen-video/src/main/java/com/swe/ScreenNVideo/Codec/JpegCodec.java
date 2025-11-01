@@ -2,13 +2,13 @@ package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
+import java.util.ArrayList;
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
- *
+ * 
  * <p>
- * This class implements the {@link Codec} interface, offering methods to convert
- * raw image data into compressed JPEG byte streams and to reconstruct images
+ * This class implements the {@link Codec} interface, offering methods to convert 
+ * raw image data into compressed JPEG byte streams and to reconstruct images 
  * from JPEG-encoded data.
  * </p>
  *
@@ -17,8 +17,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class JpegCodec implements Codec {
     /**
-     * Image that needs to be encoded.
-     */
+    * Image that needs to be encoded.
+    */
     private int[][] screenshot;
 
     /** Offset for alpha component in the AARRGGBB value.*/
@@ -26,16 +26,16 @@ public class JpegCodec implements Codec {
 
     /** Offset for red color component in the AARRGGBB value.*/
     private static final int R_OFFSET = 16;
-
+    
     /** Offset for green color component in the AARRGGBB value.*/
     private static final int G_OFFSET = 8;
-
+    
     /** Mask for extracting color component. */
     private static final int MASK = 0xFF;
 
     /** Coefficient for red contribution in luminance(Y) calculation.*/
     private static final double Y_R_COEFF  = 0.299;
-
+    
     /** Coefficient for green contribution in luminance(Y) calculation.*/
     private static final double Y_G_COEFF  = 0.587;
 
@@ -47,7 +47,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma blue-difference (Cb) calculation.*/
     private static final double CB_G_COEFF = -0.331264;
-
+    
     /** Coefficient for blue contribution in chroma blue-difference (Cb) calculation. */
     private static final double CB_B_COEFF = 0.5;
 
@@ -56,7 +56,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma red-difference (Cr) calculation. */
     private static final double CR_G_COEFF = -0.418688;
-
+    
     /** Coefficient for blue contribution in chroma red-difference (Cr) calculation.*/
     private static final double CR_B_COEFF = -0.081312;
 
@@ -83,12 +83,17 @@ public class JpegCodec implements Codec {
 
     /**
      * Creates a JpegCodec instance with screenshot.
-     *
+     * 
      * @param image screenshot that needs to be encoded
      */
     public JpegCodec(final int[][] image) {
         this.screenshot = image;
     }
+
+    public ICompressor _compressor = new Compressor();
+    public IDeCompressor _decompressor = new DeCompressor();
+    public IRLE _enDeRLE = encodeDecodeRLE.getInstance();
+    public QuantisationUtil _quantUtil = QuantisationUtil.getInstance();
 
     /**
      * Creates a JpegCode instance.
@@ -107,9 +112,12 @@ public class JpegCodec implements Codec {
         this.screenshot = image;
     }
 
+    @Override
+    public void setCompressionFactor(short Qfactor){
+        _quantUtil.setCompressonResulation(Qfactor);
+    }
+
     /**
-     * Encodes the current screent into a compressed format.
-     *
      * <p>
      * The encoding process includes:
      * <ul>
@@ -127,9 +135,9 @@ public class JpegCodec implements Codec {
             throw new RuntimeException("Invalid Matrix for encoding");
         }
 
-        final int[][] yMatrix = new int[height][width];
-        final int[][] cbMatrix = new int[height / 2][width / 2];
-        final int[][] crMatrix = new int[height / 2][width / 2];
+        final short[][] yMatrix =  new short[height][width];
+        final short[][] cbMatrix = new short[height / 2][width / 2];
+        final short[][] crMatrix = new short[height / 2][width / 2];
 
         final int bottomLeftX = topLeftX + width;
         final int bottomLeftY = topLeftY + height;
@@ -149,34 +157,39 @@ public class JpegCodec implements Codec {
                         int y  = (int) (Y_R_COEFF * r + Y_G_COEFF * g + Y_B_COEFF * b);
                         final double cb = CHROMA_OFFSET + CB_R_COEFF * r + CB_G_COEFF * g + CB_B_COEFF * b;
                         final double cr = CHROMA_OFFSET + CR_R_COEFF * r + CR_G_COEFF * g + CR_B_COEFF * b;
-
+                        
                         cbPixel += cb;
                         crPixel += cr;
 
                         // Clamp to 0-255
                         y = Math.min(COLOR_MAX, Math.max(0, y));
-                        yMatrix[ii - topLeftY][jj - topLeftX] = y;
+                        yMatrix[ii - topLeftY][jj - topLeftX] = (short) y;
                     }
                 }
 
                 final int posY = i - topLeftY;
                 final int posX = j - topLeftX;
-                cbMatrix[posY / 2][posX / 2] = Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE)));
-                crMatrix[posY / 2][posX / 2] = Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE)));
+                cbMatrix[posY / 2][posX / 2] = (short)Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE)));
+                crMatrix[posY / 2][posX / 2] = (short)Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE)));
 
             }
         }
 
-        final int dataLength = (height * width) * 2 * 4 + 8; // one matrix of (h x w) and 2 matrices of (h/2 * h/2)
-        final ByteBuffer buffer = ByteBuffer.allocate(dataLength);
-        buffer.putInt(height);
-        buffer.putInt(width);
-        zigZagScan(buffer, yMatrix);
-        zigZagScan(buffer, cbMatrix);
-        zigZagScan(buffer, crMatrix);
-        buffer.flip();
+        int MaxLen = (int)(height*width * (1.5) + 0.5);
+        ByteBuffer resRLEBuffer = ByteBuffer.allocate(MaxLen);
 
-        return buffer.array();
+        // YMatrix;
+        _compressor.compressLumin(yMatrix,(short)height,(short)width,resRLEBuffer);
+
+        // CbMatrix;
+        _compressor.compressChrome(cbMatrix,(short)height,(short)width,resRLEBuffer);
+
+        // CyMatrix
+        _compressor.compressChrome(crMatrix,(short)height,(short)width,resRLEBuffer);
+
+
+        resRLEBuffer.flip();
+        return resRLEBuffer.array();
     }
 
     /**
@@ -193,23 +206,39 @@ public class JpegCodec implements Codec {
      */
     @Override
     public int[][] decode(final byte[] encodedImage) {
-        ByteBuffer buffer = ByteBuffer.wrap(encodedImage);
-        final int height = buffer.getInt();
-        final int width = buffer.getInt();
+//        final String recoveredImage = new String(encodedImage, StandardCharsets.UTF_8);
+//
+//        final String[] parts = recoveredImage.split(";");
+//        final String[] dims = parts[0].split(",");
+//
+//        // Extracting height and width of the color matrix from string
+//        final int height = Integer.parseInt(dims[0].split("H:")[1]);
+//        final int width = Integer.parseInt(dims[1].split("W:")[1]);
+//
+//        // Extracting Y,Cb,Cr from the string
+//        final String ystring = parts[1].split("Cb:")[0].split("Y:")[1];
+//        final String cbstring = parts[1].split("Cr:")[0].split("Cb:")[1];
+//        final String crstring = parts[1].split("Cr:")[1];
+//
+//        final int[][] y = reverseZigZagScan(height, width, ystring);
+//        // System.out.println("Done" + Cbstring);
+//        final int[][] cb = reverseZigZagScan(height / 2, width / 2, cbstring);
+//        // System.out.println("Done");
+//        final int[][] cr = reverseZigZagScan(height / 2, width / 2, crstring);
+        ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
+        short[][] YMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] CbMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] CrMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
 
-        final int[][] y = reverseZigZagScan(height, width, buffer);
-        // System.out.println("Done" + Cbstring);
-        final int[][] cb = reverseZigZagScan(height / 2, width / 2, buffer);
-        // System.out.println("Done");
-        final int[][] cr = reverseZigZagScan(height / 2, width / 2, buffer);
+        _decompressor.DecompressLumin(YMatrix,(short)YMatrix.length,(short)YMatrix[0].length);
+        _decompressor.DecompressChrome(CbMatrix,(short)CbMatrix.length,(short)CbMatrix[0].length);
+        _decompressor.DecompressChrome(CrMatrix,(short)CrMatrix.length,(short)CrMatrix[0].length);
 
-        final int[][] rgbMatrix = convertYCbCrToRGB(y, cb, cr);
-
-        return rgbMatrix;
+        return convertYCbCrToRGB(YMatrix, CbMatrix, CrMatrix);
     }
 
 
-    private int[][] convertYCbCrToRGB(final int[][] yMatrix, final int[][] cbMatrix, final int[][] crMatrix) {
+    private int[][] convertYCbCrToRGB(final short[][] yMatrix, final short[][] cbMatrix, final short[][] crMatrix) {
         final int height = yMatrix.length;
         final int width = yMatrix[0].length;
 
@@ -243,17 +272,19 @@ public class JpegCodec implements Codec {
     }
 
 
-    private void zigZagScan(final ByteBuffer buffer, final int[][] matrix) {
+    private String zigZagScan(final int[][] matrix) {
         final int m = matrix.length;
         final int n = matrix[0].length;
 
+        final StringBuilder sb = new StringBuilder();
+
         /**
-         * number of diagonals = M+N-1;
-         * rule 1 :
-         *   if diagonal index is even then move bottom -> top
-         * rule 2:
-         *   if diagonal index is odd then move top -> bottom
-         */
+        * number of diagonals = M+N-1;
+        * rule 1 :
+        *   if diagonal index is even then move bottom -> top
+        * rule 2:
+        *   if diagonal index is odd then move top -> bottom
+        */
         for (int diag = 0; diag < (m + n - 1); ++diag) {
             final int rowStart = Math.max(0, diag - (n - 1));
             final int rowEnd = Math.min(m - 1, diag);
@@ -262,20 +293,24 @@ public class JpegCodec implements Codec {
                 //odd diagonal index : top->bottom
                 for (int i = rowStart; i <= rowEnd; ++i) {
                     final int j = diag - i;
-                    buffer.putInt(matrix[i][j]);
+                    sb.append(matrix[i][j]).append(" ");
                 }
             } else {
                 //even diagonal index : bottom->top
                 for (int i = rowEnd; i >= rowStart; --i) {
                     final int j = diag - i;
-                    buffer.putInt(matrix[i][j]);
+                    sb.append(matrix[i][j]).append(" ");
                 }
             }
         }
+
+        // do runLE
+        return sb.toString().trim();
     }
 
-    private int[][] reverseZigZagScan(final int height, final int width, final ByteBuffer zigZagData) {
+    private int[][] reverseZigZagScan(final int height, final int width, final String zigZagString) {
         // System.out.println(zigZagString);
+        final String[] matrixCells = zigZagString.split(" ");
         final int[][] reqMatrix = new int[height][width];
 
         int cellCounter = 0;
@@ -288,13 +323,13 @@ public class JpegCodec implements Codec {
                 //odd diagonal index : top->bottom
                 for (int i = rowStart; i <= rowEnd; ++i) {
                     final int j = diag - i;
-                    reqMatrix[i][j] = zigZagData.getInt();
+                    reqMatrix[i][j] = Integer.parseInt(matrixCells[cellCounter++]);
                 }
             } else {
                 //even diagonal index : bottom->top
                 for (int i = rowEnd; i >= rowStart; --i) {
                     final int j = diag - i;
-                    reqMatrix[i][j] = zigZagData.getInt();
+                    reqMatrix[i][j] = Integer.parseInt(matrixCells[cellCounter++]);
                 }
             }
         }
