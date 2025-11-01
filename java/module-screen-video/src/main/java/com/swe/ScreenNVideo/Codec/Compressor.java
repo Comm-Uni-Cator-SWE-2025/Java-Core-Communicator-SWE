@@ -18,9 +18,6 @@ class Compressor implements  ICompressor{
     @Override
     public void compressChrome(short[][] Matrix,short height,short width,ByteBuffer resBuffer){
 
-        resBuffer.putShort((short) (height / 8));
-        resBuffer.putShort((short) (width / 8));
-
         for(short i = 0;i<height;i+=8){
             for(short j = 0;j<width;j+=8){
                 _dctmodule.Fdct(Matrix,i,j);
@@ -28,14 +25,11 @@ class Compressor implements  ICompressor{
             }
         }
 
-        _enDeRLE.zigZagRLE(Matrix,height,width,resBuffer);
+        _enDeRLE.zigZagRLE(Matrix,resBuffer);
     }
 
     @Override
     public void compressLumin(short[][] Matrix,short height,short width,ByteBuffer resBuffer){
-
-        resBuffer.putShort((short) (height / 8));
-        resBuffer.putShort((short) (width / 8));
 
         for(short i = 0;i<height;i+=8){
             for(short j = 0;j<width;j+=8){
@@ -44,6 +38,6 @@ class Compressor implements  ICompressor{
             }
         }
 
-        _enDeRLE.zigZagRLE(Matrix,height,width,resBuffer);
+        _enDeRLE.zigZagRLE(Matrix,resBuffer);
     }
 }
