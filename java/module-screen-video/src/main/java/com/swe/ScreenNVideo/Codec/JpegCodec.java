@@ -175,7 +175,7 @@ public class JpegCodec implements Codec {
             }
         }
 
-        int MaxLen = (int)(height*width * (1.5) + 0.5);
+        int MaxLen = (int)((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
         ByteBuffer resRLEBuffer = ByteBuffer.allocate(MaxLen);
 
         // YMatrix;
