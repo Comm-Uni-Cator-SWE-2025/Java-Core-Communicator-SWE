@@ -88,11 +88,11 @@ public class PacketParser {
     private static final int OFF_CHUNK_LENGTH = 18;
 
     /** Bitfield sizes within the first two bytes. */
-    /** no of bits in byte 0 for type */
+    /** no of bits in byte 0 for type. */
     private static final int BITS_TYPE = 2;
     /** no of bits in byte 0 for priority. */
     private static final int BITS_PRIORITY = 3;
-    /** no of bits in byte 1 for module */
+    /** no of bits in byte 1 for module. */
     private static final int BITS_MODULE = 4;
     /** no of bits in byte 2 for connection type. */
     private static final int BITS_CONNECTION_TYPE = 3;
@@ -156,7 +156,7 @@ public class PacketParser {
     public PacketInfo parsePacket(final byte[] pkt) throws UnknownHostException {
         final PacketInfo info = new PacketInfo();
 
-        final int length = (pkt[OFF_LEN] ) & MASK_LENGTH 
+        final int length = (pkt[OFF_LEN]) & MASK_LENGTH
                             | (((pkt[OFF_LEN + 1]) & MASK_LENGTH) << SHIFT_LENGTH);
 
         final int type = (pkt[OFF_FLAGS] >> SHIFT_TYPE) & MASK_TYPE;
