@@ -1,6 +1,5 @@
 package com.swe.networking;
 
-import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -152,7 +151,7 @@ public class P2PClient implements P2PUser {
                 }
 
             } catch (Exception e) {
-                    System.err.println("p2pclient received exception while processing packet");
+                System.err.println("p2pclient received exception while processing packet");
             }
         }
     }
@@ -181,6 +180,8 @@ public class P2PClient implements P2PUser {
                 case USE:
                     parseUsePacket(info);
                     break;
+                default:
+                    break;
             }
         } catch (UnknownHostException e) {
             System.err.println("p2pclient failed to parse packet IP: " + e.getMessage());
@@ -195,7 +196,8 @@ public class P2PClient implements P2PUser {
     private void parseUsePacket(final PacketInfo info) {
         final int connType = info.getConnectionType();
         final NetworkConnectionType connection = NetworkConnectionType.getType(connType);
-//        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+        // final NetworkSerializer serializer =
+        // NetworkSerializer.getNetworkSerializer();
         System.out.println("p2pclient received connection type: " + connection);
         switch (connection) {
             case HELLO: // 000 drop it only to be received by main server
@@ -207,7 +209,7 @@ public class P2PClient implements P2PUser {
             case ADD: // 010 : update the current network
                 System.out.println("p2pclient received ADD packet : updating network structure");
 
-                ClientNetworkRecord newClient = serializer.deserializeClientNetworkRecord(info.getPayload());
+                final ClientNetworkRecord newClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.updateNetwork(newClient);
 
                 updateClusterServer();
@@ -215,7 +217,7 @@ public class P2PClient implements P2PUser {
             case REMOVE: // 011 : update the current network
 
                 System.out.println("p2pclient received ADD or REMOVE packet");
-                ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
+                final ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.removeClient(oldClient);
 
                 updateClusterServer();
@@ -224,7 +226,7 @@ public class P2PClient implements P2PUser {
             case NETWORK: // 100 : replace the current network
 
                 System.out.println("p2pclient received NETWORK packet");
-                NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
+                final NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
                 topology.replaceNetwork(newNetwork);
 
                 updateClusterServer();
@@ -243,14 +245,14 @@ public class P2PClient implements P2PUser {
     }
 
     /**
-     * this is helper function to update cluster server address
+     * this is helper function to update cluster server address.
      * may be changed after changing network structure (add, remove, replace)
      */
 
-    void updateClusterServer(){
+    void updateClusterServer() {
         System.out.println("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
-        if(this.clusterServerAddress == null){
+        if (this.clusterServerAddress == null) {
             System.err.println("p2pclient: Not find my cluster server in topology.");
         }
         return;
@@ -259,7 +261,7 @@ public class P2PClient implements P2PUser {
     @Override
     public void close() {
         if (!running) {
-            return; //  multiple closes
+            return; // multiple closes
         }
         running = false;
 
