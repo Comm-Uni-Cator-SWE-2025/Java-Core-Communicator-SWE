@@ -1,0 +1,40 @@
+name: PR Approval Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  check-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR approvals
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          echo "Checking approvals for PR #$PR_NUMBER on branch $BASE_BRANCH"
+
+          APPROVALS=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            | jq '[.[] | select(.state=="APPROVED")] | length')
+
+          echo "Found $APPROVALS approvals"
+
+          if [[ "$BASE_BRANCH" == "main" && "$APPROVALS" -lt 3 ]]; then
+            echo "Requires at least 3 approvals for main"
+            exit 1
+          elif [[ "$BASE_BRANCH" == "dev" && "$APPROVALS" -lt 2 ]]; then
+            echo "Requires at least 2 approvals for dev"
+            exit 1
+          elif [[ "$BASE_BRANCH" == module/* && "$APPROVALS" -lt 1 ]]; then
+            echo "Requires at least 1 approval for module branches"
+            exit 1
+          else
+            echo "Approval check passed"
+          fi
