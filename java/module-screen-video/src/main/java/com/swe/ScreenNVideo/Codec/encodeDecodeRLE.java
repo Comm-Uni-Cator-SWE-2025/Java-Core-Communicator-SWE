@@ -119,16 +119,13 @@ public class encodeDecodeRLE implements IRLE {
                         continue;
                     }
                     short curr = matrix[r][c];
-                    if (curr != 0) {
-                        if (count > 0) {
-                            buffer.putShort((short)0);
-                            buffer.putShort(count);
-                            count = 0;
-                        }
-                        // directly store non-zero values
-                        buffer.putShort(curr);
+                    if (curr == prevVal) {
+                        count++;
                     } else {
-                        count ++;
+                        buffer.putShort(prevVal);
+                        buffer.putShort(count);
+                        prevVal = curr;
+                        count = 1;
                     }
                 }
             } else {
@@ -139,25 +136,20 @@ public class encodeDecodeRLE implements IRLE {
                         continue;
                     }
                     short curr = matrix[r][c];
-                    if (curr != 0) {
-                        if (count > 0) {
-                            buffer.putShort((short)0);
-                            buffer.putShort(count);
-                            count = 0;
-                        }
-                        // directly store non-zero values
-                        buffer.putShort(curr);
+                    if (curr == prevVal) {
+                        count++;
                     } else {
-                        count ++;
+                        buffer.putShort(prevVal);
+                        buffer.putShort(count);
+                        prevVal = curr;
+                        count = 1;
                     }
                 }
             }
         }
 
-        if (count > 0) {
-            buffer.putShort((short)0);
-            buffer.putShort(count);
-        }
+        buffer.putShort(prevVal);
+        buffer.putShort(count);
 
         tcount ++;
         if (buffer.position() - prevPos > 128) {
@@ -179,11 +171,8 @@ public class encodeDecodeRLE implements IRLE {
                              final short startCol,
                              final ByteBuffer buffer) {
 
-        short currentVal = buffer.getShort();
-        short remaining = 1;
-        if (currentVal == 0) {
-            remaining = buffer.getShort();
-        }
+        short currentVal = 0;
+        short remaining = 0;
 
         // Rebuild using reverse zigzag
         for (short diag = 0; diag < 15; ++diag) {
@@ -197,18 +186,14 @@ public class encodeDecodeRLE implements IRLE {
                     if (r >= matrix.length || c >= matrix[0].length) {
                         continue;
                     }
+                    if (remaining == 0 && buffer.hasRemaining()) {
+                        currentVal = buffer.getShort();
+                        remaining = buffer.getShort();
+                    }
 
                     matrix[r][c] = currentVal;
                     remaining--;
 
-                    if (remaining == 0 && buffer.hasRemaining()) {
-                        currentVal = buffer.getShort();
-                        if (currentVal == 0) {
-                            remaining = buffer.getShort();
-                        } else {
-                            remaining = 1;
-                        }
-                    }
                 }
             } else {
                 for (int i = rowEnd; i >= rowStart; --i) {
@@ -217,18 +202,14 @@ public class encodeDecodeRLE implements IRLE {
                     if (r >= matrix.length || c >= matrix[0].length) {
                         continue;
                     }
+                    if (remaining == 0 && buffer.hasRemaining()) {
+                        currentVal = buffer.getShort();
+                        remaining = buffer.getShort();
+                    }
 
                     matrix[r][c] = currentVal;
                     remaining--;
 
-                    if (remaining == 0 && buffer.hasRemaining()) {
-                        currentVal = buffer.getShort();
-                        if (currentVal == 0) {
-                            remaining = buffer.getShort();
-                        } else {
-                            remaining = 1;
-                        }
-                    }
                 }
             }
         }

@@ -128,7 +128,7 @@ public class Client implements IUser {
         final ModuleType type = moduleType.getType(module);
         final String data = new String(parser.getPayload(packet),
                 StandardCharsets.UTF_8);
-        System.out.println("Client Data received : " + data);
+//        System.out.println("Client Data received : " + data);
         simpleNetworking.callSubscriber(parser.getPayload(packet), type);
     }
 
