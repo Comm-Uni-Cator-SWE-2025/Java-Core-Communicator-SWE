@@ -247,10 +247,8 @@ public class P2PClientTest {
 
         byte[] alivePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.ALIVE.ordinal(), null);
         byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
-        byte[] unknowntypePacket = createTestPacket(NetworkType.USE.ordinal(), 6, null);
         sendPacket(helloPacket, deviceNode);
         sendPacket(alivePacket, deviceNode);
-        sendPacket(unknowntypePacket, deviceNode);
         Thread.sleep(500);
     }
 

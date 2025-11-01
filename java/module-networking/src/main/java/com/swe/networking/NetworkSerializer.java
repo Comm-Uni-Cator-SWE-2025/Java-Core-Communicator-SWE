@@ -45,9 +45,9 @@ public class NetworkSerializer {
      */
     public byte[] serializeClientNetworkRecord(final ClientNetworkRecord record) {
         final byte[] hostName = record.client().hostName().getBytes(StandardCharsets.UTF_8);
-        final int bufferSize = 1 + hostName.length + Integer.BYTES + Integer.BYTES;
+        final int bufferSize = Integer.BYTES + hostName.length + Integer.BYTES + Integer.BYTES;
         final ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
-        buffer.put((byte) hostName.length);
+        buffer.putInt(hostName.length);
         buffer.put(hostName);
         buffer.putInt(record.client().port());
         buffer.putInt(record.clusterIndex());
@@ -62,7 +62,22 @@ public class NetworkSerializer {
      */
     public ClientNetworkRecord deserializeClientNetworkRecord(final byte[] data) {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
-        final int hostLength = buffer.get();
+
+        if (buffer.remaining() < Integer.BYTES + Integer.BYTES + Integer.BYTES) {
+            throw new IllegalArgumentException("Data too short ");
+        }
+
+        final int hostLength = buffer.getInt();
+
+        if (hostLength < 0) {
+            throw new IllegalArgumentException("Negative host length: " + hostLength);
+        }
+
+        final int needed = hostLength + Integer.BYTES + Integer.BYTES;
+        if (buffer.remaining() < needed) {
+            throw new IllegalArgumentException("Not enough bytes to read");
+        }
+
         final byte[] hostName = new byte[hostLength];
         buffer.get(hostName);
         final String hostIp = new String(hostName, StandardCharsets.UTF_8);

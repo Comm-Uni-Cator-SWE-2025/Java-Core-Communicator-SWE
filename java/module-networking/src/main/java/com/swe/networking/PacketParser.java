@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 /* Parser for the packets.
 The structure of the packet is given below
+- Length            : 16bits
 - Type              : 2bits
 - Priority          : 3bits
 - Module            : 4bits
@@ -23,6 +24,8 @@ The structure of the packet is given below
 
 0                             1
 0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5  6
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                     Length                    |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 |Type |Priority|   Module  |Con Type|BC|  empty |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -57,7 +60,7 @@ public class PacketParser {
     /**
      * Size of the packet header in bytes.
      */
-    private static final int HEADER_SIZE = 20;
+    private static final int HEADER_SIZE = 22;
     /** Number of bytes in an IPv4 address. */
     private static final int LEN_IP = 4;
     /** Number of bytes used to store a port number. */
@@ -69,37 +72,37 @@ public class PacketParser {
     /** Number of bytes used to store the chunk length. */
     private static final int LEN_CHUNK_LENGTH = 4;
     // Offsets into the packet
+    /** Offset of the length field. */
+    private static final int OFF_LEN = 0;
     /** Offset of the flags (type/priority/module bits) byte. */
-    private static final int OFF_FLAGS = 0;
+    private static final int OFF_FLAGS = 2;
     /** Offset of the IPv4 address field. */
-    private static final int OFF_IP = 2;
+    private static final int OFF_IP = 4;
     /** Offset of the port field. */
-    private static final int OFF_PORT = 6;
+    private static final int OFF_PORT = 8;
     /** Offset of the message id field. */
-    private static final int OFF_MESSAGE_ID = 8;
+    private static final int OFF_MESSAGE_ID = 10;
     /** Offset of the chunk number field. */
-    private static final int OFF_CHUNK_NUM = 12;
+    private static final int OFF_CHUNK_NUM = 14;
     /** Offset of the chunk length field. */
-    private static final int OFF_CHUNK_LENGTH = 16;
+    private static final int OFF_CHUNK_LENGTH = 18;
 
     /** Bitfield sizes within the first two bytes. */
-    /** 
-     * no of bits in byte 0 for type.
-     */
+    /** no of bits in byte 0 for type. */
     private static final int BITS_TYPE = 2;
     /** no of bits in byte 0 for priority. */
     private static final int BITS_PRIORITY = 3;
-    /**
-     * no of bits in byte 0 for module.
-     */
+    /** no of bits in byte 1 for module. */
     private static final int BITS_MODULE = 4;
-    /** no of bits in byte 1 for connection type. */
+    /** no of bits in byte 2 for connection type. */
     private static final int BITS_CONNECTION_TYPE = 3;
-    /** no of bits in byte 1 for broadcast. */
+    /** no of bits in byte 2 for broadcast. */
     private static final int BITS_BROADCAST = 1;
-    /** no of bits in byte 1 for reserved. */
+    /** no of bits in byte 2 for reserved. */
     private static final int BITS_EMPTY = 3;
 
+    /** Bit mask for the length field. */
+    private static final int MASK_LENGTH = 0xFF;
     /** Bit mask for the type field. */
     private static final int MASK_TYPE = (1 << BITS_TYPE) - 1; // 0b11
     /** Bit mask for the priority field. */
@@ -112,16 +115,18 @@ public class PacketParser {
     private static final int MASK_CONNECTION_TYPE = (1 << BITS_CONNECTION_TYPE) - 1; // 0b111
     /** Bit mask for the broadcast field. */
     private static final int MASK_BROADCAST = 1;
-
-    /** Shift right amount to extract the type field from byte0. */
+        
+    /** Shift right amount to extract the length field from byte0 and byte1. */
+    private static final int SHIFT_LENGTH = 8;
+    /** Shift right amount to extract the type field from byte3. */
     private static final int SHIFT_TYPE = 8 - BITS_TYPE; 
-    /** Shift right amount to extract the priority field from byte0. */
+    /** Shift right amount to extract the priority field from byte3. */
     private static final int SHIFT_PRIORITY = 8 - BITS_TYPE - BITS_PRIORITY;
-    /** Shift right amount to extract the connection type field from byte1. */
+    /** Shift right amount to extract the connection type field from byte3. */
     private static final int SHIFT_CONNECTION_TYPE = BITS_EMPTY + BITS_BROADCAST;
-    /** Shift right amount to extract the broadcast field from byte1. */
+    /** Shift right amount to extract the broadcast field from byte3. */
     private static final int SHIFT_BROADCAST = BITS_EMPTY;
-    /** Shift right amount to extract the module's upper bit from byte1. */
+    /** Shift right amount to extract the module's upper bit from byte3. */
     private static final int SHIFT_MODULE_UPPER = 7;
 
     /**
@@ -151,6 +156,9 @@ public class PacketParser {
     public PacketInfo parsePacket(final byte[] pkt) throws UnknownHostException {
         final PacketInfo info = new PacketInfo();
 
+        final int length = (pkt[OFF_LEN]) & MASK_LENGTH
+                            | (((pkt[OFF_LEN + 1]) & MASK_LENGTH) << SHIFT_LENGTH);
+
         final int type = (pkt[OFF_FLAGS] >> SHIFT_TYPE) & MASK_TYPE;
         final int priority = (pkt[OFF_FLAGS] >> SHIFT_PRIORITY) & MASK_PRIORITY;
 
@@ -178,6 +186,7 @@ public class PacketParser {
 
         final byte[] payload = Arrays.copyOfRange(pkt, HEADER_SIZE, pkt.length);
 
+        info.setLength(length);
         info.setType(type);
         info.setPriority(priority);
         info.setModule(module);
@@ -205,7 +214,12 @@ public class PacketParser {
         final byte[] pkt = new byte[HEADER_SIZE + data.length];
         final ByteBuffer bb = ByteBuffer.wrap(pkt);
 
-        //  byte 0 and byte 1 from the bitfield components
+        // Byte 0-1: length
+        final int totalLength = ds.getLength();
+        bb.put((byte) (totalLength & MASK_LENGTH));
+        bb.put((byte) ((totalLength >> SHIFT_LENGTH) & MASK_LENGTH));
+
+        //  byte 2 and byte 3 from the bitfield components
         final int typePart = (ds.getType() & MASK_TYPE) << SHIFT_TYPE;
         final int priorityPart = (ds.getPriority() & MASK_PRIORITY) << SHIFT_PRIORITY;
         final int moduleFull = ds.getModule() & ((1 << BITS_MODULE) - 1);
@@ -213,30 +227,30 @@ public class PacketParser {
         final int moduleLowerPacked = (moduleFull & (MASK_MODULE_LOWER << 1)) >> 1; // take bits 3..1 and shift down
         final int moduleUpper = moduleFull & MASK_MODULE_UPPER; // LSB
 
-        final byte byte0 = (byte) (typePart | priorityPart | moduleLowerPacked);
-        final byte byte1 = (byte) ((moduleUpper << SHIFT_MODULE_UPPER)
+        final byte byte2 = (byte) (typePart | priorityPart | moduleLowerPacked);
+        final byte byte3 = (byte) ((moduleUpper << SHIFT_MODULE_UPPER)
                     | ((ds.getConnectionType() & MASK_CONNECTION_TYPE) << SHIFT_CONNECTION_TYPE)
                     | ((ds.getBroadcast() & MASK_BROADCAST) << SHIFT_BROADCAST));
 
-        bb.put(byte0);
-        bb.put(byte1);
+        bb.put(byte2);
+        bb.put(byte3);
 
-        // Bytes 2–5: IP
+        // Bytes 4–6: IP
         bb.put(ds.getIpAddress().getAddress());
 
-        // Bytes 6–7: port
+        // Bytes 7–9: port
         bb.putShort((short) ds.getPortNum());
 
-        // Bytes 8–11: messageId
+        // Bytes 10–13: messageId
         bb.putInt(ds.getMessageId());
 
-        // Bytes 12–15: chunkNum
+        // Bytes 14–17: chunkNum
         bb.putInt(ds.getChunkNum());
 
-        // Bytes 16–19: chunkLength
+        // Bytes 18–21: chunkLength
         bb.putInt(ds.getChunkLength());
 
-        // Bytes 20+: payload
+        // Bytes 22+: payload
         bb.put(data);
 
         return pkt;

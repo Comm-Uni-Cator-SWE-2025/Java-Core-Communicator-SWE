@@ -10,10 +10,33 @@ import org.junit.Test;
 public class PacketParserTest {
 
     @Test
+    public void testLengthExtraction() throws UnknownHostException {
+        final PacketParser parser = PacketParser.getPacketParser();
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
+        ds.setType(0);
+        ds.setPriority(0);
+        ds.setModule(0);
+        ds.setConnectionType(0);
+        ds.setBroadcast(0);
+        ds.setIpAddress(ip);
+        ds.setPortNum(0);
+        ds.setMessageId(0);
+        ds.setChunkNum(0);
+        ds.setChunkLength(0);
+        ds.setPayload(new byte[0]);
+        final byte[] pkt = parser.createPkt(ds);
+        final PacketInfo info = parser.parsePacket(pkt);
+        assertEquals(22, info.getLength());
+    }
+
+    @Test
     public void testTypeExtraction() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(2);
         ds.setPriority(0);
         ds.setModule(0);
@@ -35,6 +58,7 @@ public class PacketParserTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(5);
         ds.setModule(0);
@@ -56,6 +80,7 @@ public class PacketParserTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(9); // 9 = 1001 (binary)
@@ -77,6 +102,7 @@ public class PacketParserTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -98,6 +124,7 @@ public class PacketParserTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -119,6 +146,7 @@ public class PacketParserTest {
         final PacketParser parser = PacketParser.getPacketParser();
         final InetAddress ip = InetAddress.getByName("192.168.1.50");
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -141,6 +169,7 @@ public class PacketParserTest {
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final int port = 8080;
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -163,6 +192,7 @@ public class PacketParserTest {
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final int messageId = 123456;
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -185,6 +215,7 @@ public class PacketParserTest {
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final int chunkNum = 654321;
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -207,6 +238,7 @@ public class PacketParserTest {
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final int chunkLength = 12345678;
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(22);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -229,6 +261,7 @@ public class PacketParserTest {
         final InetAddress ip = InetAddress.getByName("0.0.0.0");
         final byte[] payload = { 10, 20, 30, 40 };
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(26);
         ds.setType(0);
         ds.setPriority(0);
         ds.setModule(0);
@@ -249,6 +282,7 @@ public class PacketParserTest {
     public void testPkt() throws UnknownHostException {
         final PacketParser parser = PacketParser.getPacketParser();
 
+        final int length = 27;
         final int type = 3;
         final int priority = 7;
         final int module = 15;
@@ -262,6 +296,7 @@ public class PacketParserTest {
         final byte[] data = { 1, 2, 3, 4, 5 };
 
         final PacketInfo ds = new PacketInfo();
+        ds.setLength(length);
         ds.setType(type);
         ds.setPriority(priority);
         ds.setModule(module);
@@ -278,6 +313,7 @@ public class PacketParserTest {
 
         final PacketInfo info = parser.parsePacket(pkt);
 
+        assertEquals(length, info.getLength());
         assertEquals(type, info.getType());
         assertEquals(priority, info.getPriority());
         assertEquals(module, info.getModule());
