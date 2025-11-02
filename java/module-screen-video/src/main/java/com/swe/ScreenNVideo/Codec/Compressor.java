@@ -22,6 +22,11 @@ class Compressor implements  ICompressor {
 
     private final int matrixDim = 8;
 
+    public long zigZagTime = 0;
+    public long dctTime = 0;
+    public long quantTime = 0;
+
+
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
@@ -47,12 +52,18 @@ class Compressor implements  ICompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
+//                long curr = System.nanoTime();
                 dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
                 quantmodule.quantisationChrome(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
+//        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
+//        zigZagTime += System.nanoTime() - curr;
     }
 
     /**
@@ -74,11 +85,17 @@ class Compressor implements  ICompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
+//                long curr = System.nanoTime();
                 dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
                 quantmodule.quantisationLumin(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
+//        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
+//        zigZagTime += System.nanoTime() - curr;
     }
 }
