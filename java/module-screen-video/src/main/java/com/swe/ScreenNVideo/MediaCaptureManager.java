@@ -91,7 +91,7 @@ public class MediaCaptureManager implements CaptureManager {
         networking.subscribe(ModuleType.CHAT, new MediaCaptureManager.ClientHandler());
 //        addParticipant(getSelfIP());
 //        addParticipant("10.32.11.242");
-        addParticipant("10.32.12.30");
+//        addParticipant("10.32.12.30");
     }
 
     private void addParticipant(final String ip) {
