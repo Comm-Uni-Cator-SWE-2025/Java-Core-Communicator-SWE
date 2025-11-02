@@ -17,7 +17,7 @@ public class ChunkManager {
     /**
      * Payload Size.
      */
-    private final int defaultPayloadSize = 4; // size of payload in bytes
+    private final int defaultPayloadSize; // size of payload in bytes
     /**
      * packetParser.
      */
@@ -27,15 +27,19 @@ public class ChunkManager {
      */
     private final int headerSize = PacketParser.getHeaderSize();
 
-    private ChunkManager() { }
+    private ChunkManager(final int payloadSize) {
+        defaultPayloadSize = payloadSize;
+    }
 
     /**
      * Singleton chunkManager getter.
+     *
+     * @param payloadSize the payloadsize for the chunkManager
      * @return chunkManager.
      */
-    public static ChunkManager getChunkManager() {
+    public static ChunkManager getChunkManager(final int payloadSize) {
         if (chunkManager == null) {
-            chunkManager = new ChunkManager();
+            chunkManager = new ChunkManager(payloadSize);
             return chunkManager;
         }
         return chunkManager;
@@ -58,6 +62,7 @@ public class ChunkManager {
     /**
      * Temporary function used to get the messageList.
      * Used only for testing and to be replaced with some other function later.
+     * 
      * @return messageList. All the messages recorded till now.
      */
     Vector<byte[]> getMessageList() {
@@ -66,6 +71,7 @@ public class ChunkManager {
 
     /**
      * Add chunk function.
+     * 
      * @param chunk the byte of chunk coming in.
      * @throws UnknownHostException the issue from packet parser.
      */
@@ -81,7 +87,7 @@ public class ChunkManager {
         }
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            // TODO: use appropriate function once the message is ready
+            // TOD use appropriate function once the message is ready
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
         }
@@ -89,25 +95,26 @@ public class ChunkManager {
 
     /**
      * Merge Chunks function.
+     * 
      * @param chunks The list of incoming chunks.
      * @return merged packet.
      */
     private byte[] mergeChunks(final Vector<byte[]> chunks) throws UnknownHostException {
         int dataSize = 0;
-        for (byte[] chunk:chunks) {
+        for (byte[] chunk : chunks) {
             dataSize += chunk.length - headerSize;
         }
         final byte[] completePayload = new byte[dataSize];
         PacketInfo info = parser.parsePacket(chunks.get(0));
         final int lastChunkNum = info.getChunkLength() - 1;
         final Vector<byte[]> sortedChunks = new Vector<>(Collections.nCopies(chunks.size(), null));
-        for (byte[] chunk:chunks) {
+        for (byte[] chunk : chunks) {
             info = parser.parsePacket(chunk);
             final int i = info.getChunkNum();
             sortedChunks.set(i, chunk);
         }
         int i = 0;
-        for (byte[] chunk:sortedChunks) {
+        for (byte[] chunk : sortedChunks) {
             info = parser.parsePacket(chunk);
             final int chunkSize = chunk.length - headerSize;
             final byte[] chunkPayload = info.getPayload();
@@ -123,17 +130,15 @@ public class ChunkManager {
 
     /**
      * Chunking function.
-     * @param info The Chunk information including payload of the message
-     * @param  payloadSize The payload size of the message.
+     * 
+     * @param info        The Chunk information including payload of the message
+     * @param payloadSize The payload size of the message.
      * @return chunks The message broken into list of chunks.
      */
     public Vector<byte[]> chunk(final PacketInfo info, final int payloadSize) {
         // List of chunked packets we will be returning
         final Vector<byte[]> chunks = new Vector<>();
 
-        // Type is currently set to 0 : Send Packet to Cluster
-        // But we need a function in topology to identify the type
-        info.setType(0);
         final byte[] data = info.getPayload();
         final int numChunks = (data.length + payloadSize - 1) / payloadSize;
         info.setChunkLength(numChunks);
@@ -155,11 +160,12 @@ public class ChunkManager {
     }
 
     public Vector<byte[]> chunk(final PacketInfo info) {
-        return  chunk(info, defaultPayloadSize);
+        return chunk(info, defaultPayloadSize);
     }
 
     /**
      * get last message id.
+     * 
      * @return messageId.
      */
     public int getLastMessageId() {

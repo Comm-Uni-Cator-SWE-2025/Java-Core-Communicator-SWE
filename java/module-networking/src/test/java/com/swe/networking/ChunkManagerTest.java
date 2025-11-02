@@ -1,12 +1,13 @@
 package com.swe.networking;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Vector;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test cases for chunk manager.
@@ -18,7 +19,7 @@ public class ChunkManagerTest {
     @Test
     void messageChunkingTest() throws UnknownHostException {
         final int payloadSize = 4;
-        final ChunkManager chunkManager = ChunkManager.getChunkManager();
+        final ChunkManager chunkManager = ChunkManager.getChunkManager(payloadSize);
         final PacketParser parser = PacketParser.getPacketParser();
 
         final String message = "Hello this is Networking Team";
@@ -98,7 +99,7 @@ public class ChunkManagerTest {
     @Test
     void chunkNumChunkingTest() throws UnknownHostException {
         final int payloadSize = 3;
-        final ChunkManager chunkManager = ChunkManager.getChunkManager();
+        final ChunkManager chunkManager = ChunkManager.getChunkManager(payloadSize);
         final PacketParser parser = PacketParser.getPacketParser();
 
         final String message = "Hello this is Networking Team";
@@ -131,7 +132,7 @@ public class ChunkManagerTest {
     @Test
     void constFieldChunkingTest() throws UnknownHostException {
         final int payloadSize = 6;
-        final ChunkManager chunkManager = ChunkManager.getChunkManager();
+        final ChunkManager chunkManager = ChunkManager.getChunkManager(payloadSize);
         final PacketParser parser = PacketParser.getPacketParser();
 
         final String message = "Hello this is Networking Team";
@@ -179,7 +180,7 @@ public class ChunkManagerTest {
     @Test
     void mergeChunksTest() throws UnknownHostException {
         final int payloadSize = 3;
-        final ChunkManager chunkManager = ChunkManager.getChunkManager();
+        final ChunkManager chunkManager = ChunkManager.getChunkManager(payloadSize);
         final PacketParser parser = PacketParser.getPacketParser();
 
         final String message = "Hello this is Networking Team";

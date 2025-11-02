@@ -87,7 +87,8 @@ public class MainServer implements P2PUser {
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
             System.out.println("Sending data");
-            communicator.sendData(data, dest); // check of this should be dest
+            final ClientNode sendDest = topology.getDestination(mainserver, dest);
+            communicator.sendData(data, sendDest); // check of this should be dest
         }
     }
 
@@ -100,7 +101,8 @@ public class MainServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
         System.out.println("Sending data");
-        communicator.sendData(data, destIp); // check of this should be dest
+        final ClientNode sendDest = topology.getDestination(mainserver, destIp);
+        communicator.sendData(data, sendDest); // check of this should be dest
     }
 
     /**
