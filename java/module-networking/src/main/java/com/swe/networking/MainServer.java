@@ -57,6 +57,12 @@ public class MainServer implements P2PUser {
     /** Variable to store header size. */
     private final int packetHeaderSize = 22;
 
+    /** Variable to store chunk manager. */
+    private final ChunkManager chunkManager;
+
+    /** Variable to store the chunksize. */
+    private final int payloadSize = 10 * 1024;
+
     /**
      * Constructor function for the main server class.
      *
@@ -70,6 +76,7 @@ public class MainServer implements P2PUser {
         mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
+        chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
         timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
@@ -153,6 +160,7 @@ public class MainServer implements P2PUser {
                     System.out.println("Received alive packet from " + dest);
                 } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
                     System.out.println("Passing to chunk manager...");
+                    chunkManager.addChunk(packet);
                 } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                     System.out.println("Closing the Main Server");
                 }
