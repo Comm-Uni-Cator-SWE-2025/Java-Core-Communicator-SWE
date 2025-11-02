@@ -74,7 +74,7 @@ public class ChatController {
         this.mockNetwork = new MockNetworking(); // Use the real MockNetworking
 
         // 2. Initialize the real ChatManager with the mock network
-        this.chatManager = new ChatManager(this.mockNetwork);
+//        this.chatManager = new ChatManager(this.mockNetwork);
 
         // 3. Register a listener to receive messages from the ChatManager
         this.chatManager.setOnMessageReceived(this::handleIncomingMessage);

@@ -1,30 +1,39 @@
 package com.swe.chat;
 
+// 1. IMPORT THE REAL NETWORKING FILES
+import com.swe.networking.ClientNode;
+import com.swe.networking.ModuleType;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
+
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer; // Import Consumer for the listener
+import java.util.function.Consumer;
 
 /**
  * Manages chat functionality between the networking layer and the UI.
  * Handles sending, receiving, and notifying listeners about chat messages.
+ * This class IMPLEMENTS the IChatService contract.
  */
+// 2. RE-ADD THE IChatService INTERFACE
 public class ChatManager implements IChatService {
 
-    /** Networking layer used to send and receive data. */
-    private final AbstractNetworking network;
+    /** 3. THE FIELD IS THE REAL SimpleNetworking OBJECT */
+    private final SimpleNetworking network;
 
     /** Listener that gets notified when a new message is received. */
     private Consumer<ChatMessage> onMessageReceivedListener; // Listener for the UI
 
     /**
-     * Constructs a ChatManager with the given networking service.
+     * 4. THE CONSTRUCTOR NOW TAKES THE REAL SimpleNetworking OBJECT
      *
      * @param networkingService the networking service used for communication
      */
-    public ChatManager(final AbstractNetworking networkingService) {
+    public ChatManager(final SimpleNetworking networkingService) {
         this.network = networkingService;
-        // The original subscribe had an issue with the method reference type.
-        // It needs a MessageListener, which has a ReceiveData method.
-        network.subscribe("ChatManagerSubscription", this::receiveFromNetwork);
+
+        // 5. THE SUBSCRIBE CALL IS UPDATED
+        // Old: network.subscribe("ChatManagerSubscription", this::receiveFromNetwork);
+        // New:
+        network.subscribe(ModuleType.CHAT, this::receiveFromNetwork);
     }
 
     /**
@@ -37,6 +46,7 @@ public class ChatManager implements IChatService {
 
     /**
      * Sends a chat message through the network.
+     * (This method correctly implements the IChatService contract)
      *
      * @param message the chat message to send
      */
@@ -44,12 +54,23 @@ public class ChatManager implements IChatService {
     public void sendMessage(final ChatMessage message) {
         final String json = MessageParser.serialize(message);
         final byte[] data = json.getBytes(StandardCharsets.UTF_8);
-        network.sendData(data, new String[]{}, new int[]{}); // broadcast
+
+        // 6. THE SENDDATA CALL IS UPDATED
+        // Old: network.sendData(data, new String[]{}, new int[]{}); // broadcast
+
+        // New: We must provide a destination and ModuleType.
+        // TODO: You need a real way to get destinations.
+        // For now, I am using the hard-coded destination from their example.
+        ClientNode[] dests = { new ClientNode("127.0.0.1", 5678) };
+
+        network.sendData(data, dests, ModuleType.CHAT, 0);
     }
 
     /**
+     * 7. RE-ADD receiveMessage TO FULFILL THE CONTRACT
      * Receives a chat message (from JSON), deserializes it,
      * and notifies the listener if present.
+     * (This method correctly implements the IChatService contract)
      *
      * @param json serialized chat message
      */
@@ -64,21 +85,23 @@ public class ChatManager implements IChatService {
     }
 
     /**
-     * Handles incoming raw network data, converts it to a JSON string,
-     * and passes it to the receiveMessage method.
+     * This is the private callback from the network.
+     * It calls the public receiveMessage, just like your original code.
      *
      * @param data raw byte array received from the network
      */
     private void receiveFromNetwork(final byte[] data) {
         final String json = new String(data, StandardCharsets.UTF_8);
+        // This now correctly calls the method from your contract
         receiveMessage(json);
     }
 
     /**
-     * Deletes a chat message by its ID.
-     * Currently not implemented for the demo.
+     * 8. RE-ADD deleteMessage TO FULFILL THE CONTRACT
+     * Deletes a message by its unique ID.
+     * (This method correctly implements the IChatService contract)
      *
-     * @param messageId ID of the message to delete
+     * @param messageId the ID of the message to delete
      */
     @Override
     public void deleteMessage(final String messageId) {

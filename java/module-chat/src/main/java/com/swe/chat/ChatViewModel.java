@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
+import com.swe.networking.ClientNode;
 
 /**
  * The ONE ViewModel for the ChatView.
@@ -17,8 +19,8 @@ public class ChatViewModel {
 
     // --- Model ---
     private final ChatManager chatManager;
-    private final MockNetworking mockNetwork; // For the "Test Recv" button
-    private final String currentUserId = "Aditya-Chauhan";
+//    private final MockNetworking mockNetwork; // For the "Test Recv" button
+    private final String currentUserId = "Akshay-Jadhav";
     private final Map<String, ChatMessage> messageHistory = new ConcurrentHashMap<>();
 
     // --- State for View ---
@@ -61,8 +63,30 @@ public class ChatViewModel {
 
     // --- Constructor ---
     public ChatViewModel() {
-        this.mockNetwork = new MockNetworking();
-        this.chatManager = new ChatManager(this.mockNetwork);
+        // 1. Set up the model
+        // OLD:
+        // this.mockNetwork = new MockNetworking();
+        // this.chatManager = new ChatManager(this.mockNetwork);
+
+        // NEW:
+        SimpleNetworking realNetwork = SimpleNetworking.getSimpleNetwork();
+
+        // 2. *** ADD THIS BLOCK - THE MISSING STEP ***
+        // Use the same info from their Main.java example
+        String deviceIp = "127.0.0.1";
+        int devicePort = 1234;
+        ClientNode device = new ClientNode(deviceIp, devicePort);
+        String serverIp = "127.0.0.1";
+        int serverPort = 1234;
+        ClientNode server = new ClientNode(serverIp, serverPort);
+
+        // This call initializes the SimpleNetworking.user variable
+        realNetwork.addUser(device, server);
+
+        // 3. Now, create the ChatManager (which will subscribe)
+        this.chatManager = new ChatManager(realNetwork);
+
+        // 4. Listen for incoming messages
         this.chatManager.setOnMessageReceived(this::handleIncomingMessage);
     }
 
@@ -78,23 +102,27 @@ public class ChatViewModel {
 
         chatManager.sendMessage(messageToSend);
 
+        // Manually process this message for our *own* UI.
+        // This will make it appear on the right side immediately.
+        handleIncomingMessage(messageToSend);
+
         if (onClearInput != null) {
             onClearInput.run();
         }
         cancelReply();
     }
 
-    public void simulateIncomingMessage() {
-        final String messageId = UUID.randomUUID().toString();
-        final ChatMessage fakeMessage =
-                new ChatMessage(messageId, "akshay_backend",
-                        "Hey, this is a test from the 'network'!", null);
-
-        final String json = MessageParser.serialize(fakeMessage);
-        final byte[] data = json.getBytes(StandardCharsets.UTF_8);
-
-        mockNetwork.simulateMessageFromServer(data);
-    }
+//    public void simulateIncomingMessage() {
+//        final String messageId = UUID.randomUUID().toString();
+//        final ChatMessage fakeMessage =
+//                new ChatMessage(messageId, "akshay_backend",
+//                        "Hey, this is a test from the 'network'!", null);
+//
+//        final String json = MessageParser.serialize(fakeMessage);
+//        final byte[] data = json.getBytes(StandardCharsets.UTF_8);
+//
+//        mockNetwork.simulateMessageFromServer(data);
+//    }
 
     public void startReply(MessageVM messageToReply) {
         if (messageToReply == null) return;

@@ -135,7 +135,7 @@ public class ChatView extends JFrame {
 
         sendButton.addActionListener(e -> viewModel.sendMessage(messageInputField.getText()));
         messageInputField.addActionListener(e -> viewModel.sendMessage(messageInputField.getText()));
-        testRecvButton.addActionListener(e -> viewModel.simulateIncomingMessage());
+//        testRecvButton.addActionListener(e -> viewModel.simulateIncomingMessage());
         cancelReplyButton.addActionListener(e -> viewModel.cancelReply());
 
         // 5. Bind Callbacks from ViewModel to View
