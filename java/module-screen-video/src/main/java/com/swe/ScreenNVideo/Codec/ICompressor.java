@@ -34,4 +34,4 @@ interface  ICompressor {
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     void compressLumin(short[][] matrix, short height, short width, ByteBuffer resBuffer);
-};
+}

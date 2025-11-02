@@ -1,7 +1,3 @@
-/**
- * contributed by Anup Kumar.
- */
-
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
@@ -30,7 +26,7 @@ class Compressor implements  ICompressor {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
         quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = encodeDecodeRLE.getInstance();
+        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
     }
 
     /**
@@ -51,12 +47,12 @@ class Compressor implements  ICompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
-                dctmodule.Fdct(matrix, i, j);
-                quantmodule.QuantisationChrome(matrix, i, j);
+                dctmodule.fdct(matrix, i, j);
+                quantmodule.quantisationChrome(matrix, i, j);
             }
         }
 
-        enDeRLE.zigZagRLE(matrix, height, width, resBuffer);
+        enDeRLE.zigZagRLE(matrix, resBuffer);
     }
 
     /**
@@ -78,11 +74,11 @@ class Compressor implements  ICompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
-                dctmodule.Fdct(matrix, i, j);
-                quantmodule.QuantisationLumin(matrix, i, j);
+                dctmodule.fdct(matrix, i, j);
+                quantmodule.quantisationLumin(matrix, i, j);
             }
         }
 
-        enDeRLE.zigZagRLE(matrix, height, width, resBuffer);
+        enDeRLE.zigZagRLE(matrix, resBuffer);
     }
 }

@@ -41,8 +41,8 @@ public class DeCompressor implements  IDeCompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
-                quantmodule.DeQuantisationChrome(matrix, i, j);
-                dctmodule.Idct(matrix, i, j);
+                quantmodule.deQuantisationChrome(matrix, i, j);
+                dctmodule.idct(matrix, i, j);
             }
         }
     }
@@ -61,8 +61,8 @@ public class DeCompressor implements  IDeCompressor {
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
-                quantmodule.DeQuantisationLumin(matrix, i, j);
-                dctmodule.Idct(matrix, i, j);
+                quantmodule.deQuantisationLumin(matrix, i, j);
+                dctmodule.idct(matrix, i, j);
             }
         }
     }

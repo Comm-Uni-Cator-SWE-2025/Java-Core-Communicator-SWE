@@ -30,4 +30,4 @@ public interface IDeCompressor {
      * @param width : width of matrix
      */
     void decompressLumin(short[][] matrix, short height, short width);
-};
+}
