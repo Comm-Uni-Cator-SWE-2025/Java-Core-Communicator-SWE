@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 interface IRLE {
 
-    void zigZagRLE(short[][] Matrix, ByteBuffer resRLEbuffer);
+    void zigZagRLE(short[][] matrix, ByteBuffer resRLEbuffer);
 
     short[][] revZigZagRLE(ByteBuffer resRLEbuffer);
 

@@ -31,5 +31,5 @@ public interface Codec {
      */
     int[][] decode(byte[] encodedImage);
 
-    void setCompressionFactor(short Qfactor);
+    void setCompressionFactor(short qfactor);
 }

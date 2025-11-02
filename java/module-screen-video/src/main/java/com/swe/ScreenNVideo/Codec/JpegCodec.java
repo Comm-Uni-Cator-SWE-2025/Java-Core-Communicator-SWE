@@ -5,10 +5,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
- *
+ * 
  * <p>
- * This class implements the {@link Codec} interface, offering methods to convert
- * raw image data into compressed JPEG byte streams and to reconstruct images
+ * This class implements the {@link Codec} interface, offering methods to convert 
+ * raw image data into compressed JPEG byte streams and to reconstruct images 
  * from JPEG-encoded data.
  * </p>
  *
@@ -26,16 +26,16 @@ public class JpegCodec implements Codec {
 
     /** Offset for red color component in the AARRGGBB value.*/
     private static final int R_OFFSET = 16;
-
+    
     /** Offset for green color component in the AARRGGBB value.*/
     private static final int G_OFFSET = 8;
-
+    
     /** Mask for extracting color component. */
     private static final int MASK = 0xFF;
 
     /** Coefficient for red contribution in luminance(Y) calculation.*/
     private static final double Y_R_COEFF  = 0.299;
-
+    
     /** Coefficient for green contribution in luminance(Y) calculation.*/
     private static final double Y_G_COEFF  = 0.587;
 
@@ -47,7 +47,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma blue-difference (Cb) calculation.*/
     private static final double CB_G_COEFF = -0.331264;
-
+    
     /** Coefficient for blue contribution in chroma blue-difference (Cb) calculation. */
     private static final double CB_B_COEFF = 0.5;
 
@@ -56,7 +56,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma red-difference (Cr) calculation. */
     private static final double CR_G_COEFF = -0.418688;
-
+    
     /** Coefficient for blue contribution in chroma red-difference (Cr) calculation.*/
     private static final double CR_B_COEFF = -0.081312;
 
@@ -83,24 +83,23 @@ public class JpegCodec implements Codec {
 
     /**
      * Creates a JpegCodec instance with screenshot.
-     *
+     * 
      * @param image screenshot that needs to be encoded
      */
     public JpegCodec(final int[][] image) {
         this.screenshot = image;
     }
 
-    public ICompressor _compressor = new Compressor();
-    public IDeCompressor _decompressor = new DeCompressor();
-    public IRLE _enDeRLE = encodeDecodeRLE.getInstance();
-    public QuantisationUtil _quantUtil = QuantisationUtil.getInstance();
+    private ICompressor compressor = new Compressor();
+    private IDeCompressor decompressor = new DeCompressor();
+    private IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+    private QuantisationUtil quantUtil = QuantisationUtil.getInstance();
 
     /**
      * Creates a JpegCode instance.
      *
      */
     public JpegCodec() {
-//        _quantUtil.setCompressonResulation(75);
     }
 
     /**
@@ -114,8 +113,8 @@ public class JpegCodec implements Codec {
     }
 
     @Override
-    public void setCompressionFactor(short Qfactor){
-        _quantUtil.setCompressonResulation(Qfactor);
+    public void setCompressionFactor(final short qfactor) {
+        quantUtil.setCompressonResulation(qfactor);
     }
 
     /**
@@ -162,7 +161,7 @@ public class JpegCodec implements Codec {
                         int y  = (int) (Y_R_COEFF * r + Y_G_COEFF * g + Y_B_COEFF * b);
                         final double cb = CHROMA_OFFSET + CB_R_COEFF * r + CB_G_COEFF * g + CB_B_COEFF * b;
                         final double cr = CHROMA_OFFSET + CR_R_COEFF * r + CR_G_COEFF * g + CR_B_COEFF * b;
-
+                        
                         cbPixel += cb;
                         crPixel += cr;
 
@@ -174,27 +173,29 @@ public class JpegCodec implements Codec {
 
                 final int posY = i - topLeftY;
                 final int posX = j - topLeftX;
-                cbMatrix[posY / 2][posX / 2] = (short)(Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
-                crMatrix[posY / 2][posX / 2] = (short)(Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
+                cbMatrix[posY / 2][posX / 2] = (short) (Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
+                crMatrix[posY / 2][posX / 2] = (short) (Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
 
             }
         }
 
-        int MaxLen = (int)((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
-        ByteBuffer resRLEBuffer = ByteBuffer.allocate(MaxLen);
+        int maxLen = (int) ((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
+        final ByteBuffer resRLEBuffer = ByteBuffer.allocate(maxLen);
 
         // YMatrix;
-        _compressor.compressLumin(yMatrix,(short)height,(short)width,resRLEBuffer);
+        compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
 
         // CbMatrix;
-        _compressor.compressChrome(cbMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
+        compressor.compressChrome(cbMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
 
         // CyMatrix
-        _compressor.compressChrome(crMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
+        compressor.compressChrome(crMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
 
 
-        resRLEBuffer.flip();
-        return resRLEBuffer.array();
+        byte[] res = new byte[resRLEBuffer.position()];
+        resRLEBuffer.rewind();
+        resRLEBuffer.get(res);
+        return res;
     }
 
     /**
@@ -230,16 +231,16 @@ public class JpegCodec implements Codec {
 //        final int[][] cb = reverseZigZagScan(height / 2, width / 2, cbstring);
 //        // System.out.println("Done");
 //        final int[][] cr = reverseZigZagScan(height / 2, width / 2, crstring);
-        ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
-        short[][] YMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
-        short[][] CbMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
-        short[][] CrMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
+        final ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
+        short[][] yMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] cbMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] crMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
 
-        _decompressor.DecompressLumin(YMatrix,(short)YMatrix.length,(short)YMatrix[0].length);
-        _decompressor.DecompressChrome(CbMatrix,(short)CbMatrix.length,(short)CbMatrix[0].length);
-        _decompressor.DecompressChrome(CrMatrix,(short)CrMatrix.length,(short)CrMatrix[0].length);
+        decompressor.decompressLumin(yMatrix,(short)yMatrix.length,(short)yMatrix[0].length);
+        decompressor.decompressChrome(cbMatrix,(short)cbMatrix.length,(short)cbMatrix[0].length);
+        decompressor.decompressChrome(crMatrix,(short)crMatrix.length,(short)crMatrix[0].length);
 
-        return convertYCbCrToRGB(YMatrix, CbMatrix, CrMatrix);
+        return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }
 
 

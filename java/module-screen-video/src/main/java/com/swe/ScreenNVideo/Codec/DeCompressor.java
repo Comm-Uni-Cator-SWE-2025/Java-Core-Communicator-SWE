@@ -1,37 +1,69 @@
+/**
+ * contributed by Anup Kumar.
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
-public class DeCompressor implements  IDeCompressor{
+/**
+ * This Class Do Decompression of Encoded Data.
+ */
+public class DeCompressor implements  IDeCompressor {
+    /**
+     * module which have implemented fdct and idct.
+     */
+    private IFIDCT dctmodule;
+    /**
+     * module which have Qunatisation table and implemented quantisation and dequantisation.
+     */
+    private QuantisationUtil quantmodule;
 
-    IFIDCT _dctmodule;
-    QuantisationUtil _quantmodule;
+    /**
+     * Unit Matrix Dimension (8x8).
+     */
+    private final int matrixDim = 8;
 
-    DeCompressor(){
-        _dctmodule = AANdct.getInstance();
-        _quantmodule = QuantisationUtil.getInstance();
+    DeCompressor() {
+        dctmodule = AANdct.getInstance();
+        quantmodule = QuantisationUtil.getInstance();
     }
 
+    /**
+     *  Doing the DeCompression of Chrominance (Cb,Cr) Matrix of Dimension height X width
+     *  both height and width are divisible by 8
+     *  steps :
+     *  IDCT transformation <- Quantisation <- Decoding (Get Matrix) .
+     * @param matrix : input matrix to be compressed
+     * @param height : height of matrix
+     * @param width : width of matrix
+     */
     @Override
-    public void DecompressChrome(short[][] Matrix,short height,short width){
-        byte[] RLE = new byte[2*height*width];
-        int start = 0;
-        for(short i = 0;i<height;i+=8){
-            for(short j = 0;j<width;j+=8){
-                _quantmodule.DeQuantisationChrome(Matrix,i,j);
-                _dctmodule.Idct(Matrix,i,j);
+    public void decompressChrome(final short[][] matrix, final short height, final short width) {
+
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
+                quantmodule.deQuantisationChrome(matrix, i, j);
+                dctmodule.idct(matrix, i, j);
             }
         }
     }
 
+    /**
+     *  Doing the DeCompression of Luminance Matrix (Y) of Dimension height X width
+     *  both height and width are divisibel by 8
+     *  steps :
+     *  IDCT transformation <- Quantisation <- Decoding (Get Matrix) .
+     * @param matrix : input matrix to be compressed
+     * @param height : height of matrix
+     * @param width : width of matrix
+     */
     @Override
-    public void DecompressLumin(short[][] Matrix,short height,short width){
-        byte[] RLE = new byte[2*height*width];
-        int start = 0;
-        for(short i = 0;i<height;i+=8){
-            for(short j = 0;j<width;j+=8){
-                _quantmodule.DeQuantisationLumin(Matrix,i,j);
-                _dctmodule.Idct(Matrix,i,j);
+    public void decompressLumin(final short[][] matrix, final short height, final short width) {
+
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
+                quantmodule.deQuantisationLumin(matrix, i, j);
+                dctmodule.idct(matrix, i, j);
             }
         }
     }
-
 }
