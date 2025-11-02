@@ -82,7 +82,7 @@ public class SimpleNetworkingTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(0, 0, ModuleType.CHAT.ordinal(), 0, 0,
+            final byte[] packet = parser.createPkt(0, ModuleType.CHAT.ordinal(), 0, 0,
                     InetAddress.getByName("127.0.0.1"), 8000, data.getBytes());
             dataOut.write(packet);
             destSocket.close();
@@ -102,7 +102,7 @@ public class SimpleNetworkingTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(0, 0, ModuleType.CHAT.ordinal(), 0, 0,
+            final byte[] packet = parser.createPkt(0, ModuleType.CHAT.ordinal(), 0, 0,
                     InetAddress.getByName("127.0.0.1"), 9001, data.getBytes());
             dataOut.write(packet);
             destSocket.close();
@@ -152,7 +152,7 @@ public class SimpleNetworkingTest {
         network.subscribe(ModuleType.CHAT, func);
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8101);
-        final ClientNode[] dests = {dest };
+        final ClientNode[] dests = { dest };
         network.sendData(data.getBytes(), dests, ModuleType.CHAT, 0);
         clientThread.interrupt();
         network.closeNetworking();
@@ -168,7 +168,7 @@ public class SimpleNetworkingTest {
         final Server server = new Server(device);
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8000);
-        final ClientNode[] dests = {dest };
+        final ClientNode[] dests = { dest };
         server.send(data.getBytes(), dests, device, ModuleType.CHAT);
         server.sendPkt(data.getBytes(), dests, device);
         server.closeUser();

@@ -86,7 +86,7 @@ public class Server implements IUser {
                 final OutputStream output = sendSocket.getOutputStream();
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 final InetAddress addr = InetAddress.getByName(ip);
-                dataOut.write(parser.createPkt(0, 0,
+                dataOut.write(parser.createPkt(0,
                         module.ordinal(), 0, 0, addr, port, data));
                 System.out.println("Sent data succesfully...");
                 sendSocket.close();
