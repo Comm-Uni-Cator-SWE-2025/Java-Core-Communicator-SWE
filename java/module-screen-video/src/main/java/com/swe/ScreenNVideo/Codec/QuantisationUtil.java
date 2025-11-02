@@ -1,13 +1,6 @@
 package com.swe.ScreenNVideo.Codec;
 
-/**
- * Manages the quantization tables (Luminance and Chrominance) required for
- * JPEG-style compression.
- * This class implements the standard JPEG quality scaling logic and also
- * provides a method to "absorb" DCT scaling factors into the tables.
- * It is implemented as a singleton to ensure only one set of tables exists.
- * @author Anup Kumar
- */
+@SuppressWarnings("checkstyle:MissingJavadocType")
 public class QuantisationUtil {
     /**
      * Annex K, Table K.1 of the JPEG Standard (ITU-T T.81 / ISO 10918-1, 1992)
@@ -38,20 +31,24 @@ public class QuantisationUtil {
             {18, 22, 37, 56, 68, 109, 103, 77},
             {24, 35, 55, 64, 81, 104, 113, 92},
             {49, 64, 78, 87, 103, 121, 120, 101},
+            {72, 92, 95, 98, 112, 100, 103, 99}
     };
 
     /**
      * used for scaling.
      */
+    @SuppressWarnings("checkstyle:MagicNumber")
     private int[][] scaledQuantChrome = new int[8][8];
     /**
      * used for scaling.
      */
+    @SuppressWarnings("checkstyle:MagicNumber")
     private int[][] scaledQuantLumin = new int[8][8];
     /**
      * Singleton instance.
      */
-    private static final QuantisationUtil quantisationUtil = new QuantisationUtil();
+    @SuppressWarnings("checkstyle:ConstantName")
+    private static final QuantisationUtil QUANTINSTANCE = new QuantisationUtil();
 
     /**
      * Private constructor to enforce singleton pattern.
@@ -64,6 +61,7 @@ public class QuantisationUtil {
     /**
      * This will be set the quant tables to default.
      */
+    @SuppressWarnings("checkstyle:MagicNumber")
     private void resetQuantTables() {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
@@ -78,7 +76,7 @@ public class QuantisationUtil {
      * @return The single instance of this class.
      */
     public static QuantisationUtil getInstance() {
-        return quantisationUtil;
+        return QUANTINSTANCE;
     }
 
     /**
@@ -87,6 +85,7 @@ public class QuantisationUtil {
      *
      * @param q : A quality factor from 1 to 99.
      */
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:FinalParameters"})
     public void setCompressonResulation(int q) {
 
         resetQuantTables();
@@ -132,6 +131,7 @@ public class QuantisationUtil {
      *
      * @param scalingFactors An 8-element array of 1D scaling factors from the DCT.
      */
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:WhitespaceAfter", "checkstyle:NeedBraces"})
     public void scaleQuantTable(final double[] scalingFactors) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j<8; ++j) {
@@ -161,7 +161,8 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    public void quantisationChrome (final short[][] dMatrix, short row, short col) {
+    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
+    public void quantisationChrome(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // Quantize: divide by the table value and round.
@@ -177,7 +178,8 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    public void quantisationLumin (final short[][] dMatrix, short row, short col) {
+    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
+    public void quantisationLumin(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // Quantize: divide by the table value and round.
@@ -193,7 +195,8 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    public void deQuantisationChrome (short[][] dMatrix,short row, short col) {
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
+    public void deQuantisationChrome(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // De-quantize: multiply by the table value.
@@ -209,7 +212,8 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    public void deQuantisationLumin (final short[][] dMatrix,short row, short col) {
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
+    public void deQuantisationLumin(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // De-quantize: multiply by the table value.

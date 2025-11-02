@@ -1,6 +1,3 @@
-/**
- * contributed by Anup Kumar.
- */
 package com.swe.ScreenNVideo.Codec;
 
 /**
@@ -256,7 +253,7 @@ public class AANdct implements IFIDCT {
      * @param col    The starting col of the 8x8 block.
      */
     @Override
-    public void Fdct(final short[][] matrix, final short row, final short col) {
+    public void fdct(final short[][] matrix, final short row, final short col) {
 
         //final transformed 8X8 matrix.
         final double[][] data = new double[scaleFactorCount][scaleFactorCount];
@@ -290,7 +287,7 @@ public class AANdct implements IFIDCT {
      * @param col    The starting col of the 8x8 block.
      */
     @Override
-    public void Idct(final short[][] matrix, final short row, final short col) {
+    public void idct(final short[][] matrix, final short row, final short col) {
 
         // 1. Copy 8x8 block into double array
         final double[][] data = new double[scaleFactorCount][scaleFactorCount];

@@ -90,10 +90,10 @@ public class JpegCodec implements Codec {
         this.screenshot = image;
     }
 
-    public ICompressor _compressor = new Compressor();
-    public IDeCompressor _decompressor = new DeCompressor();
-    public IRLE _enDeRLE = encodeDecodeRLE.getInstance();
-    public QuantisationUtil _quantUtil = QuantisationUtil.getInstance();
+    private ICompressor compressor = new Compressor();
+    private IDeCompressor decompressor = new DeCompressor();
+    private IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+    private QuantisationUtil quantUtil = QuantisationUtil.getInstance();
 
     /**
      * Creates a JpegCode instance.
@@ -113,8 +113,8 @@ public class JpegCodec implements Codec {
     }
 
     @Override
-    public void setCompressionFactor(short Qfactor){
-        _quantUtil.setCompressonResulation(Qfactor);
+    public void setCompressionFactor(final short qfactor) {
+        quantUtil.setCompressonResulation(qfactor);
     }
 
     /**
@@ -135,9 +135,13 @@ public class JpegCodec implements Codec {
             throw new RuntimeException("Invalid Matrix for encoding");
         }
 
+        final int halfHeight = height / 2;
+        final int halfWidth = width / 2;
+        final int CbHeight = (int)Math.ceil(halfHeight / 8.0) * 8;
+        final int CbWidth = (int)Math.ceil(halfWidth / 8.0) * 8;
         final short[][] yMatrix =  new short[height][width];
-        final short[][] cbMatrix = new short[height / 2][width / 2];
-        final short[][] crMatrix = new short[height / 2][width / 2];
+        final short[][] cbMatrix = new short[CbHeight][CbWidth];
+        final short[][] crMatrix = new short[CbHeight][CbWidth];
 
         final int bottomLeftX = topLeftX + width;
         final int bottomLeftY = topLeftY + height;
@@ -163,33 +167,35 @@ public class JpegCodec implements Codec {
 
                         // Clamp to 0-255
                         y = Math.min(COLOR_MAX, Math.max(0, y));
-                        yMatrix[ii - topLeftY][jj - topLeftX] = (short) y;
+                        yMatrix[ii - topLeftY][jj - topLeftX] = (short) (y - 128);
                     }
                 }
 
                 final int posY = i - topLeftY;
                 final int posX = j - topLeftX;
-                cbMatrix[posY / 2][posX / 2] = (short)Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE)));
-                crMatrix[posY / 2][posX / 2] = (short)Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE)));
+                cbMatrix[posY / 2][posX / 2] = (short) (Math.min(COLOR_MAX, Math.max(0, (int) (cbPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
+                crMatrix[posY / 2][posX / 2] = (short) (Math.min(COLOR_MAX, Math.max(0, (int) (crPixel / SUBSAMPLE_BLOCK_SIZE))) - 128);
 
             }
         }
 
-        int MaxLen = (int)((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
-        ByteBuffer resRLEBuffer = ByteBuffer.allocate(MaxLen);
+        int maxLen = (int) ((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
+        final ByteBuffer resRLEBuffer = ByteBuffer.allocate(maxLen);
 
         // YMatrix;
-        _compressor.compressLumin(yMatrix,(short)height,(short)width,resRLEBuffer);
+        compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
 
         // CbMatrix;
-        _compressor.compressChrome(cbMatrix,(short)height,(short)width,resRLEBuffer);
+        compressor.compressChrome(cbMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
 
         // CyMatrix
-        _compressor.compressChrome(crMatrix,(short)height,(short)width,resRLEBuffer);
+        compressor.compressChrome(crMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
 
 
-        resRLEBuffer.flip();
-        return resRLEBuffer.array();
+        byte[] res = new byte[resRLEBuffer.position()];
+        resRLEBuffer.rewind();
+        resRLEBuffer.get(res);
+        return res;
     }
 
     /**
@@ -225,16 +231,16 @@ public class JpegCodec implements Codec {
 //        final int[][] cb = reverseZigZagScan(height / 2, width / 2, cbstring);
 //        // System.out.println("Done");
 //        final int[][] cr = reverseZigZagScan(height / 2, width / 2, crstring);
-        ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
-        short[][] YMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
-        short[][] CbMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
-        short[][] CrMatrix = _enDeRLE.revZigZagRLE(resRLEBuffer);
+        final ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
+        short[][] yMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] cbMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+        short[][] crMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
 
-        _decompressor.decompressLumin(YMatrix,(short)YMatrix.length,(short)YMatrix[0].length);
-        _decompressor.decompressChrome(CbMatrix,(short)CbMatrix.length,(short)CbMatrix[0].length);
-        _decompressor.decompressChrome(CrMatrix,(short)CrMatrix.length,(short)CrMatrix[0].length);
+        decompressor.decompressLumin(yMatrix,(short)yMatrix.length,(short)yMatrix[0].length);
+        decompressor.decompressChrome(cbMatrix,(short)cbMatrix.length,(short)cbMatrix[0].length);
+        decompressor.decompressChrome(crMatrix,(short)crMatrix.length,(short)crMatrix[0].length);
 
-        return convertYCbCrToRGB(YMatrix, CbMatrix, CrMatrix);
+        return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }
 
 
@@ -247,12 +253,12 @@ public class JpegCodec implements Codec {
         for (int i = 0; i < height / 2; ++i) {
             for (int j = 0; j < width / 2; ++j) {
                 // stored Cb/Cr are biased by +128; convert to signed offsets
-                final int cbOffset = cbMatrix[i][j] - 128;
-                final int crOffset = crMatrix[i][j] - 128;
+                final int cbOffset = cbMatrix[i][j] + 128;
+                final int crOffset = crMatrix[i][j] + 128;
 
                 for (int ii = 0; ii < 2; ++ii) {
                     for (int jj = 0; jj < 2; ++jj) {
-                        final int y = yMatrix[2 * i + ii][2 * j + jj];
+                        final int y = yMatrix[2 * i + ii][2 * j + jj] + 128;
 
                         // use offsets in the reconstruction formula
                         int r = (int) Math.round(y + CR_TO_R * crOffset);
