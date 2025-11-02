@@ -159,7 +159,7 @@ public final class TCPCommunicator implements ProtocolBase {
             final SocketChannel clientChannel = serverSocketChannel.accept();
             clientChannel.configureBlocking(false);
             clientChannel.register(selector, SelectionKey.OP_READ);
-            final String ip = clientChannel.getRemoteAddress().toString();
+            final String ip = clientChannel.getRemoteAddress().toString().split(":")[0].replace("/", "");
             final int port = ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort();
             clientSockets.put(new ClientNode(ip, port), clientChannel);
             System.out.println("Accepted new connection from " + ip + ":" + port);

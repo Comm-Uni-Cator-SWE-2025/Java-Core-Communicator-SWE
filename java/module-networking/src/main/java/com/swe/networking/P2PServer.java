@@ -49,6 +49,16 @@ public class P2PServer implements P2PUser {
     private final Thread sendThread;
 
     /**
+     * The thread to monitor client timeouts.
+     */
+    private final int timerTimeout = 30000;
+
+    /**
+     * Threshold for client timeout in milliseconds.
+     */
+    private final int timeoutThreshold = 10000;
+
+    /**
      * Main server Node.
      */
     private final ClientNode mainServer;
@@ -72,8 +82,8 @@ public class P2PServer implements P2PUser {
         
         this.deviceNode = deviceAddress;
         this.mainServer = mainServerAddress;
-        
-        this.timer = new Timer(30000, this::handleClientTimeout);
+
+        this.timer = new Timer(timerTimeout, this::handleClientTimeout);
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
         
@@ -92,7 +102,7 @@ public class P2PServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
-            System.out.println("Sending data to " + dest.hostName());
+            System.out.println("Sending data to " + dest.hostName() + ":" + dest.port());
             communicator.sendData(data, dest);
         }
     }
@@ -105,7 +115,7 @@ public class P2PServer implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
-        System.out.println("Sending data to " + destIp.hostName());
+        System.out.println("Sending data to " + destIp.hostName() + ":" + destIp.port());
         communicator.sendData(data, destIp);
     }
 
@@ -257,18 +267,18 @@ public class P2PServer implements P2PUser {
         packetInfo.setConnectionType(NetworkConnectionType.ALIVE.ordinal());
         packetInfo.setPayload(new byte[0]);
         try {
-            packetInfo.setIpAddress(InetAddress.getByName(mainServer.hostName()));
+            packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
         } catch (UnknownHostException e) {
-            System.out.println("Unknown host: " + mainServer.hostName());
+            System.out.println("Unknown host: " + deviceNode.hostName());
             e.printStackTrace();
             return;
         }
-        packetInfo.setPortNum(mainServer.port());
+        packetInfo.setPortNum(deviceNode.port());
         final byte[] alivePacket = parser.createPkt(packetInfo);
         while (true) {
             send(alivePacket, mainServer);
             try {
-                Thread.sleep(10000);
+                Thread.sleep(timeoutThreshold);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

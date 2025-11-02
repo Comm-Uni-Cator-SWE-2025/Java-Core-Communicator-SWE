@@ -103,7 +103,7 @@ public class MainServerTest {
             final Integer timeout = 5000;
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
-            ClientNode client = new ClientNode("127.0.0.1", destSocket.getLocalPort());
+            final ClientNode client = new ClientNode("127.0.0.1", destSocket.getLocalPort());
             final byte[] packet = getHelloPacket(client);
             dataOut.write(packet);
             destSocket.close();
@@ -111,12 +111,14 @@ public class MainServerTest {
         }
     }
 
-    public byte[] getRemovePacket(ClientNode client) {
+    public byte[] getRemovePacket(final ClientNode client) {
         try {
-            Topology topology = Topology.getTopology();
+            final Topology topology = Topology.getTopology();
             final int randomFactor = (int) Math.pow(10, 6);
-            PacketParser parser = PacketParser.getPacketParser();
+            final PacketParser parser = PacketParser.getPacketParser();
             final PacketInfo pkt = new PacketInfo();
+            final int packetHeaderSize = 22;
+            pkt.setLength(packetHeaderSize);
             pkt.setType(NetworkType.USE.ordinal());
             pkt.setPriority(0);
             pkt.setModule(0);
@@ -127,8 +129,8 @@ public class MainServerTest {
             pkt.setMessageId((int) (Math.random() * randomFactor));
             pkt.setChunkNum(0);
             pkt.setChunkLength(1);
-            int idx = topology.getClusterIndex(client);
-            ClientNetworkRecord record = new ClientNetworkRecord(client, idx);
+            final int idx = topology.getClusterIndex(client);
+            final ClientNetworkRecord record = new ClientNetworkRecord(client, idx);
             pkt.setPayload(NetworkSerializer.getNetworkSerializer().serializeClientNetworkRecord(record));
             final byte[] packet = parser.createPkt(pkt);
             return packet;
@@ -137,11 +139,14 @@ public class MainServerTest {
         }
     }
 
-    public byte[] getHelloPacket(ClientNode client) {
+    public byte[] getHelloPacket(final ClientNode client) {
         try {
             final int randomFactor = (int) Math.pow(10, 6);
-            PacketParser parser = PacketParser.getPacketParser();
+            final PacketParser parser = PacketParser.getPacketParser();
             final PacketInfo pkt = new PacketInfo();
+            final int packetHeaderSize = 22;
+            final String data = "Hello Sekai !!!";
+            pkt.setLength(packetHeaderSize + data.length());
             pkt.setType(NetworkType.USE.ordinal());
             pkt.setPriority(0);
             pkt.setModule(0);
@@ -152,7 +157,6 @@ public class MainServerTest {
             pkt.setMessageId((int) (Math.random() * randomFactor));
             pkt.setChunkNum(0);
             pkt.setChunkLength(1);
-            final String data = "Hello Sekai !!!";
             pkt.setPayload(data.getBytes());
             final byte[] packet = parser.createPkt(pkt);
             return packet;
@@ -175,7 +179,7 @@ public class MainServerTest {
             final Integer timeout = 5000;
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
-            ClientNode client = new ClientNode("127.0.0.1", destSocket.getLocalPort());
+            final ClientNode client = new ClientNode("127.0.0.1", destSocket.getLocalPort());
             final byte[] packet = getHelloPacket(client);
             dataOut.write(packet);
             Thread.sleep(6000);
