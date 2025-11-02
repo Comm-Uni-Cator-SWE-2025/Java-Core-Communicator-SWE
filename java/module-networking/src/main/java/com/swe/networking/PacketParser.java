@@ -43,7 +43,7 @@ The structure of the packet is given below
 |                  Chunk Length                 |
 |                                               |
 +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-| Payload....                                   
+| Payload....
 +--+--+--+--+--+
 */
 
@@ -56,7 +56,7 @@ public class PacketParser {
      * Singleton instance of PacketParser.
      */
     private static PacketParser parser = null;
-    
+
     /**
      * Size of the packet header in bytes.
      */
@@ -115,11 +115,11 @@ public class PacketParser {
     private static final int MASK_CONNECTION_TYPE = (1 << BITS_CONNECTION_TYPE) - 1; // 0b111
     /** Bit mask for the broadcast field. */
     private static final int MASK_BROADCAST = 1;
-        
+
     /** Shift right amount to extract the length field from byte0 and byte1. */
     private static final int SHIFT_LENGTH = 8;
     /** Shift right amount to extract the type field from byte3. */
-    private static final int SHIFT_TYPE = 8 - BITS_TYPE; 
+    private static final int SHIFT_TYPE = 8 - BITS_TYPE;
     /** Shift right amount to extract the priority field from byte3. */
     private static final int SHIFT_PRIORITY = 8 - BITS_TYPE - BITS_PRIORITY;
     /** Shift right amount to extract the connection type field from byte3. */
@@ -157,7 +157,7 @@ public class PacketParser {
         final PacketInfo info = new PacketInfo();
 
         final int length = (pkt[OFF_LEN]) & MASK_LENGTH
-                            | (((pkt[OFF_LEN + 1]) & MASK_LENGTH) << SHIFT_LENGTH);
+                | (((pkt[OFF_LEN + 1]) & MASK_LENGTH) << SHIFT_LENGTH);
 
         final int type = (pkt[OFF_FLAGS] >> SHIFT_TYPE) & MASK_TYPE;
         final int priority = (pkt[OFF_FLAGS] >> SHIFT_PRIORITY) & MASK_PRIORITY;
@@ -229,8 +229,8 @@ public class PacketParser {
 
         final byte byte2 = (byte) (typePart | priorityPart | moduleLowerPacked);
         final byte byte3 = (byte) ((moduleUpper << SHIFT_MODULE_UPPER)
-                    | ((ds.getConnectionType() & MASK_CONNECTION_TYPE) << SHIFT_CONNECTION_TYPE)
-                    | ((ds.getBroadcast() & MASK_BROADCAST) << SHIFT_BROADCAST));
+                | ((ds.getConnectionType() & MASK_CONNECTION_TYPE) << SHIFT_CONNECTION_TYPE)
+                | ((ds.getBroadcast() & MASK_BROADCAST) << SHIFT_BROADCAST));
 
         bb.put(byte2);
         bb.put(byte3);
@@ -254,5 +254,13 @@ public class PacketParser {
         bb.put(data);
 
         return pkt;
+    }
+
+    /**
+     * getter for header size.
+     * @return HEADER_SIZE.
+     */
+    public static int getHeaderSize() {
+        return  HEADER_SIZE;
     }
 }
