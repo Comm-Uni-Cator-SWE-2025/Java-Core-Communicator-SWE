@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.PatchGenerator;
 import com.swe.ScreenNVideo.Codec.Codec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -57,24 +58,57 @@ public class PacketGenerator {
             prevHashes = newPrevHashes;
         }
 
-        final List<CompressedPatch> patches = new ArrayList<>();
+        final List<CompressedPatch> patches = Collections.synchronizedList(new ArrayList<>());
+        final int totalTiles = tilesX * tilesY;
+        final int tilesPerThread = (totalTiles + 1) / 2;
 
-        for (int ty = 0; ty < tilesY; ty++) {
-            for (int tx = 0; tx < tilesX; tx++) {
-                final int x = tx * TILE_SIZE;
-                final int y = ty * TILE_SIZE;
-                final int w = Math.min(TILE_SIZE, width - x);
-                final int h = Math.min(TILE_SIZE, height - y);
+        final TileProcessingContext context = new TileProcessingContext(curr, width, height, tilesX, tilesY);
 
-                final long currHash = hasher.hash(curr, x, y, w, h);
-                if (currHash != prevHashes[tx][ty]) {
-                    final byte[] compressedString = this.compressor.encode(x, y, h, w);
-                    patches.add(new CompressedPatch(x, y, w, h, compressedString));
-                    prevHashes[tx][ty] = currHash;
-                }
+        final Thread thread1 = new Thread(() -> {
+            processTiles(context, 0, tilesPerThread, patches);
+        });
+
+        final Thread thread2 = new Thread(() -> {
+            processTiles(context, tilesPerThread, totalTiles, patches);
+        });
+
+        thread1.start();
+        thread2.start();
+
+        try {
+            thread1.join();
+            thread2.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Thread interrupted while generating packets", e);
+        }
+
+        return patches;
+    }
+
+    private record TileProcessingContext(int[][] curr, int width, int height, int tilesX, int tilesY) {
+    }
+
+    private void processTiles(final TileProcessingContext context,
+                              final int startTile, final int endTile,
+                              final List<CompressedPatch> patches) {
+        for (int tileIndex = startTile; tileIndex < endTile; tileIndex++) {
+            final int tx = tileIndex % context.tilesX;
+            final int ty = tileIndex / context.tilesX;
+
+            final int x = tx * TILE_SIZE;
+            final int y = ty * TILE_SIZE;
+            final int w = Math.min(TILE_SIZE, context.width - x);
+            final int h = Math.min(TILE_SIZE, context.height - y);
+
+            final long currHash = hasher.hash(context.curr, x, y, w, h);
+
+            if (currHash != prevHashes[tx][ty]) {
+                final byte[] compressedString = this.compressor.encode(x, y, h, w);
+                patches.add(new CompressedPatch(x, y, w, h, compressedString));
+                prevHashes[tx][ty] = currHash;
             }
         }
-        return patches;
     }
 
 }

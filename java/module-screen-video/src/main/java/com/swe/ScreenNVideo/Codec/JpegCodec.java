@@ -1,8 +1,7 @@
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
  * 
@@ -88,18 +87,27 @@ public class JpegCodec implements Codec {
      */
     public JpegCodec(final int[][] image) {
         this.screenshot = image;
+        int maxLen = (int) ((128*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
+        resRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
-    private ICompressor compressor = new Compressor();
+    public long ZigZagtime = 0;
+    public long dctTime = 0;
+    public long quantTime = 0;
+
+    private Compressor compressor = new Compressor();
     private IDeCompressor decompressor = new DeCompressor();
     private IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
     private QuantisationUtil quantUtil = QuantisationUtil.getInstance();
 
+    final ByteBuffer resRLEBuffer;
     /**
      * Creates a JpegCode instance.
      *
      */
     public JpegCodec() {
+        int maxLen = (int) ((128*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
+        resRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
     /**
@@ -179,8 +187,10 @@ public class JpegCodec implements Codec {
             }
         }
 
-        int maxLen = (int) ((height*width * 1.5 * 4 ) + (4 * 3) + 0.5);
-        final ByteBuffer resRLEBuffer = ByteBuffer.allocate(maxLen);
+        resRLEBuffer.clear();
+//        compressor.zigZagTime = 0;
+//        compressor.quantTime = 0;
+//        compressor.dctTime = 0;
 
         // YMatrix;
         compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
@@ -192,6 +202,9 @@ public class JpegCodec implements Codec {
         compressor.compressChrome(crMatrix,(short)CbHeight,(short)CbWidth,resRLEBuffer);
 
 
+//        ZigZagtime += compressor.zigZagTime;
+//        dctTime += compressor.dctTime;
+//        quantTime += compressor.quantTime;
         byte[] res = new byte[resRLEBuffer.position()];
         resRLEBuffer.rewind();
         resRLEBuffer.get(res);

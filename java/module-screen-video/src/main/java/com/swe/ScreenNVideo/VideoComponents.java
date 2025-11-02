@@ -147,8 +147,8 @@ public class VideoComponents {
         }
 //            System.out.println("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
-//        System.out.println("\nServer FPS : "
-//            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+        System.out.println("\nServer FPS : "
+            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
         start = System.nanoTime();
 
         final int[][] feed = captureComponents.getFeed();
@@ -163,8 +163,17 @@ public class VideoComponents {
 
 //            System.out.println("Feed Size : " + feed.length + " x " + feed[0].length);
         videoCodec.setScreenshot(feed);
+//        videoCodec.quantTime = 0;
+//        videoCodec.dctTime = 0;
+//        videoCodec.ZigZagtime = 0;
 
         final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
+
+//        System.out.println("ZigZagTime : " + videoCodec.ZigZagtime / ((double) Utils.MSEC_IN_NS));
+//        System.out.println("dctTime : " + videoCodec.dctTime / ((double) Utils.MSEC_IN_NS));
+//        System.out.println("quantTime : " + videoCodec.quantTime / ((double) Utils.MSEC_IN_NS));
+//        System.out.println("Actual : " + (videoCodec.ZigZagtime + videoCodec.dctTime + videoCodec.quantTime) / ((double) Utils.MSEC_IN_NS));
+//        System.out.println("Total : " + (System.nanoTime() - curr1) / ((double) Utils.MSEC_IN_NS));
 
         if (patches.isEmpty()) {
             prev = System.nanoTime();
@@ -195,8 +204,8 @@ public class VideoComponents {
         submitUIUpdate(feed);
 
         prev = System.nanoTime();
-        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
-        System.out.println("\nSending to " + networkPackets.getIp());
+//        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+//        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }
 }
