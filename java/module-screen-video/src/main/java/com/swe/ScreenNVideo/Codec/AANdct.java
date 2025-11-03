@@ -10,7 +10,7 @@ public class AANdct implements IFIDCT {
      * but to prevent repeated calculation it will be used
      * to scale quantisation table.
      */
-    private double[] aanScaleFactor;
+    private final double[] aanScaleFactor;
     /**
      * count of aanScaleFactor.
      */
@@ -19,35 +19,17 @@ public class AANdct implements IFIDCT {
      * multipliers are intermediate coefficient which will be used in FDCT
      * (Forward Discrete Cosine Transform).
      */
-    private double[] multipliers;
-    /**
-     * count of Multipliers and imultipliers (one more for matching theoratical semantic).
-     */
-    private final int multipliersCount = 5;
+    private final double[] multipliers;
     /**
      * multipliers are intermediate coefficient which will be used in IDCT
      * (Inverse Discrete Cosine Transform).
      */
-    private double[] imultipliers;
+    private final double[] imultipliers;
     /**
      * this is AANdct Instance allocated statically
      * Here Singleton Pattern is used.
      */
     private static final AANdct AANDCTINSTANCE = new AANdct();
-
-    /**
-     * index zero.
-     */
-    private final int zero = 0;
-    /**
-     * index one.
-     */
-    private final int one = 1;
-
-    /**
-     * index two.
-     */
-    private final int two = 2;
 
     /**
      * index three.
@@ -75,30 +57,25 @@ public class AANdct implements IFIDCT {
      */
     private final int seven = 7;
 
-    /**
-     * index eight.
-     */
-    private final int eight = 8;
-
-    /**
-     * cosine base.
-     */
-    private final int cosBase = 16;
-
 
     private AANdct() {
 
         aanScaleFactor = new double[scaleFactorCount];
+        final int multipliersCount = 5;
         multipliers = new double[multipliersCount];
         imultipliers = new double[multipliersCount];
 
         final double[] cVals = new double[scaleFactorCount];
-
+        final int cosBase = 16;
         for (int i = 0; i < scaleFactorCount; ++i) {
+            
             cVals[i] = Math.cos(Math.PI * i / cosBase);
             aanScaleFactor[i] = 1 / (cVals[i] * four);
         }
+        
+        final int one = 1;
 
+        final int two = 2;
         aanScaleFactor[0] = one / (two * Math.sqrt(two));
 
         multipliers[0] = cVals[four];
@@ -108,9 +85,11 @@ public class AANdct implements IFIDCT {
         multipliers[four] = cVals[six];
 
         imultipliers[1] = 1 / Math.cos(Math.PI  / four);
-        imultipliers[2] = 1 / Math.cos(Math.PI * three / eight);
+        final int eight = 8;
+        final double cos = Math.cos(Math.PI * three / eight);
+        imultipliers[2] = 1 / cos;
         imultipliers[three] = 1 / Math.cos(Math.PI / eight);
-        imultipliers[four] = 1 / (Math.cos(Math.PI / eight) + Math.cos(Math.PI * three / eight));
+        imultipliers[four] = 1 / (Math.cos(Math.PI / eight) + cos);
 
     }
 
@@ -190,8 +169,6 @@ public class AANdct implements IFIDCT {
      */
     private void fdctCol(final double[][] data) {
 
-        // Assume constants like 'seven', 'six', 'five', 'four', 'three'
-        // are defined elsewhere (e.g., static final int seven = 7;)
 
         for (int j = 0; j < scaleFactorCount; j++) {
 
@@ -302,11 +279,11 @@ public class AANdct implements IFIDCT {
 
         // 3. 1D IDCT on rows
         idctRow(data);
-
+        
         // 4. Store back the reconstructed block
         for (int i = 0; i < scaleFactorCount; i++) {
             for (int j = 0; j < scaleFactorCount; j++) {
-                matrix[row + i][col + j] = (short) Math.round(data[i][j] / eight);
+                matrix[row + i][col + j] = (short) Math.round(data[i][j]);
             }
         }
     }
