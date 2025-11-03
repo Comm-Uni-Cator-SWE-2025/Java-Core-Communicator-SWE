@@ -92,7 +92,7 @@ public class JpegCodec implements Codec {
 
     private ICompressor compressor = new Compressor();
     private IDeCompressor decompressor = new DeCompressor();
-    private IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+    private IRLE enDeRLE = encodeDecodeRLE.getInstance();
     private QuantisationUtil quantUtil = QuantisationUtil.getInstance();
 
     /**
@@ -243,6 +243,16 @@ public class JpegCodec implements Codec {
         return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }
 
+    private int rescale(short Offset) {
+        final int maxval = 255;
+        if (Offset < 0) {
+            Offset = 0;
+        } else if (Offset > maxval) {
+            Offset = maxval;
+        }
+
+        return Offset;
+    }
 
     private int[][] convertYCbCrToRGB(final short[][] yMatrix, final short[][] cbMatrix, final short[][] crMatrix) {
         final int height = yMatrix.length;
@@ -253,12 +263,12 @@ public class JpegCodec implements Codec {
         for (int i = 0; i < height / 2; ++i) {
             for (int j = 0; j < width / 2; ++j) {
                 // stored Cb/Cr are biased by +128; convert to signed offsets
-                final int cbOffset = cbMatrix[i][j] + 128;
-                final int crOffset = crMatrix[i][j] + 128;
+                final int cbOffset = rescale( (short) (cbMatrix[i][j] + 128));
+                final int crOffset = rescale( (short) (crMatrix[i][j] + 128));
 
                 for (int ii = 0; ii < 2; ++ii) {
                     for (int jj = 0; jj < 2; ++jj) {
-                        final int y = yMatrix[2 * i + ii][2 * j + jj] + 128;
+                        final int y = rescale( (short) (yMatrix[2 * i + ii][2 * j + jj] + 128));
 
                         // use offsets in the reconstruction formula
                         int r = (int) Math.round(y + CR_TO_R * crOffset);
