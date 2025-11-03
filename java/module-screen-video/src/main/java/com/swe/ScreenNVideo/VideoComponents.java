@@ -11,6 +11,7 @@ import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.RImage;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -61,9 +62,9 @@ public class VideoComponents {
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         // initialize bounded queue and start worker thread that reads from the queue and updates the UI
         this.uiQueue = new ArrayBlockingQueue<>(UI_QUEUE_CAPACITY);
-        final Thread uiWorkerThread = new Thread(this::uiWorkLoop, "MediaCaptureManager-UI-Worker");
-        uiWorkerThread.setDaemon(true);
-        uiWorkerThread.start();
+//        final Thread uiWorkerThread = new Thread(this::uiWorkLoop, "MediaCaptureManager-UI-Worker");
+//        uiWorkerThread.setDaemon(true);
+//        uiWorkerThread.start();
         timeDelay = (1.0 / fps) * Utils.SEC_IN_NS;
     }
 
@@ -169,6 +170,8 @@ public class VideoComponents {
 
         final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
 
+//        System.out.println(Arrays.toString(Arrays.copyOf(patches.get(0).data(), 20)));
+
 //        System.out.println("ZigZagTime : " + videoCodec.ZigZagtime / ((double) Utils.MSEC_IN_NS));
 //        System.out.println("dctTime : " + videoCodec.dctTime / ((double) Utils.MSEC_IN_NS));
 //        System.out.println("quantTime : " + videoCodec.quantTime / ((double) Utils.MSEC_IN_NS));
@@ -201,7 +204,7 @@ public class VideoComponents {
 
         // Asynchronously send a serialized RImage to the UI so we don't block capture
         // (frame is deep-copied inside submitUIUpdate)
-        submitUIUpdate(feed);
+//        submitUIUpdate(feed);
 
         prev = System.nanoTime();
 //        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));

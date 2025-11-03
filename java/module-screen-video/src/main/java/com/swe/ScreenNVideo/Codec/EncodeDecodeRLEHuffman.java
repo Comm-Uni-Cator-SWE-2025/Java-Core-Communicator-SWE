@@ -338,9 +338,10 @@ public class EncodeDecodeRLEHuffman implements IRLE {
     public short[][] revZigZagRLE(final ByteBuffer resRLEbuffer) {
         final short height = resRLEbuffer.getShort();
         final short width = resRLEbuffer.getShort();
-        final int bitStreamLength = resRLEbuffer.getInt();
 
         final short[][] matrix = new short[height][width];
+
+        final int bitStreamLength = resRLEbuffer.getInt();
 
         BitReader reader = new BitReader(resRLEbuffer);
         short prevDC = 0;

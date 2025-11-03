@@ -12,6 +12,10 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <mockito.version>5.0.0</mockito.version>
+    </properties>
+
     <artifactId>module-screen-video</artifactId>
     <packaging>jar</packaging>
 
@@ -74,6 +78,24 @@
             <groupId>com.github.enchanteddev</groupId>
             <artifactId>socketry</artifactId>
             <version>V3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
         </dependency>
 
 
