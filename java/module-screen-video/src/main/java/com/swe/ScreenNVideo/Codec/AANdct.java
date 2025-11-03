@@ -1,5 +1,7 @@
 package com.swe.ScreenNVideo.Codec;
 
+// Contributed by Anup Kumar.
+
 /**
  * This FDCT and IDCT transformation is implemented
  * by using AAN (Arai-Agui-Nakajima) Fast DCT algorithm.
@@ -14,7 +16,7 @@ public class AANdct implements IFIDCT {
     /**
      * count of aanScaleFactor.
      */
-    private final int scaleFactorCount = 8;
+    private final int SCALE_FACTOR_COUNT = 8;
     /**
      * multipliers are intermediate coefficient which will be used in FDCT
      * (Forward Discrete Cosine Transform).
@@ -34,66 +36,69 @@ public class AANdct implements IFIDCT {
     /**
      * index three.
      */
-    private final int three = 3;
+    private final int THREE = 3;
 
     /**
      * index four.
      */
 
-    private final int four = 4;
+    private final int FOUR = 4;
 
     /**
      * index five.
      */
-    private final int five = 5;
+    private final int FIVE = 5;
 
     /**
      * index six.
      */
-    private final int six = 6;
+    private final int SIX = 6;
 
     /**
      * index seven.
      */
-    private final int seven = 7;
+    private final int SEVEN = 7;
 
 
     private AANdct() {
 
-        aanScaleFactor = new double[scaleFactorCount];
+        aanScaleFactor = new double[SCALE_FACTOR_COUNT];
         final int multipliersCount = 5;
         multipliers = new double[multipliersCount];
         imultipliers = new double[multipliersCount];
 
-        final double[] cVals = new double[scaleFactorCount];
+        final double[] cVals = new double[SCALE_FACTOR_COUNT];
         final int cosBase = 16;
-        for (int i = 0; i < scaleFactorCount; ++i) {
-            
-            cVals[i] = Math.cos(Math.PI * i / cosBase);
-            aanScaleFactor[i] = 1 / (cVals[i] * four);
-        }
-        
-        final int one = 1;
+        for (int i = 0; i < SCALE_FACTOR_COUNT; ++i) {
 
+            cVals[i] = Math.cos(Math.PI * i / cosBase);
+            aanScaleFactor[i] = 1.0 / (cVals[i] * FOUR);
+        }
+
+        final int one = 1;
         final int two = 2;
         aanScaleFactor[0] = one / (two * Math.sqrt(two));
 
-        multipliers[0] = cVals[four];
-        multipliers[1] = cVals[two] - cVals[six];
-        multipliers[2] = cVals[four];
-        multipliers[three] = cVals[two] + cVals[six];
-        multipliers[four] = cVals[six];
+        multipliers[0] = cVals[FOUR];
+        multipliers[1] = cVals[two] - cVals[SIX];
+        multipliers[2] = cVals[FOUR];
+        multipliers[THREE] = cVals[two] + cVals[SIX];
+        multipliers[FOUR] = cVals[SIX];
 
-        imultipliers[1] = 1 / Math.cos(Math.PI  / four);
+        imultipliers[1] = 1.0 / Math.cos(Math.PI / FOUR);
         final int eight = 8;
-        final double cos = Math.cos(Math.PI * three / eight);
-        imultipliers[2] = 1 / cos;
-        imultipliers[three] = 1 / Math.cos(Math.PI / eight);
-        imultipliers[four] = 1 / (Math.cos(Math.PI / eight) + cos);
+        final double cos = Math.cos(Math.PI * THREE / eight);
+        imultipliers[2] = 1.0 / cos;
+        imultipliers[THREE] = 1.0 / Math.cos(Math.PI / eight);
+        imultipliers[FOUR] = 1.0 / (Math.cos(Math.PI / eight) + cos);
 
     }
 
-
+    /**
+     * Returns the singleton instance of the AANdct class.
+     *
+     * @return the AANdct instance.
+     */
     public static AANdct getInstance() {
         return AANDCTINSTANCE;
     }
@@ -110,18 +115,18 @@ public class AANdct implements IFIDCT {
      */
     private void fdctRow(final double[][] data) {
 
-        for (int i = 0; i < scaleFactorCount; i++) {
+        for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
 
             // --- Phase 1 ---
             // Calculate all 8 intermediate sums/differences from the input row
-            final double tmp0 = data[i][0] + data[i][seven];
-            final double tmp7 = data[i][0] - data[i][seven];
-            final double tmp1 = data[i][1] + data[i][six];
-            final double tmp6 = data[i][1] - data[i][six];
-            final double tmp2 = data[i][2] + data[i][five];
-            final double tmp5 = data[i][2] - data[i][five];
-            final double tmp3 = data[i][three] + data[i][four];
-            final double tmp4 = data[i][three] - data[i][four];
+            final double tmp0 = data[i][0] + data[i][SEVEN];
+            final double tmp7 = data[i][0] - data[i][SEVEN];
+            final double tmp1 = data[i][1] + data[i][SIX];
+            final double tmp6 = data[i][1] - data[i][SIX];
+            final double tmp2 = data[i][2] + data[i][FIVE];
+            final double tmp5 = data[i][2] - data[i][FIVE];
+            final double tmp3 = data[i][THREE] + data[i][FOUR];
+            final double tmp4 = data[i][THREE] - data[i][FOUR];
 
             // --- Phase 2 ---
             // Combine the sums/differences from phase 1
@@ -133,12 +138,12 @@ public class AANdct implements IFIDCT {
             // --- Phase 3 (Even part) ---
             // Calculate and store Y(0), Y(4)
             data[i][0] = tmp10 + tmp11;
-            data[i][four] = tmp10 - tmp11;
+            data[i][FOUR] = tmp10 - tmp11;
 
             // Calculate and store Y(2), Y(6)
             final double z1 = (tmp12 + tmp13) * multipliers[0];
             data[i][2] = z1 + tmp13;
-            data[i][six] = tmp13 - z1;
+            data[i][SIX] = tmp13 - z1;
 
             // --- Phase 3 (Odd part) ---
             // Reuse tmp10, tmp11, tmp12 for odd calculations
@@ -146,19 +151,19 @@ public class AANdct implements IFIDCT {
             tmp11 = tmp5 + tmp6;
             tmp12 = tmp6 + tmp7;
 
-            final double z5 = (tmp10 + tmp12) * multipliers[four];
+            final double z5 = (tmp10 + tmp12) * multipliers[FOUR];
             final double z2 = -multipliers[1] * tmp10 - z5;
             final double z3 = multipliers[2] * tmp11;
-            final double z4 = multipliers[three] * tmp12 - z5;
+            final double z4 = multipliers[THREE] * tmp12 - z5;
 
             final double z11 = tmp7 + z3;
             final double z13 = tmp7 - z3;
 
             // Calculate and store Y(1), Y(3), Y(5), Y(7)
-            data[i][five] = z13 + z2;
+            data[i][FIVE] = z13 + z2;
             data[i][1] = z11 + z4;
-            data[i][seven] = z11 - z4;
-            data[i][three] = z13 - z2;
+            data[i][SEVEN] = z11 - z4;
+            data[i][THREE] = z13 - z2;
         }
     }
 
@@ -168,20 +173,18 @@ public class AANdct implements IFIDCT {
      * @param data The 8x8 block of data to be transformed.
      */
     private void fdctCol(final double[][] data) {
-
-
-        for (int j = 0; j < scaleFactorCount; j++) {
+        for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
 
             // --- Phase 1 ---
             // Calculate all 8 intermediate sums/differences from the input column
-            final double tmp0 = data[0][j] + data[seven][j];
-            final double tmp7 = data[0][j] - data[seven][j];
-            final double tmp1 = data[1][j] + data[six][j];
-            final double tmp6 = data[1][j] - data[six][j];
-            final double tmp2 = data[2][j] + data[five][j];
-            final double tmp5 = data[2][j] - data[five][j];
-            final double tmp3 = data[three][j] + data[four][j];
-            final double tmp4 = data[three][j] - data[four][j];
+            final double tmp0 = data[0][j] + data[SEVEN][j];
+            final double tmp7 = data[0][j] - data[SEVEN][j];
+            final double tmp1 = data[1][j] + data[SIX][j];
+            final double tmp6 = data[1][j] - data[SIX][j];
+            final double tmp2 = data[2][j] + data[FIVE][j];
+            final double tmp5 = data[2][j] - data[FIVE][j];
+            final double tmp3 = data[THREE][j] + data[FOUR][j];
+            final double tmp4 = data[THREE][j] - data[FOUR][j];
 
             // --- Phase 2 ---
             // Combine the sums/differences from phase 1
@@ -193,12 +196,12 @@ public class AANdct implements IFIDCT {
             // --- Phase 3 (Even part) ---
             // Calculate and store Y(0), Y(4)
             data[0][j] = tmp10 + tmp11;
-            data[four][j] = tmp10 - tmp11;
+            data[FOUR][j] = tmp10 - tmp11;
 
             // Calculate and store Y(2), Y(6)
             final double z1 = (tmp12 + tmp13) * multipliers[0];
             data[2][j] = z1 + tmp13;
-            data[six][j] = tmp13 - z1;
+            data[SIX][j] = tmp13 - z1;
 
             // --- Phase 3 (Odd part) ---
             // Reuse tmp10, tmp11, tmp12 for odd calculations
@@ -206,19 +209,19 @@ public class AANdct implements IFIDCT {
             tmp11 = tmp5 + tmp6;
             tmp12 = tmp6 + tmp7;
 
-            final double z5 = (tmp10 + tmp12) * multipliers[four];
+            final double z5 = (tmp10 + tmp12) * multipliers[FOUR];
             final double z2 = -multipliers[1] * tmp10 - z5;
             final double z3 = multipliers[2] * tmp11;
-            final double z4 = multipliers[three] * tmp12 - z5;
+            final double z4 = multipliers[THREE] * tmp12 - z5;
 
             final double z11 = tmp7 + z3;
             final double z13 = tmp7 - z3;
 
             // Calculate and store Y(1), Y(3), Y(5), Y(7)
-            data[five][j] = z13 + z2;
+            data[FIVE][j] = z13 + z2;
             data[1][j] = z11 + z4;
-            data[seven][j] = z11 - z4;
-            data[three][j] = z13 - z2;
+            data[SEVEN][j] = z11 - z4;
+            data[THREE][j] = z13 - z2;
         }
     }
 
@@ -233,11 +236,11 @@ public class AANdct implements IFIDCT {
     public void fdct(final short[][] matrix, final short row, final short col) {
 
         //final transformed 8X8 matrix.
-        final double[][] data = new double[scaleFactorCount][scaleFactorCount];
+        final double[][] data = new double[SCALE_FACTOR_COUNT][SCALE_FACTOR_COUNT];
 
         // Copy 8x8 block into double array
-        for (int i = 0; i < scaleFactorCount; i++) {
-            for (int j = 0; j < scaleFactorCount; j++) {
+        for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
+            for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
                 data[i][j] = matrix[row + i][col + j];
             }
         }
@@ -249,8 +252,8 @@ public class AANdct implements IFIDCT {
         fdctCol(data);
 
         // ---- store back the transformed block ----
-        for (int i = 0; i < scaleFactorCount; i++) {
-            for (int j = 0; j < scaleFactorCount; j++) {
+        for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
+            for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
                 matrix[row + i][col + j] = (short) Math.round(data[i][j]);
             }
         }
@@ -267,9 +270,9 @@ public class AANdct implements IFIDCT {
     public void idct(final short[][] matrix, final short row, final short col) {
 
         // 1. Copy 8x8 block into double array
-        final double[][] data = new double[scaleFactorCount][scaleFactorCount];
-        for (int i = 0; i < scaleFactorCount; ++i) {
-            for (int j = 0; j < scaleFactorCount; ++j) {
+        final double[][] data = new double[SCALE_FACTOR_COUNT][SCALE_FACTOR_COUNT];
+        for (int i = 0; i < SCALE_FACTOR_COUNT; ++i) {
+            for (int j = 0; j < SCALE_FACTOR_COUNT; ++j) {
                 data[i][j] = matrix[row + i][col + j];
             }
         }
@@ -279,10 +282,10 @@ public class AANdct implements IFIDCT {
 
         // 3. 1D IDCT on rows
         idctRow(data);
-        
+
         // 4. Store back the reconstructed block
-        for (int i = 0; i < scaleFactorCount; i++) {
-            for (int j = 0; j < scaleFactorCount; j++) {
+        for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
+            for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
                 matrix[row + i][col + j] = (short) Math.round(data[i][j]);
             }
         }
@@ -294,12 +297,12 @@ public class AANdct implements IFIDCT {
      * @param data The 8x8 data block.
      */
     private void idctCol(final double[][] data) {
-        for (int j = 0; j < scaleFactorCount; j++) {
+        for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
             // --- Even part ---
-            final double tmp10 = data[0][j] + data[four][j];
-            double tmp11 = data[0][j] - data[four][j];
-            final double tmp12 = (data[2][j] - data[six][j]) * imultipliers[1];
-            final double tmp13 = data[2][j] + data[six][j];
+            final double tmp10 = data[0][j] + data[FOUR][j];
+            double tmp11 = data[0][j] - data[FOUR][j];
+            final double tmp12 = (data[2][j] - data[SIX][j]) * imultipliers[1];
+            final double tmp13 = data[2][j] + data[SIX][j];
 
             final double tmp0 = tmp10 + tmp13;
             final double tmp1 = tmp11 + tmp12;
@@ -307,18 +310,18 @@ public class AANdct implements IFIDCT {
             final double tmp3 = tmp10 - tmp13;
 
             // --- Odd part ---
-            double z2 = data[five][j] - data[three][j];
-            final double z11 = data[1][j] + data[seven][j];
-            final double z4 = data[1][j] - data[seven][j];
-            final double z13 = data[five][j] + data[three][j];
+            double z2 = data[FIVE][j] - data[THREE][j];
+            final double z11 = data[1][j] + data[SEVEN][j];
+            final double z4 = data[1][j] - data[SEVEN][j];
+            final double z13 = data[FIVE][j] + data[THREE][j];
 
             tmp11 = z11 - z13; // Reusing tmp11
             final double tmp7 = z11 + z13;
-            final double z5 = (z2 + z4) * imultipliers[four];
+            final double z5 = (z2 + z4) * imultipliers[FOUR];
 
             final double z1 = z2 * imultipliers[2] + z5;
             z2 = tmp11 * imultipliers[1]; // Reusing z2
-            final double z3 = z4 * imultipliers[three] + z5;
+            final double z3 = z4 * imultipliers[THREE] + z5;
 
             final double tmp6 = z3 - tmp7;
             final double tmp5 = z2 - tmp6;
@@ -326,13 +329,13 @@ public class AANdct implements IFIDCT {
 
             // --- Final values ---
             data[0][j] = tmp0 + tmp7;
-            data[seven][j] = tmp0 - tmp7;
+            data[SEVEN][j] = tmp0 - tmp7;
             data[1][j] = tmp1 + tmp6;
-            data[six][j] = tmp1 - tmp6;
+            data[SIX][j] = tmp1 - tmp6;
             data[2][j] = tmp2 + tmp5;
-            data[five][j] = tmp2 - tmp5;
-            data[three][j] = tmp3 + tmp4;
-            data[four][j] = tmp3 - tmp4;
+            data[FIVE][j] = tmp2 - tmp5;
+            data[THREE][j] = tmp3 + tmp4;
+            data[FOUR][j] = tmp3 - tmp4;
         }
     }
 
@@ -342,12 +345,12 @@ public class AANdct implements IFIDCT {
      * @param data The 8x8 data block.
      */
     private void idctRow(final double[][] data) {
-        for (int i = 0; i < scaleFactorCount; i++) {
+        for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
             // --- Even part ---
-            final double tmp10 = data[i][0] + data[i][four];
-            double tmp11 = data[i][0] - data[i][four];
-            final double tmp12 = (data[i][2] - data[i][six]) * imultipliers[1];
-            final double tmp13 = data[i][2] + data[i][six];
+            final double tmp10 = data[i][0] + data[i][FOUR];
+            double tmp11 = data[i][0] - data[i][FOUR];
+            final double tmp12 = (data[i][2] - data[i][SIX]) * imultipliers[1];
+            final double tmp13 = data[i][2] + data[i][SIX];
 
             final double tmp0 = tmp10 + tmp13;
             final double tmp1 = tmp11 + tmp12;
@@ -355,18 +358,18 @@ public class AANdct implements IFIDCT {
             final double tmp3 = tmp10 - tmp13;
 
             // --- Odd part ---
-            double z2 = data[i][five] - data[i][three];
-            final double z11 = data[i][1] + data[i][seven];
-            final double z4 = data[i][1] - data[i][seven];
-            final double z13 = data[i][five] + data[i][three];
+            double z2 = data[i][FIVE] - data[i][THREE];
+            final double z11 = data[i][1] + data[i][SEVEN];
+            final double z4 = data[i][1] - data[i][SEVEN];
+            final double z13 = data[i][FIVE] + data[i][THREE];
 
             tmp11 = z11 - z13; // Reusing tmp11
             final double tmp7 = z11 + z13;
-            final double z5 = (z2 + z4) * imultipliers[four];
+            final double z5 = (z2 + z4) * imultipliers[FOUR];
 
             final double z1 = z2 * imultipliers[2] + z5;
             z2 = tmp11 * imultipliers[1]; // Reusing z2
-            final double z3 = z4 * imultipliers[three] + z5;
+            final double z3 = z4 * imultipliers[THREE] + z5;
 
             final double tmp6 = z3 - tmp7;
             final double tmp5 = z2 - tmp6;
@@ -374,15 +377,13 @@ public class AANdct implements IFIDCT {
 
             // --- Final values ---
             data[i][0] = tmp0 + tmp7;
-            data[i][seven] = tmp0 - tmp7;
+            data[i][SEVEN] = tmp0 - tmp7;
             data[i][1] = tmp1 + tmp6;
-            data[i][six] = tmp1 - tmp6;
+            data[i][SIX] = tmp1 - tmp6;
             data[i][2] = tmp2 + tmp5;
-            data[i][five] = tmp2 - tmp5;
-            data[i][three] = tmp3 + tmp4;
-            data[i][four] = tmp3 - tmp4;
+            data[i][FIVE] = tmp2 - tmp5;
+            data[i][THREE] = tmp3 + tmp4;
+            data[i][FOUR] = tmp3 - tmp4;
         }
     }
 }
-
-
