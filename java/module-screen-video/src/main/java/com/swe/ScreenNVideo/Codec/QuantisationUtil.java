@@ -1,5 +1,18 @@
+// Contributed by Anup Kumar
+
 package com.swe.ScreenNVideo.Codec;
 
+/**
+ * Utility class for handling JPEG quantization tables and operations.
+ *
+ * <p>
+ * This class manages the default luminance and chrominance tables,
+ * scales them based on a quality factor and AAN DCT factors,
+ * and provides methods to quantize and de-quantize 8x8 blocks.
+ *
+ * <p>
+ * This class follows the Singleton pattern.
+ */
 @SuppressWarnings("checkstyle:MissingJavadocType")
 public class QuantisationUtil {
     /**
@@ -8,7 +21,6 @@ public class QuantisationUtil {
      * NOTE: This table is MUTABLE and will be changed by scaling methods.
      */
     private static final int[][] BASECHROME = {
-            {17, 18, 24, 47, 99, 99, 99, 99},
             {18, 21, 26, 66, 99, 99, 99, 99},
             {24, 26, 56, 99, 99, 99, 99, 99},
             {47, 66, 99, 99, 99, 99, 99, 99},
@@ -16,6 +28,7 @@ public class QuantisationUtil {
             {99, 99, 99, 99, 99, 99, 99, 99},
             {99, 99, 99, 99, 99, 99, 99, 99},
             {99, 99, 99, 99, 99, 99, 99, 99},
+            {17, 18, 24, 47, 99, 99, 99, 99},
     };
 
     /**
@@ -31,29 +44,102 @@ public class QuantisationUtil {
             {18, 22, 37, 56, 68, 109, 103, 77},
             {24, 35, 55, 64, 81, 104, 113, 92},
             {49, 64, 78, 87, 103, 121, 120, 101},
-            {72, 92, 95, 98, 112, 100, 103, 99}
+            {72, 92, 95, 98, 112, 100, 103, 99},
     };
+
+    /**
+     * Dimension for the 8x8 DCT matrix.
+     */
+    private static final int MATRIX_DIM = 8;
+    /**
+     * Base value for cosine calculation in AAN.
+     */
+    private static final int COS_BASE = 16;
+    /**
+     * Constant for the number 4, used in AAN scaling.
+     */
+    private static final double FOUR = 4.0;
+    /**
+     * Constant for the number 1, used in AAN scaling.
+     */
+    private static final double ONE = 1.0;
+    /**
+     * Constant for the number 2, used in AAN scaling.
+     */
+    private static final double TWO = 2.0;
+
+    // --- Constants for JPEG Quality Scaling ---
+    /**
+     * Midpoint for quality factor logic switch.
+     */
+    private static final int JPEG_QUALITY_MID = 50;
+    /**
+     * Scale factor for high-quality settings.
+     */
+    private static final int JPEG_QUALITY_SCALE_HIGH = 200;
+    /**
+     * Multiplier for high-quality scale factor.
+     */
+    private static final int JPEG_QUALITY_SCALE_HIGH_FACTOR = 2;
+    /**
+     * Numerator for low-quality scale factor.
+     */
+    private static final int JPEG_QUALITY_SCALE_LOW_NUM = 5000;
+    /**
+     * Rounding offset for quality scaling.
+     */
+    private static final int JPEG_ROUNDING_OFFSET = 50;
+    /**
+     * Divisor for quality scaling.
+     */
+    private static final int JPEG_SCALE_DIVISOR = 100;
+    /**
+     * Minimum allowed value for a quantized table entry.
+     */
+    private static final int JPEG_CLAMP_MIN = 1;
+    /**
+     * Maximum allowed value for a quantized table entry.
+     */
+    private static final int JPEG_CLAMP_MAX = 255;
+    /**
+     * Rounding offset for double-to-int conversion.
+     */
+    private static final double ROUNDING_OFFSET_DOUBLE = 0.5;
 
     /**
      * used for scaling.
      */
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private int[][] scaledQuantChrome = new int[8][8];
+    private final int[][] scaledQuantChrome = new int[MATRIX_DIM][MATRIX_DIM];
     /**
      * used for scaling.
      */
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private int[][] scaledQuantLumin = new int[8][8];
+    private final int[][] scaledQuantLumin = new int[MATRIX_DIM][MATRIX_DIM];
+
+    /**
+     * ScaleFactor which is used in FDCT to scale DCT coefficient
+     * but to prevent repeated calculation it will be used
+     * to scale quantisation table.
+     */
+    private final double[] aanScaleFactor;
+
     /**
      * Singleton instance.
      */
-    @SuppressWarnings("checkstyle:ConstantName")
-    private static final QuantisationUtil QUANTINSTANCE = new QuantisationUtil();
+    private static final QuantisationUtil QUANT_INSTANCE = new QuantisationUtil();
 
     /**
      * Private constructor to enforce singleton pattern.
      */
     private QuantisationUtil() {
+        aanScaleFactor = new double[MATRIX_DIM];
+
+        final double[] cVals = new double[MATRIX_DIM];
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            cVals[i] = Math.cos(Math.PI * i / COS_BASE);
+            aanScaleFactor[i] = ONE / (cVals[i] * FOUR);
+        }
+
+        aanScaleFactor[0] = ONE / (TWO * Math.sqrt(TWO));
         // Initialize the scaled tables when created
         resetQuantTables();
     }
@@ -61,22 +147,23 @@ public class QuantisationUtil {
     /**
      * This will be set the quant tables to default.
      */
-    @SuppressWarnings("checkstyle:MagicNumber")
     private void resetQuantTables() {
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
+        for (int i = 0; i < MATRIX_DIM; i++) {
+            for (int j = 0; j < MATRIX_DIM; j++) {
                 scaledQuantChrome[i][j] = BASECHROME[i][j];
                 scaledQuantLumin[i][j] = BASELUMIN[i][j];
             }
         }
+        scaleQuantTable(aanScaleFactor);
     }
 
     /**
      * Gets the singleton instance of the QuantisationUtil.
+     *
      * @return The single instance of this class.
      */
     public static QuantisationUtil getInstance() {
-        return QUANTINSTANCE;
+        return QUANT_INSTANCE;
     }
 
     /**
@@ -85,35 +172,34 @@ public class QuantisationUtil {
      *
      * @param q : A quality factor from 1 to 99.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:FinalParameters"})
-    public void setCompressonResulation(int q) {
+    public void setCompressonResulation(final int q) {
 
         resetQuantTables();
 
-        int scaleFactor = 200 - 2 * q;
+        int scaleFactor = JPEG_QUALITY_SCALE_HIGH - JPEG_QUALITY_SCALE_HIGH_FACTOR * q;
 
         // Standard JPEG quality scale factor calculation.
-        if (q >= 1 && q < 50) {
-            scaleFactor = 5000 / q;
+        if (q >= JPEG_CLAMP_MIN && q < JPEG_QUALITY_MID) {
+            scaleFactor = JPEG_QUALITY_SCALE_LOW_NUM / q;
         }
 
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // Apply scale factor with rounding (+50 / 100)
-                int scaledCVal = (scaledQuantChrome[i][j] * scaleFactor + 50) / 100;
-                int scaledLVal = (scaledQuantLumin[i][j] * scaleFactor + 50) / 100;
+                int scaledCVal = (scaledQuantChrome[i][j] * scaleFactor + JPEG_ROUNDING_OFFSET) / JPEG_SCALE_DIVISOR;
+                int scaledLVal = (scaledQuantLumin[i][j] * scaleFactor + JPEG_ROUNDING_OFFSET) / JPEG_SCALE_DIVISOR;
 
                 // Clamp values to the valid JPEG range [1, 255]
-                if (scaledCVal<1) {
-                    scaledCVal = 1;
-                } else if (scaledCVal>255) {
-                    scaledCVal = 255;
+                if (scaledCVal < JPEG_CLAMP_MIN) {
+                    scaledCVal = JPEG_CLAMP_MIN;
+                } else if (scaledCVal > JPEG_CLAMP_MAX) {
+                    scaledCVal = JPEG_CLAMP_MAX;
                 }
 
-                if (scaledLVal < 1) {
-                    scaledLVal = 1;
-                } else if (scaledLVal > 255) {
-                    scaledLVal = 255;
+                if (scaledLVal < JPEG_CLAMP_MIN) {
+                    scaledLVal = JPEG_CLAMP_MIN;
+                } else if (scaledLVal > JPEG_CLAMP_MAX) {
+                    scaledLVal = JPEG_CLAMP_MAX;
                 }
 
                 scaledQuantChrome[i][j] = scaledCVal;
@@ -127,26 +213,29 @@ public class QuantisationUtil {
      * This is used to "absorb" the scaling factors from a fast DCT (like AAN)
      * into the quantization table, as you mentioned.
      *
+     * <p>
      * This method MODIFIES the class's quantChrome and quantLumin tables in-place.
      *
      * @param scalingFactors An 8-element array of 1D scaling factors from the DCT.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:WhitespaceAfter", "checkstyle:NeedBraces"})
+    @SuppressWarnings({"checkstyle:WhitespaceAfter", "checkstyle:NeedBraces", "checkstyle:CommentedOutCode"})
     public void scaleQuantTable(final double[] scalingFactors) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j<8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
 
                 // Apply 2D scaling by dividing by the outer product (scale[i] * scale[j])
                 // Add 0.5 before casting to int to perform rounding.
-                int scaledCVal = (int) ((scaledQuantChrome[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
-                int scaledLVal = (int) ((scaledQuantLumin[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
+                final int scaledCVal = (int) ((scaledQuantChrome[i][j] / (scalingFactors[i] * scalingFactors[j]))
+                        + ROUNDING_OFFSET_DOUBLE);
+                final int scaledLVal = (int) ((scaledQuantLumin[i][j] / (scalingFactors[i] * scalingFactors[j]))
+                        + ROUNDING_OFFSET_DOUBLE);
 
-                // Clamp values to the valid JPEG range [1, 255]
-                if(scaledCVal<1) scaledCVal = 1;
-                else if(scaledCVal>255) scaledCVal = 255;
-
-                if(scaledLVal<1) scaledLVal = 1;
-                else if(scaledLVal>255) scaledLVal = 255;
+//                // Clamp values to the valid JPEG range [1, 255]
+//                if(scaledCVal<1) scaledCVal = 1;
+//                else if(scaledCVal>255) scaledCVal = 255;
+//
+//                if(scaledLVal<1) scaledLVal = 1;
+//                else if(scaledLVal>255) scaledLVal = 255;
 
                 scaledQuantChrome[i][j] = scaledCVal;
                 scaledQuantLumin[i][j] = scaledLVal;
@@ -161,12 +250,12 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
     public void quantisationChrome(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // Quantize: divide by the table value and round.
-                dMatrix[i + row][j + col] = (short) Math.round((float) dMatrix[i + row][j + col] / scaledQuantChrome[i][j]);
+                final float val = (float) dMatrix[i + row][j + col] / scaledQuantChrome[i][j];
+                dMatrix[i + row][j + col] = (short) Math.round(val);
             }
         }
     }
@@ -178,12 +267,12 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
     public void quantisationLumin(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // Quantize: divide by the table value and round.
-                dMatrix[i + row][j + col] = (short) Math.round((float) dMatrix[i + row][j + col] / scaledQuantLumin[i][j]);
+                final float val = (float) dMatrix[i + row][j + col] / scaledQuantLumin[i][j];
+                dMatrix[i + row][j + col] = (short) Math.round(val);
             }
         }
     }
@@ -195,10 +284,9 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
     public void deQuantisationChrome(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // De-quantize: multiply by the table value.
                 dMatrix[i + row][j + col] = (short) (dMatrix[i + row][j + col] * scaledQuantChrome[i][j]);
             }
@@ -212,12 +300,11 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
     public void deQuantisationLumin(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // De-quantize: multiply by the table value.
-                dMatrix[i + row][j + col] = (short) (dMatrix[i + row][j + col]  * scaledQuantLumin[i][j]);
+                dMatrix[i + row][j + col] = (short) (dMatrix[i + row][j + col] * scaledQuantLumin[i][j]);
             }
         }
     }
