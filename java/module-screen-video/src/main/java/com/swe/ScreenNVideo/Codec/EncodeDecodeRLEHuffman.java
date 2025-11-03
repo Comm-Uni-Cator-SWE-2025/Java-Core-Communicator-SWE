@@ -248,16 +248,20 @@ public class EncodeDecodeRLEHuffman implements IRLE {
         private final ByteBuffer buffer;
         private int currentByte;
         private int bitsRemaining;
+        private final int startPosition;
+        private final int maxPosition;
 
-        public BitReader(ByteBuffer buffer) {
+        public BitReader(ByteBuffer buffer, int bitStreamLength) {
             this.buffer = buffer;
             this.currentByte = 0;
             this.bitsRemaining = 0;
+            this.startPosition = buffer.position();
+            this.maxPosition = startPosition + bitStreamLength;
         }
 
         public int readBit() {
             if (bitsRemaining == 0) {
-                if (!buffer.hasRemaining()) {
+                if (!buffer.hasRemaining() || buffer.position() >= maxPosition) {
                     return -1; // End of stream
                 }
                 currentByte = buffer.get() & 0xFF;
@@ -297,6 +301,11 @@ public class EncodeDecodeRLEHuffman implements IRLE {
             }
 
             return code.toString();
+        }
+
+        public void alignToNextByte() {
+            // Move buffer position to account for consumed bytes
+            buffer.position(maxPosition);
         }
     }
 
@@ -339,11 +348,22 @@ public class EncodeDecodeRLEHuffman implements IRLE {
         final short height = resRLEbuffer.getShort();
         final short width = resRLEbuffer.getShort();
 
+        // Validate dimensions
+        if (height <= 0 || width <= 0) {
+            throw new RuntimeException("Invalid matrix dimensions: height=" + height + ", width=" + width);
+        }
+
         final short[][] matrix = new short[height][width];
 
         final int bitStreamLength = resRLEbuffer.getInt();
 
-        BitReader reader = new BitReader(resRLEbuffer);
+        // Validate bit stream length
+        if (bitStreamLength < 0 || bitStreamLength > resRLEbuffer.remaining()) {
+            throw new RuntimeException("Invalid bit stream length: " + bitStreamLength +
+                ", remaining bytes: " + resRLEbuffer.remaining());
+        }
+
+        BitReader reader = new BitReader(resRLEbuffer, bitStreamLength);
         short prevDC = 0;
 
         for (short rowBlock = 0; rowBlock < height; rowBlock += 8) {
@@ -351,6 +371,9 @@ public class EncodeDecodeRLEHuffman implements IRLE {
                 prevDC = decodeBlockHuffman(matrix, rowBlock, colBlock, reader, prevDC);
             }
         }
+
+        // Ensure buffer position is correctly aligned after reading all bits
+        reader.alignToNextByte();
 
         return matrix;
     }

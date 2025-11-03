@@ -74,8 +74,8 @@ public class QuantisationUtil {
 
         aanScaleFactor[0] = 1 / (2 * Math.sqrt(2));
         // Initialize the scaled tables when created
-        setCompressonResulation(95);
-        resetQuantTables();
+        setCompressonResulation(50);
+//        resetQuantTables();
     }
 
     /**

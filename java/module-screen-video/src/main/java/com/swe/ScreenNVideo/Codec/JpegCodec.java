@@ -252,18 +252,21 @@ public class JpegCodec implements Codec {
             throw new RuntimeException("Cannot decode: insufficient data for Y matrix dimensions");
         }
         short[][] yMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+//        System.out.println("DeCompression Y : " + resRLEBuffer.position());
 
         // Decode Cb matrix
         if (resRLEBuffer.remaining() < 4) {
             throw new RuntimeException("Cannot decode: insufficient data for Cb matrix dimensions");
         }
         short[][] cbMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+//        System.out.println("DeCompression Cb : " + resRLEBuffer.position());
 
         // Decode Cr matrix
         if (resRLEBuffer.remaining() < 4) {
             throw new RuntimeException("Cannot decode: insufficient data for Cr matrix dimensions");
         }
         short[][] crMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+//        System.out.println("DeCompression Cr : " + resRLEBuffer.position());
 
         // Validate matrix dimensions before decompression
         if (yMatrix.length == 0 || yMatrix[0].length == 0) {

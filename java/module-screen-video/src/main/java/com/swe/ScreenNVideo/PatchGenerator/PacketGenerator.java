@@ -67,11 +67,11 @@ public class PacketGenerator {
                 final int h = Math.min(TILE_SIZE, height - y);
 
                 final long currHash = hasher.hash(curr, x, y, w, h);
-                if (currHash != prevHashes[tx][ty]) {
+//                if (currHash != prevHashes[tx][ty]) {
                     final byte[] compressedString = this.compressor.encode(x, y, h, w);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
                     prevHashes[tx][ty] = currHash;
-                }
+//                }
             }
         }
         return patches;

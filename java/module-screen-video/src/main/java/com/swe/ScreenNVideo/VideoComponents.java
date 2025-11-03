@@ -180,7 +180,6 @@ public class VideoComponents {
         final int[][] image = imageSynchronizer.synchronize(patches);
         final RImage rImage = new RImage(image, localIp);
         final byte[] serializedImage = rImage.serialize();
-        // Do not wait for result
         try {
             rpc.call(Utils.UPDATE_UI, serializedImage).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -229,3 +228,5 @@ public class VideoComponents {
         return encodedPatches;
     }
 }
+
+
