@@ -178,4 +178,15 @@ public class Networking implements AbstractNetworking, AbstractController {
         topology.addUser(deviceAddress, mainServerAddress);
     }
 
+    /**
+     * The Function to call the function mentioned in the subscribers list.
+     *
+     * @param data          the data that is received
+     * @param moduleInt     the module to be called
+     */
+    public void callSubscriber(final byte[] data, final int moduleInt) {
+        final MessageListener listener = listeners.get(moduleInt);
+        listener.receiveData(data);
+    }
+
 }

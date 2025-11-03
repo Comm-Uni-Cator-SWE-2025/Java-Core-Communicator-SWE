@@ -2,25 +2,33 @@ package com.swe.networking;
 
 import java.nio.ByteBuffer;
 
-import com.swe.networking.ModuleType;
-
+/**
+ * The class implementing coalescing receive and
+ * passing data to corresponding subscribed module.
+ */
 public class CoalesceReceive {
 
-    public void receiveCoalescedPacket(ByteBuffer coalescedData) {
+    /**
+     * function to parse coalesce packet and pass to corresponding listener.
+     *
+     * @param coalescedData  coalesced payload.
+     */
+    public void receiveCoalescedPacket(final ByteBuffer coalescedData) {
         while (coalescedData.hasRemaining()) {
             // Get the size of the packet
-            int packetSize = coalescedData.getInt();
+            final int packetSize = coalescedData.getInt();
 
             // Get the module type
-            byte moduleTypeByte = coalescedData.get();
-            int moduleTypeInt = moduleTypeByte;
+            final byte moduleTypeByte = coalescedData.get();
+            final int moduleTypeInt = moduleTypeByte;
 
             // Get the payload
-            byte[] payload = new byte[packetSize - 4 - 1];
+            final int payloadSize = packetSize - 4 - 1;
+            final byte[] payload = new byte[payloadSize];
             coalescedData.get(payload);
 
             // Call the module message listener based on the module type
-            }
+            Networking.getNetwork().callSubscriber(payload, moduleTypeInt);
         }
     }
 }
