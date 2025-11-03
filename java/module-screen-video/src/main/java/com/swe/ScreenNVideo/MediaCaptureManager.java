@@ -109,11 +109,11 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Starting capture");
         //noinspection InfiniteLoopStatement
         while (true) {
-            final byte[] encodedPatches = videoComponent.captureScreenNVideo();
+            final byte[] encodedPatches = videoComponent.captureScreenNVideo(imageSynchronizers);
             if (encodedPatches == null) {
                 continue;
             }
-            sendImageToViewers(encodedPatches);
+//            sendImageToViewers(encodedPatches);
         }
     }
 

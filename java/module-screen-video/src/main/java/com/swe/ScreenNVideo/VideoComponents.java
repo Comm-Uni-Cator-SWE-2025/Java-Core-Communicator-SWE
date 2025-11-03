@@ -9,11 +9,14 @@ import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
 import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.RImage;
+import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Class containing Components to capture and process video.
@@ -140,7 +143,7 @@ public class VideoComponents {
      *
      * @return encoded Patches to be sent through the network
      */
-    protected byte[] captureScreenNVideo() {
+    protected byte[] captureScreenNVideo(final HashMap<String, ImageSynchronizer> imageSynchronizers) {
         final long currTime = System.nanoTime();
         final long diff = currTime - start;
         if (diff < timeDelay) {
@@ -169,6 +172,20 @@ public class VideoComponents {
 //        videoCodec.ZigZagtime = 0;
 
         final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
+
+        final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(localIp);
+        if (imageSynchronizer == null) {
+            return null;
+        }
+        final int[][] image = imageSynchronizer.synchronize(patches);
+        final RImage rImage = new RImage(image, localIp);
+        final byte[] serializedImage = rImage.serialize();
+        // Do not wait for result
+        try {
+            rpc.call(Utils.UPDATE_UI, serializedImage).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
 //        System.out.println(Arrays.toString(Arrays.copyOf(patches.get(0).data(), 20)));
 

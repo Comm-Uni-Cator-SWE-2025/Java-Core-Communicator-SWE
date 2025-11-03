@@ -8,14 +8,14 @@ public class QuantisationUtil {
      * NOTE: This table is MUTABLE and will be changed by scaling methods.
      */
     private static final int[][] BASECHROME = {
-            {17, 18, 24, 47, 99, 99, 99, 99},
-            {18, 21, 26, 66, 99, 99, 99, 99},
-            {24, 26, 56, 99, 99, 99, 99, 99},
-            {47, 66, 99, 99, 99, 99, 99, 99},
-            {99, 99, 99, 99, 99, 99, 99, 99},
-            {99, 99, 99, 99, 99, 99, 99, 99},
-            {99, 99, 99, 99, 99, 99, 99, 99},
-            {99, 99, 99, 99, 99, 99, 99, 99},
+        {17, 18, 24, 47, 99, 99, 99, 99},
+        {18, 21, 26, 66, 99, 99, 99, 99},
+        {24, 26, 56, 99, 99, 99, 99, 99},
+        {47, 66, 99, 99, 99, 99, 99, 99},
+        {99, 99, 99, 99, 99, 99, 99, 99},
+        {99, 99, 99, 99, 99, 99, 99, 99},
+        {99, 99, 99, 99, 99, 99, 99, 99},
+        {99, 99, 99, 99, 99, 99, 99, 99},
     };
 
     /**
@@ -24,26 +24,33 @@ public class QuantisationUtil {
      * NOTE: This table is MUTABLE and will be changed by scaling methods.
      */
     private static final int[][] BASELUMIN = {
-            {16, 11, 10, 16, 24, 40, 51, 61},
-            {12, 12, 14, 19, 26, 58, 60, 55},
-            {14, 13, 16, 24, 40, 57, 69, 56},
-            {14, 17, 22, 29, 51, 87, 80, 62},
-            {18, 22, 37, 56, 68, 109, 103, 77},
-            {24, 35, 55, 64, 81, 104, 113, 92},
-            {49, 64, 78, 87, 103, 121, 120, 101},
-            {72, 92, 95, 98, 112, 100, 103, 99}
+        {16, 11, 10, 16, 24, 40, 51, 61},
+        {12, 12, 14, 19, 26, 58, 60, 55},
+        {14, 13, 16, 24, 40, 57, 69, 56},
+        {14, 17, 22, 29, 51, 87, 80, 62},
+        {18, 22, 37, 56, 68, 109, 103, 77},
+        {24, 35, 55, 64, 81, 104, 113, 92},
+        {49, 64, 78, 87, 103, 121, 120, 101},
+        {72, 92, 95, 98, 112, 100, 103, 99}
     };
 
     /**
-     * used for scaling.
+     * used for matrix.
      */
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private int[][] scaledQuantChrome = new int[8][8];
+    private final int matrixdim = 8;
     /**
      * used for scaling.
      */
     @SuppressWarnings("checkstyle:MagicNumber")
-    private int[][] scaledQuantLumin = new int[8][8];
+    private final float[][] scaledQuantChrome = new float[8][8];
+    private final float[][] scaledQuantLumin = new float[8][8];
+    /**
+     * ScaleFactor which is used in FDCT to scale DCT coefficient
+     * but to prevent repeated calculation it will be used
+     * to scale quantisation table.
+     */
+    private final double[] aanScaleFactor;
+
     /**
      * Singleton instance.
      */
@@ -54,7 +61,20 @@ public class QuantisationUtil {
      * Private constructor to enforce singleton pattern.
      */
     private QuantisationUtil() {
+        aanScaleFactor = new double[matrixdim];
+
+        final double[] cVals = new double[matrixdim];
+        final int cosBase = 16;
+        final int four = 4;
+        for (int i = 0; i < matrixdim; ++i) {
+
+            cVals[i] = Math.cos(Math.PI * i / cosBase);
+            aanScaleFactor[i] = 1 / (cVals[i] * four);
+        }
+
+        aanScaleFactor[0] = 1 / (2 * Math.sqrt(2));
         // Initialize the scaled tables when created
+        setCompressonResulation(95);
         resetQuantTables();
     }
 
@@ -69,23 +89,26 @@ public class QuantisationUtil {
                 scaledQuantLumin[i][j] = BASELUMIN[i][j];
             }
         }
+        scaleQuantTable(aanScaleFactor);
     }
 
     /**
      * Gets the singleton instance of the QuantisationUtil.
+     *
      * @return The single instance of this class.
      */
     public static QuantisationUtil getInstance() {
         return QUANTINSTANCE;
     }
 
-    /**
-     * Scales the quantization tables based on a JPEG quality factor 'q'.
-     * This method MODIFIES the class's quantChrome and quantLumin tables in-place.
-     *
-     * @param q : A quality factor from 1 to 99.
-     */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:FinalParameters"})
+    //    /**
+//     * Scales the quantization tables based on a JPEG quality factor 'q'.
+//     * This method MODIFIES the class's quantChrome and quantLumin tables in-place.
+//     *
+//     * @param q : A quality factor from 1 to 99.
+//     */
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:FinalParameters",
+        "checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:WhitespaceAfter", "checkstyle:NeedBraces"})
     public void setCompressonResulation(int q) {
 
         resetQuantTables();
@@ -100,8 +123,8 @@ public class QuantisationUtil {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // Apply scale factor with rounding (+50 / 100)
-                int scaledCVal = (scaledQuantChrome[i][j] * scaleFactor + 50) / 100;
-                int scaledLVal = (scaledQuantLumin[i][j] * scaleFactor + 50) / 100;
+                int scaledCVal = (BASECHROME[i][j] * scaleFactor + 50) / 100;
+                int scaledLVal = (BASELUMIN[i][j] * scaleFactor + 50) / 100;
 
                 // Clamp values to the valid JPEG range [1, 255]
                 if (scaledCVal<1) {
@@ -116,8 +139,8 @@ public class QuantisationUtil {
                     scaledLVal = 255;
                 }
 
-                scaledQuantChrome[i][j] = scaledCVal;
-                scaledQuantLumin[i][j] = scaledLVal;
+                BASECHROME[i][j] = scaledCVal;
+                BASELUMIN[i][j] = scaledLVal;
             }
         }
     }
@@ -131,25 +154,12 @@ public class QuantisationUtil {
      *
      * @param scalingFactors An 8-element array of 1D scaling factors from the DCT.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:WhitespaceAround", "checkstyle:WhitespaceAfter", "checkstyle:NeedBraces"})
     public void scaleQuantTable(final double[] scalingFactors) {
         for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j<8; ++j) {
-
-                // Apply 2D scaling by dividing by the outer product (scale[i] * scale[j])
-                // Add 0.5 before casting to int to perform rounding.
-                int scaledCVal = (int) ((scaledQuantChrome[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
-                int scaledLVal = (int) ((scaledQuantLumin[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
-
-//                // Clamp values to the valid JPEG range [1, 255]
-//                if(scaledCVal<1) scaledCVal = 1;
-//                else if(scaledCVal>255) scaledCVal = 255;
-//
-//                if(scaledLVal<1) scaledLVal = 1;
-//                else if(scaledLVal>255) scaledLVal = 255;
-
-                scaledQuantChrome[i][j] = scaledCVal;
-                scaledQuantLumin[i][j] = scaledLVal;
+            for (int j = 0; j < 8; ++j) {
+                final double scale = scalingFactors[i] * scalingFactors[j];
+                scaledQuantChrome[i][j] = (float) (BASECHROME[i][j] / scale);
+                scaledQuantLumin[i][j] = (float) (BASELUMIN[i][j] / scale);
             }
         }
     }
@@ -161,12 +171,13 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
+    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters",
+        "checkstyle:MethodParamPad"})
     public void quantisationChrome(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // Quantize: divide by the table value and round.
-                dMatrix[i + row][j + col] = (short) Math.round((float) dMatrix[i + row][j + col] / scaledQuantChrome[i][j]);
+                dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] / scaledQuantChrome[i][j]);
             }
         }
     }
@@ -178,12 +189,13 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:MethodParamPad"})
+    @SuppressWarnings({"checkstyle:LineLength", "checkstyle:MagicNumber", "checkstyle:FinalParameters",
+        "checkstyle:MethodParamPad"})
     public void quantisationLumin(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
                 // Quantize: divide by the table value and round.
-                dMatrix[i + row][j + col] = (short) Math.round((float) dMatrix[i + row][j + col] / scaledQuantLumin[i][j]);
+                dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] / scaledQuantLumin[i][j]);
             }
         }
     }
@@ -195,12 +207,13 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter",
+        "checkstyle:MethodParamPad"})
     public void deQuantisationChrome(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
-                // De-quantize: multiply by the table value.
-                dMatrix[i + row][j + col] = (short) (dMatrix[i + row][j + col] * scaledQuantChrome[i][j]);
+                // De-quantize: multiply by the table value and round.
+                dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] * scaledQuantChrome[i][j]);
             }
         }
     }
@@ -212,12 +225,13 @@ public class QuantisationUtil {
      * @param row     The starting row of the block.
      * @param col     The starting column of the block.
      */
-    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter", "checkstyle:MethodParamPad"})
+    @SuppressWarnings({"checkstyle:MagicNumber", "checkstyle:FinalParameters", "checkstyle:WhitespaceAfter",
+        "checkstyle:MethodParamPad"})
     public void deQuantisationLumin(final short[][] dMatrix, final short row, final short col) {
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
-                // De-quantize: multiply by the table value.
-                dMatrix[i + row][j + col] = (short) (dMatrix[i + row][j + col]  * scaledQuantLumin[i][j]);
+                // De-quantize: multiply by the table value and round.
+                dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] * scaledQuantLumin[i][j]);
             }
         }
     }

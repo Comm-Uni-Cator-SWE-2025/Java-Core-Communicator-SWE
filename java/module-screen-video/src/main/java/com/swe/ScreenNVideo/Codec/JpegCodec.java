@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
- * 
+ *
  * <p>
  * This class implements the {@link Codec} interface, offering methods to convert 
  * raw image data into compressed JPEG byte streams and to reconstruct images 
@@ -17,25 +17,25 @@ import java.util.Arrays;
  */
 public class JpegCodec implements Codec {
     /**
-    * Image that needs to be encoded.
-    */
+     * Image that needs to be encoded.
+     */
     private int[][] screenshot;
 
     /** Offset for alpha component in the AARRGGBB value.*/
-    private static final int A_OFFEST = 24;
+    private static final int A_OFFSET = 24;
 
     /** Offset for red color component in the AARRGGBB value.*/
     private static final int R_OFFSET = 16;
-    
+
     /** Offset for green color component in the AARRGGBB value.*/
     private static final int G_OFFSET = 8;
-    
+
     /** Mask for extracting color component. */
     private static final int MASK = 0xFF;
 
     /** Coefficient for red contribution in luminance(Y) calculation.*/
     private static final double Y_R_COEFF  = 0.299;
-    
+
     /** Coefficient for green contribution in luminance(Y) calculation.*/
     private static final double Y_G_COEFF  = 0.587;
 
@@ -47,7 +47,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma blue-difference (Cb) calculation.*/
     private static final double CB_G_COEFF = -0.331264;
-    
+
     /** Coefficient for blue contribution in chroma blue-difference (Cb) calculation. */
     private static final double CB_B_COEFF = 0.5;
 
@@ -56,7 +56,7 @@ public class JpegCodec implements Codec {
 
     /** Coefficient for green contribution in chroma red-difference (Cr) calculation. */
     private static final double CR_G_COEFF = -0.418688;
-    
+
     /** Coefficient for blue contribution in chroma red-difference (Cr) calculation.*/
     private static final double CR_B_COEFF = -0.081312;
 
@@ -83,7 +83,7 @@ public class JpegCodec implements Codec {
 
     /**
      * Creates a JpegCodec instance with screenshot.
-     * 
+     *
      * @param image screenshot that needs to be encoded
      */
     public JpegCodec(final int[][] image) {
@@ -123,7 +123,7 @@ public class JpegCodec implements Codec {
 
     @Override
     public void setCompressionFactor(final short qfactor) {
-        quantUtil.setCompressonResulation(qfactor);
+//        quantUtil.setCompressonResulation(qfactor);
     }
 
     /**
@@ -140,8 +140,20 @@ public class JpegCodec implements Codec {
 
         // System.out.println("topLeftX topLeftY W H = " + topLeftX + " " + topLeftY + ":" + width + " " + height);
 
+        if (screenshot == null) {
+            throw new RuntimeException("Cannot encode: screenshot is null");
+        }
+
+        if (height <= 0 || width <= 0) {
+            throw new RuntimeException("Invalid Matrix for encoding: height and width must be positive");
+        }
+
         if (height % 2 == 1 || width % 2 == 1) {
-            throw new RuntimeException("Invalid Matrix for encoding");
+            throw new RuntimeException("Invalid Matrix for encoding: height and width must be even");
+        }
+
+        if (topLeftY + height > screenshot.length || topLeftX + width > screenshot[0].length) {
+            throw new RuntimeException("Invalid Matrix for encoding: coordinates exceed screenshot bounds");
         }
 
         final int halfHeight = height / 2;
@@ -170,7 +182,7 @@ public class JpegCodec implements Codec {
                         int y  = (int) (Y_R_COEFF * r + Y_G_COEFF * g + Y_B_COEFF * b);
                         final double cb = CHROMA_OFFSET + CB_R_COEFF * r + CB_G_COEFF * g + CB_B_COEFF * b;
                         final double cr = CHROMA_OFFSET + CR_R_COEFF * r + CR_G_COEFF * g + CR_B_COEFF * b;
-                        
+
                         cbPixel += cb;
                         crPixel += cr;
 
@@ -229,13 +241,40 @@ public class JpegCodec implements Codec {
      */
     @Override
     public int[][] decode(final byte[] encodedImage) {
+        if (encodedImage == null || encodedImage.length == 0) {
+            throw new RuntimeException("Cannot decode: encoded image data is null or empty");
+        }
+
         final ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
+
+        // Decode Y matrix
+        if (resRLEBuffer.remaining() < 4) {
+            throw new RuntimeException("Cannot decode: insufficient data for Y matrix dimensions");
+        }
         short[][] yMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
-//        System.out.println("DeCompression Y : " + resRLEBuffer.position());
+
+        // Decode Cb matrix
+        if (resRLEBuffer.remaining() < 4) {
+            throw new RuntimeException("Cannot decode: insufficient data for Cb matrix dimensions");
+        }
         short[][] cbMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
-//        System.out.println("DeCompression Cb : " + resRLEBuffer.position());
+
+        // Decode Cr matrix
+        if (resRLEBuffer.remaining() < 4) {
+            throw new RuntimeException("Cannot decode: insufficient data for Cr matrix dimensions");
+        }
         short[][] crMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
-//        System.out.println("DeCompression Cr : " + resRLEBuffer.position());
+
+        // Validate matrix dimensions before decompression
+        if (yMatrix.length == 0 || yMatrix[0].length == 0) {
+            throw new RuntimeException("Cannot decode: invalid Y matrix dimensions");
+        }
+        if (cbMatrix.length == 0 || cbMatrix[0].length == 0) {
+            throw new RuntimeException("Cannot decode: invalid Cb matrix dimensions");
+        }
+        if (crMatrix.length == 0 || crMatrix[0].length == 0) {
+            throw new RuntimeException("Cannot decode: invalid Cr matrix dimensions");
+        }
 
         decompressor.decompressLumin(yMatrix,(short)yMatrix.length,(short)yMatrix[0].length);
         decompressor.decompressChrome(cbMatrix,(short)cbMatrix.length,(short)cbMatrix[0].length);
@@ -253,8 +292,14 @@ public class JpegCodec implements Codec {
         final int width = yMatrix[0].length;
         final int[][] rgb = new int[height][width];
 
-        for (int i = 0; i < height / 2; ++i) {
-            for (int j = 0; j < width / 2; ++j) {
+        // Chroma matrices may be padded to multiples of 8, but we only need height/2 x width/2
+        final int chromaHeight = Math.min(cbMatrix.length, height / 2);
+        final int chromaWidth = Math.min(cbMatrix[0].length, width / 2);
+
+        // Process chroma subsampled data - only use the first height/2 x width/2 elements
+        // even if chroma matrices are padded to multiples of 8
+        for (int i = 0; i < chromaHeight; ++i) {
+            for (int j = 0; j < chromaWidth; ++j) {
                 // Level shift: [-128, 127] → [0, 255]
                 final int cbOffset = rescale(cbMatrix[i][j] + 128);
                 final int crOffset = rescale(crMatrix[i][j] + 128);
@@ -265,7 +310,15 @@ public class JpegCodec implements Codec {
 
                 for (int ii = 0; ii < 2; ++ii) {
                     for (int jj = 0; jj < 2; ++jj) {
-                        final int y = rescale(yMatrix[2 * i + ii][2 * j + jj] + 128);
+                        final int yRow = 2 * i + ii;
+                        final int yCol = 2 * j + jj;
+
+                        // Skip if we're beyond the Y matrix bounds (due to chroma padding or edge cases)
+                        if (yRow >= height || yCol >= width) {
+                            continue;
+                        }
+
+                        final int y = rescale(yMatrix[yRow][yCol] + 128);
 
                         // YCbCr → RGB with centered chroma
                         int r = (int) Math.round(y + 1.402 * crCentered);
@@ -277,11 +330,12 @@ public class JpegCodec implements Codec {
                         g = Math.min(255, Math.max(0, g));
                         b = Math.min(255, Math.max(0, b));
 
-                        rgb[2 * i + ii][2 * j + jj] = (MASK << A_OFFEST) | (r << R_OFFSET) | (g << G_OFFSET) | b;
+                        rgb[yRow][yCol] = (MASK << A_OFFSET) | (r << R_OFFSET) | (g << G_OFFSET) | b;
                     }
                 }
             }
         }
+
         return rgb;
     }
 
