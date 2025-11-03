@@ -1,4 +1,3 @@
-
 package com.swe.networking;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -157,6 +156,26 @@ public class CoalesceReceiveTest {
 
         assertEquals(1, listener2.getReceivedData().size());
         assertArrayEquals(data2, listener2.getReceivedData().get(1));
+
+        networking.removeSubscription(moduleId1);
+        networking.removeSubscription(moduleId2);
+    }
+
+    @Test
+    public void testEmptyBytesNoReceive() {
+        final byte moduleId1 = 7;
+        final byte moduleId2 = 8;
+
+        TestMessageListener listener1 = new TestMessageListener();
+        TestMessageListener listener2 = new TestMessageListener();
+        networking.subscribe(moduleId1, listener1);
+        networking.subscribe(moduleId2, listener2);
+
+        ByteBuffer emptyBuffer = ByteBuffer.allocate(0);
+        coalesceReceive.receiveCoalescedPacket(emptyBuffer);
+
+        assertTrue(listener1.getReceivedData().isEmpty());
+        assertTrue(listener2.getReceivedData().isEmpty());
 
         networking.removeSubscription(moduleId1);
         networking.removeSubscription(moduleId2);
