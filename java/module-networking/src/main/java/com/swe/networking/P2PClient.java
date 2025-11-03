@@ -61,6 +61,12 @@ public class P2PClient implements P2PUser {
      */
     private final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
 
+    /** Variable to store header size. */
+    private final int packetHeaderSize = 22;
+
+    /** Variable to store chunk manager. */
+    private final ChunkManager chunkManager;
+
     /**
      * Creates a new P2PClient.
      *
@@ -72,6 +78,7 @@ public class P2PClient implements P2PUser {
         this.mainServerAddress = server;
 
         this.communicator = new TCPCommunicator(device.port());
+        chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
 
         // Starting the continuous receive loop
         this.receiveThread = new Thread(this::receive);
@@ -88,8 +95,10 @@ public class P2PClient implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
-            System.out.println("p2pclient sending data to: " + dest);
-            communicator.sendData(data, dest);
+
+            final ClientNode sendDest = topology.getDestination(mainServerAddress, dest);
+            System.out.println("p2pclient sending data to: " + sendDest);
+            communicator.sendData(data, sendDest);
         }
         return;
     }
@@ -97,8 +106,9 @@ public class P2PClient implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
 
-        System.out.println("p2pclient sending data to: " + destIp);
-        communicator.sendData(data, destIp);
+        final ClientNode sendDest = topology.getDestination(mainServerAddress, destIp);
+        System.out.println("p2pclient sending data to: " + sendDest);
+        communicator.sendData(data, sendDest);
         return;
     }
 
@@ -178,7 +188,7 @@ public class P2PClient implements P2PUser {
                     break;
 
                 case USE:
-                    parseUsePacket(info);
+                    parseUsePacket(info, packet);
                     break;
                 default:
                     break;
@@ -193,7 +203,7 @@ public class P2PClient implements P2PUser {
      *
      * @param info The raw packet data.
      */
-    private void parseUsePacket(final PacketInfo info) {
+    private void parseUsePacket(final PacketInfo info, final byte[] packet) throws UnknownHostException {
         final int connType = info.getConnectionType();
         final NetworkConnectionType connection = NetworkConnectionType.getType(connType);
         // final NetworkSerializer serializer =
@@ -230,7 +240,11 @@ public class P2PClient implements P2PUser {
                 topology.replaceNetwork(newNetwork);
 
                 updateClusterServer();
+                break;
 
+            case MODULE:
+                System.out.println("p2pclient received MODULE packet");
+                chunkManager.addChunk(packet);
                 break;
 
             case CLOSE: // 111 : close the client terminate
