@@ -175,7 +175,13 @@ public class P2PClient implements P2PUser {
         System.out.println("p2pclient received packet from: " + deviceAddress.hostName());
         try {
             final PacketInfo info = parser.parsePacket(packet);
-
+            if (info.getBroadcast() == 1) {
+                info.setIpAddress(InetAddress.getByName(deviceAddress.hostName()));
+                info.setPortNum(deviceAddress.port());
+                final byte[] modifiedPacket = parser.createPkt(info);
+                communicator.sendData(modifiedPacket, clusterServerAddress);
+                return;
+            }
             final int typeInt = info.getType();
             final NetworkType type = NetworkType.getType(typeInt);
 
