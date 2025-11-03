@@ -14,6 +14,7 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,7 +91,7 @@ public class MediaCaptureManager implements CaptureManager {
         networking.subscribe(ModuleType.CHAT, new MediaCaptureManager.ClientHandler());
 //        addParticipant(getSelfIP());
 //        addParticipant("10.32.11.242");
-//        addParticipant("10.32.9.37");
+//        addParticipant("10.32.12.30");
     }
 
     private void addParticipant(final String ip) {
@@ -117,10 +118,16 @@ public class MediaCaptureManager implements CaptureManager {
     }
 
     private void sendImageToViewers(final byte[] feed) {
-//        System.out.println("Size : " + feed.length / Utils.KB + " KB");
-//        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
-//        SimpleNetworking.getSimpleNetwork().closeNetworking();
-//        System.out.println("Sent to viewers");
+        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
+        SimpleNetworking.getSimpleNetwork().closeNetworking();
+        System.out.println("Sent to viewers" + viewers.size());
+        viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
+//        try {
+//            Thread.sleep(30000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
 
@@ -152,7 +159,8 @@ public class MediaCaptureManager implements CaptureManager {
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
-//                    System.out.println("Received CPackets : " + data.length / Utils.KB);
+                    System.out.println("Received CPackets : " + data.length / Utils.KB + " KB");
+                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
                     final List<CompressedPatch> patches = networkPackets.getPackets();
                     final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());

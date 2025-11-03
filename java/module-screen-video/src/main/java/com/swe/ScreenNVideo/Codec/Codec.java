@@ -30,4 +30,6 @@ public interface Codec {
      * @return decoded image matrix
      */
     int[][] decode(byte[] encodedImage);
+
+    void setCompressionFactor(short qfactor);
 }
