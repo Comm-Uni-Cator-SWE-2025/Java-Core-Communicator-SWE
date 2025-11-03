@@ -31,7 +31,7 @@ class Compressor implements  ICompressor {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
         quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+        enDeRLE = encodeDecodeRLE.getInstance();
     }
 
     /**
@@ -46,9 +46,6 @@ class Compressor implements  ICompressor {
      */
     @Override
     public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
-
-        resBuffer.putShort((short) (height / matrixDim));
-        resBuffer.putShort((short) (width / matrixDim));
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {
@@ -79,9 +76,6 @@ class Compressor implements  ICompressor {
      */
     @Override
     public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
-
-        resBuffer.putShort((short) (height / matrixDim));
-        resBuffer.putShort((short) (width / matrixDim));
 
         for (short i = 0; i < height; i += matrixDim) {
             for (short j = 0; j < width; j += matrixDim) {

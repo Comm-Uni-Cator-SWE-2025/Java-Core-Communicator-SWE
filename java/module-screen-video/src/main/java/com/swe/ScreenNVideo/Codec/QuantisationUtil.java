@@ -141,12 +141,12 @@ public class QuantisationUtil {
                 int scaledCVal = (int) ((scaledQuantChrome[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
                 int scaledLVal = (int) ((scaledQuantLumin[i][j] / (scalingFactors[i] * scalingFactors[j])) + 0.5);
 
-                // Clamp values to the valid JPEG range [1, 255]
-                if(scaledCVal<1) scaledCVal = 1;
-                else if(scaledCVal>255) scaledCVal = 255;
-
-                if(scaledLVal<1) scaledLVal = 1;
-                else if(scaledLVal>255) scaledLVal = 255;
+//                // Clamp values to the valid JPEG range [1, 255]
+//                if(scaledCVal<1) scaledCVal = 1;
+//                else if(scaledCVal>255) scaledCVal = 255;
+//
+//                if(scaledLVal<1) scaledLVal = 1;
+//                else if(scaledLVal>255) scaledLVal = 255;
 
                 scaledQuantChrome[i][j] = scaledCVal;
                 scaledQuantLumin[i][j] = scaledLVal;

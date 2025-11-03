@@ -4,6 +4,7 @@ import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
+import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
@@ -42,18 +43,18 @@ public class MainController {
     }
 
     static void main(final String[] args) throws InterruptedException {
-        final SimpleNetworking networking =  SimpleNetworking.getSimpleNetwork();
+        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
-        final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
-        final ClientNode serverNode = new ClientNode("10.32.12.30", SERVERPORT);
+//        final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
+//        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
 
         final AbstractRPC rpc = new DummyRPC();
 
         final CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
-        networking.addUser(deviceNode, serverNode);
+//        networking.addUser(deviceNode, serverNode);
         Thread handler = null;
         try {
             handler = rpc.connect();
@@ -79,6 +80,6 @@ public class MainController {
 //        uiThread.join();
         screenNVideoThread.join();
         handler.join();
-        networking.closeNetworking();
+//        networking.closeNetworking();
     }
 }

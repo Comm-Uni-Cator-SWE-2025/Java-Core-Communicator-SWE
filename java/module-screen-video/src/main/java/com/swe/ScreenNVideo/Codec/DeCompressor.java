@@ -22,7 +22,7 @@ public class DeCompressor implements  IDeCompressor {
      */
     private final int matrixDim = 8;
 
-    DeCompressor() {
+    public DeCompressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
     }

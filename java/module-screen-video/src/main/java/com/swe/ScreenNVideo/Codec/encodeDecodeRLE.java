@@ -186,7 +186,10 @@ public class encodeDecodeRLE implements IRLE {
                     if (r >= matrix.length || c >= matrix[0].length) {
                         continue;
                     }
-                    if (remaining == 0 && buffer.hasRemaining()) {
+                    if (remaining == 0) {
+                        if (!buffer.hasRemaining() || buffer.remaining() < 4) {
+                            throw new RuntimeException("Buffer underflow during decode: insufficient data for RLE block");
+                        }
                         currentVal = buffer.getShort();
                         remaining = buffer.getShort();
                     }
@@ -202,7 +205,10 @@ public class encodeDecodeRLE implements IRLE {
                     if (r >= matrix.length || c >= matrix[0].length) {
                         continue;
                     }
-                    if (remaining == 0 && buffer.hasRemaining()) {
+                    if (remaining == 0) {
+                        if (!buffer.hasRemaining() || buffer.remaining() < 4) {
+                            throw new RuntimeException("Buffer underflow during decode: insufficient data for RLE block");
+                        }
                         currentVal = buffer.getShort();
                         remaining = buffer.getShort();
                     }

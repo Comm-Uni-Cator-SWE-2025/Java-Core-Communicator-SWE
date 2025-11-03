@@ -1,10 +1,10 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.ScreenNVideo.Utils;
-import com.swe.networking.AbstractNetworking;
 import com.swe.networking.ClientNode;
-import com.swe.networking.MessageListener;
 import com.swe.networking.ModuleType;
+import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.MessageListener;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -40,7 +40,6 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
         receiverThread.start();
     }
 
-    @Override
     public String getSelfIP() {
         return selfIP;
     }
@@ -65,22 +64,18 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
         packetQueue.offer(buffer.array());
     }
 
-    @Override
     public void sendData(final byte[] data, final ClientNode[] dest, final ModuleType module) {
 
     }
 
-    @Override
     public void sendData(final byte[] data) {
 
     }
 
-    @Override
     public void subscribe(final String name, final MessageListener function) {
         subscriptions.put(name, function);
     }
 
-    @Override
     public void removeSubscription(final String name) {
         subscriptions.remove(name);
     }
@@ -116,5 +111,20 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
 
     public void shutdown() {
         running = false;
+    }
+
+    @Override
+    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
+        sendData(data, new String[]{""}, new int[]{0});
+    }
+
+    @Override
+    public void subscribe(ModuleType name, com.swe.networking.SimpleNetworking.MessageListener function) {
+        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
+    }
+
+    @Override
+    public void removeSubscription(ModuleType name) {
+
     }
 }

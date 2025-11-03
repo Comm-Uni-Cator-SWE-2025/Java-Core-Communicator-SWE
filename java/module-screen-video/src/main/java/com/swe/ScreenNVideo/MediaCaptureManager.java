@@ -89,7 +89,7 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println(this.localIp);
 
         networking.subscribe(ModuleType.CHAT, new MediaCaptureManager.ClientHandler());
-//        addParticipant(getSelfIP());
+        addParticipant(localIp);
 //        addParticipant("10.32.11.242");
 //        addParticipant("10.32.12.30");
     }
@@ -120,7 +120,7 @@ public class MediaCaptureManager implements CaptureManager {
     private void sendImageToViewers(final byte[] feed) {
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
         networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
-        SimpleNetworking.getSimpleNetwork().closeNetworking();
+//        SimpleNetworking.getSimpleNetwork().closeNetworking();
         System.out.println("Sent to viewers" + viewers.size());
         viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
 //        try {
@@ -160,9 +160,10 @@ public class MediaCaptureManager implements CaptureManager {
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
                     System.out.println("Received CPackets : " + data.length / Utils.KB + " KB");
-                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
+//                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
                     final List<CompressedPatch> patches = networkPackets.getPackets();
+//                    System.out.println(Arrays.toString(Arrays.copyOf(patches.get(0).data(), 20)));
                     final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());
                     if (imageSynchronizer == null) {
                         return;
