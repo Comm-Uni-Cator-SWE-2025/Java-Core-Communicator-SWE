@@ -1,21 +1,23 @@
 package com.swe.ScreenNVideo.Capture;
 
-import java.awt.AWTException;
-import java.awt.Robot;
+// Original imports
+//import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.Rectangle;
+// import java.awt.Rectangle; // Removed unused import
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 
+// --- Imports ADDED from the 'another branch' code ---
+import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamResolution;
+// --- End of ADDED imports ---
+
 /**
- * VideoCapture class for capturing video frames from webcam using pure Java.
+ * VideoCapture class for capturing video frames from webcam.
  * Provides interface to capture images and convert them to matrix format.
  */
 public class VideoCapture extends ICapture {
-
-    /** Robot for screen capture (fallback method). */
-    private Robot robot;
 
     /** Capture parameters. */
     private Dimension captureArea;
@@ -24,6 +26,11 @@ public class VideoCapture extends ICapture {
 
     /** Listener for frame capture events. */
     private FrameCaptureListener listener;
+
+    // --- Field ADDED from the 'another branch' code ---
+    /** Webcam object for video capture. */
+    private Webcam webcam;
+    // --- End of ADDED field ---
 
     /** Default capture settings. */
     private static final int DEFAULT_WIDTH = 640;
@@ -36,12 +43,13 @@ public class VideoCapture extends ICapture {
 
     /**
      * Constructor - initializes with default screen capture area.
+     *
      */
     public VideoCapture() {
         this.captureArea = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         this.captureLocation = new Point(DEFAULT_X, DEFAULT_Y);
 
-        initializeCapture();
+
     }
 
     /**
@@ -57,42 +65,60 @@ public class VideoCapture extends ICapture {
         this.captureArea = new Dimension(width, height);
     }
 
-    /**
-     * Initialize capture mechanism.
-     */
-    private void initializeCapture() {
+    private void openWebcam() {
         try {
-            // Initialize Robot for screen capture
-            this.robot = new Robot();
-            System.out.println("VideoCapture initialized with screen capture");
-            System.out.println("Capture area: " + captureArea.width + "x" + captureArea.height
-                    + " at (" + captureLocation.x + "," + captureLocation.y + ")");
-        } catch (AWTException e) {
-            System.err.println("Error initializing Robot: " + e.getMessage());
+            this.webcam = Webcam.getDefault();
+            if (this.webcam == null) {
+                throw new IllegalStateException("No webcam found.");
+            }
+
+            // Use the captureArea set by the constructor
+            Dimension resolution = this.captureArea;
+            // If default Robot values were used, switch to a standard webcam res
+            if (resolution.width == DEFAULT_WIDTH && resolution.height == DEFAULT_HEIGHT) {
+                resolution = WebcamResolution.VGA.getSize();
+                System.out.println("Using default VGA resolution: " + resolution.width + "x" + resolution.height);
+            } else {
+                System.out.println("Using custom resolution: " + resolution.width + "x" + resolution.height);
+            }
+
+            this.webcam.setCustomViewSizes(new Dimension[]{resolution});
+            this.webcam.setViewSize(resolution);
+            this.webcam.open();
+
+            System.out.println("VideoCapture initialized with webcam: " + webcam.getName());
+
+        } catch (Exception e) {
+            System.err.println("Error initializing Webcam: " + e.getMessage());
             if (listener != null) {
                 listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
             }
         }
     }
 
+
     /**
      * Capture a single frame.
      * @return BufferedImage of the captured frame
      */
-    @SuppressWarnings("checkstyle:FinalLocalVariable")
     public BufferedImage capture() {
-        if (robot == null) {
-            System.err.println("Capture not started or robot not available");
+
+
+        // Lazy initialization: Initialize webcam on first capture attempt
+        if (this.webcam == null) {
+            System.out.println("Initializing webcam for the first time...");
+            openWebcam();
+        }
+
+        // --- Webcam capture logic ---
+        if (webcam == null || !webcam.isOpen()) {
+            System.err.println("Capture not started or webcam not available");
             return null;
         }
 
         try {
-            final Robot robot1 = new Robot();
-            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            final Rectangle screenRect = new Rectangle(screenSize);
-
-            // Create Robot instance and capture screen
-            return robot1.createScreenCapture(screenRect);
+            // Removed empty 'if' block that caused EmptyBlock error
+            return webcam.getImage();
 
         } catch (Exception e) {
             System.err.println("Error capturing frame: " + e.getMessage());
@@ -105,6 +131,9 @@ public class VideoCapture extends ICapture {
 
     /**
      * Set capture area and location.
+     * NOTE: Due to constraints, calling this will NOT update the webcam
+     * resolution after the first capture.)
+     *
      * @param x X coordinate
      * @param y Y coordinate
      * @param width Width of capture area
@@ -116,14 +145,6 @@ public class VideoCapture extends ICapture {
         System.out.println("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
     }
 
-    /**
-     * Set frame capture listener.
-     * @param newListener FrameCaptureListener implementation.
-     */
-    public void setFrameCaptureListener(final FrameCaptureListener newListener) {
-        this.listener = newListener;
-    }
-
 
     /**
      * Get screen dimensions.
@@ -133,4 +154,20 @@ public class VideoCapture extends ICapture {
         final Toolkit toolkit = Toolkit.getDefaultToolkit();
         return toolkit.getScreenSize();
     }
+
+    // --- Method ADDED from 'another branch' to work with test_video.java ---
+    /**
+     * Closes the webcam to release the resource.
+     * This is an important new method to call when you are done.
+     */
+    public void close() {
+        if (webcam != null && webcam.isOpen()) {
+            webcam.close();
+            System.out.println("Webcam closed.");
+        }
+    }
+    // --- End of ADDED method ---
+
+
+    // Added here so the file could be self-contained for testing.
 }
