@@ -58,6 +58,12 @@ public class P2PServer implements P2PUser {
      */
     private final int timeoutThreshold = 10000;
 
+    /** Variable to store header size. */
+    private final int packetHeaderSize = 22;
+
+    /** Variable to store chunk manager. */
+    private final ChunkManager chunkManager;
+
     /**
      * Main server Node.
      */
@@ -79,7 +85,8 @@ public class P2PServer implements P2PUser {
         
         this.serverPort = deviceAddress.port();
         communicator = new TCPCommunicator(deviceAddress.port());
-        
+        chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
+
         this.deviceNode = deviceAddress;
         this.mainServer = mainServerAddress;
 
@@ -154,6 +161,28 @@ public class P2PServer implements P2PUser {
         final ClientNode dest = new ClientNode(destinationIp,
                 destinationPort);
 
+        // check for broadcast
+        if (packetInfo.getBroadcast() == 1) {
+            System.out.println("Broadcast packet received at P2PServer.");
+            // modify packet to dest as self
+            packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
+            packetInfo.setPortNum(deviceNode.port());
+            final byte[] newPacket = parser.createPkt(packetInfo);
+            for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
+                if (c.equals(deviceNode) || c.equals(dest)) {
+                    continue;
+                }
+                send(newPacket, c);
+            }
+            for(ClientNode servers : topology.getAllClusterServers()){
+                if(servers.equals(deviceNode) || servers.equals(dest)){
+                    continue;
+                }
+                send(newPacket, servers);
+            }
+            return;
+        }
+
         // handle based on type and connection type
         if (type == NetworkType.USE.ordinal() || type == NetworkType.CLUSTERSERVER.ordinal()) {
             handleUsePacket(connectionType, packet, dest);
@@ -197,6 +226,10 @@ public class P2PServer implements P2PUser {
                     break;
                 case NETWORK:
                     handleNetwork(packet);
+                    break;
+                case MODULE:
+                    System.out.println("MODULE packet received");
+                    chunkManager.addChunk(packet);
                     break;
                 case CLOSE:
                     close();
