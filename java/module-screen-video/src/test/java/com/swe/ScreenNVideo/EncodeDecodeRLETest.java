@@ -1,6 +1,6 @@
 package com.swe.ScreenNVideo;
 
-import com.swe.ScreenNVideo.Codec.encodeDecodeRLE;
+import com.swe.ScreenNVideo.Codec.EncodeDecodeRLE;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Comprehensive test suite for encodeDecodeRLE class.
+ * Comprehensive test suite for EncodeDecodeRLE class.
  * Tests ZigZag scanning and Run-Length Encoding compression and decompression.
  */
-public class encodeDecodeRLETest {
+public class EncodeDecodeRLETest {
 
     private static final int BLOCK_SIZE = 8;
     private static final int SINGLE_BLOCK_DIM = 8;
@@ -27,14 +27,14 @@ public class encodeDecodeRLETest {
     private static final short TEST_VALUE = 100;
     private static final short ZERO_VALUE = 0;
 
-    private encodeDecodeRLE encoder;
+    private EncodeDecodeRLE encoder;
 
     /**
      * Sets up test fixture before each test.
      */
     @BeforeEach
     public void setUp() {
-        encoder = encodeDecodeRLE.getInstance();
+        encoder = EncodeDecodeRLE.getInstance();
     }
 
     /**
@@ -50,8 +50,8 @@ public class encodeDecodeRLETest {
      */
     @Test
     public void testGetInstanceSingleton() {
-        final encodeDecodeRLE instance1 = encodeDecodeRLE.getInstance();
-        final encodeDecodeRLE instance2 = encodeDecodeRLE.getInstance();
+        final EncodeDecodeRLE instance1 = EncodeDecodeRLE.getInstance();
+        final EncodeDecodeRLE instance2 = EncodeDecodeRLE.getInstance();
         assertSame(instance1, instance2);
     }
 
