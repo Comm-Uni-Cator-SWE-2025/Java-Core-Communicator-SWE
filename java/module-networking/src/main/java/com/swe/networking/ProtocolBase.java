@@ -1,6 +1,6 @@
 package com.swe.networking;
 
-import java.net.Socket;
+import java.nio.channels.SocketChannel;
 
 /**
  * Common interface to send data using various protocols.
@@ -11,7 +11,7 @@ public interface ProtocolBase {
      *
      * @return the created socket
      */
-    Socket openSocket();
+    SocketChannel openSocket();
 
     /**
      * To close an opened socket.

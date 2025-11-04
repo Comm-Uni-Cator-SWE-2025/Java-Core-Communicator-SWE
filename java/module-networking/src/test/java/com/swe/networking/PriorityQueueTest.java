@@ -1,7 +1,10 @@
 package com.swe.networking;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -16,11 +19,32 @@ class PriorityQueueTest {
         return PacketParser.getPacketParser();
     }
 
+    // Creating the object PriorityQueue
+    PriorityQueue pq = PriorityQueue.getPriorityQueue();
+
     // Helper method for creating packets
     private byte[] createTestPkt(PacketParser parser, int priority, int chunkNum, String payload)
             throws UnknownHostException {
-        InetAddress ip = InetAddress.getByName("0.0.0.0");
-        return parser.createPkt(0, priority, 0, 0, 0, ip, 0, 0, chunkNum, 0, payload.getBytes());
+        final InetAddress ip = InetAddress.getByName("0.0.0.0");
+        final PacketInfo ds = new PacketInfo();
+        ds.setType(0);
+        ds.setPriority(priority);
+        ds.setModule(0);
+        ds.setBroadcast(0);
+        ds.setIpAddress(ip);
+        ds.setPortNum(0);
+        ds.setMessageId(0);
+        ds.setChunkNum(chunkNum);
+        ds.setLength(22 + payload.getBytes().length);
+        ds.setChunkLength(0);
+        ds.setPayload(payload.getBytes());
+        final byte[] pkt = parser.createPkt(ds);
+        return pkt;
+    }
+
+    @AfterEach
+    public void queueClear() {
+        pq.clear();
     }
 
     //-------------------------------------------------------------------------
@@ -29,14 +53,21 @@ class PriorityQueueTest {
 
     @Test
     void testSinglePacket() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
-        byte[] data = createTestPkt(parser, 1, 0, "hello");
+        byte[] data = createTestPkt(parser, 5, 0, "hello");
         pq.addPacket(data);
 
         byte[] result = pq.nextPacket();
         assertNotNull(result, "Next packet should not be null");
         assertArrayEquals(data, result, "Packet data should match");
+    }
+
+    @Test
+    void testingEmptyQueue() {
+        PacketParser parser = getParser();
+        boolean result = pq.isEmpty();
+
+        assertEquals(true, result, "The Queues should be empty");
     }
 
     @Test
@@ -60,33 +91,32 @@ class PriorityQueueTest {
 
     @Test
     void testMultiplePacketsDifferentPriorities() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
-        byte[] highPriority = createTestPkt(parser, 1, 0, "high");
-        byte[] midPriority = createTestPkt(parser, 2, 0, "medium");
-        byte[] lowPriority = createTestPkt(parser, 3, 0, "lowest");
+        byte[] high1Priority = createTestPkt(parser, 0, 0, "high");
+        byte[] mid1Priority = createTestPkt(parser, 3, 0, "medium");
+        byte[] low1Priority = createTestPkt(parser, 7, 0, "lowest");
 
-        pq.addPacket(lowPriority);
-        pq.addPacket(midPriority);
-        pq.addPacket(highPriority);
+        pq.addPacket(low1Priority);
+        pq.addPacket(mid1Priority);
+        pq.addPacket(high1Priority);
+
 
         // P1 > P2 > P3 order
-        assertArrayEquals(highPriority, pq.nextPacket(), "Highest priority packet sent first");
-        assertArrayEquals(midPriority, pq.nextPacket(), "Mid priority packet sent second");
-        assertArrayEquals(lowPriority, pq.nextPacket(), "Low priority packet sent last");
+        assertArrayEquals(high1Priority, pq.nextPacket(), "Highest priority packet sent first");
+        assertArrayEquals(mid1Priority, pq.nextPacket(), "Mid priority packet sent second");
+        assertArrayEquals(low1Priority, pq.nextPacket(), "Low priority packet sent last");
     }
 
     @Test
     void testBudgetLimits() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         // Add 200 high-priority packets (budget is 50)
         for (int i = 0; i < 10000; i++) {
-            pq.addPacket(createTestPkt(parser, 1, i, "p" + i));
-            pq.addPacket(createTestPkt(parser, 2, 10000 + i, "mp" + i));
-            pq.addPacket(createTestPkt(parser, 3, 20000+i, "lp" + i));
+            pq.addPacket(createTestPkt(parser, 0, i, "p" + i));
+            pq.addPacket(createTestPkt(parser, 3, 10000 + i, "mp" + i));
+            pq.addPacket(createTestPkt(parser, 7, 20000+i, "lp" + i));
         }
 
         int sentCount = 0;
@@ -110,11 +140,10 @@ class PriorityQueueTest {
 
     @Test
     void testRotation() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         for(int i = 0; i < 4000; i++){
-            pq.addPacket(createTestPkt(parser, 3, i, "LP"));
+            pq.addPacket(createTestPkt(parser, 6, i, "LP"));
         }
 
         for(int i = 0; i < 400; i++){
@@ -125,13 +154,14 @@ class PriorityQueueTest {
         pq.nextPacket();
 
         for(int i = 0; i < 1000; i++){
-            pq.addPacket(createTestPkt(parser, 3, 4000+i, "LP"));
+            pq.addPacket(createTestPkt(parser, 7, 4000+i, "LP"));
         }
 
         for(int i = 0; i < 2900; i++){
             byte[] pkt = pq.nextPacket();
             if (pkt != null) {
-                System.out.println(parser.getChunkNum(pkt));
+                final PacketInfo info = parser.parsePacket(pkt);
+                System.out.println(info.getChunkNum());
             }
         }
 
@@ -142,18 +172,17 @@ class PriorityQueueTest {
 
     @Test
     void testAggressiveMLFQSurvival() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         final int LP_BUDGET = 20;
 
         // --- Phase 1: Initial Load ---
         // Load 40 LP packets (P0-P39) to ensure 20 packets remain after the first epoch.
         for (int i = 0; i < 40; i++) {
-            pq.addPacket(createTestPkt(parser, 3, i, "LP" + i));
+            pq.addPacket(createTestPkt(parser, 6, i, "LP" + i));
         }
         // Add HP/MP traffic to ensure P3 only gets its 20 tokens
         for (int i = 0; i < 50; i++) { pq.addPacket(createTestPkt(parser, 1, 100+i, "HP")); }
-        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 2, 200+i, "MP")); }
+        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 3, 200+i, "MP")); }
 
 
         // --- Epoch 1: Consumption (P0-P19 Sent) ---
@@ -167,19 +196,19 @@ class PriorityQueueTest {
         // --- Rotation 1: MLFQ[0] -> MLFQ[1] ---
         Thread.sleep(150); // Wait > 10ms for budget reset
         Thread.sleep(1000); // Wait > 1000ms for rotation
-        pq.nextPacket(); // Trigger rotation. P20-P39 move to MLFQ[1].
+        pq.nextPacket(); // Sends P20 and Trigger rotation. P21-P39 move to MLFQ[1].
 
         // --- Epoch 2: Consumption (P20-P39 Sent from MLFQ[1]) ---
-        // Drain 100 packets. P20-P39 are now sent using P3's budget.
+        // Drain 100 packets. P21-P39 are now sent using P3's budget.
         for (int i = 0; i < 100; i++) { pq.nextPacket(); }
 
         System.out.println("--- Epoch 2 Complete. MLFQ[1] is now empty. ---");
 
         // --- Target Packet Load ---
         // Load one unique target packet (P_TARGET) into MLFQ[0] to track it.
-        byte[] testPkt = createTestPkt(parser, 1, 169, "Test_Pkt");
+        byte[] testPkt = createTestPkt(parser, 1, 16900, "Test_Pkt");
         pq.addPacket(testPkt);
-        byte[] targetPkt = createTestPkt(parser, 3, 500, "TARGET_SURVIVOR");
+        byte[] targetPkt = createTestPkt(parser, 7, 500, "TARGET_SURVIVOR");
         pq.addPacket(targetPkt);
 
         // --- Rotation 2: MLFQ[1] (empty) -> MLFQ[2] ---
@@ -190,7 +219,7 @@ class PriorityQueueTest {
         // --- Epoch 3: TARGET is starved by P1/P2 ---
         // Fill P1/P2 budgets and consume them instantly. TARGET packet remains in MLFQ[1].
         for (int i = 0; i < 50; i++) { pq.addPacket(createTestPkt(parser, 1, 300+i, "HP")); }
-        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 2, 400+i, "MP")); }
+        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 4, 400+i, "MP")); }
         for (int i = 0; i < 79; i++) { pq.nextPacket(); } // Budget consumed (TARGET not sent)
 
         // --- Rotation 3: MLFQ[2] (empty) -> MLFQ[0] (Recycled Queue) ---
@@ -209,20 +238,20 @@ class PriorityQueueTest {
 
         // --- Assertions ---
         assertNotNull(survivorPkt, "The target packet must be sent after surviving rotations.");
-        assertEquals(3, parser.getPriority(survivorPkt), "The priority must be 3 (Low).");
-        assertEquals(500, parser.getChunkNum(survivorPkt),
-                "The chunk number must match the target survivor (500).");
+        PacketInfo info = parser.parsePacket(survivorPkt);
+        assertEquals(7, info.getPriority(), () -> "The packet should be from level 2.");
+        assertEquals(500, info.getChunkNum(),
+                () -> "The chunk number must match the target survivor (500).");
     }
 
     @Test
     void testMLFQStarvationPrevention() throws InterruptedException, UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         final int MLFQ_BUDGET = 20;
 
         // Add 100 LP packets (P_0 to P_99)
         for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 3, i, "P" + i));
+            pq.addPacket(createTestPkt(parser, 7, i, "P" + i));
         }
 
         for (int i = 0; i < 99; i++) {
@@ -232,10 +261,11 @@ class PriorityQueueTest {
         byte[] pkt = pq.nextPacket(); // Triggers final rotation
 
         // Verify the first packet after the full cycle is P_60, and its budget is used.
-        int priority = parser.getPriority(pkt);
-        int chunkNum = parser.getChunkNum(pkt);
+        PacketInfo info = parser.parsePacket(pkt);
+        int priority = info.getPriority();
+        int chunkNum = info.getChunkNum();
 
-        assertEquals(3, priority, "Priority must be 3 (Low)");
+        assertEquals(7, priority, "Priority must be 7 (Low)");
         assertEquals(99, chunkNum, "First packet after full cycle should be P_60");
     }
 
@@ -246,7 +276,6 @@ class PriorityQueueTest {
 
     @Test
     void testWorkConservation() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         // 1. Add only 10 HP (P1) packets (Budget is 50)
@@ -255,11 +284,11 @@ class PriorityQueueTest {
         }
         // 2. Add 100 MP (P2) packets (Budget is 30)
         for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 2, 100 + i, "MP" + i));
+            pq.addPacket(createTestPkt(parser, 4, 100 + i, "MP" + i));
         }
         // 3. Add 100 LP (P3) packets (Budget is 20)
         for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 3, 200 + i, "LP" + i));
+            pq.addPacket(createTestPkt(parser, 7, 200 + i, "LP" + i));
         }
 
         int sentCount = 0;
@@ -272,10 +301,11 @@ class PriorityQueueTest {
             byte[] pkt = pq.nextPacket();
             if (pkt != null) {
                 sentCount++;
-                int priority = parser.getPriority(pkt);
+                PacketInfo info = parser.parsePacket(pkt);
+                int priority = info.getPriority();
                 if (priority == 1) hpSent++;
-                else if (priority == 2) mpSent++;
-                else if (priority == 3) lpSent++;
+                else if (priority == 4) mpSent++;
+                else if (priority == 7) lpSent++;
             }
         }
 
@@ -298,7 +328,6 @@ class PriorityQueueTest {
 
     @Test
     void testConcurrentAccessAndOrder() throws InterruptedException, UnknownHostException, ExecutionException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         final int NUM_PACKETS_PER_THREAD = 100; // 400 total packets of each priority
@@ -317,8 +346,8 @@ class PriorityQueueTest {
 
                 // Use uniqueChunkId in the payload for easier debugging
                 pq.addPacket(createTestPkt(parser, 1, uniqueChunkId, "HP-" + uniqueChunkId));
-                pq.addPacket(createTestPkt(parser, 2, uniqueChunkId, "MP-" + uniqueChunkId));
-                pq.addPacket(createTestPkt(parser, 3, uniqueChunkId, "LP-" + uniqueChunkId));
+                pq.addPacket(createTestPkt(parser, 4, uniqueChunkId, "MP-" + uniqueChunkId));
+                pq.addPacket(createTestPkt(parser, 7, uniqueChunkId, "LP-" + uniqueChunkId));
 
                 // Introduce interleaving
                 Thread.sleep(1);
@@ -343,8 +372,9 @@ class PriorityQueueTest {
             for (int i = 0; i < 400; i++) { // Each receiver tries 400 times
                 byte[] pkt = pq.nextPacket();
                 if (pkt != null) {
-                    int priority = parser.getPriority(pkt);
-                    int chunkNum = parser.getChunkNum(pkt);
+                    PacketInfo info = parser.parsePacket(pkt);
+                    int priority = info.getPriority();
+                    int chunkNum = info.getChunkNum();
 
                     String logEntry = String.format("P: %d, Chunk: %d, Thread: %s",
                             priority, chunkNum, Thread.currentThread().getName());
@@ -377,8 +407,8 @@ class PriorityQueueTest {
 
         for (String log : firstEpoch) {
             if (log.contains("P: 1")) p1Count++;
-            else if (log.contains("P: 2")) p2Count++;
-            else if (log.contains("P: 3")) p3Count++;
+            else if (log.contains("P: 4")) p2Count++;
+            else if (log.contains("P: 7")) p3Count++;
         }
 
         // Budget integrity check: The nextPacket() must respect the 100 limit.
@@ -392,5 +422,179 @@ class PriorityQueueTest {
         executor.shutdown();
     }
 
+    @Test
+    void testNonStarvationDuringBulkTransfer() throws InterruptedException, UnknownHostException, ExecutionException {
+        PacketParser parser = getParser();
+        ExecutorService executor = Executors.newFixedThreadPool(3); // 3 threads
+        final int BULK_PACKETS = 100000;
+        final int HP_INJECTION_COUNT = 10;
+        final int HP_CHUNK_START = 7700000;
 
+        // Use a queue to track the sent HP packets for verification
+        ConcurrentLinkedQueue<Integer> sentHighPriorityChunks = new ConcurrentLinkedQueue<>();
+
+        // 1. Bulk Sender Task (Continuously load Low Priority)
+        Callable<Void> bulkSender = () -> {
+            // Load the initial bulk of the 4GB file
+            for (int i = 0; i < BULK_PACKETS; i++) {
+                pq.addPacket(createTestPkt(parser, 7, i, "LP_BULK_" + i));
+                // Slow down slightly to allow the receiver to start
+                if (i % 1000 == 0) Thread.sleep(1);
+            }
+            return null;
+        };
+
+        // 2. Critical Sender Task (Inject 10 HP packets mid-transfer)
+        Callable<Void> criticalSender = () -> {
+            // Wait for the bulk transfer to be well underway (e.g., 50ms)
+            Thread.sleep(50);
+
+            System.out.println("\n*** Injecting 10 High Priority Packets Now ***");
+
+            // Inject the 10 highest-priority packets (P1)
+            for (int i = 0; i < HP_INJECTION_COUNT; i++) {
+                pq.addPacket(createTestPkt(parser, 0, HP_CHUNK_START + i, "HP_CRITICAL_" + i));
+            }
+            return null;
+        };
+
+        Callable<Void> sender1 = () -> {
+            Thread.sleep(100);
+
+            for(int i = 0; i < HP_INJECTION_COUNT; i++){
+                pq.addPacket(createTestPkt(parser, 4, (HP_CHUNK_START + 10) + i, "HP_CRITICAL_" + i));
+                pq.addPacket(createTestPkt(parser, 6, (HP_CHUNK_START + 10) + i, "HP_CRITICAL_" + i));
+                pq.addPacket(createTestPkt(parser, 1, (HP_CHUNK_START + 10) + i, "HP_CRITICAL_" + i));
+            }
+            return null;
+        };
+
+        // 3. Receiver Task (Continuous Transmission)
+        Callable<Integer> receiver = () -> {
+            int count = 0;
+            int maxIterations = BULK_PACKETS + HP_INJECTION_COUNT + 130; // Total expected + buffer
+
+            for (int i = 0; i < maxIterations; i++) {
+                byte[] pkt = pq.nextPacket();
+                if (pkt != null) {
+                    count++;
+                    PacketInfo info = parser.parsePacket(pkt);
+                    int chunkNum = info.getChunkNum();
+                    int priority = info.getPriority();
+
+                    // Track and log the critical HP packets when they are sent
+                    if (info.getPriority() <= 6) { // Priority ZERO, ONE, TWO map to highestPriorityQueue
+                        if (chunkNum >= HP_CHUNK_START) {
+                            sentHighPriorityChunks.add(chunkNum);
+                            System.out.println("-> HP Packet Sent: Chunk " + chunkNum + " Priority: " + priority);
+                        }
+                    }
+                } else {
+                    // Sleep briefly if queue is empty to avoid busy-waiting
+                    Thread.sleep(1);
+                }
+            }
+            return count;
+        };
+
+        // Execute all tasks
+        Future<Void> bulkFuture = executor.submit(bulkSender);
+        Future<Void> criticalFuture = executor.submit(criticalSender);
+        Future<Integer> receiverFuture = executor.submit(receiver);
+        Future<Void> future2 = executor.submit(sender1);
+
+        // Wait for the critical sender to finish injection
+        criticalFuture.get();
+
+        // Wait for the bulk sender to finish loading the initial queue
+        bulkFuture.get();
+
+        // Wait for the receiver to finish draining
+        receiverFuture.get();
+
+        future2.get();
+
+        executor.shutdown();
+
+        // --- Verification ---
+        assertEquals(HP_INJECTION_COUNT * 4, sentHighPriorityChunks.size(), "All 10 HP packets must have been sent.");
+
+        // Verify order (The first HP packets sent must be the injected ones)
+        for (int i = 0; i < HP_INJECTION_COUNT; i++) {
+            assertTrue(sentHighPriorityChunks.contains(HP_CHUNK_START + i), "Missing injected HP packet: " + (HP_CHUNK_START + i));
+        }
+        System.out.println("\nTest Successful: HP packets were sent immediately after injection, proving non-starvation.");
+    }
+
+    //-------------------------------------------------------------------------
+    // PERFORMANCE TEST (THROUGHPUT)
+    //-------------------------------------------------------------------------
+
+    @Test
+    void testThroughput() throws UnknownHostException, InterruptedException {
+        PacketParser parser = getParser();
+        final int TOTAL_PACKETS = 60000; // Load 600,000 packets
+        final int PACKETS_PER_ITERATION = 8;
+        final int TOTAL_PACKETS_TO_SEND = TOTAL_PACKETS * PACKETS_PER_ITERATION;
+
+        // Load the Queue
+        System.out.println("Loading " + TOTAL_PACKETS_TO_SEND + " packets...");
+        for (int i = 0; i < TOTAL_PACKETS; i++) {
+            // Use different chunk numbers for uniqueness
+            pq.addPacket(createTestPkt(parser, 7, i, "Payload" + i));
+            pq.addPacket(createTestPkt(parser, 0, i, "High Priority + i"));
+            pq.addPacket(createTestPkt(parser, 5, i, "five Priority + i"));
+            pq.addPacket(createTestPkt(parser, 1, i, "one Priority + i"));
+            pq.addPacket(createTestPkt(parser, 2, i, "twooo Priority + i"));
+            pq.addPacket(createTestPkt(parser, 3, i, "three3 Priority + i"));
+            pq.addPacket(createTestPkt(parser, 4, i, "four44 Priority + i"));
+            pq.addPacket(createTestPkt(parser, 6, i, "sixxxxx Priority + i"));
+        }
+        System.out.println("Loading complete.");
+
+        // Measure Consumption
+        int sentCount = 0;
+        int nullCount = 0;
+
+        // Use System.nanoTime() for high-resolution timing
+        long startTimeNanos = System.nanoTime();
+
+        // Drain the queue until all packets are retrieved
+        long packetsRemaining = TOTAL_PACKETS_TO_SEND;
+        while(packetsRemaining > 0) {
+            byte[] pkt = pq.nextPacket();
+            if (pkt != null) {
+                sentCount++;
+                packetsRemaining--;
+            }
+        }
+
+
+        long endTimeNanos = System.nanoTime();
+
+        // Calculation and Assertion
+
+        // Ensure the correct number of packets were sent
+        assertEquals(TOTAL_PACKETS_TO_SEND, sentCount, "The total number of sent packets must equal the number added.");
+
+        // Calculate time difference in seconds
+        long elapsedTimeNanos = endTimeNanos - startTimeNanos;
+        double elapsedTimeSeconds = elapsedTimeNanos / 1_000_000_000.0;
+
+        // Calculate Packets Per Second (PPS)
+        double packetsPerSecond = (double)sentCount / elapsedTimeSeconds;
+
+        // Log the result
+        System.out.printf("\nTHROUGHPUT RESULTS\n");
+        System.out.printf("Total Packets Sent: %,d\n", sentCount);
+        System.out.printf("Elapsed Time: %.4f seconds\n", elapsedTimeSeconds);
+        System.out.printf("Approximate Throughput: **%,.0f PPS** (Packets Per Second)\n", packetsPerSecond);
+
+        // Assertion against a baseline minimum (adjust this value based on your hardware)
+        // This asserts that the performance is reasonable, not just correct.
+        final double MIN_ACCEPTABLE_PPS = 10000.0; // Example baseline (100k PPS)
+        assertTrue(packetsPerSecond > MIN_ACCEPTABLE_PPS,
+                String.format("Throughput is too low: %.0f PPS (Below %.0f PPS minimum)",
+                        packetsPerSecond, MIN_ACCEPTABLE_PPS));
+    }
 }
