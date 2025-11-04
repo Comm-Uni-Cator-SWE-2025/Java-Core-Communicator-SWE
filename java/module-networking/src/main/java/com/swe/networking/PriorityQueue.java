@@ -166,6 +166,18 @@ public class PriorityQueue {
     }
 
     /**
+     * This function gives the approx throughput of the Priority Queue.
+     * This assumes that there are enough number of packets.
+     *
+     * @return The minimum throughput of the Priority Queue
+     */
+    public int getThroughput() {
+        final int numMS = 1000;
+        final int numEpoch = numMS / EPOCH_MS;
+        return TOTAL_BUDGET * numEpoch;
+    }
+
+    /**
      * Adds a packet to the appropriate queue based on its priority.
      *
      * @param data the packet payload
