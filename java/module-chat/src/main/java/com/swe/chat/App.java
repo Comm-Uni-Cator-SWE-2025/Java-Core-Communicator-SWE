@@ -1,69 +1,50 @@
 package com.swe.chat;
 
-import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
-import java.io.IOException;
-
-/**
- * Hello world!.
- */
-
-//public class App {
-//    public static void main(String[] args) {
-//        System.out.println("Hello World!");
-//    }
-//}
-
-
+import com.swe.chat.AbstractRPC; // You will need to import your RPC files
+import com.swe.chat.DummyRPC;   // You will need to import your RPC files
+import com.swe.networking.ClientNode;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 import javax.swing.SwingUtilities;
 
 /**
- * Main application launcher for the Swing version.
- * This REPLACES your JavaFX App.java.
+ * Main application launcher for testing the refactored RPC architecture.
+ * This class now acts as the "Controller" to inject dependencies.
  */
 public class App {
 
     public static void main(final String[] args) {
-        // Launch all Swing UIs on the Event Dispatch Thread (EDT)
-        // This is the standard, required way to start a Swing app.
+
+        // --- THIS IS THE NEW CONTROLLER LOGIC ---
+
+        // 1. Create the single RPC instance
+        // (Make it final so the lambda can use it)
+        final AbstractRPC dummyRpc = new DummyRPC();
+
+        // 2. Create and configure the "Backend" (Core)
+        // TODO: Update these IPs/Ports for your test
+        // (This is the old code from ChatViewModel's constructor)
+        SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
+        ClientNode device = new ClientNode("127.0.0.1", 1234); // This instance's port
+        ClientNode server = new ClientNode("127.0.0.1", 1234); // The server's port
+        network.addUser(device, server);
+
+        // 3. Create the ChatManager (Core) and subscribe it to the RPC
+        // This is the step that was missing!
+        ChatManager chatManager = new ChatManager(dummyRpc, network);
+
+        // ---
+
+        // 4. Create the "Frontend" (View/ViewModel)
         SwingUtilities.invokeLater(() -> {
-            ChatView chatView = new ChatView();
+
+            // 5. Create the ViewModel and subscribe it to the RPC
+            ChatViewModel viewModel = new ChatViewModel(dummyRpc);
+
+            // 6. Create the View and inject the ViewModel
+            // (This requires you to update ChatView's constructor)
+            ChatView chatView = new ChatView(viewModel);
+
             chatView.setVisible(true);
         });
     }
 }
-
-// Your main class now extends Application from JavaFX
-//public class App extends Application {
-//
-//    // The start method is the main entry point for all JavaFX applications
-//    @Override
-//    public void start(final Stage primaryStage) {
-//        try {
-//
-//            // Load the FXML file we created.
-//            final FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(
-//                    "/ChatView.fxml")
-//            );
-//            final Parent root = fxmlLoader.load();
-//
-//
-//            // Set up the main window (called a "Stage")
-//            primaryStage.setTitle("CommUniCator Chat");
-//            primaryStage.setScene(new Scene(root));
-//            primaryStage.show();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    // The main method now just launches the JavaFX application
-//    public static void main(final String[] args) {
-//        launch(args);
-//    }
-//}

@@ -18,7 +18,7 @@ import com.swe.networking.ClientNode;
 public class ChatViewModel {
 
     // --- Model ---
-    private final ChatManager chatManager;
+    private final AbstractRPC rpc;
 //    private final MockNetworking mockNetwork; // For the "Test Recv" button
     private final String currentUserId = "Akshay-Jadhav";
     private final Map<String, ChatMessage> messageHistory = new ConcurrentHashMap<>();
@@ -62,35 +62,49 @@ public class ChatViewModel {
     }
 
     // --- Constructor ---
-    public ChatViewModel() {
+    public ChatViewModel(AbstractRPC rpc) {
         // 1. Set up the model
         // OLD:
         // this.mockNetwork = new MockNetworking();
         // this.chatManager = new ChatManager(this.mockNetwork);
 
         // NEW:
-        SimpleNetworking realNetwork = SimpleNetworking.getSimpleNetwork();
+        this.rpc = rpc;
+        this.rpc.subscribe("chat:new-message", this::handleBackendMessage);
 
         // 2. *** ADD THIS BLOCK - THE MISSING STEP ***
         // Use the same info from their Main.java example
-        String deviceIp = "127.0.0.1";
-        int devicePort = 1234;
-        ClientNode device = new ClientNode(deviceIp, devicePort);
-        String serverIp = "127.0.0.1";
-        int serverPort = 1234;
-        ClientNode server = new ClientNode(serverIp, serverPort);
-
-        // This call initializes the SimpleNetworking.user variable
-        realNetwork.addUser(device, server);
+//        String deviceIp = "127.0.0.1";
+//        int devicePort = 1234;
+//        ClientNode device = new ClientNode(deviceIp, devicePort);
+//        String serverIp = "127.0.0.1";
+//        int serverPort = 1234;
+//        ClientNode server = new ClientNode(serverIp, serverPort);
+//
+//        // This call initializes the SimpleNetworking.user variable
+//        realNetwork.addUser(device, server);
 
         // 3. Now, create the ChatManager (which will subscribe)
-        this.chatManager = new ChatManager(realNetwork);
+//        this.chatManager = new ChatManager(realNetwork);
 
         // 4. Listen for incoming messages
-        this.chatManager.setOnMessageReceived(this::handleIncomingMessage);
+//        this.chatManager.setOnMessageReceived(this::handleIncomingMessage);
     }
 
     // --- Actions (Called by the View) ---
+
+    /**
+     * Handles an incoming message from the Backend via RPC.
+     */
+    private byte[] handleBackendMessage(byte[] messageBytes) {
+        // We received a serialized ChatMessage
+        ChatMessage message = MessageParser.deserialize(new String(messageBytes, StandardCharsets.UTF_8));
+
+        // Now, use your *existing* logic to show the message
+        handleIncomingMessage(message); // This updates the UI
+
+        return null; // No reply needed
+    }
 
     public void sendMessage(String messageText) {
         if (messageText == null || messageText.trim().isEmpty()) {
@@ -100,10 +114,11 @@ public class ChatViewModel {
         final String messageId = UUID.randomUUID().toString();
         final ChatMessage messageToSend = new ChatMessage(messageId, this.currentUserId, messageText, this.currentReplyId);
 
-        chatManager.sendMessage(messageToSend);
+        // 1. Send the message to the Backend via RPC
+        String json = MessageParser.serialize(messageToSend);
+        this.rpc.call("chat:send-message", json.getBytes(StandardCharsets.UTF_8));
 
-        // Manually process this message for our *own* UI.
-        // This will make it appear on the right side immediately.
+        // 2. Display our *own* message immediately
         handleIncomingMessage(messageToSend);
 
         if (onClearInput != null) {
@@ -111,6 +126,26 @@ public class ChatViewModel {
         }
         cancelReply();
     }
+
+//    public void sendMessage(String messageText) {
+//        if (messageText == null || messageText.trim().isEmpty()) {
+//            return;
+//        }
+//
+//        final String messageId = UUID.randomUUID().toString();
+//        final ChatMessage messageToSend = new ChatMessage(messageId, this.currentUserId, messageText, this.currentReplyId);
+//
+//        chatManager.sendMessage(messageToSend);
+//
+//        // Manually process this message for our *own* UI.
+//        // This will make it appear on the right side immediately.
+//        handleIncomingMessage(messageToSend);
+//
+//        if (onClearInput != null) {
+//            onClearInput.run();
+//        }
+//        cancelReply();
+//    }
 
 //    public void simulateIncomingMessage() {
 //        final String messageId = UUID.randomUUID().toString();

@@ -33,9 +33,9 @@ public class ChatView extends JFrame {
 
     // We refer to the helper class as ChatViewModel.MessageVM
 
-    public ChatView() {
+    public ChatView(ChatViewModel viewModel) {
         // 1. Create the ViewModel
-        this.viewModel = new ChatViewModel();
+        this.viewModel = viewModel;
 
         // 2. Set up the main window
         setTitle("CommUniCator Chat (Swing)");

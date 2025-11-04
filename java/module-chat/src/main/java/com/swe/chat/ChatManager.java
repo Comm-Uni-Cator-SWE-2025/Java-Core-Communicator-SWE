@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 public class ChatManager implements IChatService {
 
     /** 3. THE FIELD IS THE REAL SimpleNetworking OBJECT */
+    private final AbstractRPC rpc;
     private final SimpleNetworking network;
 
     /** Listener that gets notified when a new message is received. */
@@ -27,13 +28,32 @@ public class ChatManager implements IChatService {
      *
      * @param networkingService the networking service used for communication
      */
-    public ChatManager(final SimpleNetworking networkingService) {
-        this.network = networkingService;
+    public ChatManager(AbstractRPC rpc, SimpleNetworking network) {
+        this.rpc = rpc;
+        this.network = network;
 
         // 5. THE SUBSCRIBE CALL IS UPDATED
-        // Old: network.subscribe("ChatManagerSubscription", this::receiveFromNetwork);
-        // New:
-        network.subscribe(ModuleType.CHAT, this::receiveFromNetwork);
+// 1. Subscribe to calls from the Frontend
+        this.rpc.subscribe("chat:send-message", this::handleFrontendMessage);
+
+        // 2. Subscribe to calls from the Network
+        this.network.subscribe(ModuleType.CHAT, this::handleNetworkMessage);
+    }
+
+    /**
+     * Handles an incoming message from the Frontend via RPC.
+     * Its job is to send this message to the network.
+     */
+    private byte[] handleFrontendMessage(byte[] messageBytes) {
+        // messageBytes is a serialized ChatMessage from the frontend
+
+        // TODO: Get the list of destination IPs from the Controller/Meeting
+        ClientNode[] dests = { new ClientNode("127.0.0.1", 5678) }; // Placeholder
+
+        // Send to the network (this part is the same as your old sendMessage)
+        this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
+
+        return null; // 'null' means "I received it, no reply needed"
     }
 
     /**
@@ -82,6 +102,17 @@ public class ChatManager implements IChatService {
         if (onMessageReceivedListener != null) {
             onMessageReceivedListener.accept(message);
         }
+    }
+
+    /**
+     * Handles an incoming message from the Network.
+     * Its job is to broadcast this message to all Frontends via RPC.
+     */
+    private void handleNetworkMessage(final byte[] messageBytes) {
+        // messageBytes is a serialized ChatMessage from the network
+
+        // Broadcast this message to all listening frontends
+        this.rpc.call("chat:new-message", messageBytes);
     }
 
     /**
