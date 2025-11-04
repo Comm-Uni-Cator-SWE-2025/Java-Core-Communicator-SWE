@@ -150,6 +150,14 @@ public class MainServer implements P2PUser {
                     destinationPort);
             System.out.println("Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
+            // check for broadcast packet
+            if (parser.parsePacket(packet).getBroadcast() == 1) {
+                for(ClientNode c : topology.getAllClusterServers()) {
+                    if(!c.equals(mainserver) && !c.equals(dest)) {
+                        send(packet, c);
+                    }
+                }
+            }
             if (type == NetworkType.USE.ordinal()) {
                 if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
                     handleHello(dest);

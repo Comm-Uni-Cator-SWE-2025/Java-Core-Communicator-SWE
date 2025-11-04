@@ -12,7 +12,7 @@ import java.util.List;
  * The Cluster class to store details of a given cluster.
  *
  */
-public class P2PCluster {
+public class P2PCluster implements P2PUser {
     /**
      * List of all clients belonging to the same cluster.
      */
@@ -87,9 +87,9 @@ public class P2PCluster {
                 for (int i = 0; i < networkStructure.servers().size(); i++) {
                     if (networkStructure.servers().get(i).equals(client)) {
                         clusterServer = client;
-                        user = new P2PServer(client, server);
+                        this.user = new P2PServer(client, server);
                         for (ClientNode c : networkStructure.clusters().get(i)) {
-                            ((P2PServer) user).monitor(c);
+                            ((P2PServer) this.user).monitor(c);
                         }
                         // send network packet to the P2P server
                         final Socket serverSocket =
@@ -132,5 +132,42 @@ public class P2PCluster {
         if (clients.size() < size - 1) {
             System.out.println("Cannot resize cluster...");
         }
-    }    
+    } 
+    
+    /** 
+     * Function to send data by the user.
+     * @param data the data to be sent
+     * @param destIp the destinations to send the data
+    */
+    @Override
+    public void send(byte[] data, ClientNode[] destIp) {
+        this.user.send(data, destIp);
+    }
+
+    /** 
+     * Function to send data by the user.
+     * @param data the data to be sent
+     * @param destIp the one destination to send the data
+    */
+    @Override
+    public void send(byte[] data, ClientNode destIp) {
+        this.user.send(data, destIp);
+    }
+
+    /** 
+     * Function to receive data from other clients.
+    */
+    @Override
+    public void receive() {
+        this.user.receive();
+    }
+
+    /** 
+     * Function to handle socket closing at termination.
+    */
+    @Override
+    public void close() {
+        this.user.close();
+    }
+
 }
