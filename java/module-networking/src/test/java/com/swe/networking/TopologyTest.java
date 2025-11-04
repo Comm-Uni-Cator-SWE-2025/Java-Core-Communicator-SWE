@@ -23,7 +23,7 @@ class TopologyTest {
     @org.junit.jupiter.api.Test
     void mainServerReceiveTestHello() {
         try {
-            final int sleepTime = 1000;
+            final int sleepTime = 15000;
             final Integer port = 8000;
             final Integer timeout = 5000;
             final ClientNode server = new ClientNode("127.0.0.1", 8000);
@@ -32,11 +32,12 @@ class TopologyTest {
             final Socket destSocket = new Socket();
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final Socket destSocket1 = new Socket();
-            sendHello(destSocket);
+            // destSocket1.connect(new InetSocketAddress("127.0.0.1", port), timeout);
+            // sendHello(destSocket);
             // sendHello(destSocket1);
-            sendRemove(destSocket);
+            // sendRemove(destSocket);
             Thread.sleep(sleepTime);
-            topology.closeTopology();
+            // topology.closeTopology();
         } catch (InterruptedException ex) {
             System.out.println("Error 1...");
         } catch (IOException e) {
@@ -51,6 +52,7 @@ class TopologyTest {
         try {
 
             final int sleepTime = 1000;
+            System.out.println("Client Socket " + destSocket.getLocalAddress().toString() + destSocket.getLocalPort());
             final Thread receiveThread = new Thread(() -> receiveHello(destSocket));
             receiveThread.start();
             Thread.sleep(sleepTime);
