@@ -5,5 +5,11 @@ package com.swe.networking;
  *
  */
 public interface AbstractTopology {
+    /**
+     * Function to get the cluster server.
+     *
+     * @param dest the destination to be sent to
+     * @return the cluster server of the destination client belongs to
+     */
     ClientNode getServer(ClientNode dest);
 }

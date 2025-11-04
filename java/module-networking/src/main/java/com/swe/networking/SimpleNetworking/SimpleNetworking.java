@@ -1,10 +1,15 @@
 package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Vector;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
+import com.swe.networking.NetworkConnectionType;
+import com.swe.networking.PacketInfo;
 
 /**
  * The main module of the simple networking class.
@@ -22,8 +27,7 @@ public final class SimpleNetworking
     /**
      * The variable to store all the listeners subscribed to the module.
      */
-    private final HashMap<ModuleType, MessageListener> listeners =
-        new HashMap<>();
+    private final HashMap<ModuleType, MessageListener> listeners = new HashMap<>();
     /**
      * The variable to store the main host IP address.
      */
@@ -37,7 +41,14 @@ public final class SimpleNetworking
      */
     private boolean exit = false;
 
+    /** The variable to store chunk Manager. */
+    private SimpleChunkManager chunkManager;
+
+    /** The variable to store chunk Manager payload size. */
+    private final int payloadSize = 15 * 1024;
+
     private SimpleNetworking() {
+        chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
     }
 
     /**
@@ -88,6 +99,37 @@ public final class SimpleNetworking
     }
 
     /**
+     * Function to chunk the given data by the chunk manager.
+     *
+     * @param data      the data to be sent
+     * @param dest      the dest to send the packet
+     * @param module    the module to be sent to
+     * @param priority  the priority of the packet
+     * @param broadcast the data should broadcasted or not
+     * @return the chunks of the data
+     */
+    private Vector<byte[]> getChunks(final byte[] data, final ClientNode[] dest, final int module, final int priority,
+            final int broadcast) {
+        final PacketInfo pkt = new PacketInfo();
+        pkt.setModule(module);
+        pkt.setPriority(priority);
+        pkt.setBroadcast(broadcast);
+        pkt.setPayload(data);
+        Vector<byte[]> chunks = new Vector<>();
+        for (ClientNode client : dest) {
+            try {
+                pkt.setType(0);
+                pkt.setIpAddress(InetAddress.getByName(client.hostName()));
+                pkt.setPortNum(client.port());
+                pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());
+                chunks = chunkManager.chunk(pkt);
+            } catch (UnknownHostException ex) {
+            }
+        }
+        return chunks;
+    }
+
+    /**
      * Function to send the given data to a list of destinations.
      *
      * @param data     the data to be sent
@@ -98,7 +140,11 @@ public final class SimpleNetworking
     @Override
     public void sendData(final byte[] data, final ClientNode[] destIp,
             final ModuleType module, final int priority) {
-        user.send(data, destIp, serverAddr, module);
+        final Vector<byte[]> chunks = getChunks(data, destIp, module.ordinal(), priority, 0);
+        for (byte[] payload : chunks) {
+            System.out.println("Chunks size " + payload.length);
+            user.send(payload, destIp, serverAddr, module);
+        }
     }
 
     /**
@@ -152,6 +198,7 @@ public final class SimpleNetworking
      * @param module the module to be called
      */
     public void callSubscriber(final byte[] data, final ModuleType module) {
+        System.out.println("Message received for " + module + " of size " + data.length);
         final MessageListener listener = listeners.get(module);
         listener.receiveData(data);
     }

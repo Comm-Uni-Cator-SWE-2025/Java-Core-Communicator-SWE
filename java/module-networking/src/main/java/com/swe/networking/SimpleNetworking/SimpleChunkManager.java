@@ -1,4 +1,4 @@
-package com.swe.networking;
+package com.swe.networking.SimpleNetworking;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -6,14 +6,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
+import com.swe.networking.PacketInfo;
+import com.swe.networking.PacketParser;
+
 /**
  * Code for Chunk Manager.
  */
-public class ChunkManager {
+public class SimpleChunkManager {
     /**
      * Singleton chunkManger.
      */
-    private static ChunkManager chunkManager = null;
+    private static SimpleChunkManager chunkManager = null;
     /**
      * Payload Size.
      */
@@ -27,7 +30,7 @@ public class ChunkManager {
      */
     private final int headerSize = PacketParser.getHeaderSize();
 
-    private ChunkManager(final int payloadSize) {
+    private SimpleChunkManager(final int payloadSize) {
         defaultPayloadSize = payloadSize;
     }
 
@@ -37,9 +40,9 @@ public class ChunkManager {
      * @param payloadSize the payloadsize for the chunkManager
      * @return chunkManager.
      */
-    public static ChunkManager getChunkManager(final int payloadSize) {
+    public static SimpleChunkManager getChunkManager(final int payloadSize) {
         if (chunkManager == null) {
-            chunkManager = new ChunkManager(payloadSize);
+            chunkManager = new SimpleChunkManager(payloadSize);
             return chunkManager;
         }
         return chunkManager;
@@ -73,9 +76,10 @@ public class ChunkManager {
      * Add chunk function.
      * 
      * @param chunk the byte of chunk coming in.
+     * @return the combined message
      * @throws UnknownHostException the issue from packet parser.
      */
-    public void addChunk(final byte[] chunk) throws UnknownHostException {
+    public byte[] addChunk(final byte[] chunk) throws UnknownHostException {
         final PacketInfo info = parser.parsePacket(chunk);
         final int msgId = info.getMessageId();
         final int maxNumChunks = info.getChunkLength();
@@ -87,10 +91,11 @@ public class ChunkManager {
         }
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            // TOD use appropriate function once the message is ready
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
+            return messageChunk;
         }
+        return null;
     }
 
     /**

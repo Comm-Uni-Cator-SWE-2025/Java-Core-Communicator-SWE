@@ -26,11 +26,11 @@ public class SimpleNetworkingTest {
             final ClientNode mainServer = new ClientNode("127.0.0.1", 8000);
             network.addUser(device, mainServer);
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
+                System.out.println("Server Received data: " + data.length);
             };
             network.subscribe(ModuleType.CHAT, func);
-            Thread.sleep(sleepTime);
             sendServer();
+            Thread.sleep(sleepTime);
             network.closeNetworking();
         } catch (InterruptedException ex) {
         }
@@ -80,9 +80,9 @@ public class SimpleNetworkingTest {
             final Integer timeout = 5000;
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
-            final String data = "Hello World !!!";
+            final String data = "Hello World";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(0, 0, ModuleType.CHAT.ordinal(), 0, 0,
+            final byte[] packet = parser.createPkt(0, ModuleType.CHAT.ordinal(), 0, 0,
                     InetAddress.getByName("127.0.0.1"), 8000, data.getBytes());
             dataOut.write(packet);
             destSocket.close();
@@ -102,7 +102,7 @@ public class SimpleNetworkingTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
             final PacketParser parser = PacketParser.getPacketParser();
-            final byte[] packet = parser.createPkt(0, 0, ModuleType.CHAT.ordinal(), 0, 0,
+            final byte[] packet = parser.createPkt(0, ModuleType.CHAT.ordinal(), 0, 0,
                     InetAddress.getByName("127.0.0.1"), 9001, data.getBytes());
             dataOut.write(packet);
             destSocket.close();
@@ -130,33 +130,39 @@ public class SimpleNetworkingTest {
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingServerSendTest() {
-        final ClientNode cdevice = new ClientNode("127.0.0.1", 8101);
-        final Client client = new Client(cdevice);
-        final Thread clientThread = new Thread(() -> {
-            try {
-                while (true) {
-                    client.receive();
+        try {
+            final ClientNode cdevice = new ClientNode("127.0.0.1", 8101);
+            final Client client = new Client(cdevice);
+            final Thread clientThread = new Thread(() -> {
+                try {
+                    while (true) {
+                        client.receive();
+                    }
+                } catch (IOException e) {
+                    System.err.println("Server receive error: " + e.getMessage());
                 }
-            } catch (IOException e) {
-                System.err.println("Server receive error: " + e.getMessage());
-            }
-        });
-        clientThread.start();
-        final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-        final ClientNode device = new ClientNode("127.0.0.1", 8100);
-        final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
-        network.addUser(device, mainServer);
-        final MessageListener func = (byte[] data) -> {
-            System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
-        };
-        network.subscribe(ModuleType.CHAT, func);
-        final String data = "Hello from server !!!";
-        final ClientNode dest = new ClientNode("127.0.0.1", 8101);
-        final ClientNode[] dests = {dest };
-        network.sendData(data.getBytes(), dests, ModuleType.CHAT, 0);
-        clientThread.interrupt();
-        network.closeNetworking();
-        // client.closeUser();
+            });
+            clientThread.start();
+            final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
+            final ClientNode device = new ClientNode("127.0.0.1", 8100);
+            final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
+            network.addUser(device, mainServer);
+            final MessageListener func = (byte[] data) -> {
+                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
+            };
+            network.subscribe(ModuleType.CHAT, func);
+            final byte[] message = new byte[40 * 1024];
+            final String data = "Hello world to the new world";
+            // System.out.println("Data length " + data.length());
+            final ClientNode dest = new ClientNode("127.0.0.1", 8101);
+            final ClientNode[] dests = { dest };
+            network.sendData(message, dests, ModuleType.CHAT, 0);
+            Thread.sleep(2000);
+            clientThread.interrupt();
+            network.closeNetworking();
+            // client.closeUser();
+        } catch (InterruptedException ex) {
+        }
     }
 
     /**
@@ -168,7 +174,7 @@ public class SimpleNetworkingTest {
         final Server server = new Server(device);
         final String data = "Hello from server !!!";
         final ClientNode dest = new ClientNode("127.0.0.1", 8000);
-        final ClientNode[] dests = {dest };
+        final ClientNode[] dests = { dest };
         server.send(data.getBytes(), dests, device, ModuleType.CHAT);
         server.sendPkt(data.getBytes(), dests, device);
         server.closeUser();

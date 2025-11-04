@@ -6,6 +6,11 @@
 Networking/.idea/
 Networking/.mvn/
 
+/.vscode
+**/.idea
+/target/
+*.iml
+
 # User-specific files
 *.rsuser
 *.suo
