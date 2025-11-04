@@ -1,6 +1,6 @@
 package com.swe.ScreenNVideo;
 
-import com.swe.ScreenNVideo.Codec.encodeDecodeRLE;
+import com.swe.ScreenNVideo.Codec.EncodeDecodeRLE;
 
 import java.nio.ByteBuffer;
 
@@ -24,7 +24,7 @@ public class ZigZagRLETest {
 
         // Encode using ZigZag + RLE
         ByteBuffer encoded = ByteBuffer.allocate(10000);
-        encodeDecodeRLE encoder = encodeDecodeRLE.getInstance();
+        EncodeDecodeRLE encoder = EncodeDecodeRLE.getInstance();
         encoder.zigZagRLE(original, encoded);
 
         // Prepare buffer for decoding

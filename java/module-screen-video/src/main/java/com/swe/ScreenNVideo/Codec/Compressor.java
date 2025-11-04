@@ -2,54 +2,68 @@ package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
 
-class Compressor implements  ICompressor {
+// Contributed by Anup Kumar
+/**
+ * Implements the ICompressor interface to provide JPEG-like compression logic.
+ * This class orchestrates the various steps:
+ * 1. Forward Discrete Cosine Transform (FDCT)
+ * 2. Quantization
+ * 3. Run-Length Encoding (RLE) with ZigZag scan
+ * <p>
+ * It is package-private and intended to be used within the Codec package.
+ */
+class Compressor implements ICompressor {
     /**
      * module which have implemented fdct and idct.
      */
-    private IFIDCT dctmodule;
+    private final IFIDCT dctmodule;
     /**
      * module which have Qunatisation table and implemented quantisation and dequantisation.
      */
-    private QuantisationUtil quantmodule;
+    private final QuantisationUtil quantmodule;
     /**
      * this is the module which will be used for encoding and decoding.
      */
-    private IRLE enDeRLE;
+    private final IRLE enDeRLE;
 
     /**
      * Unit Matrix Dimension (8x8).
      */
-
-    private final int matrixDim = 8;
+    private final int MATRIX_DIM = 8;
 
     public long zigZagTime = 0;
     public long dctTime = 0;
     public long quantTime = 0;
 
 
+    /**
+     * Package-private constructor.
+     * Initializes the compressor by obtaining singleton instances of the
+     * DCT, Quantization, and RLE modules.
+     */
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
         quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = encodeDecodeRLE.getInstance();
+        enDeRLE = EncodeDecodeRLE.getInstance();
     }
 
     /**
-     *  Doing the Compression of Chrominance (Cb,Cr) Matrix of Dimension height X width
-     *  both height and width are divisible by 8
-     *  steps :
-     *  DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
-     * @param matrix : input matrix to be compressed
-     * @param height : height of matrix
-     * @param width : width of matrix
+     * Doing the Compression of Chrominance (Cb,Cr) Matrix of Dimension height X width
+     * both height and width are divisible by 8
+     * steps :
+     * DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
+     *
+     * @param matrix    : input matrix to be compressed
+     * @param height    : height of matrix
+     * @param width     : width of matrix
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
     public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        for (short i = 0; i < height; i += matrixDim) {
-            for (short j = 0; j < width; j += matrixDim) {
-//                long curr = System.nanoTime();
+        for (short i = 0; i < height; i += MATRIX_DIM) {
+            for (short j = 0; j < width; j += MATRIX_DIM) {
                 dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
 //                curr = System.nanoTime();
@@ -77,9 +91,8 @@ class Compressor implements  ICompressor {
     @Override
     public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        for (short i = 0; i < height; i += matrixDim) {
-            for (short j = 0; j < width; j += matrixDim) {
-//                long curr = System.nanoTime();
+        for (short i = 0; i < height; i += MATRIX_DIM) {
+            for (short j = 0; j < width; j += MATRIX_DIM) {
                 dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
 //                curr = System.nanoTime();
