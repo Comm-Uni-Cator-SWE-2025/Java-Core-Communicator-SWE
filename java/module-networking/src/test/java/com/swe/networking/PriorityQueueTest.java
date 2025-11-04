@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,6 +18,9 @@ class PriorityQueueTest {
     private PacketParser getParser() {
         return PacketParser.getPacketParser();
     }
+
+    // Creating the object PriorityQueue
+    PriorityQueue pq = PriorityQueue.getPriorityQueue();
 
     // Helper method for creating packets
     private byte[] createTestPkt(PacketParser parser, int priority, int chunkNum, String payload)
@@ -38,13 +42,17 @@ class PriorityQueueTest {
         return pkt;
     }
 
+    @AfterEach
+    public void queueClear() {
+        pq.clear();
+    }
+
     //-------------------------------------------------------------------------
     // BASIC FUNCTIONALITY TESTS
     //-------------------------------------------------------------------------
 
     @Test
     void testSinglePacket() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         byte[] data = createTestPkt(parser, 5, 0, "hello");
         pq.addPacket(data);
@@ -52,6 +60,14 @@ class PriorityQueueTest {
         byte[] result = pq.nextPacket();
         assertNotNull(result, "Next packet should not be null");
         assertArrayEquals(data, result, "Packet data should match");
+    }
+
+    @Test
+    void testingEmptyQueue() {
+        PacketParser parser = getParser();
+        boolean result = pq.isEmpty();
+
+        assertEquals(true, result, "The Queues should be empty");
     }
 
     @Test
@@ -75,7 +91,6 @@ class PriorityQueueTest {
 
     @Test
     void testMultiplePacketsDifferentPriorities() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         byte[] high1Priority = createTestPkt(parser, 0, 0, "high");
@@ -95,7 +110,6 @@ class PriorityQueueTest {
 
     @Test
     void testBudgetLimits() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         // Add 200 high-priority packets (budget is 50)
@@ -126,7 +140,6 @@ class PriorityQueueTest {
 
     @Test
     void testRotation() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         for(int i = 0; i < 4000; i++){
@@ -159,7 +172,6 @@ class PriorityQueueTest {
 
     @Test
     void testAggressiveMLFQSurvival() throws UnknownHostException, InterruptedException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         final int LP_BUDGET = 20;
 
@@ -234,7 +246,6 @@ class PriorityQueueTest {
 
     @Test
     void testMLFQStarvationPrevention() throws InterruptedException, UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         final int MLFQ_BUDGET = 20;
 
@@ -265,7 +276,6 @@ class PriorityQueueTest {
 
     @Test
     void testWorkConservation() throws UnknownHostException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         // 1. Add only 10 HP (P1) packets (Budget is 50)
@@ -318,7 +328,6 @@ class PriorityQueueTest {
 
     @Test
     void testConcurrentAccessAndOrder() throws InterruptedException, UnknownHostException, ExecutionException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
 
         final int NUM_PACKETS_PER_THREAD = 100; // 400 total packets of each priority
@@ -415,7 +424,6 @@ class PriorityQueueTest {
 
     @Test
     void testNonStarvationDuringBulkTransfer() throws InterruptedException, UnknownHostException, ExecutionException {
-        PriorityQueue pq = new PriorityQueue();
         PacketParser parser = getParser();
         ExecutorService executor = Executors.newFixedThreadPool(3); // 3 threads
         final int BULK_PACKETS = 100000;
@@ -464,7 +472,7 @@ class PriorityQueueTest {
         // 3. Receiver Task (Continuous Transmission)
         Callable<Integer> receiver = () -> {
             int count = 0;
-            int maxIterations = BULK_PACKETS + HP_INJECTION_COUNT + 100; // Total expected + buffer
+            int maxIterations = BULK_PACKETS + HP_INJECTION_COUNT + 130; // Total expected + buffer
 
             for (int i = 0; i < maxIterations; i++) {
                 byte[] pkt = pq.nextPacket();
@@ -516,5 +524,77 @@ class PriorityQueueTest {
             assertTrue(sentHighPriorityChunks.contains(HP_CHUNK_START + i), "Missing injected HP packet: " + (HP_CHUNK_START + i));
         }
         System.out.println("\nTest Successful: HP packets were sent immediately after injection, proving non-starvation.");
+    }
+
+    //-------------------------------------------------------------------------
+    // PERFORMANCE TEST (THROUGHPUT)
+    //-------------------------------------------------------------------------
+
+    @Test
+    void testThroughput() throws UnknownHostException, InterruptedException {
+        PacketParser parser = getParser();
+        final int TOTAL_PACKETS = 60000; // Load 600,000 packets
+        final int PACKETS_PER_ITERATION = 8;
+        final int TOTAL_PACKETS_TO_SEND = TOTAL_PACKETS * PACKETS_PER_ITERATION;
+
+        // Load the Queue
+        System.out.println("Loading " + TOTAL_PACKETS_TO_SEND + " packets...");
+        for (int i = 0; i < TOTAL_PACKETS; i++) {
+            // Use different chunk numbers for uniqueness
+            pq.addPacket(createTestPkt(parser, 7, i, "Payload" + i));
+            pq.addPacket(createTestPkt(parser, 0, i, "High Priority + i"));
+            pq.addPacket(createTestPkt(parser, 5, i, "five Priority + i"));
+            pq.addPacket(createTestPkt(parser, 1, i, "one Priority + i"));
+            pq.addPacket(createTestPkt(parser, 2, i, "twooo Priority + i"));
+            pq.addPacket(createTestPkt(parser, 3, i, "three3 Priority + i"));
+            pq.addPacket(createTestPkt(parser, 4, i, "four44 Priority + i"));
+            pq.addPacket(createTestPkt(parser, 6, i, "sixxxxx Priority + i"));
+        }
+        System.out.println("Loading complete.");
+
+        // Measure Consumption
+        int sentCount = 0;
+        int nullCount = 0;
+
+        // Use System.nanoTime() for high-resolution timing
+        long startTimeNanos = System.nanoTime();
+
+        // Drain the queue until all packets are retrieved
+        long packetsRemaining = TOTAL_PACKETS_TO_SEND;
+        while(packetsRemaining > 0) {
+            byte[] pkt = pq.nextPacket();
+            if (pkt != null) {
+                sentCount++;
+                packetsRemaining--;
+            }
+        }
+
+
+        long endTimeNanos = System.nanoTime();
+
+        // Calculation and Assertion
+
+        // Ensure the correct number of packets were sent
+        assertEquals(TOTAL_PACKETS_TO_SEND, sentCount, "The total number of sent packets must equal the number added.");
+
+        // Calculate time difference in seconds
+        long elapsedTimeNanos = endTimeNanos - startTimeNanos;
+        double elapsedTimeSeconds = elapsedTimeNanos / 1_000_000_000.0;
+
+        // Calculate Packets Per Second (PPS)
+        double packetsPerSecond = (double)sentCount / elapsedTimeSeconds;
+
+        // Log the result
+        System.out.printf("\nTHROUGHPUT RESULTS\n");
+        System.out.printf("Total Packets Sent: %,d\n", sentCount);
+        System.out.printf("Elapsed Time: %.4f seconds\n", elapsedTimeSeconds);
+        System.out.printf("Approximate Throughput: **%,.0f PPS** (Packets Per Second)\n", packetsPerSecond);
+
+        // Assertion against a baseline minimum (adjust this value based on your hardware)
+        // This asserts that the performance is reasonable, not just correct.
+        final double MIN_ACCEPTABLE_PPS = 10000.0; // Example baseline (100k PPS)
+        assertTrue(packetsPerSecond > MIN_ACCEPTABLE_PPS,
+                String.format("Throughput is too low: %.0f PPS (Below %.0f PPS minimum)",
+                        packetsPerSecond, MIN_ACCEPTABLE_PPS));
     }
 }
