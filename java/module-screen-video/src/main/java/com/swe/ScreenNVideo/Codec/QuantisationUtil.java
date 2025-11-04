@@ -5,13 +5,11 @@ package com.swe.ScreenNVideo.Codec;
 /**
  * Utility class for handling JPEG quantization tables and operations.
  *
- * <p>
- * This class manages the default luminance and chrominance tables,
+ * <p>This class manages the default luminance and chrominance tables,
  * scales them based on a quality factor and AAN DCT factors,
  * and provides methods to quantize and de-quantize 8x8 blocks.
  *
- * <p>
- * This class follows the Singleton pattern.
+ * <p>This class follows the Singleton pattern.
  */
 @SuppressWarnings("checkstyle:MissingJavadocType")
 public class QuantisationUtil {
@@ -141,7 +139,7 @@ public class QuantisationUtil {
 
         aanScaleFactor[0] = ONE / (TWO * Math.sqrt(TWO));
         // Initialize the scaled tables when created
-        setCompressonResulation(50);
+        setCompressonResulation(JPEG_QUALITY_MID);
 //        resetQuantTables();
     }
 
@@ -214,14 +212,13 @@ public class QuantisationUtil {
      * This is used to "absorb" the scaling factors from a fast DCT (like AAN)
      * into the quantization table, as you mentioned.
      *
-     * <p>
-     * This method MODIFIES the class's quantChrome and quantLumin tables in-place.
+     * <p>This method MODIFIES the class's quantChrome and quantLumin tables in-place.
      *
      * @param scalingFactors An 8-element array of 1D scaling factors from the DCT.
      */
     public void scaleQuantTable(final double[] scalingFactors) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 final double scale = scalingFactors[i] * scalingFactors[j];
                 scaledQuantChrome[i][j] = (float) (BASECHROME[i][j] / scale);
                 scaledQuantLumin[i][j] = (float) (BASELUMIN[i][j] / scale);
@@ -269,8 +266,8 @@ public class QuantisationUtil {
      * @param col     The starting column of the block.
      */
     public void deQuantisationChrome(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // De-quantize: multiply by the table value and round.
                 dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] * scaledQuantChrome[i][j]);
             }
@@ -285,8 +282,8 @@ public class QuantisationUtil {
      * @param col     The starting column of the block.
      */
     public void deQuantisationLumin(final short[][] dMatrix, final short row, final short col) {
-        for (int i = 0; i < 8; ++i) {
-            for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < MATRIX_DIM; ++i) {
+            for (int j = 0; j < MATRIX_DIM; ++j) {
                 // De-quantize: multiply by the table value and round.
                 dMatrix[i + row][j + col] = (short) Math.round(dMatrix[i + row][j + col] * scaledQuantLumin[i][j]);
             }

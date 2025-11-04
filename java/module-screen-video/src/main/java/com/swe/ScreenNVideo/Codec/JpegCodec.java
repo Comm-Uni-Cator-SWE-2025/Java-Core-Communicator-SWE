@@ -1,7 +1,6 @@
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
@@ -15,10 +14,6 @@ import java.util.Arrays;
  * @see Codec
  */
 public class JpegCodec implements Codec {
-    /**
-     * Image that needs to be encoded.
-     */
-    private int[][] screenshot;
 
     /**
      * Offset for alpha component in the AARRGGBB value.
@@ -158,43 +153,38 @@ public class JpegCodec implements Codec {
      */
     private static final double INT_ROUNDING_OFFSET = 0.5;
 
-    /**
-     * Creates a JpegCodec instance with screenshot.
-     *
-     * @param image screenshot that needs to be encoded
-     */
-    public JpegCodec(final int[][] image) {
-        this.screenshot = image;
-        int maxLen = (int) ((128*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
-        resRLEBuffer = ByteBuffer.allocate(maxLen);
-    }
 
-    public long ZigZagtime = 0;
-    public long dctTime = 0;
-    public long quantTime = 0;
+    /**
+     * Time taken for ZigZag operations.
+     */
+    private long zigZagtime = 0;
+    /**
+     * Time taken for DCT operations.
+     */
+    private long dctTime = 0;
+    /**
+     * Time taken for quantization operations.
+     */
+    private long quantTime = 0;
 
     private final Compressor compressor = new Compressor();
     private final IDeCompressor decompressor = new DeCompressor();
     private final IRLE enDeRLE = EncodeDecodeRLE.getInstance();
     private final QuantisationUtil quantUtil = QuantisationUtil.getInstance();
 
-    final ByteBuffer resRLEBuffer;
+    /**
+     * Buffer for RLE results.
+     */
+    private final ByteBuffer resRLEBuffer;
+
     /**
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        int maxLen = (int) ((128*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
+        final int maxLen = (int) ((DCT_BLOCK_SIZE * DCT_BLOCK_SIZE * DCT_BLOCK_SIZE * DCT_BLOCK_SIZE
+                * TOTAL_PIXEL_FACTOR * BYTES_PER_RLE_PAIR) + (MATRIX_DIM_BYTES * NUM_MATRICES)
+                + INT_ROUNDING_OFFSET);
         resRLEBuffer = ByteBuffer.allocate(maxLen);
-    }
-
-    /**
-     * Sets the screenshot image for this object.
-     *
-     * @param image a 2D integer array representing the image,
-     * where each entry encodes a pixel color value.
-     */
-    public void setScreenshot(final int[][] image) {
-        this.screenshot = image;
     }
 
     @Override
@@ -203,16 +193,22 @@ public class JpegCodec implements Codec {
     }
 
     /**
-     * <p>
-     * The encoding process includes:
+     * Encodes a portion of the screenshot into JPEG format.
+     *
+     * <p>The encoding process includes:
      * <ul>
      * <li>Converting the RGB pixel data of the screenshot into YCbCr color space.</li>
      * <li>Applying 4:2:0 chroma sampling to reduce color resolution.</li>
      * </ul>
-     * </p>
+     *
+     * @param topLeftX starting X coordinate
+     * @param topLeftY starting Y coordinate
+     * @param height height of the region to encode
+     * @param width width of the region to encode
+     * @return encoded byte array
      */
     @Override
-    public byte[] encode(final int topLeftX, final int topLeftY, final int height, final int width) {
+    public byte[] encode(final int[][] screenshot,final int topLeftX, final int topLeftY, final int height, final int width) {
 
         if (height % BLOCK_SIDE == 1 || width % BLOCK_SIDE == 1) {
             throw new RuntimeException("Invalid Matrix for encoding");
@@ -285,10 +281,10 @@ public class JpegCodec implements Codec {
 //        System.out.println("Compression Cr : " + resRLEBuffer.position());
 
 
-//        ZigZagtime += compressor.zigZagTime;
+//        zigZagtime += compressor.zigZagTime;
 //        dctTime += compressor.dctTime;
 //        quantTime += compressor.quantTime;
-        byte[] res = new byte[resRLEBuffer.position()];
+        final byte[] res = new byte[resRLEBuffer.position()];
         resRLEBuffer.rewind();
         resRLEBuffer.get(res);
         return res;
@@ -308,10 +304,10 @@ public class JpegCodec implements Codec {
      */
     @Override
     public int[][] decode(final byte[] encodedImage) {
-        final ByteBuffer resRLEBuffer = ByteBuffer.wrap(encodedImage);
-        final short[][] yMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
-        final short[][] cbMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
-        final short[][] crMatrix = enDeRLE.revZigZagRLE(resRLEBuffer);
+        final ByteBuffer buffer = ByteBuffer.wrap(encodedImage);
+        final short[][] yMatrix = enDeRLE.revZigZagRLE(buffer);
+        final short[][] cbMatrix = enDeRLE.revZigZagRLE(buffer);
+        final short[][] crMatrix = enDeRLE.revZigZagRLE(buffer);
 
         decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
         decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);

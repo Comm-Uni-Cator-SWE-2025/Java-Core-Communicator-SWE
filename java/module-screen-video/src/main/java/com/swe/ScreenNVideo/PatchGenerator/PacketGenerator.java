@@ -39,7 +39,7 @@ public class PacketGenerator {
         final int height = curr.length;
         final int width = curr[0].length;
 
-        final byte[] compressedString = this.compressor.encode(0, 0, height, width);
+        final byte[] compressedString = this.compressor.encode(curr,0, 0, height, width);
         final List<CompressedPatch> patches = new ArrayList<>();
         patches.add(new CompressedPatch(0, 0, width, height, compressedString));
         return patches;
@@ -83,9 +83,9 @@ public class PacketGenerator {
 
                 final long currHash = hasher.hash(curr, x, y, w, h);
 //                if (currHash != prevHashes[tx][ty]) {
-                    final byte[] compressedString = this.compressor.encode(x, y, h, w);
-                    patches.add(new CompressedPatch(x, y, w, h, compressedString));
-                    prevHashes[tx][ty] = currHash;
+                final byte[] compressedString = this.compressor.encode(curr, x, y, h, w);
+                patches.add(new CompressedPatch(x, y, w, h, compressedString));
+                prevHashes[tx][ty] = currHash;
 //                }
             }
         }

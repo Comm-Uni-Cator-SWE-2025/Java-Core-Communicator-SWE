@@ -53,26 +53,6 @@ public class JpegCodecTest {
     }
 
     /**
-     * Tests constructor with image parameter.
-     */
-    @Test
-    public void testConstructorWithImage() {
-        final int[][] image = new int[SMALL_DIM][SMALL_DIM];
-        final JpegCodec codecWithImage = new JpegCodec(image);
-        assertNotNull(codecWithImage);
-    }
-
-    /**
-     * Tests setScreenshot method.
-     */
-    @Test
-    public void testSetScreenshot() {
-        final int[][] image = new int[SMALL_DIM][SMALL_DIM];
-        codec.setScreenshot(image);
-        assertNotNull(codec);
-    }
-
-    /**
      * Tests setCompressionFactor method.
      */
     @Test
@@ -87,9 +67,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeBlackImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_BLACK);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -100,9 +79,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeWhiteImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_WHITE);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -113,9 +91,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeRedImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_RED);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -126,9 +103,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeGreenImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GREEN);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -139,9 +115,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeBlueImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_BLUE);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -152,9 +127,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeGrayImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -165,9 +139,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeMediumImage() {
         final int[][] image = createSolidColorImage(MEDIUM_DIM, MEDIUM_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, MEDIUM_DIM, MEDIUM_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, MEDIUM_DIM, MEDIUM_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -178,9 +151,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeLargeImage() {
         final int[][] image = createSolidColorImage(LARGE_DIM, LARGE_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, LARGE_DIM, LARGE_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, LARGE_DIM, LARGE_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -191,9 +163,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeWithOffset() {
         final int[][] image = createSolidColorImage(LARGE_DIM, LARGE_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(SMALL_DIM, SMALL_DIM, MEDIUM_DIM, MEDIUM_DIM);
+        final byte[] encoded = codec.encode(image, SMALL_DIM, SMALL_DIM, MEDIUM_DIM, MEDIUM_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -204,10 +175,9 @@ public class JpegCodecTest {
     @Test
     public void testEncodeOddHeightThrowsException() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
         assertThrows(RuntimeException.class, () -> {
-            codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, 7, SMALL_DIM);
+            codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, 7, SMALL_DIM);
         });
     }
 
@@ -217,10 +187,9 @@ public class JpegCodecTest {
     @Test
     public void testEncodeOddWidthThrowsException() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
         assertThrows(RuntimeException.class, () -> {
-            codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, 7);
+            codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, 7);
         });
     }
 
@@ -230,9 +199,8 @@ public class JpegCodecTest {
     @Test
     public void testDecodeBlackImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_BLACK);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         assertNotNull(decoded);
@@ -246,9 +214,8 @@ public class JpegCodecTest {
     @Test
     public void testDecodeWhiteImage() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_WHITE);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         assertNotNull(decoded);
@@ -262,9 +229,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripBlackImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_BLACK);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -276,9 +242,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripWhiteImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_WHITE);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -290,9 +255,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripRedImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_RED);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -304,9 +268,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripGreenImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GREEN);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -318,9 +281,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripBlueImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_BLUE);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -332,9 +294,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripGrayImage() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -346,9 +307,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripGradientImage() {
         final int[][] original = createGradientImage(SMALL_DIM, SMALL_DIM);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -360,9 +320,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripCheckerboardImage() {
         final int[][] original = createCheckerboardImage(SMALL_DIM, SMALL_DIM);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -374,9 +333,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripMediumImage() {
         final int[][] original = createSolidColorImage(MEDIUM_DIM, MEDIUM_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, MEDIUM_DIM, MEDIUM_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, MEDIUM_DIM, MEDIUM_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -388,9 +346,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripLargeImage() {
         final int[][] original = createSolidColorImage(LARGE_DIM, LARGE_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, LARGE_DIM, LARGE_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, LARGE_DIM, LARGE_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -402,10 +359,9 @@ public class JpegCodecTest {
     @Test
     public void testEncodeLowQuality() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
         codec.setCompressionFactor((short) QUALITY_LOW);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -416,10 +372,9 @@ public class JpegCodecTest {
     @Test
     public void testEncodeHighQuality() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
         codec.setCompressionFactor((short) QUALITY_HIGH);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -430,10 +385,9 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripLowQuality() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
         codec.setCompressionFactor((short) QUALITY_LOW);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         assertNotNull(decoded);
@@ -445,10 +399,9 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripHighQuality() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
         codec.setCompressionFactor((short) QUALITY_HIGH);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         assertNotNull(decoded);
@@ -460,9 +413,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeMixedColorImage() {
         final int[][] image = createMixedColorImage(SMALL_DIM, SMALL_DIM);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -473,9 +425,8 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripMixedColorImage() {
         final int[][] original = createMixedColorImage(SMALL_DIM, SMALL_DIM);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         verifyImageSimilarity(original, decoded);
@@ -489,9 +440,8 @@ public class JpegCodecTest {
         final int height = 10;
         final int width = 10;
         final int[][] image = createSolidColorImage(MEDIUM_DIM, MEDIUM_DIM, COLOR_GRAY);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, height, width);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, height, width);
         assertNotNull(encoded);
         assertTrue(encoded.length > 0);
     }
@@ -504,9 +454,8 @@ public class JpegCodecTest {
         final int height = 10;
         final int width = 10;
         final int[][] original = createSolidColorImage(MEDIUM_DIM, MEDIUM_DIM, COLOR_GRAY);
-        codec.setScreenshot(original);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, height, width);
+        final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, height, width);
         final int[][] decoded = codec.decode(encoded);
 
         assertNotNull(decoded);
@@ -520,9 +469,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeColorClampingY() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_WHITE);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
     }
 
@@ -532,9 +480,8 @@ public class JpegCodecTest {
     @Test
     public void testEncodeColorClampingCbCr() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_RED);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
     }
 
@@ -544,9 +491,8 @@ public class JpegCodecTest {
     @Test
     public void testDecodeColorClamping() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_WHITE);
-        codec.setScreenshot(image);
 
-        final byte[] encoded = codec.encode(TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
+        final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
 
         for (int i = 0; i < decoded.length; i++) {

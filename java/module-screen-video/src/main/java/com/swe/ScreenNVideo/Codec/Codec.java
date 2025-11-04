@@ -5,23 +5,18 @@ package com.swe.ScreenNVideo.Codec;
  *
  */
 public interface Codec {
-    /**
-     * Set the screenshot for encoding or decoding. 
-     *
-     * @param screenshot matrix
-     */
-    void setScreenshot(int[][] screenshot); 
 
     /**
      * Encode and Compress the image.
      *
+     * @param screenShot image matrix to be encoded
      * @param x topLeft postition along x axis of image matrix
      * @param y topLeft position along y axis of image matrix
      * @param height block's height
      * @param width block's width
      * @return an array bytes
      */
-    byte[] encode(int x, int y, int height, int width);
+    byte[] encode(final int[][] screenShot,int x, int y, int height, int width);
 
     /**
      * Decode and Decompress the image.

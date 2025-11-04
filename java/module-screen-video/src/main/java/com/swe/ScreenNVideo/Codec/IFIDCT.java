@@ -2,6 +2,9 @@
 
 package com.swe.ScreenNVideo.Codec;
 
+/**
+ * Interface for Forward and Inverse Discrete Cosine Transform (DCT) operations.
+ */
 public interface IFIDCT {
 
     /**

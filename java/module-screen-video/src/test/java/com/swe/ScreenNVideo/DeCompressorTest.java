@@ -1,12 +1,8 @@
 package com.swe.ScreenNVideo;
 
 import com.swe.ScreenNVideo.Codec.DeCompressor;
-import com.swe.ScreenNVideo.Codec.IFIDCT;
-import com.swe.ScreenNVideo.Codec.QuantisationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -16,12 +12,30 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class DeCompressorTest {
 
+    /**
+     * Block size for DCT operations.
+     */
     private static final int BLOCK_SIZE = 8;
+    /**
+     * Single block dimension.
+     */
     private static final int SINGLE_BLOCK_DIM = 8;
+    /**
+     * Double block dimension.
+     */
     private static final int DOUBLE_BLOCK_DIM = 16;
+    /**
+     * Triple block dimension.
+     */
     private static final int TRIPLE_BLOCK_DIM = 24;
+    /**
+     * Quad block dimension.
+     */
     private static final int QUAD_BLOCK_DIM = 32;
 
+    /**
+     * Decompressor instance for testing.
+     */
     private DeCompressor decompressor;
 
 //    @Mock

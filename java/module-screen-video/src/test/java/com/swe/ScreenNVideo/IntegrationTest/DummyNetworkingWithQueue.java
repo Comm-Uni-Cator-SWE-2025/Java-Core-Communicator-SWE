@@ -80,6 +80,21 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
         subscriptions.remove(name);
     }
 
+    @Override
+    public void sendData(final byte[] data, final ClientNode[] destIp, final ModuleType module, final int priority) {
+        sendData(data, new String[]{""}, new int[]{0});
+    }
+
+    @Override
+    public void subscribe(final ModuleType name, final com.swe.networking.SimpleNetworking.MessageListener function) {
+        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
+    }
+
+    @Override
+    public void removeSubscription(final ModuleType name) {
+
+    }
+
     /**
      * Receiver loop: consumes queued packets, reconstructs payload,
      * and forwards to subscribers.
@@ -111,20 +126,5 @@ public class DummyNetworkingWithQueue implements AbstractNetworking {
 
     public void shutdown() {
         running = false;
-    }
-
-    @Override
-    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
-        sendData(data, new String[]{""}, new int[]{0});
-    }
-
-    @Override
-    public void subscribe(ModuleType name, com.swe.networking.SimpleNetworking.MessageListener function) {
-        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
-    }
-
-    @Override
-    public void removeSubscription(ModuleType name) {
-
     }
 }

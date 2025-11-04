@@ -16,6 +16,9 @@ import java.util.List;
  * @param packetNumber Packet Number.
  * @param packets Packets transferred from different user.
  * @param ip      IP of the User who transferred these packets.
+ * @param isFullImage whether this is a full image
+ * @param height height of the image
+ * @param width width of the image
  */
 public record CPackets(int packetNumber, String ip, boolean isFullImage, int height, int width, List<CompressedPatch> packets) {
 
@@ -34,7 +37,8 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, int hei
         // Write the feed Number
         Utils.writeInt(bufferOut, packetNumber);
         // write if full image
-        bufferOut.write(isFullImage ? (byte) 1 : (byte) 0);
+        final byte fullImageFlag = isFullImage ? (byte) 1 : (byte) 0;
+        bufferOut.write(fullImageFlag);
         // Write the height
         Utils.writeInt(bufferOut, height);
         // Write the width
