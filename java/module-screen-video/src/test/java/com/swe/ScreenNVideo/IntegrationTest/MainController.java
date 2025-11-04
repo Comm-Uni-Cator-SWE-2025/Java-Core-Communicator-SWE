@@ -3,9 +3,7 @@ package com.swe.ScreenNVideo.IntegrationTest;
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
-import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -47,14 +45,11 @@ public class MainController {
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
-//        final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
-//        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
 
         final AbstractRPC rpc = new DummyRPC();
 
         final CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
-//        networking.addUser(deviceNode, serverNode);
         Thread handler = null;
         try {
             handler = rpc.connect();

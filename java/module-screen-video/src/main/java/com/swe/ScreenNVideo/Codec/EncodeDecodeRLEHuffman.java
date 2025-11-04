@@ -625,17 +625,26 @@ public class EncodeDecodeRLEHuffman implements IRLE {
 
     /**
      * Get category (number of bits needed) for a value.
+     *
+     * @param value the value to get category for
+     * @return category number
      */
-    private int getCategory(short value) {
-        int absValue = Math.abs(value);
-        if (absValue == 0) return 0;
+    private int getCategory(final short value) {
+        final int absValue = Math.abs(value);
+        if (absValue == 0) {
+            return 0;
+        }
         return 32 - Integer.numberOfLeadingZeros(absValue);
     }
 
     /**
      * Get additional bits value for a coefficient.
+     *
+     * @param value the coefficient value
+     * @param category the category
+     * @return additional bits value
      */
-    private int getAdditionalBitsValue(short value, int category) {
+    private int getAdditionalBitsValue(final short value, final int category) {
         if (value >= 0) {
             return value;
         } else {
@@ -645,9 +654,13 @@ public class EncodeDecodeRLEHuffman implements IRLE {
 
     /**
      * Decode value from additional bits.
+     *
+     * @param bits the bits to decode
+     * @param category the category of the value
+     * @return decoded value
      */
-    private short decodeValue(int bits, int category) {
-        int threshold = 1 << (category - 1);
+    private short decodeValue(final int bits, final int category) {
+        final int threshold = 1 << (category - 1);
 
         if (bits < threshold) {
             return (short) (bits - (1 << category) + 1);
