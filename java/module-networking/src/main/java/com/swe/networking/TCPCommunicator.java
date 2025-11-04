@@ -77,7 +77,7 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             return null;
         } catch (IOException ex) {
-            System.out.println("Error while using selector...");
+            // System.out.println("Error while using selector...");
             return null;
         }
     }
@@ -188,7 +188,7 @@ public final class TCPCommunicator implements ProtocolBase {
             buffer.get(data);
             return data;
         } catch (IOException ex) {
-            System.out.println("Error while reading data from client Channel...");
+            // System.out.println("Error while reading data from client Channel...");
             return null;
         }
     }

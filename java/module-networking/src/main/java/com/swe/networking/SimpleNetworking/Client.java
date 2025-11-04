@@ -10,10 +10,13 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
+import com.swe.networking.PacketInfo;
+import com.swe.networking.PacketParser;
 
 /**
  * The main module of the client device.
@@ -52,6 +55,11 @@ public class Client implements IUser {
      * The variable isused to store connection timeout.
      */
     private final int connectionTimeout = 5000;
+    /** The variable to store chunk Manager. */
+    private SimpleChunkManager chunkManager;
+
+    /** The variable to store chunk Manager payload size. */
+    private final int payloadSize = 15 * 1024;
 
     /**
      * The constructor function for the client class.
@@ -63,6 +71,7 @@ public class Client implements IUser {
         devicePort = deviceAddr.port();
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
+        chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
         try {
             receiveSocket = new ServerSocket(devicePort);
             receiveSocket.setSoTimeout(0);
@@ -92,8 +101,7 @@ public class Client implements IUser {
                 final OutputStream output = sendSocket.getOutputStream();
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 final InetAddress addr = InetAddress.getByName(ip);
-                dataOut.write(parser.createPkt(0, module.ordinal(),
-                        0, 0, addr, port, data));
+                dataOut.write(data);
                 System.out.println("Sent data succesfully...");
                 sendSocket.close();
             } catch (IOException e) {
@@ -124,12 +132,23 @@ public class Client implements IUser {
      * @param packet the packet to parse
      */
     public void parsePacket(final byte[] packet) {
-        final int module = parser.getModule(packet);
-        final ModuleType type = moduleType.getType(module);
-        final String data = new String(parser.getPayload(packet),
-                StandardCharsets.UTF_8);
-        System.out.println("Client Data received : " + data);
-        simpleNetworking.callSubscriber(parser.getPayload(packet), type);
+        try {
+            final PacketInfo pktInfo = parser.parsePacket(packet);
+            final int module = pktInfo.getModule();
+            System.out.println("Module : " + module);
+            final ModuleType type = moduleType.getType(module);
+            System.out.println("Module : " + type);
+            final String data = new String(pktInfo.getPayload(),
+                    StandardCharsets.UTF_8);
+            System.out.println("Client Data received : " + data);
+            final byte[] message = chunkManager.addChunk(packet);
+            System.out.println("Client Data length received : " + data.length());
+            System.out.println("Client Module received : " + type);
+            if (message != null) {
+                simpleNetworking.callSubscriber(message, type);
+            }
+        } catch (UnknownHostException ex) {
+        }
     }
 
     /**
