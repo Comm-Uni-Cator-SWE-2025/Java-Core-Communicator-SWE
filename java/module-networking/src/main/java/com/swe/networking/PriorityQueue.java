@@ -73,7 +73,7 @@ public class PriorityQueue {
      *
      * @return the singleton object
      */
-    public PriorityQueue getPriorityQueue() {
+    public static PriorityQueue getPriorityQueue() {
         if (priorityQueue == null) {
             priorityQueue = new PriorityQueue();
             System.out.println("Instantated a new priority Queue...");
@@ -92,6 +92,40 @@ public class PriorityQueue {
         // Sums up all remaining tokens from the HIGHEST,HIGH,and MLFQ buckets.
         return currentBudget.values().stream()
                 .mapToInt(Integer::intValue).sum();
+    }
+
+    /**
+     * Empties the priority queue for each test.
+     */
+    public void clear() {
+        highestPriorityQueue.clear();
+        midPriorityQueue.clear();
+        for (Deque<byte[]> level : mlfq) {
+            level.clear();
+        }
+        resetBudgets();
+    }
+
+    /**
+     * This function says whether there are any packets to be sent.
+     *
+     * @return true if there are packets left.
+     */
+    public boolean isEmpty() {
+        // Checking the highest and mid-priority queue
+        if (!highestPriorityQueue.isEmpty() || !midPriorityQueue.isEmpty()) {
+            return false;
+        }
+
+        // Check all levels of the MLFQ
+        for (Deque<byte[]> level : mlfq) {
+            if (!level.isEmpty()) {
+                return false; // If any MLFQ level has packets, it's NOT empty
+            }
+        }
+
+        // If everything is empty
+        return true;
     }
 
     /**
@@ -197,9 +231,6 @@ public class PriorityQueue {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
                 // System.out.println(("Mid priority sent from p1"));
-            } else {
-                // Should not happen if totalP2Budget > 0, but as a safeguard:
-                return null;
             }
             // System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
@@ -250,16 +281,20 @@ public class PriorityQueue {
     }
 
     /**
-     * Retrieves the next packet to process.
+     * A private function which gets the packet from the queue.
+     * The packet could be null, and it signals to wait.
      *
-     * @return the next packet's data, or null if none available
+     * @return The Packet data or null
      */
-    public synchronized byte[] nextPacket() {
+    private byte[] trySendNext() {
+        // 1. Reset budgets every epoch
+        if (getTotalRemainingBudget() <= 0) {
+            resetBudgets();
+        }
+
         final long now = System.currentTimeMillis();
 
-        // 1. Reset budgets every epoch
-        if (now - lastEpochReset >= EPOCH_MS
-                || getTotalRemainingBudget() <= 0) {
+        if (now - lastEpochReset >= EPOCH_MS) {
             resetBudgets();
         }
 
@@ -285,8 +320,43 @@ public class PriorityQueue {
         if (packet != null) {
             return packet;
         }
+        return null;
+    }
 
-        return null; // nothing available
+    /**
+     * Retrieves the next packet to process.
+     *
+     * @return the next packet's data, or null if none available
+     */
+    public synchronized byte[] nextPacket() {
+        byte[] packet;
+        final int maxRetryCount = 10;
+        int retryCount = 0;
+
+        while (true) {
+            // If the queue is empty it return null.
+            if (isEmpty()) {
+                return null;
+            }
+
+            // Gets the Packet from tryNextSend.
+            packet = trySendNext();
+            if (packet != null) {
+                return packet;
+            }
+
+            // If the packet is null it makes the thread wait and they retry.
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException ignored) { }
+
+            retryCount++;
+            // optional safety escape
+            if (retryCount > maxRetryCount) {
+                return null;
+            }
+        }
+
     }
 
     /**

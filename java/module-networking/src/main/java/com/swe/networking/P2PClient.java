@@ -202,6 +202,7 @@ public class P2PClient implements P2PUser {
      * Handles Type 11 (USE) packets based on the connection type.
      *
      * @param info The raw packet data.
+     * @param packet The raw packet data.
      */
     private void parseUsePacket(final PacketInfo info, final byte[] packet) throws UnknownHostException {
         final int connType = info.getConnectionType();
