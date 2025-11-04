@@ -14,7 +14,6 @@ import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
-import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,7 +87,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
-        networking.subscribe(ModuleType.CHAT, new MediaCaptureManager.ClientHandler());
+        networking.subscribe(ModuleType.SCREENSHARING, new MediaCaptureManager.ClientHandler());
         addParticipant(localIp);
 //        addParticipant("10.32.11.242");
 //        addParticipant("10.32.12.30");
@@ -109,7 +108,7 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Starting capture");
         //noinspection InfiniteLoopStatement
         while (true) {
-            final byte[] encodedPatches = videoComponent.captureScreenNVideo(imageSynchronizers);
+            final byte[] encodedPatches = videoComponent.captureScreenNVideo();
             if (encodedPatches == null) {
                 continue;
             }
@@ -119,7 +118,7 @@ public class MediaCaptureManager implements CaptureManager {
 
     private void sendImageToViewers(final byte[] feed) {
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
-//        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.CHAT, 2);
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
 //        SimpleNetworking.getSimpleNetwork().closeNetworking();
         System.out.println("Sent to viewers" + viewers.size());
         viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
@@ -162,14 +161,14 @@ public class MediaCaptureManager implements CaptureManager {
                     System.out.println("Received CPackets : " + data.length / Utils.KB + " KB");
 //                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
-                    final List<CompressedPatch> patches = networkPackets.getPackets();
+                    final List<CompressedPatch> patches = networkPackets.packets();
 //                    System.out.println(Arrays.toString(Arrays.copyOf(patches.get(0).data(), 20)));
-                    final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.getIp());
+                    final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     if (imageSynchronizer == null) {
                         return;
                     }
                     final int[][] image = imageSynchronizer.synchronize(patches);
-                    final RImage rImage = new RImage(image, networkPackets.getIp());
+                    final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
@@ -181,6 +180,14 @@ public class MediaCaptureManager implements CaptureManager {
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
                     addParticipant(viewerIP);
+                    final byte[] fullImageEnocoded = videoComponent.captureFullImage();
+                    if (fullImageEnocoded == null) {
+                        return;
+                    }
+                    networking.sendData(fullImageEnocoded,
+                        new ClientNode[]{new ClientNode(viewerIP, port)},
+                        ModuleType.SCREENSHARING,
+                        2);
                 }
                 default -> {
                 }
