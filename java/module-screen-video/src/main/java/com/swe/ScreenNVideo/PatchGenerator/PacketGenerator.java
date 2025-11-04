@@ -31,6 +31,21 @@ public class PacketGenerator {
     }
 
     /**
+     * Generate a full image patch covering the entire frame.
+     * @param curr is the image frame (int[width][height][3] RGB array)
+     * @return list containing a single compressed patch for the full image
+     */
+    public List<CompressedPatch> generateFullImage(final int[][] curr) {
+        final int height = curr.length;
+        final int width = curr[0].length;
+
+        final byte[] compressedString = this.compressor.encode(0, 0, height, width);
+        final List<CompressedPatch> patches = new ArrayList<>();
+        patches.add(new CompressedPatch(0, 0, width, height, compressedString));
+        return patches;
+    }
+
+    /**
      * Split frames into tiles, compare hashes, compress dirty tiles.
      * @param curr is the image frame (int[width][height][3] RGB array)
      * @return list of compressed patches
