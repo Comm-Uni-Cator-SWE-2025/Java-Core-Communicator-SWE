@@ -16,15 +16,20 @@ public interface Codec {
      * @param width block's width
      * @return an array bytes
      */
-    byte[] encode(final int[][] screenShot,int x, int y, int height, int width);
+    byte[] encode(final int[][] screenShot, final int x, final int y, final int height, final int width);
 
     /**
      * Decode and Decompress the image.
      *
-     * @param encodedImage image to be decoded 
+     * @param encodedImage image to be decoded
      * @return decoded image matrix
      */
-    int[][] decode(byte[] encodedImage);
+    int[][] decode(final byte[] encodedImage);
 
-    void setCompressionFactor(short qfactor);
+    /**
+     * Sets the compression factor.
+     *
+     * @param qfactor quality factor
+     */
+    void setCompressionFactor(final short qfactor);
 }

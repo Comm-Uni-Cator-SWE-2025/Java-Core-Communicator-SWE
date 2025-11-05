@@ -106,7 +106,6 @@ public class MediaCaptureManager implements CaptureManager {
     public void startCapture() throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
-        //noinspection InfiniteLoopStatement
         while (true) {
             final byte[] encodedPatches = videoComponent.captureScreenNVideo();
             if (encodedPatches == null) {

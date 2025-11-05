@@ -5,7 +5,6 @@
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 
 /**
  * Provides methods for ZigZag scanning and Run-Length Encoding (RLE)
@@ -43,8 +42,14 @@ public class EncodeDecodeRLE implements IRLE {
      */
     private static final short ZERO = 0;
 
-    public static int extraCount = 0;
-    public static int tcount = 0;
+    /**
+     * Extra count for debugging.
+     */
+    private static int extraCount = 0;
+    /**
+     * Total count for debugging.
+     */
+    private static int tcount = 0;
 
     /** Singleton instance. */
     public static final EncodeDecodeRLE ENCODE_DECODE_RLE = new EncodeDecodeRLE();

@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.IntegrationTest;
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 
 import java.io.IOException;
