@@ -424,3 +424,17 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# maven
+**/.mvn/
+**/target/
+
+# idea
+.idea
+
+# Eclipse/IDE metada
+.classpath
+.project
+.settings/
+
+*.class
