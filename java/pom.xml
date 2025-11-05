@@ -177,8 +177,8 @@
   <!-- Properties -->
   <!-- ===================================================== -->
   <properties>
-    <maven.compiler.source>16</maven.compiler.source>
-    <maven.compiler.target>16</maven.compiler.target>
+    <maven.compiler.source>24</maven.compiler.source>
+    <maven.compiler.target>24</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <checkstyle.version>3.3.1</checkstyle.version>
   </properties>
