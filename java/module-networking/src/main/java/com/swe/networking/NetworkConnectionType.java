@@ -32,7 +32,7 @@ public enum NetworkConnectionType {
     /** NETWORK packet ID. */
     private static final int NETWORKID = 4;
     /** NETWORK packet ID. */
-    private static final int MODULEID = 4;
+    private static final int MODULEID = 5;
     /** CLOES packet ID. */
     private static final int CLOSEID = 7;
 

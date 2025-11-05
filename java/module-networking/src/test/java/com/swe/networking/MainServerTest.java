@@ -39,6 +39,8 @@ public class MainServerTest {
             final ClientNode dest2 = new ClientNode("127.0.0.1", 8002);
             final String data = "Good morning !!!";
             mainServer.send(data.getBytes(), dest1);
+            mainServer.send(data.getBytes(), dest1);
+            mainServer.send(data.getBytes(), dest1);
             mainServer.send(data.getBytes(), dest2);
             mainServer.closeClient(dest1);
             mainServer.closeClient(dest2);

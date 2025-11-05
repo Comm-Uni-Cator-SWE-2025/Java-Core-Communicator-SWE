@@ -46,7 +46,7 @@ public class MainServer implements P2PUser {
     /**
      * Variable to start the timer.
      */
-    private final int timerTimeoutMilliSeconds = 2 * 1000;
+    private final int timerTimeoutMilliSeconds = 5 * 1000;
 
     /** Variable to store the server IP address. */
     private final ClientNode mainserver;
@@ -56,6 +56,12 @@ public class MainServer implements P2PUser {
 
     /** Variable to store header size. */
     private final int packetHeaderSize = 22;
+
+    /** Variable to store chunk manager. */
+    private final ChunkManager chunkManager;
+
+    /** Variable to store the chunksize. */
+    private final int payloadSize = 10 * 1024;
 
     /**
      * Constructor function for the main server class.
@@ -70,6 +76,7 @@ public class MainServer implements P2PUser {
         mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
+        chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
         timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
@@ -87,7 +94,8 @@ public class MainServer implements P2PUser {
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
             System.out.println("Sending data");
-            communicator.sendData(data, dest); // check of this should be dest
+            final ClientNode sendDest = topology.getDestination(mainserver, dest);
+            communicator.sendData(data, sendDest); // check of this should be dest
         }
     }
 
@@ -100,7 +108,8 @@ public class MainServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
         System.out.println("Sending data");
-        communicator.sendData(data, destIp); // check of this should be dest
+        final ClientNode sendDest = topology.getDestination(mainserver, destIp);
+        communicator.sendData(data, sendDest); // check of this should be dest
     }
 
     /**
@@ -141,25 +150,48 @@ public class MainServer implements P2PUser {
                     destinationPort);
             System.out.println("Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
-            if (type == NetworkType.USE.ordinal()) {
-                if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
-                    handleHello(dest);
-                } else if (connectionType == NetworkConnectionType.REMOVE.ordinal()) {
-                    handleRemove(packet, dest);
-                } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
-                    timer.updateTimeout(dest);
-                    System.out.println("Received alive packet from " + dest);
-                } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
-                    System.out.println("Passing to chunk manager...");
-                } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
-                    System.out.println("Closing the Main Server");
+            // check for broadcast packet
+            if (parser.parsePacket(packet).getBroadcast() == 1) {
+                for (ClientNode c : topology.getAllClusterServers()) {
+                    if (!c.equals(mainserver) && !c.equals(dest)) {
+                        send(packet, c);
+                    }
                 }
+            }
+            if (type == NetworkType.USE.ordinal()) {
+                handleUsePacket(packet, dest, connectionType);
             } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
                 // might new to change the type to SAMECLUSTER
                 final ClientNode newDest = topology.getServer(dest);
                 send(packet, newDest);
             } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
                 send(packet, dest);
+            }
+        } catch (UnknownHostException ex) {
+        }
+    }
+
+    /**
+     * Function to handle the use packet after receiving.
+     *
+     * @param packet         the packet to be parsed
+     * @param dest           the destination from which the packet was received
+     * @param connectionType the connection type of the packet
+     */
+    private void handleUsePacket(final byte[] packet, final ClientNode dest, final int connectionType) {
+        try {
+            if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
+                handleHello(dest);
+            } else if (NetworkConnectionType.REMOVE.ordinal() == connectionType) {
+                handleRemove(packet, dest);
+            } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
+                timer.updateTimeout(dest);
+                System.out.println("Received alive packet from " + dest);
+            } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
+                System.out.println("Passing to chunk manager...");
+                chunkManager.addChunk(packet);
+            } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
+                System.out.println("Closing the Main Server");
             }
         } catch (UnknownHostException ex) {
         }
