@@ -9,6 +9,7 @@ import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 import com.swe.ScreenNVideo.Serializer.RImage;
+import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
@@ -160,12 +161,50 @@ public class MediaCaptureManager implements CaptureManager {
                     System.out.println("Received CPackets : " + data.length / Utils.KB + " KB");
 //                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
-                    final List<CompressedPatch> patches = networkPackets.packets();
-//                    System.out.println(Arrays.toString(Arrays.copyOf(patches.get(0).data(), 20)));
+
                     final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     if (imageSynchronizer == null) {
                         return;
                     }
+
+                    List <CompressedPatch> patches;
+
+                    if (networkPackets.isFullImage()) {
+                        // reset expected feed number
+                        imageSynchronizer.expectedfeedNumber = networkPackets.packetNumber();
+
+                        // drop all entries older than this full image
+                        while (!imageSynchronizer.getHeap().isEmpty() &&
+                                imageSynchronizer.getHeap().peek().getFeedNumber() < imageSynchronizer.expectedfeedNumber) {
+                            imageSynchronizer.getHeap().poll();
+                        }
+
+                        patches = networkPackets.packets();
+                    } else {
+
+                        // if heap is growing too large, request a full frame to resync
+                        if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
+                            final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
+                            final ClientNode destNode = new ClientNode(networkPackets.ip(), port);
+                            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
+
+                            imageSynchronizer.getHeap().clear();
+                            return;
+                        }
+
+                        imageSynchronizer.getHeap().add(new FeedData(networkPackets.packetNumber(), networkPackets));
+
+                        // If the next expected patch hasn't arrived yet, wait
+                        if (!(imageSynchronizer.getHeap().peek().getFeedNumber() == imageSynchronizer.expectedfeedNumber)) {
+                            return;
+                        }
+
+                        final FeedData minFeedNumPacket = imageSynchronizer.getHeap().poll();
+                        patches = minFeedNumPacket.getFeedPackets().packets();
+                    }
+
+                    imageSynchronizer.expectedfeedNumber++;
+
                     final int[][] image = imageSynchronizer.synchronize(patches);
                     final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
@@ -175,15 +214,16 @@ public class MediaCaptureManager implements CaptureManager {
                     } catch (InterruptedException | ExecutionException e) {
                         throw new RuntimeException(e);
                     }
+
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
                     addParticipant(viewerIP);
-                    final byte[] fullImageEnocoded = videoComponent.captureFullImage();
-                    if (fullImageEnocoded == null) {
+                    final byte[] fullImageEncoded = videoComponent.captureFullImage();
+                    if (fullImageEncoded == null) {
                         return;
                     }
-                    networking.sendData(fullImageEnocoded,
+                    networking.sendData(fullImageEncoded,
                         new ClientNode[]{new ClientNode(viewerIP, port)},
                         ModuleType.SCREENSHARING,
                         2);
