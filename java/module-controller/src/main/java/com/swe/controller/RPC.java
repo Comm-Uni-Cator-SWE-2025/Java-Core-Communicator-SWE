@@ -1,7 +1,7 @@
 package com.swe.controller;
 
-import com.socketry.SocketryServer;
-import com.swe.RPC.AbstractRPC;
+import com.socketry.SocketryClient;
+import com.swe.controller.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,7 +12,7 @@ import java.util.function.Function;
 public class RPC implements AbstractRPC {
     HashMap<String, Function<byte[], byte[]>> methods;
 
-    private SocketryServer socketryServer;
+    private SocketryClient socketryServer;
 
     public RPC() {
         methods = new HashMap<>();
@@ -23,21 +23,14 @@ public class RPC implements AbstractRPC {
     }
 
     public Thread connect() throws IOException, InterruptedException, ExecutionException {
-        socketryServer = new SocketryServer(60000, methods);
-        final Thread rpcThread = new Thread(socketryServer::listenLoop);
+        socketryServer = new SocketryClient(new byte[] {20}, 60000, methods);
+        Thread rpcThread = new Thread(socketryServer::listenLoop);
         rpcThread.start();
         return rpcThread;
     }
 
     public CompletableFuture<byte[]> call(String methodName, byte[] data) {
-        if(socketryServer == null) {
-            System.err.println("Server is null");
-            return CompletableFuture.supplyAsync(() -> {
-                return new byte[0];
-            });
-        }
-
-        final byte methodId = socketryServer.getRemoteProcedureId(methodName);
+        byte methodId = socketryServer.getRemoteProcedureId(methodName);
         try {
             return socketryServer.makeRemoteCall(methodId, data, 0);
         } catch (InterruptedException e) {
