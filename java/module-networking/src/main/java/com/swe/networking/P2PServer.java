@@ -51,12 +51,12 @@ public class P2PServer implements P2PUser {
     /**
      * The thread to monitor client timeouts.
      */
-    private final int timerTimeout = 30000;
+    private final int timerTimeout = 3000;
 
     /**
      * Threshold for client timeout in milliseconds.
      */
-    private final int timeoutThreshold = 10000;
+    private final int timeoutThreshold = 1000;
 
     /** Variable to store header size. */
     private final int packetHeaderSize = 22;
@@ -81,10 +81,10 @@ public class P2PServer implements P2PUser {
      * @param mainServerAddress the IP address of the main server
      */
     public P2PServer(final ClientNode deviceAddress,
-            final ClientNode mainServerAddress) {
+            final ClientNode mainServerAddress, ProtocolBase tcpCommunicator) {
         
         this.serverPort = deviceAddress.port();
-        communicator = new TCPCommunicator(deviceAddress.port());
+        communicator = tcpCommunicator;
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
 
         this.deviceNode = deviceAddress;
@@ -192,6 +192,7 @@ public class P2PServer implements P2PUser {
             final byte[] newPacket = parser.createPkt(pktInfo);
             send(newPacket, dest);
         } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
+            // TODO: change the type to appropriate one
             final ClientNode clusterServer = topology.getServer(dest);
             send(packet, clusterServer);
         } else {
@@ -296,6 +297,7 @@ public class P2PServer implements P2PUser {
      */
     private void sendAliveToMainServer() {
         final PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setLength(PacketParser.getHeaderSize());
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.ALIVE.ordinal());
         packetInfo.setPayload(new byte[0]);
@@ -309,6 +311,7 @@ public class P2PServer implements P2PUser {
         packetInfo.setPortNum(deviceNode.port());
         final byte[] alivePacket = parser.createPkt(packetInfo);
         while (true) {
+            System.out.println("Sending ALIVE to main server...");
             send(alivePacket, mainServer);
             try {
                 Thread.sleep(timeoutThreshold);
@@ -334,6 +337,7 @@ public class P2PServer implements P2PUser {
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
         packetInfo.setPayload(client.toString().getBytes());
+        packetInfo.setLength(PacketParser.getHeaderSize() + packetInfo.getPayload().length);
         final byte[] removePacket = parser.createPkt(packetInfo);
         send(removePacket, mainServer);
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
