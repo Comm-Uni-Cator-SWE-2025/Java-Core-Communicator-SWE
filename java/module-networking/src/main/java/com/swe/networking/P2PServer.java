@@ -51,18 +51,24 @@ public class P2PServer implements P2PUser {
     /**
      * The thread to monitor client timeouts.
      */
-    private final int timerTimeout = 30000;
+    private final int timerTimeout = 3000;
 
     /**
      * Threshold for client timeout in milliseconds.
      */
-    private final int timeoutThreshold = 10000;
+    private final int timeoutThreshold = 1000;
+
+    /** Variable to store header size. */
+    private final int packetHeaderSize = 22;
+
+    /** Variable to store chunk manager. */
+    private final ChunkManager chunkManager;
 
     /**
      * Main server Node.
      */
     private final ClientNode mainServer;
-    
+
     /**
      * The p2pserver Node.
      */
@@ -71,22 +77,24 @@ public class P2PServer implements P2PUser {
     /**
      * Constructor function for the cluster server class.
      *
-     * @param deviceAddress   the ClientNode of the device
+     * @param deviceAddress     the ClientNode of the device
      * @param mainServerAddress the IP address of the main server
+     * @param tcpCommunicator   the tcp communicator object to send messages
      */
     public P2PServer(final ClientNode deviceAddress,
-            final ClientNode mainServerAddress) {
-        
+            final ClientNode mainServerAddress, final ProtocolBase tcpCommunicator) {
+
         this.serverPort = deviceAddress.port();
-        communicator = new TCPCommunicator(deviceAddress.port());
-        
+        communicator = tcpCommunicator;
+        chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
+
         this.deviceNode = deviceAddress;
         this.mainServer = mainServerAddress;
 
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
-        
+
         sendThread.start();
         receiveThread.start();
 
@@ -136,7 +144,7 @@ public class P2PServer implements P2PUser {
             }
         }
     }
-    
+
     /**
      * Function to handle the received packet.
      *
@@ -154,6 +162,17 @@ public class P2PServer implements P2PUser {
         final ClientNode dest = new ClientNode(destinationIp,
                 destinationPort);
 
+        // check for broadcast
+        if (packetInfo.getBroadcast() == 1) {
+            System.out.println("Broadcast packet received at P2PServer.");
+            // modify packet to dest as self
+            packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
+            packetInfo.setPortNum(deviceNode.port());
+            final byte[] newPacket = parser.createPkt(packetInfo);
+            handleBroadcast(newPacket, dest);
+            return;
+        }
+
         // handle based on type and connection type
         if (type == NetworkType.USE.ordinal() || type == NetworkType.CLUSTERSERVER.ordinal()) {
             handleUsePacket(connectionType, packet, dest);
@@ -163,10 +182,32 @@ public class P2PServer implements P2PUser {
             final byte[] newPacket = parser.createPkt(pktInfo);
             send(newPacket, dest);
         } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
+            // TOD change the type to appropriate one
             final ClientNode clusterServer = topology.getServer(dest);
             send(packet, clusterServer);
         } else {
             System.out.println("Unknown packet type received.");
+        }
+    }
+
+    /**
+     * Function to handle broadcasting a packet.
+     *
+     * @param newPacket the packet to be broacasted
+     * @param dest      the destination from which the packet was received
+     */
+    private void handleBroadcast(final byte[] newPacket, final ClientNode dest) {
+        for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
+            if (c.equals(deviceNode) || c.equals(dest)) {
+                continue;
+            }
+            send(newPacket, c);
+        }
+        for (ClientNode servers : topology.getAllClusterServers()) {
+            if (servers.equals(deviceNode) || servers.equals(dest)) {
+                continue;
+            }
+            send(newPacket, servers);
         }
     }
 
@@ -197,6 +238,10 @@ public class P2PServer implements P2PUser {
                     break;
                 case NETWORK:
                     handleNetwork(packet);
+                    break;
+                case MODULE:
+                    System.out.println("MODULE packet received");
+                    chunkManager.addChunk(packet);
                     break;
                 case CLOSE:
                     close();
@@ -263,6 +308,7 @@ public class P2PServer implements P2PUser {
      */
     private void sendAliveToMainServer() {
         final PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setLength(PacketParser.getHeaderSize());
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.ALIVE.ordinal());
         packetInfo.setPayload(new byte[0]);
@@ -276,6 +322,7 @@ public class P2PServer implements P2PUser {
         packetInfo.setPortNum(deviceNode.port());
         final byte[] alivePacket = parser.createPkt(packetInfo);
         while (true) {
+            System.out.println("Sending ALIVE to main server...");
             send(alivePacket, mainServer);
             try {
                 Thread.sleep(timeoutThreshold);
@@ -301,6 +348,7 @@ public class P2PServer implements P2PUser {
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
         packetInfo.setPayload(client.toString().getBytes());
+        packetInfo.setLength(PacketParser.getHeaderSize() + packetInfo.getPayload().length);
         final byte[] removePacket = parser.createPkt(packetInfo);
         send(removePacket, mainServer);
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
@@ -308,8 +356,9 @@ public class P2PServer implements P2PUser {
         }
     }
 
-    /** 
+    /**
      * Function to monitor a new client.
+     * 
      * @param client the client to monitor
      */
     public void monitor(final ClientNode client) {

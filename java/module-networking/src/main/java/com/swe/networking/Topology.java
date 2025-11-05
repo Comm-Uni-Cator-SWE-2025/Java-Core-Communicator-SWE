@@ -111,8 +111,8 @@ public final class Topology implements AbstractTopology, AbstractController {
             numClients = 1;
         } else {
             try {
-                final P2PCluster userP2P = new P2PCluster();
-                userP2P.addUser(deviceAddress, deviceAddress);
+                user = new P2PCluster();
+                ((P2PCluster) user).addUser(deviceAddress, mainServerAddress);
             } catch (UnknownHostException ex) {
                 System.out.println("Error while adding user to the P2P cluster...");
             }
@@ -268,5 +268,50 @@ public final class Topology implements AbstractTopology, AbstractController {
             }
         }
         return clients;
+    }
+
+    /**
+     * Function to get the network type based in source and destination.
+     *
+     * @param source the source IP address
+     * @param dest   the destination IP address
+     * @return the type number
+     */
+    public int getNetworkType(final ClientNode source, final ClientNode dest) {
+        final int srcClusterIdx = getClusterIndex(source);
+        final int destClusterIdx = getClusterIndex(dest);
+        if (srcClusterIdx == destClusterIdx) {
+            return NetworkType.USE.ordinal();
+        } else {
+            return NetworkType.OTHERCLUSTER.ordinal();
+        }
+    }
+
+    /**
+     * Function to get the destination to send the packet to in the topology.
+     *
+     * @param source the source IP address
+     * @param dest   the destination IP address
+     * @return the destination to send to
+     */
+    public ClientNode getDestination(final ClientNode source, final ClientNode dest) {
+        final int srcClusterIdx = getClusterIndex(source);
+        final int destClusterIdx = getClusterIndex(dest);
+        if (srcClusterIdx == destClusterIdx) {
+            return dest;
+        } else {
+            final ClientNode destServer = getServer(dest);
+            return destServer;
+        }
+    }
+
+    /**
+     * Function to send the packet to underlying user.
+     *
+     * @param packet the packet to be send
+     * @param dest   the destination to send
+     */
+    public void sendPacket(final byte[] packet, final ClientNode dest) {
+        user.send(packet, dest);
     }
 }

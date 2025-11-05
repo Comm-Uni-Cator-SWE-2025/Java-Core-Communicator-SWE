@@ -1,9 +1,6 @@
 package com.swe.networking;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +9,7 @@ import java.util.List;
  * The Cluster class to store details of a given cluster.
  *
  */
-public class P2PCluster {
+public class P2PCluster implements P2PUser {
     /**
      * List of all clients belonging to the same cluster.
      */
@@ -43,6 +40,12 @@ public class P2PCluster {
      */
     private static PacketParser packetParser = PacketParser.getPacketParser();
 
+    /**
+     * Constructor function for P2P Cluster class.
+     *
+     */
+    private ProtocolBase tcpCommunicator;
+
     public P2PCluster() {
         System.out.println("Creating a new P2P Cluster...");
         clients = new ArrayList<>();
@@ -57,69 +60,44 @@ public class P2PCluster {
     public void addUser(final ClientNode client, final ClientNode server) throws UnknownHostException {
         System.out.println("Adding new user to the network...");
         // send hello to server
-        PacketInfo packetInfo = new PacketInfo();
+        final PacketInfo packetInfo = new PacketInfo();
+        packetInfo.setLength(PacketParser.getHeaderSize());
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
         packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
         packetInfo.setPortNum(client.port());
         packetInfo.setPayload(new byte[0]);
-        final byte[] helloPacket = packetParser.createPkt(packetInfo);
 
+        tcpCommunicator = new TCPCommunicator(client.port());
+
+        final byte[] helloPacket = packetParser.createPkt(packetInfo);
+        tcpCommunicator.sendData(helloPacket, server);
+        clients.add(client);
+        final Thread receiveThread = new Thread(this::receive);
+        receiveThread.start();
         try {
-            final Socket socket = 
-                new Socket(server.hostName(), server.port(), InetAddress.getByName(client.hostName()), client.port());
-            final OutputStream out = socket.getOutputStream();
-            out.write(helloPacket);
-            out.flush();
-            // read response from server
-            final InputStream in = socket.getInputStream();
-            final byte[] packet = new byte[MAX_PACKET_SIZE];
-            final int bytesRead = in.read(packet);
-            socket.close();
-            if (bytesRead > 0) {
-                System.out.println("Received structure from server: " + server.hostName());
-                clients.add(client);
-                // deserialize the object from packet
-                packetInfo = packetParser.parsePacket(packet);
-                final NetworkStructure networkStructure =
-                    NetworkSerializer.getNetworkSerializer()
-                        .deserializeNetworkStructure(packetInfo.getPayload());
-                for (int i = 0; i < networkStructure.servers().size(); i++) {
-                    if (networkStructure.servers().get(i).equals(client)) {
-                        clusterServer = client;
-                        user = new P2PServer(client, server);
-                        for (ClientNode c : networkStructure.clusters().get(i)) {
-                            ((P2PServer) user).monitor(c);
-                        }
-                        // send network packet to the P2P server
-                        final Socket serverSocket =
-                            new Socket(client.hostName(), client.port());
-                        final OutputStream serverOut = serverSocket.getOutputStream();
-                        final PacketInfo netPacketInfo = new PacketInfo();
-                        netPacketInfo.setType(NetworkType.USE.ordinal());
-                        netPacketInfo.setConnectionType(NetworkConnectionType.NETWORK.ordinal());
-                        netPacketInfo.setIpAddress(InetAddress.getByName(client.hostName()));
-                        netPacketInfo.setPortNum(client.port());
-                        netPacketInfo.setPayload(
-                            NetworkSerializer.getNetworkSerializer()
-                                .serializeNetworkStructure(networkStructure));
-                        final byte[] networkPacket = packetParser.createPkt(netPacketInfo);
-                        serverOut.write(networkPacket);
-                        serverOut.flush();
-                        serverSocket.close();
-                        this.isServer = true;
-                        break;
-                    }
-                    if (networkStructure.clusters().get(i).contains(client)) {
-                        clusterServer = networkStructure.servers().get(i);
-                        this.isServer = false;
-                        // user = new P2PClient(client, server);
-                        break;
-                    }
+            receiveThread.join();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("User added to the network...");
+        final NetworkStructure networkStructure = Topology.getTopology().getNetwork();
+        for (int i = 0; i < networkStructure.servers().size(); i++) {
+            if (networkStructure.servers().get(i).equals(client)) {
+                clusterServer = client;
+                this.user = new P2PServer(client, server, tcpCommunicator);
+                for (ClientNode c : networkStructure.clusters().get(i)) {
+                    ((P2PServer) this.user).monitor(c);
                 }
+                this.isServer = true;
+                break;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            if (networkStructure.clusters().get(i).contains(client)) {
+                clusterServer = networkStructure.servers().get(i);
+                this.isServer = false;
+                user = new P2PClient(client, server);
+                break;
+            }
         }
     }
 
@@ -132,5 +110,60 @@ public class P2PCluster {
         if (clients.size() < size - 1) {
             System.out.println("Cannot resize cluster...");
         }
-    }    
+    }
+
+    /**
+     * Function to send data by the user.
+     * 
+     * @param data   the data to be sent
+     * @param destIp the destinations to send the data
+     */
+    @Override
+    public void send(final byte[] data, final ClientNode[] destIp) {
+        this.user.send(data, destIp);
+    }
+
+    /**
+     * Function to send data by the user.
+     * 
+     * @param data   the data to be sent
+     * @param destIp the one destination to send the data
+     */
+    @Override
+    public void send(final byte[] data, final ClientNode destIp) {
+        this.user.send(data, destIp);
+    }
+
+    /**
+     * Function to receive data from other clients.
+     */
+    @Override
+    public void receive() {
+        while (true) {
+            final byte[] packet = tcpCommunicator.receiveData();
+            if (packet == null) {
+                System.out.println("No packet received, continuing...");
+                continue;
+            } else {
+                try {
+                    final PacketInfo packetInfo = packetParser.parsePacket(packet);
+                    final NetworkStructure networkStructure = NetworkSerializer.getNetworkSerializer()
+                            .deserializeNetworkStructure(packetInfo.getPayload());
+                    Topology.getTopology().replaceNetwork(networkStructure);
+                    break;
+                } catch (Exception e) {
+                    System.out.println("Error while receiving data in P2P Cluster...");
+                }
+            }
+        }
+    }
+
+    /**
+     * Function to handle socket closing at termination.
+     */
+    @Override
+    public void close() {
+        this.user.close();
+    }
+
 }
