@@ -108,7 +108,10 @@ public class Utils {
      */
     public static final double KB = 1_024.0;
 
-
+    /**
+     * Max diffs stored in a heap.
+     */
+    public static final int MAX_HEAP_SIZE = 20;
 
     /**
      * Maximum tries to serialize the compressed packets.

@@ -6,6 +6,7 @@ import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
 
 import java.util.List;
+import java.util.PriorityQueue;
 
 /**
  * Synchronizer to synchronize the image from the patches.
@@ -26,6 +27,24 @@ public class ImageSynchronizer {
     private final ImageStitcher imageStitcher;
 
     /**
+     * The next feed number we expect to recieve in correct order.
+     * Used to ensure patches are applied sequentially.
+     */
+    public int expectedfeedNumber;
+
+    /**
+     * Min-heap storing out-of-order feed packets.
+     */
+    private final PriorityQueue<FeedData> heap;
+
+    /**
+     * @return the min-heap of {@link FeedData} items used for ordering incoming packets.
+     */
+    public PriorityQueue<FeedData> getHeap() {
+        return this.heap;
+    }
+
+    /**
      * Create a new image synchronizer.
      * @param codec the codec to decode the patches.
      */
@@ -33,6 +52,8 @@ public class ImageSynchronizer {
         this.videoCodec = codec;
         this.imageStitcher = new ImageStitcher();
         previousImage = null;
+        this.expectedfeedNumber = 0;
+        this.heap = new PriorityQueue<>((a, b) -> Integer.compare(a.getFeedNumber(), b.getFeedNumber()));
     }
 
     /**
