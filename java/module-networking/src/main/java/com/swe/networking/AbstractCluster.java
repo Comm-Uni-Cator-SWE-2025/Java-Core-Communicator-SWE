@@ -5,5 +5,10 @@ package com.swe.networking;
  *
  */
 public interface AbstractCluster {
-    void addClient(String ip, Integer port);
+    /**
+     * Function to add a client to the cluster.
+     *
+     * @param client the client to be added
+     */
+    void addClient(ClientNode client);
 }

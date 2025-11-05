@@ -32,6 +32,20 @@ class Compressor implements ICompressor {
     private final int MATRIX_DIM = 8;
 
     /**
+     * Time taken for ZigZag operations.
+     */
+    private long zigZagTime = 0;
+    /**
+     * Time taken for DCT operations.
+     */
+    private long dctTime = 0;
+    /**
+     * Time taken for quantization operations.
+     */
+    private long quantTime = 0;
+
+
+    /**
      * Package-private constructor.
      * Initializes the compressor by obtaining singleton instances of the
      * DCT, Quantization, and RLE modules.
@@ -39,7 +53,8 @@ class Compressor implements ICompressor {
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
-        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
+        enDeRLE = EncodeDecodeRLE.getInstance();
     }
 
     /**
@@ -56,17 +71,19 @@ class Compressor implements ICompressor {
     @Override
     public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        resBuffer.putShort((short) (height / MATRIX_DIM));
-        resBuffer.putShort((short) (width / MATRIX_DIM));
-
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
-                dctmodule.fdct(matrix, i, j);
-                quantmodule.quantisationChrome(matrix, i, j);
+//                dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
+//                quantmodule.quantisationChrome(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
+//        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
+//        zigZagTime += System.nanoTime() - curr;
     }
 
     /**
@@ -83,16 +100,18 @@ class Compressor implements ICompressor {
     @Override
     public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        resBuffer.putShort((short) (height / MATRIX_DIM));
-        resBuffer.putShort((short) (width / MATRIX_DIM));
-
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
-                dctmodule.fdct(matrix, i, j);
-                quantmodule.quantisationLumin(matrix, i, j);
+//                dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
+//                quantmodule.quantisationLumin(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
+//        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
+//        zigZagTime += System.nanoTime() - curr;
     }
 }

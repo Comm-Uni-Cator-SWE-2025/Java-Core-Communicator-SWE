@@ -49,6 +49,16 @@ public class VideoComponents {
     private final String localIp = Utils.getSelfIP();
 
     /**
+     * Feed number.
+     */
+    private int feedNumber = 0;
+
+    /**
+     * Current feed.
+     */
+    private int[][] feed;
+
+    /**
      * Class conatining Components to capture feed.
      */
     private final CaptureComponents captureComponents;
@@ -67,6 +77,35 @@ public class VideoComponents {
         timeDelay = (1.0 / fps) * Utils.SEC_IN_NS;
     }
 
+    /**
+     * Captures the full image without diffing.
+     * @return encoded Patches to be sent through the network
+     */
+    public byte[] captureFullImage() {
+
+        final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed);
+
+        final CPackets networkPackets = new CPackets(feedNumber, localIp, true, feed.length, feed[0].length, patches);
+        byte[] encodedPatches = null;
+        int tries = Utils.MAX_TRIES_TO_SERIALIZE;
+        while (tries-- > 0) {
+            // max tries 3 times to convert the patch
+            try {
+                encodedPatches = networkPackets.serializeCPackets();
+                break;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (tries < 0 || encodedPatches == null) {
+            System.err.println("Error: Unable to serialize compressed packets");
+            return null;
+        }
+
+        return encodedPatches;
+    }
+
     private void uiWorkLoop() {
 //        int count = 0;
 //        long prev = 0;
@@ -74,16 +113,10 @@ public class VideoComponents {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
-//                        System.out.println("UI Frame Processed : " + (++count));
-//                        long curr = System.nanoTime();
                     final RImage rImage = new RImage(frame, localIp);
                     final byte[] serializedImage = rImage.serialize();
-//                        System.out.println("Data size : " + serializedImage.length / ((double)Utils.KB));
-                    // Fire-and-forget; do not block capture thread — worker thread can block on network
-//                        System.out.println("UI Serialization Time : "
-//                            + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
-                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
-                        / ((double) Utils.MSEC_IN_NS));
+//                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
+//                        / ((double) Utils.MSEC_IN_NS));
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage);
                     } catch (final Exception e) {
@@ -123,7 +156,6 @@ public class VideoComponents {
     // Submit an RImage serialization + RPC task to the background worker queue. If the queue is full,
     // this method will drop the frame (non-blocking) to keep capture smooth.
     private void submitUIUpdate(final int[][] frame) {
-        // only add to the queue; worker thread handles serialization and sending
         if (frame == null) {
             return;
         }
@@ -151,27 +183,23 @@ public class VideoComponents {
             + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
         start = System.nanoTime();
 
-        final int[][] feed = captureComponents.getFeed();
-        if (feed == null) {
-//            System.err.println("No feed");
+        final int[][] newFeed = captureComponents.getFeed();
+        if (newFeed == null) {
             return null;
         }
 
-//            System.out.println("Time taken : Video | PacketGen");
-//            final long curr1 = System.nanoTime();
-//            System.out.print((curr1 - start) / (double) (Utils.MSEC_IN_NS) + " | ");
-
-//            System.out.println("Feed Size : " + feed.length + " x " + feed[0].length);
-        videoCodec.setScreenshot(feed);
-
-        final List<CompressedPatch> patches = patchGenerator.generatePackets(feed);
+        final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed);
 
         if (patches.isEmpty()) {
             prev = System.nanoTime();
             return null;
         }
 
-        final CPackets networkPackets = new CPackets(localIp, patches);
+        // increase the feed number and update the feed
+        feed = newFeed;
+        feedNumber++;
+
+        final CPackets networkPackets = new CPackets(feedNumber, localIp, false, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
@@ -195,8 +223,10 @@ public class VideoComponents {
         submitUIUpdate(feed);
 
         prev = System.nanoTime();
-//            System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
-//            System.out.println("\nSending to " + networkPackets.getIp());
+//        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+//        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }
 }
+
+

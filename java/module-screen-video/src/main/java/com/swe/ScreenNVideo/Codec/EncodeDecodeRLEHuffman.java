@@ -194,13 +194,13 @@ public class EncodeDecodeRLEHuffman implements IRLE {
         private int currentByte;
         private int bitsInByte;
 
-        public BitWriter(ByteBuffer buffer) {
-            this.buffer = buffer;
+        public BitWriter(final ByteBuffer bufferArgs) {
+            this.buffer = bufferArgs;
             this.currentByte = 0;
             this.bitsInByte = 0;
         }
 
-        public void writeBit(int bit) {
+        public void writeBit(final int bit) {
             currentByte = (currentByte << 1) | (bit & 1);
             bitsInByte++;
 
@@ -248,16 +248,20 @@ public class EncodeDecodeRLEHuffman implements IRLE {
         private final ByteBuffer buffer;
         private int currentByte;
         private int bitsRemaining;
+        private final int startPosition;
+        private final int maxPosition;
 
-        public BitReader(ByteBuffer buffer) {
+        public BitReader(ByteBuffer buffer, int bitStreamLength) {
             this.buffer = buffer;
             this.currentByte = 0;
             this.bitsRemaining = 0;
+            this.startPosition = buffer.position();
+            this.maxPosition = startPosition + bitStreamLength;
         }
 
         public int readBit() {
             if (bitsRemaining == 0) {
-                if (!buffer.hasRemaining()) {
+                if (!buffer.hasRemaining() || buffer.position() >= maxPosition) {
                     return -1; // End of stream
                 }
                 currentByte = buffer.get() & 0xFF;
@@ -297,6 +301,11 @@ public class EncodeDecodeRLEHuffman implements IRLE {
             }
 
             return code.toString();
+        }
+
+        public void alignToNextByte() {
+            // Move buffer position to account for consumed bytes
+            buffer.position(maxPosition);
         }
     }
 
@@ -338,11 +347,23 @@ public class EncodeDecodeRLEHuffman implements IRLE {
     public short[][] revZigZagRLE(final ByteBuffer resRLEbuffer) {
         final short height = resRLEbuffer.getShort();
         final short width = resRLEbuffer.getShort();
-        final int bitStreamLength = resRLEbuffer.getInt();
+
+        // Validate dimensions
+        if (height <= 0 || width <= 0) {
+            throw new RuntimeException("Invalid matrix dimensions: height=" + height + ", width=" + width);
+        }
 
         final short[][] matrix = new short[height][width];
 
-        BitReader reader = new BitReader(resRLEbuffer);
+        final int bitStreamLength = resRLEbuffer.getInt();
+
+        // Validate bit stream length
+        if (bitStreamLength < 0 || bitStreamLength > resRLEbuffer.remaining()) {
+            throw new RuntimeException("Invalid bit stream length: " + bitStreamLength +
+                ", remaining bytes: " + resRLEbuffer.remaining());
+        }
+
+        BitReader reader = new BitReader(resRLEbuffer, bitStreamLength);
         short prevDC = 0;
 
         for (short rowBlock = 0; rowBlock < height; rowBlock += 8) {
@@ -350,6 +371,9 @@ public class EncodeDecodeRLEHuffman implements IRLE {
                 prevDC = decodeBlockHuffman(matrix, rowBlock, colBlock, reader, prevDC);
             }
         }
+
+        // Ensure buffer position is correctly aligned after reading all bits
+        reader.alignToNextByte();
 
         return matrix;
     }
@@ -601,17 +625,26 @@ public class EncodeDecodeRLEHuffman implements IRLE {
 
     /**
      * Get category (number of bits needed) for a value.
+     *
+     * @param value the value to get category for
+     * @return category number
      */
-    private int getCategory(short value) {
-        int absValue = Math.abs(value);
-        if (absValue == 0) return 0;
+    private int getCategory(final short value) {
+        final int absValue = Math.abs(value);
+        if (absValue == 0) {
+            return 0;
+        }
         return 32 - Integer.numberOfLeadingZeros(absValue);
     }
 
     /**
      * Get additional bits value for a coefficient.
+     *
+     * @param value the coefficient value
+     * @param category the category
+     * @return additional bits value
      */
-    private int getAdditionalBitsValue(short value, int category) {
+    private int getAdditionalBitsValue(final short value, final int category) {
         if (value >= 0) {
             return value;
         } else {
@@ -621,9 +654,13 @@ public class EncodeDecodeRLEHuffman implements IRLE {
 
     /**
      * Decode value from additional bits.
+     *
+     * @param bits the bits to decode
+     * @param category the category of the value
+     * @return decoded value
      */
-    private short decodeValue(int bits, int category) {
-        int threshold = 1 << (category - 1);
+    private short decodeValue(final int bits, final int category) {
+        final int threshold = 1 << (category - 1);
 
         if (bits < threshold) {
             return (short) (bits - (1 << category) + 1);
