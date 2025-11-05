@@ -126,6 +126,7 @@ public class P2PClient implements P2PUser {
             final byte[] emptyPayload = new byte[0];
 
             final PacketInfo aliveInfo = new PacketInfo();
+            aliveInfo.setLength(PacketParser.getHeaderSize());
             aliveInfo.setType(NetworkType.USE.ordinal());
             aliveInfo.setPriority(0);
             aliveInfo.setModule(ModuleType.NETWORKING.ordinal());

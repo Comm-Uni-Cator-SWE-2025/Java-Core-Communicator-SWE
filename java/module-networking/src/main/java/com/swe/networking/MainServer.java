@@ -46,7 +46,7 @@ public class MainServer implements P2PUser {
     /**
      * Variable to start the timer.
      */
-    private final int timerTimeoutMilliSeconds = 10 * 1000;
+    private final int timerTimeoutMilliSeconds = 5 * 1000;
 
     /** Variable to store the server IP address. */
     private final ClientNode mainserver;
