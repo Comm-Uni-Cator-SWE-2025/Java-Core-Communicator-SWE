@@ -20,9 +20,6 @@ public class P2PMainServerTest {
         ClientNode mainServerNode = new ClientNode(loopBackAddress, mainServerPort);
         Topology topology = Topology.getTopology();
         topology.addUser(mainServerNode, mainServerNode);
-        // P2PCluster cluster0 = new P2PCluster();
-        // P2PServer p2pServer = new P2PServer(p2pserverNode, mainServerNode);
-        // cluster0.addUser(p2pserverNode, mainServerNode);
         try {
             Thread.sleep(50000);
         } catch (InterruptedException ex) {

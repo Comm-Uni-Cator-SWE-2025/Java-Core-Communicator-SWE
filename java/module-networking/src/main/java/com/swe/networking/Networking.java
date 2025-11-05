@@ -140,7 +140,15 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public void broadcast(final byte[] data, final int module, final int priority) {
-        final ClientNode[] dest = {topology.getServer(user) };
+        ClientNode[] dest = new ClientNode[topology.getAllClusterServers().size() 
+                                            + topology.getClients(topology.getClusterIndex(user)).size()];
+        for(int i = 0; i < topology.getAllClusterServers().size(); i++) {
+            dest[i] = topology.getAllClusterServers().get(i);
+        }
+        for(int j = 0; j < topology.getClients(topology.getClusterIndex(user)).size(); j++) {
+            dest[topology.getAllClusterServers().size() + j] 
+                = topology.getClients(topology.getClusterIndex(user)).get(j);
+        }
         final Vector<byte[]> chunks = getChunks(data, dest, module, priority, 1);
         for (byte[] chunk : chunks) {
             try {
@@ -148,6 +156,7 @@ public class Networking implements AbstractNetworking, AbstractController {
             } catch (UnknownHostException ex) {
             }
         }
+        
     }
 
     /**
