@@ -30,21 +30,21 @@ public class P2PClientTest {
     private P2PClient testClient;
 
     public NetworkStructure getMockNetworkStructure() {
-        List<List<ClientNode>> clusters = new ArrayList<>();
-        List<ClientNode> clusterServers = new ArrayList<>();
+        final List<List<ClientNode>> clusters = new ArrayList<>();
+        final List<ClientNode> clusterServers = new ArrayList<>();
 
         // Cluster 0 (another cluster)
-        List<ClientNode> cluster0 = new ArrayList<>();
-        ClientNode otherServer = new ClientNode("127.0.0.1", 6000);
+        final List<ClientNode> cluster0 = new ArrayList<>();
+        final ClientNode otherServer = new ClientNode("127.0.0.1", 6000);
         cluster0.add(otherServer);
         clusters.add(cluster0);
         clusterServers.add(otherServer);
 
         // Cluster 1 (The client's cluster)
-        List<ClientNode> cluster1 = new ArrayList<>();
+        final List<ClientNode> cluster1 = new ArrayList<>();
         cluster1.add(clusterServerNode); // The server
-        cluster1.add(deviceNode);         // The client itself
-        cluster1.add(otherClientNode);    // Another client
+        cluster1.add(deviceNode); // The client itself
+        cluster1.add(otherClientNode); // Another client
         clusters.add(cluster1);
         clusterServers.add(clusterServerNode);
 
@@ -55,9 +55,9 @@ public class P2PClientTest {
      * Helper method to send a packet to a specific ClientNode.
      * We use this to send packets *to* our testClient.
      */
-    public void sendPacket(byte[] packet, ClientNode destNode) {
+    public void sendPacket(final byte[] packet, final ClientNode destNode) {
         try (Socket socket = new Socket(destNode.hostName(), destNode.port())) {
-            OutputStream out = socket.getOutputStream();
+            final OutputStream out = socket.getOutputStream();
             out.write(packet);
             out.flush();
         } catch (Exception e) {
@@ -67,11 +67,14 @@ public class P2PClientTest {
 
     /**
      * Helper to create a fully formed packet for sending.
+     * 
      * @return Raw packet bytes
      */
-    private byte[] createTestPacket(int type, int connType, byte[] payload) throws UnknownHostException {
-        PacketInfo info = new PacketInfo();
+    private byte[] createTestPacket(final int type, final int connType, final byte[] payload)
+            throws UnknownHostException {
+        final PacketInfo info = new PacketInfo();
         info.setType(type);
+        info.setLength(packetParser.getHeaderSize() + payload.length);
         info.setConnectionType(connType);
         info.setPayload(payload != null ? payload : new byte[0]);
 
@@ -103,9 +106,11 @@ public class P2PClientTest {
         testClient = new P2PClient(deviceNode, mainServer);
 
         // 1. Create the network structure and the packet
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPayload = serializer.serializeNetworkStructure(network);
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), networkPayload);
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPayload = serializer.serializeNetworkStructure(network);
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                networkPayload);
 
         sendPacket(networkPacket, deviceNode);
 
@@ -120,8 +125,8 @@ public class P2PClientTest {
     public void testClientSendToSingleDestPacket() throws Exception {
         System.out.println("Test for sending data to single dest packet ...............");
         testClient = new P2PClient(deviceNode, mainServer);
-        ClientNode destination = new ClientNode("127.0.0.1", 8001);
-        byte[] testdata = new byte[]{2, 4, 5};
+        final ClientNode destination = new ClientNode("127.0.0.1", 8001);
+        final byte[] testdata = new byte[] { 2, 4, 5 };
         testClient.send(testdata, destination);
     }
 
@@ -129,40 +134,42 @@ public class P2PClientTest {
     public void testClientSendToMultipleDestPacket() throws Exception {
         System.out.println("Test for sending data to multiple dest packet ...............");
         testClient = new P2PClient(deviceNode, mainServer);
-        ClientNode destination1 = new ClientNode("127.0.0.1", 8002);
-        ClientNode destination2 = new ClientNode("127.0.0.1", 8003);
+        final ClientNode destination1 = new ClientNode("127.0.0.1", 8002);
+        final ClientNode destination2 = new ClientNode("127.0.0.1", 8003);
 
-        byte[] testdata = new byte[]{2, 4, 5};
+        final byte[] testdata = new byte[] { 2, 4, 5 };
 
-        ClientNode[] destination = new ClientNode[]{destination1,destination2};
+        final ClientNode[] destination = new ClientNode[] { destination1, destination2 };
         testClient.send(testdata, destination);
     }
 
     @Test
     public void testALivePacketSending() throws Exception {
         System.out.println("Test for sending alive packet ...............");
-        AtomicReference<byte[]> receivedPacket = new AtomicReference<>();
+        final AtomicReference<byte[]> receivedPacket = new AtomicReference<>();
 
-        Thread mockServerThread = new Thread(() -> {
+        final Thread mockServerThread = new Thread(() -> {
             try (ServerSocket serverSocket = new ServerSocket(clusterServerNode.port())) {
-                Socket socket = serverSocket.accept();
-                byte[] buffer = new byte[1024];
-                int bytesRead = socket.getInputStream().read(buffer);
+                final Socket socket = serverSocket.accept();
+                final byte[] buffer = new byte[1024];
+                final int bytesRead = socket.getInputStream().read(buffer);
                 if (bytesRead > 0) {
-                    byte[] packet = new byte[bytesRead];
+                    final byte[] packet = new byte[bytesRead];
                     System.arraycopy(buffer, 0, packet, 0, bytesRead);
                     receivedPacket.set(packet); // Store the received packet
                 }
                 socket.close();
             } catch (IOException e) {
-//                e.printStackTrace();
+                // e.printStackTrace();
             }
         });
         mockServerThread.start();
 
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPayload = serializer.serializeNetworkStructure(network);
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), networkPayload);
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPayload = serializer.serializeNetworkStructure(network);
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                networkPayload);
 
         testClient = new P2PClient(deviceNode, mainServer);
 
@@ -170,7 +177,7 @@ public class P2PClientTest {
         Thread.sleep(3000);
 
         assertNotNull("Mock server did not receive any packet", receivedPacket.get());
-        PacketInfo info = packetParser.parsePacket(receivedPacket.get());
+        final PacketInfo info = packetParser.parsePacket(receivedPacket.get());
         assertEquals(NetworkType.USE.ordinal(), info.getType());
         assertEquals(NetworkConnectionType.ALIVE.ordinal(), info.getConnectionType());
 
@@ -181,18 +188,21 @@ public class P2PClientTest {
     public void testHandlingAddReceivedPacket() throws Exception {
         System.out.println("Test for receiving ADD packet ...............");
 
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), serializer.serializeNetworkStructure(network));
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                serializer.serializeNetworkStructure(network));
 
         testClient = new P2PClient(deviceNode, mainServer);
 
         sendPacket(networkPacket, deviceNode);
         Thread.sleep(100);
 
-        ClientNode newNode = new ClientNode("127.0.0.1", 7000);
-        ClientNetworkRecord addRecord = new ClientNetworkRecord(newNode, 1); // Add to cluster 1
-        byte[] addPayload = serializer.serializeClientNetworkRecord(addRecord);
-        byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.ADD.ordinal(), addPayload);
+        final ClientNode newNode = new ClientNode("127.0.0.1", 7000);
+        final ClientNetworkRecord addRecord = new ClientNetworkRecord(newNode, 1); // Add to cluster 1
+        final byte[] addPayload = serializer.serializeClientNetworkRecord(addRecord);
+        final byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.ADD.ordinal(),
+                addPayload);
         sendPacket(addPacket, deviceNode);
         Thread.sleep(500);
 
@@ -202,8 +212,10 @@ public class P2PClientTest {
     @Test
     public void testHandlingRemoveReceivedPacket() throws Exception {
         System.out.println("Test for receiving REMOVE packet ...............");
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), serializer.serializeNetworkStructure(network));
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                serializer.serializeNetworkStructure(network));
 
         testClient = new P2PClient(deviceNode, mainServer);
 
@@ -212,21 +224,25 @@ public class P2PClientTest {
 
         assertEquals("otherClientNode should be in cluster 1", 1, topology.getClusterIndex(otherClientNode));
 
-        ClientNetworkRecord removeRecord = new ClientNetworkRecord(otherClientNode, 1);
-        byte[] removePayload = serializer.serializeClientNetworkRecord(removeRecord);
-        byte[] removePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.REMOVE.ordinal(), removePayload);
+        final ClientNetworkRecord removeRecord = new ClientNetworkRecord(otherClientNode, 1);
+        final byte[] removePayload = serializer.serializeClientNetworkRecord(removeRecord);
+        final byte[] removePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.REMOVE.ordinal(),
+                removePayload);
 
         sendPacket(removePacket, deviceNode);
         Thread.sleep(500);
 
-//        assertEquals("otherClientNode should be removed", -1, topology.getClusterIndex(otherClientNode));
+        // assertEquals("otherClientNode should be removed", -1,
+        // topology.getClusterIndex(otherClientNode));
     }
 
     @Test
     public void testHandlingNetworkReceivedPacket() throws Exception {
         System.out.println("Test for receiving NETWORK packet ...............");
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), serializer.serializeNetworkStructure(network));
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                serializer.serializeNetworkStructure(network));
 
         testClient = new P2PClient(deviceNode, mainServer);
 
@@ -237,16 +253,20 @@ public class P2PClientTest {
     @Test
     public void testHandlingHello_Alive_Unknown_Packet() throws Exception {
         System.out.println("Test for receiving hello or alive packet ...............");
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), serializer.serializeNetworkStructure(network));
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                serializer.serializeNetworkStructure(network));
 
         testClient = new P2PClient(deviceNode, mainServer);
 
         sendPacket(networkPacket, deviceNode);
         Thread.sleep(100);
 
-        byte[] alivePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.ALIVE.ordinal(), null);
-        byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
+        final byte[] alivePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.ALIVE.ordinal(),
+                null);
+        final byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.HELLO.ordinal(),
+                null);
         sendPacket(helloPacket, deviceNode);
         sendPacket(alivePacket, deviceNode);
         Thread.sleep(500);
@@ -259,20 +279,25 @@ public class P2PClientTest {
         testClient = new P2PClient(deviceNode, mainServer);
 
         try {
-            byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
+            final byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(),
+                    NetworkConnectionType.HELLO.ordinal(),
+                    null);
             sendPacket(helloPacket, deviceNode);
         } catch (IOException e) {
             fail("Client socket was not open before test: " + e.getMessage());
         }
 
-        byte[] closePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.CLOSE.ordinal(), null);
+        final byte[] closePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.CLOSE.ordinal(),
+                null);
         sendPacket(closePacket, deviceNode);
 
-        //checking
+        // checking
         Thread.sleep(500);
         boolean conn = true;
         try {
-            byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
+            final byte[] helloPacket = createTestPacket(NetworkType.USE.ordinal(),
+                    NetworkConnectionType.HELLO.ordinal(),
+                    null);
             sendPacket(helloPacket, deviceNode);
         } catch (IOException e) {
             conn = false;
@@ -284,18 +309,23 @@ public class P2PClientTest {
     @Test
     public void testDroppedTypePacket() throws Exception {
         System.out.println("Test for receiving dropped packet ...............");
-        NetworkStructure network = getMockNetworkStructure();
-        byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.NETWORK.ordinal(), serializer.serializeNetworkStructure(network));
+        final NetworkStructure network = getMockNetworkStructure();
+        final byte[] networkPacket = createTestPacket(NetworkType.USE.ordinal(),
+                NetworkConnectionType.NETWORK.ordinal(),
+                serializer.serializeNetworkStructure(network));
 
         testClient = new P2PClient(deviceNode, mainServer);
 
         sendPacket(networkPacket, deviceNode);
         Thread.sleep(100);
 
-        byte[] pkt1 = createTestPacket(NetworkType.CLUSTERSERVER.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
-        byte[] pkt2 = createTestPacket(NetworkType.SAMECLUSTER.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
-        byte[] pkt3 = createTestPacket(NetworkType.OTHERCLUSTER.ordinal(), NetworkConnectionType.HELLO.ordinal(), null);
-        byte[] pkt4 = createTestPacket(4,NetworkConnectionType.HELLO.ordinal(), null);
+        final byte[] pkt1 = createTestPacket(NetworkType.CLUSTERSERVER.ordinal(), NetworkConnectionType.HELLO.ordinal(),
+                null);
+        final byte[] pkt2 = createTestPacket(NetworkType.SAMECLUSTER.ordinal(), NetworkConnectionType.HELLO.ordinal(),
+                null);
+        final byte[] pkt3 = createTestPacket(NetworkType.OTHERCLUSTER.ordinal(), NetworkConnectionType.HELLO.ordinal(),
+                null);
+        final byte[] pkt4 = createTestPacket(4, NetworkConnectionType.HELLO.ordinal(), null);
         sendPacket(pkt1, deviceNode);
         sendPacket(pkt2, deviceNode);
         sendPacket(pkt3, deviceNode);
@@ -329,9 +359,9 @@ public class P2PClientTest {
         assertTrue(true);
     }
 
-    private static void setPrivateField(Object target, String fieldName, Object value)
+    private static void setPrivateField(final Object target, final String fieldName, final Object value)
             throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
+        final Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
     }

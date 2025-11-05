@@ -311,7 +311,7 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @param packet the packet to be send
      * @param dest   the destination to send
      */
-    public void sendPacket(final byte[] packet, final ClientNode[] dest) {
-
+    public void sendPacket(final byte[] packet, final ClientNode dest) {
+        user.send(packet, dest);
     }
 }
