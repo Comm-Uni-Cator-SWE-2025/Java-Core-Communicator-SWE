@@ -20,7 +20,8 @@ import java.util.List;
  * @param height height of the image
  * @param width width of the image
  */
-public record CPackets(int packetNumber, String ip, boolean isFullImage, int height, int width, List<CompressedPatch> packets) {
+public record CPackets(int packetNumber, String ip, boolean isFullImage, int height, int width,
+                       List<CompressedPatch> packets) {
 
     /**
      * Serializes List of CompressedPackets for networking layer.

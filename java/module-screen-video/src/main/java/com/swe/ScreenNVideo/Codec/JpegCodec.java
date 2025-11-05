@@ -113,11 +113,13 @@ public class JpegCodec implements Codec {
 
     /**
      * Number of pixels in a 2*2 block for 4:2:0 chroma subsampling.
+     * Note: Not used in 4:4:4 mode, kept for compatibility.
      */
     private static final int SUBSAMPLE_BLOCK_SIZE = 4;
 
     /**
      * Side dimension of the 2x2 subsampling block.
+     * Note: Not used in 4:4:4 mode, kept for compatibility.
      */
     private static final int BLOCK_SIDE = 2;
 
@@ -133,9 +135,9 @@ public class JpegCodec implements Codec {
 
     // --- Constants for maxLen calculation ---
     /**
-     * Factor for total pixels (Y + Cb + Cr) based on 4:2:0 subsampling (1 + 0.25 + 0.25 = 1.5).
+     * Factor for total pixels (Y + Cb + Cr) based on 4:4:4 subsampling (1 + 1 + 1 = 3.0).
      */
-    private static final double TOTAL_PIXEL_FACTOR = 1.5;
+    private static final double TOTAL_PIXEL_FACTOR = 3.0;
     /**
      * Bytes per RLE pair (short value, short count).
      */
@@ -181,9 +183,7 @@ public class JpegCodec implements Codec {
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        final int maxLen = (int) ((DCT_BLOCK_SIZE * DCT_BLOCK_SIZE * DCT_BLOCK_SIZE * DCT_BLOCK_SIZE
-                * TOTAL_PIXEL_FACTOR * BYTES_PER_RLE_PAIR) + (MATRIX_DIM_BYTES * NUM_MATRICES)
-                + INT_ROUNDING_OFFSET);
+        int maxLen = (int) ((256*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
         resRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
@@ -309,9 +309,9 @@ public class JpegCodec implements Codec {
         final short[][] cbMatrix = enDeRLE.revZigZagRLE(buffer);
         final short[][] crMatrix = enDeRLE.revZigZagRLE(buffer);
 
-        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
-        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
-        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+//        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
+//        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
+//        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
 
         return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }

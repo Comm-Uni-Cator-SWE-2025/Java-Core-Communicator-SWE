@@ -13,7 +13,7 @@ import java.util.List;
 public class PacketGenerator {
 
     /** Default size of each tile in pixels. */
-    private static final int TILE_SIZE = 128;
+    private static final int TILE_SIZE = 64;
 
     /** Compressor used to encode image patches. */
     private final Codec compressor;
@@ -82,11 +82,11 @@ public class PacketGenerator {
                 final int h = Math.min(TILE_SIZE, height - y);
 
                 final long currHash = hasher.hash(curr, x, y, w, h);
-//                if (currHash != prevHashes[tx][ty]) {
-                final byte[] compressedString = this.compressor.encode(curr, x, y, h, w);
-                patches.add(new CompressedPatch(x, y, w, h, compressedString));
-                prevHashes[tx][ty] = currHash;
-//                }
+                if (currHash != prevHashes[tx][ty]) {
+                    final byte[] compressedString = this.compressor.encode(curr, x, y, h, w);
+                    patches.add(new CompressedPatch(x, y, w, h, compressedString));
+                    prevHashes[tx][ty] = currHash;
+                }
             }
         }
         return patches;
