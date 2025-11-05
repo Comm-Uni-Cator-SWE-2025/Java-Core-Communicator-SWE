@@ -172,4 +172,34 @@ public class Utils {
         }
     }
 
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(int[][] srcMatrix, int[][] dstMatrix) {
+
+        int height = Math.min(srcMatrix.length, dstMatrix.length);
+        int width = Math.min(srcMatrix[0].length, dstMatrix[0].length);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix, 0, dstMatrix, 0, width);
+        }
+    }
+
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(long[][] srcMatrix, long[][] dstMatrix) {
+
+        int height = Math.min(srcMatrix.length, dstMatrix.length);
+        int width = Math.min(srcMatrix[0].length, dstMatrix[0].length);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix, 0, dstMatrix, 0, width);
+        }
+    }
+
 }

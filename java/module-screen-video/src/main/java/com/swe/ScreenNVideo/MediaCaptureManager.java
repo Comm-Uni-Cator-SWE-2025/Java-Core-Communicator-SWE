@@ -168,6 +168,8 @@ public class MediaCaptureManager implements CaptureManager {
                     }
 
                     List <CompressedPatch> patches;
+                    int newHeight;
+                    int newWidth;
 
                     if (networkPackets.isFullImage()) {
                         // reset expected feed number
@@ -180,6 +182,8 @@ public class MediaCaptureManager implements CaptureManager {
                         }
 
                         patches = networkPackets.packets();
+                        newHeight = networkPackets.height();
+                        newWidth = networkPackets.width();
                     } else {
 
                         // if heap is growing too large, request a full frame to resync
@@ -200,12 +204,16 @@ public class MediaCaptureManager implements CaptureManager {
                         }
 
                         final FeedData minFeedNumPacket = imageSynchronizer.getHeap().poll();
-                        patches = minFeedNumPacket.getFeedPackets().packets();
+
+                        CPackets minFeedCPacket = minFeedNumPacket.getFeedPackets();
+                        patches = minFeedCPacket.packets();
+                        newHeight = minFeedCPacket.height();
+                        newWidth = minFeedCPacket.width();
                     }
 
                     imageSynchronizer.expectedfeedNumber++;
 
-                    final int[][] image = imageSynchronizer.synchronize(patches);
+                    final int[][] image = imageSynchronizer.synchronize(newHeight, newWidth, patches);
                     final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
