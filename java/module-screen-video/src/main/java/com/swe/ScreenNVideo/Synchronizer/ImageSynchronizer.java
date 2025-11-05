@@ -61,12 +61,15 @@ public class ImageSynchronizer {
      * @param compressedPatches the patches to synchronize the image.
      * @return the image.
      */
-    public int[][] synchronize(final List<CompressedPatch> compressedPatches) {
+    public int[][] synchronize(final int newHeight, final int newWidth, final List<CompressedPatch> compressedPatches) {
         if (previousImage != null) {
             imageStitcher.setCanvas(previousImage);
         } else {
             imageStitcher.resetCanvas();
         }
+
+        imageStitcher.setCanvasDimensions(newHeight, newWidth);
+
         for (CompressedPatch compressedPatch : compressedPatches) {
             final int[][] decodedImage = videoCodec.decode(compressedPatch.data());
             final Patch patch = new Patch(decodedImage, compressedPatch.x(), compressedPatch.y());

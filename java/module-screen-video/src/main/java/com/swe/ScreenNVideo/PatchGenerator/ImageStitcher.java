@@ -1,5 +1,7 @@
 package com.swe.ScreenNVideo.PatchGenerator;
 
+import com.swe.ScreenNVideo.Utils;
+
 import java.util.List;
 
 /**
@@ -43,6 +45,17 @@ public class ImageStitcher {
         this.canvas = initialCanvas;
         this.currentHeight = initialCanvas.length;
         this.currentWidth = initialCanvas[0].length;
+    }
+
+    /**
+     * Set Canvas Dimensions
+     * @param newHeight height of the updated canvas
+     * @param newWidth width of the updated canvas
+     */
+    public void setCanvasDimensions(final int newHeight, final int newWidth) {
+        if (this.currentHeight != newHeight && this.currentWidth != newWidth) {
+            resize(newHeight, newWidth, true);
+        }
     }
 
     /**
@@ -95,9 +108,7 @@ public class ImageStitcher {
         System.out.println("Resizing to " + height + " " + width);
 
         if (fill) {
-            for (int i = 0; i < currentHeight; i++) {
-                System.arraycopy(this.canvas[i], 0, newCanvas[i], 0, currentWidth);
-            }
+            Utils.copyMatrix(this.canvas, newCanvas);
         }
 
         this.canvas = newCanvas;

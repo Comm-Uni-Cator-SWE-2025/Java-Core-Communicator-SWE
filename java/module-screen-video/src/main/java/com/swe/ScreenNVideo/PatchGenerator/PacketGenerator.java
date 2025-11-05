@@ -1,6 +1,7 @@
 package com.swe.ScreenNVideo.PatchGenerator;
 
 import com.swe.ScreenNVideo.Codec.Codec;
+import com.swe.ScreenNVideo.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,12 +64,10 @@ public class PacketGenerator {
             prevHashes = new long[tilesX][tilesY];
         }
 
-        if (tilesX >= prevHashes.length || tilesY >= prevHashes[0].length) {
+        if (tilesX != prevHashes.length || tilesY != prevHashes[0].length) {
             // Resize prevHashes array if needed
             final long[][] newPrevHashes = new long[tilesX][tilesY];
-            for (int i = 0; i < prevHashes.length; i++) {
-                System.arraycopy(prevHashes[i], 0, newPrevHashes[i], 0, prevHashes[i].length);
-            }
+            Utils.copyMatrix(prevHashes, newPrevHashes);
             prevHashes = newPrevHashes;
         }
 
