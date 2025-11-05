@@ -15,7 +15,6 @@ public class P2PMainServerTestDummy {
         ClientNode mainServerNode = new ClientNode(loopBackAddress, mainServerPort);
         ClientNode p2pserverNode = new ClientNode(loopBackAddress, mainServerPort + 3);
         Topology topology = Topology.getTopology();
-        // P2PServer p2pServer = new P2PServer(p2pserverNode, mainServerNode);
         topology.addUser(p2pserverNode, mainServerNode);
         try {
             Thread.sleep(5000);
