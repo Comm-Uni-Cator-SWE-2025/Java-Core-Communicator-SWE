@@ -1,12 +1,8 @@
 package com.swe.networking;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,7 +44,7 @@ public class P2PCluster implements P2PUser {
      * Constructor function for P2P Cluster class.
      *
      */
-    public ProtocolBase tcpCommunicator;
+    private ProtocolBase tcpCommunicator;
 
     public P2PCluster() {
         System.out.println("Creating a new P2P Cluster...");
@@ -64,7 +60,7 @@ public class P2PCluster implements P2PUser {
     public void addUser(final ClientNode client, final ClientNode server) throws UnknownHostException {
         System.out.println("Adding new user to the network...");
         // send hello to server
-        PacketInfo packetInfo = new PacketInfo();
+        final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setLength(PacketParser.getHeaderSize());
         packetInfo.setType(NetworkType.USE.ordinal());
         packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
@@ -77,7 +73,7 @@ public class P2PCluster implements P2PUser {
         final byte[] helloPacket = packetParser.createPkt(packetInfo);
         tcpCommunicator.sendData(helloPacket, server);
         clients.add(client);
-        Thread receiveThread = new Thread(this::receive);
+        final Thread receiveThread = new Thread(this::receive);
         receiveThread.start();
         try {
             receiveThread.join();
@@ -85,8 +81,7 @@ public class P2PCluster implements P2PUser {
             ex.printStackTrace();
         }
         System.out.println("User added to the network...");
-        final NetworkStructure networkStructure =
-            Topology.getTopology().getNetwork();
+        final NetworkStructure networkStructure = Topology.getTopology().getNetwork();
         for (int i = 0; i < networkStructure.servers().size(); i++) {
             if (networkStructure.servers().get(i).equals(client)) {
                 clusterServer = client;
@@ -115,31 +110,33 @@ public class P2PCluster implements P2PUser {
         if (clients.size() < size - 1) {
             System.out.println("Cannot resize cluster...");
         }
-    } 
-    
-    /** 
+    }
+
+    /**
      * Function to send data by the user.
-     * @param data the data to be sent
+     * 
+     * @param data   the data to be sent
      * @param destIp the destinations to send the data
-    */
+     */
     @Override
-    public void send(byte[] data, ClientNode[] destIp) {
+    public void send(final byte[] data, final ClientNode[] destIp) {
         this.user.send(data, destIp);
     }
 
-    /** 
+    /**
      * Function to send data by the user.
-     * @param data the data to be sent
+     * 
+     * @param data   the data to be sent
      * @param destIp the one destination to send the data
-    */
+     */
     @Override
-    public void send(byte[] data, ClientNode destIp) {
+    public void send(final byte[] data, final ClientNode destIp) {
         this.user.send(data, destIp);
     }
 
-    /** 
+    /**
      * Function to receive data from other clients.
-    */
+     */
     @Override
     public void receive() {
         while (true) {
@@ -147,11 +144,10 @@ public class P2PCluster implements P2PUser {
             if (packet == null) {
                 System.out.println("No packet received, continuing...");
                 continue;
-            }else{
+            } else {
                 try {
-                    PacketInfo packetInfo = packetParser.parsePacket(packet);
-                    final NetworkStructure networkStructure =
-                        NetworkSerializer.getNetworkSerializer()
+                    final PacketInfo packetInfo = packetParser.parsePacket(packet);
+                    final NetworkStructure networkStructure = NetworkSerializer.getNetworkSerializer()
                             .deserializeNetworkStructure(packetInfo.getPayload());
                     Topology.getTopology().replaceNetwork(networkStructure);
                     break;
@@ -162,9 +158,9 @@ public class P2PCluster implements P2PUser {
         }
     }
 
-    /** 
+    /**
      * Function to handle socket closing at termination.
-    */
+     */
     @Override
     public void close() {
         this.user.close();

@@ -68,7 +68,7 @@ public class P2PServer implements P2PUser {
      * Main server Node.
      */
     private final ClientNode mainServer;
-    
+
     /**
      * The p2pserver Node.
      */
@@ -77,12 +77,13 @@ public class P2PServer implements P2PUser {
     /**
      * Constructor function for the cluster server class.
      *
-     * @param deviceAddress   the ClientNode of the device
+     * @param deviceAddress     the ClientNode of the device
      * @param mainServerAddress the IP address of the main server
+     * @param tcpCommunicator   the tcp communicator object to send messages
      */
     public P2PServer(final ClientNode deviceAddress,
-            final ClientNode mainServerAddress, ProtocolBase tcpCommunicator) {
-        
+            final ClientNode mainServerAddress, final ProtocolBase tcpCommunicator) {
+
         this.serverPort = deviceAddress.port();
         communicator = tcpCommunicator;
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
@@ -93,7 +94,7 @@ public class P2PServer implements P2PUser {
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
-        
+
         sendThread.start();
         receiveThread.start();
 
@@ -143,7 +144,7 @@ public class P2PServer implements P2PUser {
             }
         }
     }
-    
+
     /**
      * Function to handle the received packet.
      *
@@ -168,18 +169,7 @@ public class P2PServer implements P2PUser {
             packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
             packetInfo.setPortNum(deviceNode.port());
             final byte[] newPacket = parser.createPkt(packetInfo);
-            for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
-                if (c.equals(deviceNode) || c.equals(dest)) {
-                    continue;
-                }
-                send(newPacket, c);
-            }
-            for(ClientNode servers : topology.getAllClusterServers()){
-                if(servers.equals(deviceNode) || servers.equals(dest)){
-                    continue;
-                }
-                send(newPacket, servers);
-            }
+            handleBroadcast(newPacket, dest);
             return;
         }
 
@@ -192,11 +182,32 @@ public class P2PServer implements P2PUser {
             final byte[] newPacket = parser.createPkt(pktInfo);
             send(newPacket, dest);
         } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
-            // TODO: change the type to appropriate one
+            // TOD change the type to appropriate one
             final ClientNode clusterServer = topology.getServer(dest);
             send(packet, clusterServer);
         } else {
             System.out.println("Unknown packet type received.");
+        }
+    }
+
+    /**
+     * Function to handle broadcasting a packet.
+     *
+     * @param newPacket the packet to be broacasted
+     * @param dest      the destination from which the packet was received
+     */
+    private void handleBroadcast(final byte[] newPacket, final ClientNode dest) {
+        for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
+            if (c.equals(deviceNode) || c.equals(dest)) {
+                continue;
+            }
+            send(newPacket, c);
+        }
+        for (ClientNode servers : topology.getAllClusterServers()) {
+            if (servers.equals(deviceNode) || servers.equals(dest)) {
+                continue;
+            }
+            send(newPacket, servers);
         }
     }
 
@@ -345,8 +356,9 @@ public class P2PServer implements P2PUser {
         }
     }
 
-    /** 
+    /**
      * Function to monitor a new client.
+     * 
      * @param client the client to monitor
      */
     public void monitor(final ClientNode client) {

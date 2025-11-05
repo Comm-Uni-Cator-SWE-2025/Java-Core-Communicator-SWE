@@ -112,7 +112,7 @@ public final class Topology implements AbstractTopology, AbstractController {
         } else {
             try {
                 user = new P2PCluster();
-                ((P2PCluster)user).addUser(deviceAddress, mainServerAddress);
+                ((P2PCluster) user).addUser(deviceAddress, mainServerAddress);
             } catch (UnknownHostException ex) {
                 System.out.println("Error while adding user to the P2P cluster...");
             }
