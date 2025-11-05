@@ -251,6 +251,8 @@ public class AANdct implements IFIDCT {
         // column wise transformation
         fdctCol(data);
 
+        final double normalizeFactor = 1;
+
         // ---- store back the transformed block ----
         for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
             for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
@@ -286,7 +288,7 @@ public class AANdct implements IFIDCT {
         // 4. Store back the reconstructed block
         for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {
             for (int j = 0; j < SCALE_FACTOR_COUNT; j++) {
-                matrix[row + i][col + j] = (short) Math.round(data[i][j]);
+                matrix[row + i][col + j] = (short) Math.round(data[i][j] / 64.0);
             }
         }
     }

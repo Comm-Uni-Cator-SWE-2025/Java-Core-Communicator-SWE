@@ -1,6 +1,5 @@
 package com.swe.networking;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,119 +11,164 @@ import java.util.Vector;
  */
 public class ChunkManager {
     /**
+     * Singleton chunkManger.
+     */
+    private static ChunkManager chunkManager = null;
+    /**
      * Payload Size.
      */
-
-    private final int payloadSize; // size of payload in bytes
+    private final int defaultPayloadSize; // size of payload in bytes
+    /**
+     * packetParser.
+     */
+    private final PacketParser parser = PacketParser.getPacketParser();
     /**
      * headerSize.
      */
-    private final int headerSize = 20;
+    private final int headerSize = PacketParser.getHeaderSize();
 
-    ChunkManager(final int chunkPayloadSize) {
-        this.payloadSize = chunkPayloadSize;
+    private ChunkManager(final int payloadSize) {
+        defaultPayloadSize = payloadSize;
     }
 
-    Map<Integer, Vector<byte[]>> groupChunks(final Vector<byte[]> chunks) {
-        final PacketParser parser = PacketParser.getPacketParser();
-        final Map<Integer, Vector<byte[]>> messageMap = new HashMap<>();
-        for (byte[] chunk:chunks) {
-            final int messageId = parser.getMessageId(chunk);
-            final Vector<byte[]> groupedChunks;
-            if (!messageMap.containsKey(messageId)) {
-                groupedChunks = new Vector<>();
-                groupedChunks.add(chunk);
-                messageMap.put(messageId, groupedChunks);
-            } else {
-                groupedChunks = messageMap.get(messageId);
-                groupedChunks.add(chunk);
-            }
+    /**
+     * Singleton chunkManager getter.
+     *
+     * @param payloadSize the payloadsize for the chunkManager
+     * @return chunkManager.
+     */
+    public static ChunkManager getChunkManager(final int payloadSize) {
+        if (chunkManager == null) {
+            chunkManager = new ChunkManager(payloadSize);
+            return chunkManager;
         }
-        return messageMap;
+        return chunkManager;
     }
 
-    // should be of same message id
-    byte[] mergeChunks(final Vector<byte[]> chunks) throws UnknownHostException {
-        if (chunks.isEmpty()) {
-            throw new IllegalArgumentException("there should be at least one chunk in the input array");
+    /**
+     * Message id.
+     */
+    private int messageId = 0;
+
+    /**
+     * chunkListMap maps message id to list of chunks.
+     */
+    private final Map<Integer, Vector<byte[]>> chunkListMap = new HashMap<>();
+    /**
+     * messageList gets the list of merged chunks.
+     */
+    private final Vector<byte[]> messageList = new Vector<>();
+
+    /**
+     * Temporary function used to get the messageList.
+     * Used only for testing and to be replaced with some other function later.
+     * 
+     * @return messageList. All the messages recorded till now.
+     */
+    Vector<byte[]> getMessageList() {
+        return messageList;
+    }
+
+    /**
+     * Add chunk function.
+     * 
+     * @param chunk the byte of chunk coming in.
+     * @throws UnknownHostException the issue from packet parser.
+     */
+    public void addChunk(final byte[] chunk) throws UnknownHostException {
+        final PacketInfo info = parser.parsePacket(chunk);
+        final int msgId = info.getMessageId();
+        final int maxNumChunks = info.getChunkLength();
+        if (chunkListMap.containsKey(msgId)) {
+            chunkListMap.get(msgId).add(chunk);
+        } else {
+            chunkListMap.put(msgId, new Vector<byte[]>());
+            chunkListMap.get(msgId).add(chunk);
         }
-        final PacketParser parser = PacketParser.getPacketParser();
+        if (chunkListMap.get(msgId).size() == maxNumChunks) {
+            final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
+            // TOD use appropriate function once the message is ready
+            messageList.add(messageChunk);
+            chunkListMap.remove(msgId);
+        }
+    }
+
+    /**
+     * Merge Chunks function.
+     * 
+     * @param chunks The list of incoming chunks.
+     * @return merged packet.
+     */
+    private byte[] mergeChunks(final Vector<byte[]> chunks) throws UnknownHostException {
         int dataSize = 0;
-        for (byte[] chunk:chunks) {
-            dataSize += parser.getChunkLength(chunk) - headerSize;
+        for (byte[] chunk : chunks) {
+            dataSize += chunk.length - headerSize;
         }
         final byte[] completePayload = new byte[dataSize];
-        final Vector<byte[]> sortedChunks = new Vector<>(Collections.nCopies(chunks.size(), (byte[]) null));
-        for (byte[] chunk:chunks) {
-            final int i = parser.getChunkNum(chunk);
-            if (i == 0) {
-                sortedChunks.set(chunks.size() - 1, chunk);
-            } else {
-                sortedChunks.set(i - 1, chunk);
-            }
+        PacketInfo info = parser.parsePacket(chunks.get(0));
+        final int lastChunkNum = info.getChunkLength() - 1;
+        final Vector<byte[]> sortedChunks = new Vector<>(Collections.nCopies(chunks.size(), null));
+        for (byte[] chunk : chunks) {
+            info = parser.parsePacket(chunk);
+            final int i = info.getChunkNum();
+            sortedChunks.set(i, chunk);
         }
         int i = 0;
-        for (byte[] chunk:sortedChunks) {
-            final int chunkSize = parser.getChunkLength(chunk) - headerSize;
-            final byte[] chunkPayload = parser.getPayload(chunk);
+        for (byte[] chunk : sortedChunks) {
+            info = parser.parsePacket(chunk);
+            final int chunkSize = chunk.length - headerSize;
+            final byte[] chunkPayload = info.getPayload();
             System.arraycopy(chunkPayload, 0, completePayload, i, chunkSize);
             i += chunkSize;
         }
-        final int type = parser.getType(chunks.get(0));
-        final int priority = parser.getPriority(chunks.get(0));
-        final int module = parser.getModule(chunks.get(0));
-        final int connectionType = parser.getConnectionType(chunks.get(0));
-        final int broadcast = parser.getBroadcast(chunks.get(0));
-        final InetAddress ipaddr = parser.getIpAddress(chunks.get(0));
-        final int portNumber = parser.getPortNum(chunks.get(0));
-        final int messageId = parser.getMessageId(chunks.get(0));
-        return parser.createPkt(
-                type, priority, module,
-                connectionType, broadcast, ipaddr,
-                portNumber, messageId, 0,
-                dataSize + headerSize, completePayload
-        );
+        info = parser.parsePacket(chunks.get(0));
+        info.setChunkLength(1);
+        info.setChunkNum(0);
+        info.setPayload(completePayload);
+        return parser.createPkt(info);
     }
 
     /**
      * Chunking function.
-     * @param priority The priority of the message
-     * @param  module The module to send the message to
-     * @param connectionType The connection type
-     * @param  broadcast Broadcast or not
-     * @param  ipAddr IP address of receiver
-     * @param  portNum Port number of receiver
-     * @param  messageId unique message id
-     * @param  data the payload
-     * @return the message broken to chunks
+     * 
+     * @param info        The Chunk information including payload of the message
+     * @param payloadSize The payload size of the message.
+     * @return chunks The message broken into list of chunks.
      */
-    public Vector<byte[]> chunk(final int priority, final int module,
-                                final int connectionType, final int broadcast,
-                                final InetAddress ipAddr, final int portNum,
-                                final int messageId, final byte[] data) {
+    public Vector<byte[]> chunk(final PacketInfo info, final int payloadSize) {
+        // List of chunked packets we will be returning
         final Vector<byte[]> chunks = new Vector<>();
-        final PacketParser parser = PacketParser.getPacketParser();
-        // It would be better to make HEADER_SIZE variable in PacketParser public or make function to get its value
-        // Currently I am hardcoding it
 
-        // Type is currently set to 0 : Send Packet to Cluster
-        // But we need a function in topology to identify the type
+        final byte[] data = info.getPayload();
+        final int numChunks = (data.length + payloadSize - 1) / payloadSize;
+        info.setChunkLength(numChunks);
+        info.setMessageId(messageId);
+        messageId++;
+        // reset message id to zero once it exceed limit
         for (int i = 0; i < data.length; i += payloadSize) {
             final int pSize = Math.min(payloadSize, data.length - i);
             final byte[] payloadChunk = new byte[pSize];
             System.arraycopy(data, i, payloadChunk, 0, pSize);
-            final int type = 0;
-            int chunkNumber = i / payloadSize + 1;
-            if (i == data.length - payloadSize) {
-                chunkNumber = 0;
-            }
-            final byte[] pkt = parser.createPkt(
-                    type, priority, module,
-                    connectionType, broadcast, ipAddr,
-                    portNum, messageId, chunkNumber, pSize + headerSize, payloadChunk
-            );
+            final int chunkNumber = i / payloadSize;
+            info.setChunkNum(chunkNumber);
+            info.setPayload(payloadChunk);
+            info.setLength(PacketParser.getHeaderSize() + pSize);
+            final byte[] pkt = parser.createPkt(info);
             chunks.add(pkt);
         }
         return chunks;
+    }
+
+    public Vector<byte[]> chunk(final PacketInfo info) {
+        return chunk(info, defaultPayloadSize);
+    }
+
+    /**
+     * get last message id.
+     * 
+     * @return messageId.
+     */
+    public int getLastMessageId() {
+        return messageId - 1;
     }
 }

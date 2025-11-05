@@ -1,6 +1,7 @@
 package com.swe.ScreenNVideo;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -88,12 +89,12 @@ public class Utils {
      * INT mask to get the third 8 bits.
      */
     public static final int INT_MASK_8 = 8;
-    
+
     /**
      * Seconds in milliseconds.
      */
     public static final int SEC_IN_MS = 1000;
-    
+
     /**
      * Milli-seconds in nanoseconds.
      */
@@ -132,18 +133,26 @@ public class Utils {
 
     /**
      * Converts the given image to its rgb form.
-     * @param feed the image
+     * @param img the image
      * @return int[][] : RGB matrix 0xAARRGGBB / 0x00RRGGBB
      */
-    public static int[][] convertToRGBMatrix(final BufferedImage feed) {
-        final int[][] matrix = new int[feed.getHeight()][feed.getWidth()];
-        for (int i = 0; i < feed.getHeight(); i++) {
-            for (int j = 0; j < feed.getWidth(); j++) {
-                matrix[i][j] = feed.getRGB(j, i);
-            }
+    public static int[][] convertToRGBMatrix(final BufferedImage img) {
+        final int width = img.getWidth();
+        final int height = img.getHeight();
+
+//        long startTime = System.nanoTime();
+        // Direct buffer access (zero per-pixel overhead)
+        final int[] data = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
+
+        final int[][] matrix = new int[height][width];
+        for (int y = 0; y < height; y++) {
+            System.arraycopy(data, y * width, matrix[y], 0, width);
         }
+//        System.out.println("Image to RGB Matrix Conversion Time: "
+//                + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
         return matrix;
     }
+
 
     /**
      * Gives the IP address of self machine.

@@ -2,7 +2,10 @@
 
 package com.swe.ScreenNVideo.Codec;
 
-interface IFIDCT {
+/**
+ * Interface for Forward and Inverse Discrete Cosine Transform (DCT) operations.
+ */
+public interface IFIDCT {
 
     /**
      * Main public function to perform the 2D Forward DCT.

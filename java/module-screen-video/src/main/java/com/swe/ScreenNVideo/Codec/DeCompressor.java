@@ -26,9 +26,11 @@ public class DeCompressor implements IDeCompressor {
      * Initializes the decompressor by obtaining singleton instances of the
      * DCT and Quantization modules.
      */
-    DeCompressor() {
+    public DeCompressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
+        // Ensure quantization tables are scaled with the same DCT scale factors
+        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
     }
 
     /**
