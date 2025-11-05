@@ -172,7 +172,7 @@ public class Server implements IUser {
             final ClientNode dest = new ClientNode(address.getHostAddress(),
                     port);
             System.out.println("Redirecting data : " + dest.toString());
-            final ClientNode[] dests = { dest };
+            final ClientNode[] dests = {dest };
             sendPkt(packet, dests, dest);
         }
     }
