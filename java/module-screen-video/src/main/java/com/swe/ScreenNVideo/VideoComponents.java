@@ -58,6 +58,10 @@ public class VideoComponents {
      */
     private int[][] feed;
 
+    public int[][] getFeed() {
+        return feed;
+    }
+
     /**
      * Class conatining Components to capture feed.
      */
@@ -186,6 +190,11 @@ public class VideoComponents {
 
         final int[][] newFeed = captureComponents.getFeed();
         if (newFeed == null) {
+            if (feed != null) {
+                // previous feed exists
+                feed = null;
+                rpc.call(Utils.STOP_SHARE, localIp.getBytes());
+            }
             return null;
         }
         System.out.println("\nServer FPS : "
