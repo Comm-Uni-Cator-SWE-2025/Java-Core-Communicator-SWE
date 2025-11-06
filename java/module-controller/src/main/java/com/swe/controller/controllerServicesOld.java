@@ -8,7 +8,7 @@ import com.swe.controller.RPCinterface.AbstractRPC;
 import com.swe.controller.serialize.DataSerializer;
 import com.swe.controller.serialize.ProfilePacket;
 
-public class controllerServices {
+public class controllerServicesOld {
 
     AbstractRPC rpc;
 
@@ -19,7 +19,7 @@ public class controllerServices {
     // Get the SINGLE instance of the DataStore
     private final DataStore dataStore = DataStore.getInstance();
 
-    controllerServices(AbstractRPC rpc, SimpleNetworking networking) {
+    controllerServicesOld(AbstractRPC rpc, SimpleNetworking networking) {
         this.rpc = rpc;
         this.networking = networking;
     }

@@ -7,10 +7,11 @@
 
     <!-- Parent reference -->
     <parent>
-        <groupId>com.swe</groupId>
-        <artifactId>java-core-comm-uni-cator</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
+    <groupId>com.swe</groupId>
+    <artifactId>java-core-communicator</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
     <properties>
         <mockito.version>5.0.0</mockito.version>
@@ -74,11 +75,6 @@
             <version>0.3.12</version> <!-- Use the latest stable version -->
         </dependency>
 
-        <dependency>
-            <groupId>com.github.enchanteddev</groupId>
-            <artifactId>socketry</artifactId>
-            <version>V3</version>
-        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
