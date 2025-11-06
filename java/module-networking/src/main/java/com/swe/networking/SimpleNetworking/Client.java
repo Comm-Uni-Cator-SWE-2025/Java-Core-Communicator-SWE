@@ -12,11 +12,13 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
+import com.swe.networking.SplitPackets;
 
 /**
  * The main module of the client device.
@@ -124,7 +126,12 @@ public class Client implements IUser {
             final InputStream input = socket.getInputStream();
             final DataInputStream dataIn = new DataInputStream(input);
             final byte[] packet = dataIn.readAllBytes();
-            parsePacket(packet);
+            if (packet != null) {
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    parsePacket(p);
+                }
+            }
         } catch (SocketTimeoutException e) {
             System.err.println("Client3 Error: " + e.getMessage());
         }
