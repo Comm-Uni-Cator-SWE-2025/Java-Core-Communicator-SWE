@@ -69,6 +69,7 @@ public class Timer {
      * @param client the client to add
      */
     public void addClient(final ClientNode client) {
+        System.out.println("Adding client to timer monitoring: " + client);
         clients.add(client);
         clientTimeouts.put(client, System.currentTimeMillis());
     }
