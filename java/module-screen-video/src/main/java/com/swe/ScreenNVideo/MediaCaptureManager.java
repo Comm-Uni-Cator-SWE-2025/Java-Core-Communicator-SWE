@@ -15,9 +15,9 @@ import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -57,7 +57,7 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * List of viewers to send the video Feed.
      */
-    private final ArrayList<ClientNode> viewers;
+    private final HashSet<ClientNode> viewers;
 
     /**
      * Client handler for incoming messages.
@@ -81,7 +81,7 @@ public class MediaCaptureManager implements CaptureManager {
         backgroundCaptureManager.start();
 
         imageSynchronizers = new HashMap<>();
-        viewers = new ArrayList<>();
+        viewers = new HashSet<>();
 
         // Cache local IP once to avoid repeated socket operations during capture
         this.localIp = Utils.getSelfIP();
@@ -166,14 +166,14 @@ public class MediaCaptureManager implements CaptureManager {
         @Override
         public void receiveData(final byte[] data) {
 
-//            System.out.println("Recieved");
+            System.out.println("Recieved");
             if (data.length == 0) {
                 return;
             }
 
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
-                final int printLen = 20;
+                final int printLen = 34;
                 System.err.println("Error: Invalid packet type: " + packetType + "  " + data.length);
                 System.err.println("Error: Packet data: " + (Arrays.toString(Arrays.copyOf(data, printLen))));
                 return;
@@ -187,9 +187,11 @@ public class MediaCaptureManager implements CaptureManager {
                         "Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
                     System.out.println("Height: " + networkPackets.height() + " Width: " + networkPackets.width());
 
-                    final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
+                    ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     if (imageSynchronizer == null) {
-                        return;
+                        // add new participant if not already present
+                        addParticipant(networkPackets.ip());
+                        imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     }
 
                     final List<CompressedPatch> patches;
@@ -261,6 +263,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
                     System.out.println("Viewer joined" + viewerIP);
                     addUserNFullImageRequest(viewerIP);
+                    System.out.println("Handled packet type: " + type);
                 }
                 default -> {
                 }
