@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.Codec;
 import java.nio.ByteBuffer;
 
 // Contributed by Anup Kumar
+
 /**
  * Implements the ICompressor interface to provide JPEG-like compression logic.
  * This class orchestrates the various steps:
@@ -44,6 +45,11 @@ class Compressor implements ICompressor {
      */
     public long quantTime = 0;
 
+    private boolean UseANNDCT = false;
+
+    public void setUseANNDCT(boolean useANNDCT) {
+        UseANNDCT = useANNDCT;
+    }
 
     /**
      * Package-private constructor.
@@ -69,16 +75,19 @@ class Compressor implements ICompressor {
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
+    public void compressChrome(final short[][] matrix, final short height, final short width,
+                               final ByteBuffer resBuffer) {
 
-        for (short i = 0; i < height; i += MATRIX_DIM) {
-            for (short j = 0; j < width; j += MATRIX_DIM) {
-                long curr = System.nanoTime();
-//                dctmodule.fdct(matrix, i, j);
-                dctTime += System.nanoTime() - curr;
-                curr = System.nanoTime();
-//                quantmodule.quantisationChrome(matrix, i, j);
-                quantTime += System.nanoTime() - curr;
+        if (UseANNDCT) {
+            for (short i = 0; i < height; i += MATRIX_DIM) {
+                for (short j = 0; j < width; j += MATRIX_DIM) {
+                    long curr = System.nanoTime();
+                    dctmodule.fdct(matrix, i, j);
+                    dctTime += System.nanoTime() - curr;
+                    curr = System.nanoTime();
+                    quantmodule.quantisationChrome(matrix, i, j);
+                    quantTime += System.nanoTime() - curr;
+                }
             }
         }
 
@@ -99,16 +108,19 @@ class Compressor implements ICompressor {
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
+    public void compressLumin(final short[][] matrix, final short height, final short width,
+                              final ByteBuffer resBuffer) {
 
-        for (short i = 0; i < height; i += MATRIX_DIM) {
-            for (short j = 0; j < width; j += MATRIX_DIM) {
-                long curr = System.nanoTime();
-//                dctmodule.fdct(matrix, i, j);
-//                dctTime += System.nanoTime() - curr;
-                curr = System.nanoTime();
-//                quantmodule.quantisationLumin(matrix, i, j);
-//                quantTime += System.nanoTime() - curr;
+        if (UseANNDCT) {
+            for (short i = 0; i < height; i += MATRIX_DIM) {
+                for (short j = 0; j < width; j += MATRIX_DIM) {
+                    long curr = System.nanoTime();
+                    dctmodule.fdct(matrix, i, j);
+                    dctTime += System.nanoTime() - curr;
+                    curr = System.nanoTime();
+                    quantmodule.quantisationLumin(matrix, i, j);
+                    quantTime += System.nanoTime() - curr;
+                }
             }
         }
 
