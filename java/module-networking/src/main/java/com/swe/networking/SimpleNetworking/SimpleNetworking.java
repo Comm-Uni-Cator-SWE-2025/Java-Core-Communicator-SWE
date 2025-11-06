@@ -142,7 +142,7 @@ public final class SimpleNetworking
             final ModuleType module, final int priority) {
         final Vector<byte[]> chunks = getChunks(data, destIp, module.ordinal(), priority, 0);
         for (byte[] payload : chunks) {
-            System.out.println("Chunks size " + payload.length);
+//            System.out.println("Chunks size " + payload.length);
             user.send(payload, destIp, serverAddr, module);
         }
     }

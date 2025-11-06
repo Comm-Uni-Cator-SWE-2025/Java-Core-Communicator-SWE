@@ -161,7 +161,7 @@ public class Server implements IUser {
         if (addr.equals(deviceIp) && port == devicePort) {
             final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
-            System.out.println("Server Data received : " + data);
+//            System.out.println("Server Data received : " + data);
             final byte[] message = chunkManager.addChunk(packet);
             System.out.println("Server Data length received : " + data.length());
             System.out.println("Server Module received : " + type);

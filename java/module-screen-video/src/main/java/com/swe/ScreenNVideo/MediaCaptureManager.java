@@ -90,9 +90,6 @@ public class MediaCaptureManager implements CaptureManager {
         clientHandler = new MediaCaptureManager.ClientHandler();
 
         networking.subscribe(ModuleType.SCREENSHARING, clientHandler);
-//        addParticipant(localIp);
-//        addParticipant("10.32.11.242");
-//        addParticipant("10.32.12.30");
     }
 
     /**
@@ -146,7 +143,7 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
         networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
 //        SimpleNetworking.getSimpleNetwork().closeNetworking();
-        System.out.println("Sent to viewers" + viewers.size());
+        System.out.println("Sent to viewers " + viewers.size());
         viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
 //        try {
 //            Thread.sleep(30000);
@@ -262,6 +259,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
+                    System.out.println("Viewer joined" + viewerIP);
                     addUserNFullImageRequest(viewerIP);
                 }
                 default -> {

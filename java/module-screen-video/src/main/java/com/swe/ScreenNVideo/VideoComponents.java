@@ -182,14 +182,14 @@ public class VideoComponents {
         }
 //            System.out.println("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
-        System.out.println("\nServer FPS : "
-            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
         start = System.nanoTime();
 
         final int[][] newFeed = captureComponents.getFeed();
         if (newFeed == null) {
             return null;
         }
+        System.out.println("\nServer FPS : "
+            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
         System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
@@ -235,7 +235,7 @@ public class VideoComponents {
 
         // Asynchronously send a serialized RImage to the UI so we don't block capture
         // (frame is deep-copied inside submitUIUpdate)
-//        submitUIUpdate(feed);
+        submitUIUpdate(feed);
 
         prev = System.nanoTime();
         System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
