@@ -24,8 +24,8 @@ public class RPC implements AbstractRPC {
     }
 
     @Override
-    public Thread connect() throws IOException, InterruptedException, ExecutionException {
-        socketryServer = new SocketryServer(60000, methods);
+    public Thread connect(int portNumber) throws IOException, InterruptedException, ExecutionException {
+        socketryServer = new SocketryServer(portNumber, methods);
         Thread rpcThread = new Thread(socketryServer::listenLoop);
         rpcThread.start();
         return rpcThread;
