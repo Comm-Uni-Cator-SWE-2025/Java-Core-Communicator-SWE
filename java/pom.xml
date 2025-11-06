@@ -26,7 +26,7 @@
     <module>module-screen-video</module>
     <module>module-ai-insights</module>
     <module>module-cloud</module>
-    <module>module-controller</module>
+    <module>module-core</module>
     <module>module-app</module>
     <module>module-integration-tests</module>
   </modules>
@@ -51,6 +51,7 @@
         <version>5.10.2</version>
         <scope>test</scope>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 
