@@ -1,5 +1,8 @@
 package com.swe.controller;
 
+import java.util.concurrent.ExecutionException;
+
+import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.core.ControllerServices;
 import com.swe.core.RPC;
 import com.swe.networking.ClientNode;
@@ -19,6 +22,16 @@ public class Init {
 
         controllerServices.networking = networking;
 
+        MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(networking, rpc, portNumber);
+        Thread mediaCaptureManagerThread = new Thread(() -> {
+            try {
+                mediaCaptureManager.startCapture();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        mediaCaptureManagerThread.start();
+
         // We need to get all subscriptions from frontend to also finish before this
         Thread rpcThread = rpc.connect(portNumber);
 
@@ -27,6 +40,7 @@ public class Init {
         networking.addUser(localClientNode, serverClientNode);
 
         rpcThread.join();
+        mediaCaptureManagerThread.join();
     }
 }
 
