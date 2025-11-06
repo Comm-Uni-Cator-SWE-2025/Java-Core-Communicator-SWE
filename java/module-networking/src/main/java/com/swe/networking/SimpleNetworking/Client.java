@@ -141,10 +141,12 @@ public class Client implements IUser {
             final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
 //            System.out.println("Client Data received : " + data);
-            final byte[] message = chunkManager.addChunk(packet);
+            byte[] message = chunkManager.addChunk(packet);
             System.out.println("Client Data length received : " + data.length());
             System.out.println("Client Module received : " + type);
             if (message != null) {
+                final PacketInfo newPktInfo = parser.parsePacket(message);
+                message = newPktInfo.getPayload();
                 simpleNetworking.callSubscriber(message, type);
             }
         } catch (UnknownHostException ex) {
