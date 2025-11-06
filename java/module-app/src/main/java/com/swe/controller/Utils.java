@@ -9,7 +9,7 @@ public class Utils {
         return new ClientNode(InetAddress.getLocalHost().getHostAddress(), 6942);
     }
 
-    public static ClientNode getServerClientNode() throws UnknownHostException {
+    public static ClientNode getServerClientNode(String meetingId) throws UnknownHostException {
         // TODO: Get the server IP address from the cloud
         return new ClientNode("10.32.11.242", 6942);
     }

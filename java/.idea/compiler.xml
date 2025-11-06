@@ -1,25 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <annotationProcessing>
-      <profile name="Maven default annotation processors profile" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <module name="module-app" />
-        <module name="module-core" />
-        <module name="module-networking" />
-        <module name="module-canvas" />
-        <module name="module-screen-video" />
-        <module name="module-chat" />
-        <module name="module-cloud" />
-        <module name="module-integration-tests" />
-        <module name="module-ai-insights" />
-      </profile>
-    </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="module-controller" target="24" />
-      <module name="module-ux" target="24" />
+      <module name="java-core-communicator" target="24" />
+      <module name="module-ai-insights" target="24" />
+      <module name="module-app" target="24" />
+      <module name="module-canvas" target="24" />
+      <module name="module-chat" target="24" />
+      <module name="module-cloud" target="24" />
+      <module name="module-core" target="24" />
+      <module name="module-integration-tests" target="24" />
+      <module name="module-networking" target="24" />
+      <module name="module-screen-video" target="24" />
     </bytecodeTargetLevel>
   </component>
 </project>
