@@ -1,11 +1,12 @@
-package com.swe.controller;
+package com.swe.core;
 
-import com.swe.controller.Meeting.UserProfile;
+import com.swe.core.Meeting.UserProfile;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 
 public class ControllerServices {
     private static ControllerServices instance;
 
+    public RPC rpc;
     public AbstractNetworking networking;
     public UserProfile self;
 

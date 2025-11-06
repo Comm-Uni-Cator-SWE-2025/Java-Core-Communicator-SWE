@@ -33,7 +33,7 @@
     <dependencies>
         <!-- Internal dependencies-->
         <dependency>
-            <groupId>com.swe.networking</groupId>
+            <groupId>com.swe</groupId>
             <artifactId>module-networking</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -102,8 +102,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>24</source>
-                    <target>24</target>
+                    <source>21</source>
+                    <target>21</target>
                     <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
