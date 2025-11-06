@@ -22,8 +22,15 @@ public class RPC implements AbstractRPC {
         methods.put(methodName, method);
     }
 
-    public Thread connect() throws IOException, InterruptedException, ExecutionException {
-        socketryServer = new SocketryClient(new byte[] {20}, 60000, methods);
+    public Thread connect(int portNumber) throws IOException, InterruptedException, ExecutionException {
+        socketryServer = new SocketryClient(new byte[] {
+            1, // Chat
+            2, // Networking
+            5, // Screensharing
+            2, // Canvas
+            1, // Controller
+            1, // Misc
+        }, portNumber, methods);
         Thread rpcThread = new Thread(socketryServer::listenLoop);
         rpcThread.start();
         return rpcThread;
