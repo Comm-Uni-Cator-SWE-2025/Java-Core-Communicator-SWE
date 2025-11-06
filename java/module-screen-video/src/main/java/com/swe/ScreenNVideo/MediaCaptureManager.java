@@ -101,8 +101,10 @@ public class MediaCaptureManager implements CaptureManager {
     public void broadcastJoinMeeting(final List<String> availableIPs) {
         final ClientNode[] clientNodes = availableIPs.stream().map(ip -> new ClientNode(ip, port))
             .toArray(ClientNode[]::new);
-        final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING, 2);
+
+        System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
+        final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
+        sendDataToViewers(subscribeData);
     }
 
     @Override
@@ -130,16 +132,24 @@ public class MediaCaptureManager implements CaptureManager {
     public void startCapture() throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
+        int[][] feed = null;
         while (true) {
             final byte[] encodedPatches = videoComponent.captureScreenNVideo();
+            final int[][] newFeed = videoComponent.getFeed();
             if (encodedPatches == null) {
+                if (feed != null && newFeed == null) {
+                    final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.STOP_SHARE, localIp);
+                    sendDataToViewers(subscribeData);
+                    feed = newFeed;
+                }
                 continue;
             }
-            sendImageToViewers(encodedPatches);
+            feed = newFeed;
+            sendDataToViewers(encodedPatches);
         }
     }
 
-    private void sendImageToViewers(final byte[] feed) {
+    private void sendDataToViewers(final byte[] feed) {
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
         networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
 //        SimpleNetworking.getSimpleNetwork().closeNetworking();
@@ -216,7 +226,8 @@ public class MediaCaptureManager implements CaptureManager {
 
                         // if heap is growing too large, request a full frame to resync
                         if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
-                            final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
+                            final byte[] subscribeData = NetworkSerializer.serializeIP(
+                                NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
                             final ClientNode destNode = new ClientNode(networkPackets.ip(), port);
                             networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING,
                                 2);
