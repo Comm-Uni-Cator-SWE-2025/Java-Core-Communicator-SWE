@@ -202,6 +202,12 @@ public class VideoComponents {
 
         System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
+        if (captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn()) {
+            videoCodec.setUseANNDCT(true);
+            // for only video capture, use ANNDCT
+        } else {
+            videoCodec.setUseANNDCT(false);
+        }
         long curr1 = System.nanoTime();
         videoCodec.quantTime = 0;
         videoCodec.dctTime = 0;
