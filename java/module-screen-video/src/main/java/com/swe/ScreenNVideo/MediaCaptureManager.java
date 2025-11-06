@@ -87,6 +87,8 @@ public class MediaCaptureManager implements CaptureManager {
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
+        addParticipant(this.localIp);
+
         clientHandler = new MediaCaptureManager.ClientHandler();
 
         networking.subscribe(ModuleType.SCREENSHARING, clientHandler);
@@ -116,9 +118,9 @@ public class MediaCaptureManager implements CaptureManager {
         if (ip == null) {
             return;
         }
-        if (localIp != null && ip == localIp) {
-            return;
-        }
+//        if (localIp != null && ip == localIp) {
+//            return;
+//        }
         final ClientNode node = new ClientNode(ip, port);
         viewers.add(node);
         imageSynchronizers.put(ip, new ImageSynchronizer(videoComponent.getVideoCodec()));

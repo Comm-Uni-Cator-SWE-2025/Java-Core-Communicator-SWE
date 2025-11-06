@@ -4,7 +4,6 @@ import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ public class MainController {
 
 
     static void main(final String[] args) throws InterruptedException {
-        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
+        final AbstractNetworking networking = new DummyNetworking(SERVERPORT);
 
         List<String> allNetworks = new ArrayList<>();
         allNetworks.add("10.128.2.197");
@@ -44,7 +43,7 @@ public class MainController {
 
         final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
-        networking.addUser(deviceNode, serverNode);
+        // networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 //        System.out.println(allNetworks);
 
         screenNVideo.broadcastJoinMeeting(allNetworks);
@@ -76,6 +75,10 @@ public class MainController {
 //        uiThread.join();
         screenNVideoThread.join();
         handler.join();
-//        networking.closeNetworking();
+        
+        // Cleanup
+        if (networking instanceof DummyNetworking) {
+            ((DummyNetworking) networking).shutdown();
+        }
     }
 }
