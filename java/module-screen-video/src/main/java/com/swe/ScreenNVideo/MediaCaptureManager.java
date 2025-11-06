@@ -104,7 +104,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
         final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING, 2);
+        sendDataToViewers(subscribeData);
     }
 
     @Override
@@ -264,12 +264,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
-                        byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
-                        boolean success = res[0] == 1;
-                        if (!success) {
-                            System.err.println("Error: Failed to update UI for IP: " + networkPackets.ip());
-                            addParticipant(networkPackets.ip());
-                        }
+                        rpc.call(Utils.UPDATE_UI, serializedImage).get();
                     } catch (InterruptedException | ExecutionException e) {
                         throw new RuntimeException(e);
                     }
