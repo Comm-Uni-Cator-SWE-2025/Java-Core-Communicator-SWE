@@ -1,7 +1,7 @@
 package com.swe.ScreenNVideo;
 
 
-import com.swe.RPC.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 
