@@ -66,7 +66,8 @@ public class P2PServerTest {
 
     @Test
     public void testInitServer() throws UnknownHostException {
-        final P2PServer server = new P2PServer(this.deviceNode, this.server);
+        final TCPCommunicator communicator = new TCPCommunicator(8000);
+        final P2PServer server = new P2PServer(this.deviceNode, this.server, communicator);
         final NetworkStructure networkStructure = getNetworkStructure(this.deviceNode);
 
         for (int i = 0; i < networkStructure.servers().size(); i++) {
@@ -93,7 +94,8 @@ public class P2PServerTest {
     }
 
     public P2PServer getServer() throws UnknownHostException {
-        final P2PServer server = new P2PServer(this.deviceNode, this.server);
+        final TCPCommunicator communicator = new TCPCommunicator(8000);
+        final P2PServer server = new P2PServer(this.deviceNode, this.server, communicator);
         final NetworkStructure networkStructure = getNetworkStructure(this.deviceNode);
 
         for (int i = 0; i < networkStructure.servers().size(); i++) {
