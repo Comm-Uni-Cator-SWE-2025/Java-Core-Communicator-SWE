@@ -8,12 +8,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
 import com.swe.networking.ProtocolBase;
+import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
 /**
@@ -116,7 +118,10 @@ public class Server implements IUser {
         while (true) {
             final byte[] packet = receiveSocket.receiveData();
             if (packet != null) {
-                parsePacket(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    parsePacket(p);
+                }
             }
         }
     }
