@@ -15,31 +15,37 @@ import java.util.Iterator;
  *
  */
 public final class TCPCommunicator implements ProtocolBase {
+
     /**
      * The server socket used to receive client connections.
-     **/
+     *
+     */
     private ServerSocketChannel receiveSocket;
 
-    /** The selector for the sockets. */
+    /**
+     * The selector for the sockets.
+     */
     private Selector selector;
     /**
      * The list of all connected clients and their sockets.
-     **/
+     *
+     */
     private final HashMap<ClientNode, SocketChannel> clientSockets = new HashMap<>();
 
     /**
      * The port where the server is instantiated.
-     **/
+     *
+     */
     private Integer deviceServerPort = 0;
     /**
      * The maximum time the socket must wait to connect to the destination.
-     **/
+     *
+     */
     private final Integer clientConnectTimeout = 5000;
     // Integer clientSendTimeout = 2000;
 
     /**
-     * The size of the buffer to read data.
-     * Let it be the size of 15KB.
+     * The size of the buffer to read data. Let it be the size of 15KB.
      */
     private final Integer byteBufferSize = 15 * 1024;
 
@@ -135,6 +141,8 @@ public final class TCPCommunicator implements ProtocolBase {
                 System.out.println("Waiting for " + clientConnectTimeout + " s to connect to the client...");
                 System.out.println("Client: " + dest + " ...");
                 destSocket.socket().connect(new InetSocketAddress(destIp, destPort), clientConnectTimeout);
+                destSocket.configureBlocking(false);
+                destSocket.register(selector, SelectionKey.OP_READ);
                 System.out.println("New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
@@ -143,8 +151,8 @@ public final class TCPCommunicator implements ProtocolBase {
                 destSocket.write(buffer);
             }
             printIpAddr(destIp, destPort);
-        } catch (IOException ex) {
-            System.out.println("Error occured while sending data.... ");
+        } catch (Exception ex) {
+            System.out.println("Error occured while sending data.... " + ex.getMessage());
         }
     }
 

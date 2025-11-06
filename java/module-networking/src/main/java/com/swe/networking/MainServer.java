@@ -46,7 +46,7 @@ public class MainServer implements P2PUser {
     /**
      * Variable to start the timer.
      */
-    private final int timerTimeoutMilliSeconds = 10 * 1000;
+    private final int timerTimeoutMilliSeconds = 5 * 1000;
 
     /** Variable to store the server IP address. */
     private final ClientNode mainserver;
@@ -152,32 +152,46 @@ public class MainServer implements P2PUser {
                     + type + " and connection type " + connectionType + "...");
             // check for broadcast packet
             if (parser.parsePacket(packet).getBroadcast() == 1) {
-                for(ClientNode c : topology.getAllClusterServers()) {
-                    if(!c.equals(mainserver) && !c.equals(dest)) {
+                for (ClientNode c : topology.getAllClusterServers()) {
+                    if (!c.equals(mainserver) && !c.equals(dest)) {
                         send(packet, c);
                     }
                 }
             }
             if (type == NetworkType.USE.ordinal()) {
-                if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
-                    handleHello(dest);
-                } else if (connectionType == NetworkConnectionType.REMOVE.ordinal()) {
-                    handleRemove(packet, dest);
-                } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
-                    timer.updateTimeout(dest);
-                    System.out.println("Received alive packet from " + dest);
-                } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
-                    System.out.println("Passing to chunk manager...");
-                    chunkManager.addChunk(packet);
-                } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
-                    System.out.println("Closing the Main Server");
-                }
+                handleUsePacket(packet, dest, connectionType);
             } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
                 // might new to change the type to SAMECLUSTER
                 final ClientNode newDest = topology.getServer(dest);
                 send(packet, newDest);
             } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
                 send(packet, dest);
+            }
+        } catch (UnknownHostException ex) {
+        }
+    }
+
+    /**
+     * Function to handle the use packet after receiving.
+     *
+     * @param packet         the packet to be parsed
+     * @param dest           the destination from which the packet was received
+     * @param connectionType the connection type of the packet
+     */
+    private void handleUsePacket(final byte[] packet, final ClientNode dest, final int connectionType) {
+        try {
+            if (connectionType == NetworkConnectionType.HELLO.ordinal()) {
+                handleHello(dest);
+            } else if (NetworkConnectionType.REMOVE.ordinal() == connectionType) {
+                handleRemove(packet, dest);
+            } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
+                timer.updateTimeout(dest);
+                System.out.println("Received alive packet from " + dest);
+            } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
+                System.out.println("Passing to chunk manager...");
+                chunkManager.addChunk(packet);
+            } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
+                System.out.println("Closing the Main Server");
             }
         } catch (UnknownHostException ex) {
         }

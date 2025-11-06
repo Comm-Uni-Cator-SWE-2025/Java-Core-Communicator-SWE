@@ -111,8 +111,8 @@ public final class Topology implements AbstractTopology, AbstractController {
             numClients = 1;
         } else {
             try {
-                final P2PCluster userP2P = new P2PCluster();
-                userP2P.addUser(deviceAddress, deviceAddress);
+                user = new P2PCluster();
+                ((P2PCluster) user).addUser(deviceAddress, mainServerAddress);
             } catch (UnknownHostException ex) {
                 System.out.println("Error while adding user to the P2P cluster...");
             }
@@ -311,7 +311,7 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @param packet the packet to be send
      * @param dest   the destination to send
      */
-    public void sendPacket(final byte[] packet, final ClientNode[] dest) {
-
+    public void sendPacket(final byte[] packet, final ClientNode dest) {
+        user.send(packet, dest);
     }
 }
