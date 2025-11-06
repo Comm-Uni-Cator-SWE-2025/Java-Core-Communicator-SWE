@@ -108,7 +108,10 @@ public class Utils {
      */
     public static final double KB = 1_024.0;
 
-
+    /**
+     * Max diffs stored in a heap.
+     */
+    public static final int MAX_HEAP_SIZE = 20;
 
     /**
      * Maximum tries to serialize the compressed packets.
@@ -166,6 +169,36 @@ public class Utils {
             return socket.getLocalAddress().getHostAddress();
         } catch (SocketException | UnknownHostException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(int[][] srcMatrix, int[][] dstMatrix) {
+
+        int height = Math.min(srcMatrix.length, dstMatrix.length);
+        int width = Math.min(srcMatrix[0].length, dstMatrix[0].length);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix, 0, dstMatrix, 0, width);
+        }
+    }
+
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(long[][] srcMatrix, long[][] dstMatrix) {
+
+        int height = Math.min(srcMatrix.length, dstMatrix.length);
+        int width = Math.min(srcMatrix[0].length, dstMatrix[0].length);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix, 0, dstMatrix, 0, width);
         }
     }
 
