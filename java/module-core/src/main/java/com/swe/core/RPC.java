@@ -29,7 +29,7 @@ public class RPC implements AbstractRPC {
     }
 
     public Thread connect(int portNumber) throws IOException, InterruptedException, ExecutionException {
-        
+
         socketryClient = new SocketryClient(new byte[] {
             1, // Chat
             2, // Networking
