@@ -90,6 +90,7 @@ public class Timer {
         final List<ClientNode> timedOutClients = new ArrayList<>();
         final long currentTime = System.currentTimeMillis();
         synchronized (clients) {
+            System.out.println("Timer clients " + clients);
             for (ClientNode c : clients) {
                 if (currentTime - clientTimeouts.get(c) > timeoutDuration) {
                     timedOutClients.add(c);
@@ -116,7 +117,7 @@ public class Timer {
             }
         }
     }
-    
+
     /**
      * Close the timer thread.
      */
