@@ -87,7 +87,8 @@ public class P2PCluster implements P2PUser {
                 clusterServer = client;
                 this.user = new P2PServer(client, server, tcpCommunicator);
                 for (ClientNode c : networkStructure.clusters().get(i)) {
-                    ((P2PServer) this.user).monitor(c);
+                    if(!c.equals(client))
+                        ((P2PServer) this.user).monitor(c);
                 }
                 this.isServer = true;
                 break;
