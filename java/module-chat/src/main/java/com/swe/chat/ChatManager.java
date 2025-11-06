@@ -1,6 +1,7 @@
 package com.swe.chat;
 
 // 1. IMPORT THE REAL NETWORKING FILES
+import com.swe.RPC.AbstractRPC;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
@@ -28,7 +29,7 @@ public class ChatManager implements IChatService {
      *
      * @param networkingService the networking service used for communication
      */
-    public ChatManager(AbstractRPC rpc, SimpleNetworking network) {
+    public ChatManager(SimpleNetworking network, AbstractRPC rpc) {
         this.rpc = rpc;
         this.network = network;
 
@@ -51,9 +52,11 @@ public class ChatManager implements IChatService {
         ClientNode[] dests = { new ClientNode("127.0.0.1", 5678) }; // Placeholder
 
         // Send to the network (this part is the same as your old sendMessage)
-        this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
+//        this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
+        System.out.println("Received from front");
 
-        return null; // 'null' means "I received it, no reply needed"
+//        return byte[0]; // 'null' means "I received it, no reply needed"
+        return new byte[0];
     }
 
     /**

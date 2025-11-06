@@ -1,14 +1,13 @@
 package com.swe.chat;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import com.swe.networking.SimpleNetworking.SimpleNetworking;
-import com.swe.networking.ClientNode;
+
+import com.swe.RPC.AbstractRPC;
 
 /**
  * The ONE ViewModel for the ChatView.
@@ -112,7 +111,7 @@ public class ChatViewModel {
         }
 
         final String messageId = UUID.randomUUID().toString();
-        final ChatMessage messageToSend = new ChatMessage(messageId, this.currentUserId, messageText, this.currentReplyId);
+        final ChatMessage messageToSend = new ChatMessage(messageId, this.currentUserId,"dcsjkdsjk" , messageText, this.currentReplyId);
 
         // 1. Send the message to the Backend via RPC
         String json = MessageParser.serialize(messageToSend);

@@ -1,6 +1,6 @@
 package com.swe.chat; // Assuming it's in the same package
 
-import com.swe.chat.AbstractRPC;
+import com.swe.RPC.AbstractRPC;
 
 import java.io.IOException;
 import java.util.Map;

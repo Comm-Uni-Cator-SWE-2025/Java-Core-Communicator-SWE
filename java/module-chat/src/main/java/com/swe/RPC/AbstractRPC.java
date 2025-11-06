@@ -1,4 +1,4 @@
-package com.swe.chat;
+package com.swe.RPC;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;

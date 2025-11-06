@@ -1,7 +1,6 @@
 package com.swe.chat;
 
-import com.swe.chat.AbstractRPC; // You will need to import your RPC files
-import com.swe.chat.DummyRPC;   // You will need to import your RPC files
+import com.swe.RPC.AbstractRPC; // You will need to import your RPC files
 import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 import javax.swing.SwingUtilities;
@@ -30,7 +29,7 @@ public class App {
 
         // 3. Create the ChatManager (Core) and subscribe it to the RPC
         // This is the step that was missing!
-        ChatManager chatManager = new ChatManager(dummyRpc, network);
+        ChatManager chatManager = new ChatManager(network,dummyRpc);
 
         // ---
 

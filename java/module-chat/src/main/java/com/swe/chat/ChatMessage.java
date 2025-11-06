@@ -4,93 +4,94 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 /**
- * Represents a single chat message with ID, user, content, and timestamp.
+ * Represents a single chat message.
+ * This is the "Data Contract" for all frontends and the core.
+ * It is immutable once created.
  */
 public class ChatMessage {
 
-    /** Unique identifier for this message. */
-    private final String messageId;   // Unique per message
-
-    /** ID of the user who sent the message. */
-    private final String userId;      // Who sent the messag
-
-    /** Text content of the message. */
-    private String content;
-
-    /** Timestamp when the message was created, in epoch seconds (UTC). */
-    private final long timestamp;
-
-    /** The ID of the message this message is replying to*/
+    private final String messageId;
+    private final String userId;
+    private final String senderDisplayName;
+    private final String content;
+    private final LocalDateTime timestamp;
     private final String replyToMessageId;
 
     /**
-     * Creates a new chat message.
+     * Constructor for creating a NEW chat message.
+     * Automatically sets the timestamp to 'now' (UTC).
      *
-     * @param messageIdd unique ID for the message
-     * @param userIdd ID of the user who sent the message
-     * @param contentt the message content
-     * @param replyToId ID of the message being replied to, or null
+     * @param messageId         Unique ID for the message.
+     * @param userId            Stable, unique ID of the sender.
+     * @param senderDisplayName The name to show in the UI.
+     * @param content           The message text.
+     * @param replyToId         The ID of the message being replied to (or null).
      */
-    public ChatMessage(final String messageIdd, final String userIdd,
-                       final String contentt,final String replyToId) {
-        this.messageId = messageIdd;
-        this.userId = userIdd;
-        this.content = contentt;
-        final LocalDateTime timestp = LocalDateTime.now();
-        this.timestamp = timestp.toEpochSecond(ZoneOffset.UTC);
-        this.replyToMessageId=replyToId;
+    public ChatMessage(final String messageId,
+                       final String userId,
+                       final String senderDisplayName,
+                       final String content,
+                       final String replyToId) {
+
+        this.messageId = messageId;
+        this.userId = userId;
+        this.senderDisplayName = senderDisplayName;
+        this.content = content;
+        this.replyToMessageId = replyToId;
+        // Auto-set timestamp to now in UTC
+        this.timestamp = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     /**
-     * Returns the unique message ID.
+     * Constructor for DESERIALIZATION only.
+     * Allows re-creating a message with an existing timestamp.
      *
-     * @return the unique message ID
+     * @param messageId         Unique ID for the message.
+     * @param userId            Stable, unique ID of the sender.
+//     * @param senderDisplayName The name to show in the UI.
+     * @param content           The message text.
+     * @param timestampEpoch    The raw timestamp (epoch seconds).
+     * @param replyToId         The ID of the message being replied to (or null).
      */
+    public ChatMessage(final String messageId,
+                       final String userId,
+                       final String senderDisplayName,
+                       final String content,
+                       final long timestampEpoch,
+                       final String replyToId) {
+
+        this.messageId = messageId;
+        this.userId = userId;
+        this.senderDisplayName = senderDisplayName;
+        this.content = content;
+        this.replyToMessageId = replyToId;
+        // Convert the raw long back to a rich LocalDateTime object
+        this.timestamp = LocalDateTime.ofEpochSecond(timestampEpoch, 0, ZoneOffset.UTC);
+    }
+
+    // --- Getters ---
+
     public String getMessageId() {
         return messageId;
     }
 
-    /**
-     * Returns the ID of the user who sent this message.
-     *
-     * @return the ID of the user
-     */
     public String getUserId() {
         return userId;
     }
 
-    /**
-     * Returns the text content of the message.
-     *
-     * @return the message content
-     */
+    public String getSenderDisplayName() {
+        return senderDisplayName;
+    }
+
     public String getContent() {
         return content;
     }
 
-    /**
-     * Returns the timestamp of the message as a LocalDateTime (UTC).
-     *
-     * @return the timestamp in UTC
-     */
     public LocalDateTime getTimestamp() {
-        return LocalDateTime.ofEpochSecond(this.timestamp, 0, ZoneOffset.UTC);
+        return timestamp;
     }
 
-    /**
-     * Returns the message id to whose message is replied
-     *
-     * @return messageId
-     */
-    public String getReplyToMessageId(){
+    public String getReplyToMessageId() {
         return replyToMessageId;
-    }
-    /**
-     * Updates the content of this message.
-     *
-     * @param newcontent new content to set
-     */
-    public void setContent(final String newcontent) {
-        this.content = newcontent;
     }
 }
