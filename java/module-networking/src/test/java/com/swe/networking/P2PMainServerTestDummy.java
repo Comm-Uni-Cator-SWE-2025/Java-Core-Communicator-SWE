@@ -7,7 +7,7 @@ import org.junit.Test;
 public class P2PMainServerTestDummy {
 
     private int mainServerPort = 8000;
-    private String loopBackAddress = "127.0.0.1";
+    private String loopBackAddress = "10.32.0.41";
     private String loganAddr = "10.32.0.41";
 
     @Test
