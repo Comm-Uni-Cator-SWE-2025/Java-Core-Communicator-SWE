@@ -101,6 +101,8 @@ public class MediaCaptureManager implements CaptureManager {
     public void broadcastJoinMeeting(final List<String> availableIPs) {
         final ClientNode[] clientNodes = availableIPs.stream().map(ip -> new ClientNode(ip, port))
             .toArray(ClientNode[]::new);
+
+        System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
         final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
         networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING, 2);
     }

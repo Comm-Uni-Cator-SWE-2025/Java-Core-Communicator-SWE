@@ -25,19 +25,20 @@ public class MainController {
     /**
      * Server port for ScreenNVideo.
      */
-    static final int SERVERPORT = 40000;
+    static final int SERVERPORT = 40000 ;
 
 
     static void main(final String[] args) throws InterruptedException {
         final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
 
         List<String> allNetworks = new ArrayList<>();
-        allNetworks.add("10.32.12.30");
+        allNetworks.add("10.128.2.197");
+//        allNetworks.add("10.129.4.62");
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
         final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
-        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
+        final ClientNode serverNode = new ClientNode("10.128.5.70", SERVERPORT);
 
         final AbstractRPC rpc = new DummyRPC();
 
