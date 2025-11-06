@@ -55,10 +55,14 @@ public class Client implements IUser {
      * The variable isused to store connection timeout.
      */
     private final int connectionTimeout = 5000;
-    /** The variable to store chunk Manager. */
+    /**
+     * The variable to store chunk Manager.
+     */
     private SimpleChunkManager chunkManager;
 
-    /** The variable to store chunk Manager payload size. */
+    /**
+     * The variable to store chunk Manager payload size.
+     */
     private final int payloadSize = 15 * 1024;
 
     /**
@@ -83,10 +87,10 @@ public class Client implements IUser {
     /**
      * Function to send the data to a list of destination.
      *
-     * @param data     the data to be sent
-     * @param destIp   the list fo destination to send the data
+     * @param data the data to be sent
+     * @param destIp the list fo destination to send the data
      * @param serverIp the Ip address of the main server
-     * @param module   the module to send th data to
+     * @param module the module to send th data to
      */
     @Override
     public void send(final byte[] data, final ClientNode[] destIp,
@@ -141,10 +145,12 @@ public class Client implements IUser {
             final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
             System.out.println("Client Data received : " + data);
-            final byte[] message = chunkManager.addChunk(packet);
+            byte[] message = chunkManager.addChunk(packet);
             System.out.println("Client Data length received : " + data.length());
             System.out.println("Client Module received : " + type);
             if (message != null) {
+                final PacketInfo newpktInfo = parser.parsePacket(message);
+                message = newpktInfo.getPayload();
                 simpleNetworking.callSubscriber(message, type);
             }
         } catch (UnknownHostException ex) {
