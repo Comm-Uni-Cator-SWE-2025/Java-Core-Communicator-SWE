@@ -83,7 +83,6 @@ public class DummyNetworking implements AbstractNetworking {
         }
 
         for (int i = 0; i < dest.length && i < port.length; i++) {
-            System.out.println("Sending data to " + dest[i] + ":" + port[i]);
             try (Socket socket = new Socket(dest[i], port[i]);
                  DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
                 
@@ -91,7 +90,6 @@ public class DummyNetworking implements AbstractNetworking {
                 out.writeInt(data.length);
                 out.write(data);
                 out.flush();
-                System.out.println("Done");
                 
             } catch (IOException e) {
                 System.err.println("Failed to send data to " + dest[i] + ":" + port[i] + " - " + e.getMessage());
