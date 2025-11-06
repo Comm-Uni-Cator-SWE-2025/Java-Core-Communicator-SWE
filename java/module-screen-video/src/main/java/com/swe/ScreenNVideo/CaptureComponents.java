@@ -6,6 +6,7 @@ import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
+import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
@@ -140,11 +141,7 @@ public class CaptureComponents {
 //            long prev = System.nanoTime();
 
         if (!isScreenCaptureOn && !isVideoCaptureOn) {
-            try {
-                Thread.sleep(Utils.SEC_IN_MS);
-            } catch (InterruptedException e) {
-                System.out.println("Error : " + e.getMessage());
-            }
+            return null;
         }
 
 //            long curr = System.nanoTime();
@@ -194,7 +191,7 @@ public class CaptureComponents {
             final ClientNode destNode = new ClientNode(destIP, port);
 
             // Get IP address as string
-            final byte[] subscribeData = NetworkSerializer.serializeIP(localIp);
+            final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
             networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
 
             final byte[] res = new byte[1];
