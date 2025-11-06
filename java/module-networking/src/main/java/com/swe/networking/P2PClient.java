@@ -117,7 +117,7 @@ public class P2PClient implements P2PUser {
      */
     private void sendAlivePacket() {
         if (clusterServerAddress == null) {
-            return;
+            System.out.println("cluster server address is null");
         }
 
         try {
@@ -214,8 +214,7 @@ public class P2PClient implements P2PUser {
     private void parseUsePacket(final PacketInfo info, final byte[] packet) throws UnknownHostException {
         final int connType = info.getConnectionType();
         final NetworkConnectionType connection = NetworkConnectionType.getType(connType);
-        // final NetworkSerializer serializer =
-        // NetworkSerializer.getNetworkSerializer();
+
         System.out.println("p2pclient received connection type: " + connection);
         switch (connection) {
             case HELLO: // 000 drop it only to be received by main server
@@ -294,14 +293,15 @@ public class P2PClient implements P2PUser {
             aliveScheduler.shutdownNow();
         }
 
-        // Stop the receive thread
-        if (receiveThread != null) {
-            receiveThread.interrupt();
-        }
-
         // Close all network sockets
         if (communicator != null) {
             communicator.close();
+        }
+
+
+        // Stop the receive thread
+        if (receiveThread != null) {
+            receiveThread.interrupt();
         }
 
         System.out.println("p2pclient closed");

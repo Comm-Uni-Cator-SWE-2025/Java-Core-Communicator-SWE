@@ -159,20 +159,21 @@ public class JpegCodec implements Codec {
     /**
      * Time taken for ZigZag operations.
      */
-    private long zigZagtime = 0;
+    public long zigZagtime = 0;
     /**
      * Time taken for DCT operations.
      */
-    private long dctTime = 0;
+    public long dctTime = 0;
     /**
      * Time taken for quantization operations.
      */
-    private long quantTime = 0;
+    public long quantTime = 0;
 
     private final Compressor compressor = new Compressor();
     private final IDeCompressor decompressor = new DeCompressor();
-    private final IRLE enDeRLE = EncodeDecodeRLE.getInstance();
+    private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
     private final QuantisationUtil quantUtil = QuantisationUtil.getInstance();
+
 
     /**
      * Buffer for RLE results.
@@ -189,7 +190,7 @@ public class JpegCodec implements Codec {
 
     @Override
     public void setCompressionFactor(final short qfactor) {
-//        quantUtil.setCompressonResulation(qfactor);
+        quantUtil.setCompressonResulation(qfactor);
     }
 
     /**
@@ -264,9 +265,9 @@ public class JpegCodec implements Codec {
         }
 
         resRLEBuffer.clear();
-//        compressor.zigZagTime = 0;
-//        compressor.quantTime = 0;
-//        compressor.dctTime = 0;
+        compressor.zigZagTime = 0;
+        compressor.quantTime = 0;
+        compressor.dctTime = 0;
 
         // YMatrix;
         compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
@@ -281,9 +282,9 @@ public class JpegCodec implements Codec {
 //        System.out.println("Compression Cr : " + resRLEBuffer.position());
 
 
-//        zigZagtime += compressor.zigZagTime;
-//        dctTime += compressor.dctTime;
-//        quantTime += compressor.quantTime;
+        zigZagtime += compressor.zigZagTime;
+        dctTime += compressor.dctTime;
+        quantTime += compressor.quantTime;
         final byte[] res = new byte[resRLEBuffer.position()];
         resRLEBuffer.rewind();
         resRLEBuffer.get(res);

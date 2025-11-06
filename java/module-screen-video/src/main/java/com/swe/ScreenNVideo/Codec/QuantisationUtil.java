@@ -70,7 +70,7 @@ public class QuantisationUtil {
     /**
      * Midpoint for quality factor logic switch.
      */
-    private static final int JPEG_QUALITY_MID = 50;
+    private static final int JPEG_QUALITY_MID = 90;
     /**
      * Scale factor for high-quality settings.
      */
@@ -153,7 +153,7 @@ public class QuantisationUtil {
                 scaledQuantLumin[i][j] = BASELUMIN[i][j];
             }
         }
-        scaleQuantTable(aanScaleFactor);
+//        scaleQuantTable(aanScaleFactor);
     }
 
     /**

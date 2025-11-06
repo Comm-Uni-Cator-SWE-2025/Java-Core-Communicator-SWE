@@ -68,11 +68,11 @@ public class Utils {
     /**
      * Width of the server.
      */
-    public static final int SERVER_WIDTH = 1200;
+    public static final int SERVER_WIDTH = 800;
     /**
      * Height of the server.
      */
-    public static final int SERVER_HEIGHT = 800;
+    public static final int SERVER_HEIGHT = 600;
     /**
      * Width of the client.
      */
@@ -108,7 +108,10 @@ public class Utils {
      */
     public static final double KB = 1_024.0;
 
-
+    /**
+     * Max diffs stored in a heap.
+     */
+    public static final int MAX_HEAP_SIZE = 20;
 
     /**
      * Maximum tries to serialize the compressed packets.
@@ -166,6 +169,40 @@ public class Utils {
             return socket.getLocalAddress().getHostAddress();
         } catch (SocketException | UnknownHostException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(int[][] srcMatrix, int[][] dstMatrix) {
+
+        final int height = Math.min(srcMatrix.length, dstMatrix.length);
+        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
+        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int width = Math.min(srcWidth, dstWidth);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix[i], 0, dstMatrix[i], 0, width);
+        }
+    }
+
+    /**
+     * Fills dstMatrix with the srcMatrix
+     * @param srcMatrix matrix
+     * @param dstMatrix matrix
+     */
+    public static void copyMatrix(long[][] srcMatrix, long[][] dstMatrix) {
+
+        final int height = Math.min(srcMatrix.length, dstMatrix.length);
+        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
+        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int width = Math.min(srcWidth, dstWidth);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(srcMatrix[i], 0, dstMatrix[i], 0, width);
         }
     }
 
