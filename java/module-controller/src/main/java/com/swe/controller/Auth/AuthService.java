@@ -11,24 +11,19 @@ import java.security.GeneralSecurityException;
  */
 public class AuthService {
 
-    private final DataStore dataStore;
-
-    public AuthService(DataStore dataStore) {
-        this.dataStore = dataStore;
-    }
+    public AuthService() {}
     /**
      * Registers a new user with domain-based role validation.
      *
      * @return UserProfile if registration succeeds, null otherwise
      */
-    public UserProfile register() throws GeneralSecurityException, IOException {
+    public static UserProfile register() throws GeneralSecurityException, IOException {
         final GoogleAuthServices googleAuthService = new GoogleAuthServices();
         final Credential credential = googleAuthService.getCredentials();
 
-        final AuthHelper authHelper = new AuthHelper(dataStore);
-        final UserProfile googleStudent = authHelper.handleGoogleLogin(credential);
+        final AuthHelper authHelper = new AuthHelper();
 
 //        dataStore.users.put(googleStudent.getUserId(), googleStudent);
-        return googleStudent;
+        return authHelper.handleGoogleLogin(credential);
     }
 }

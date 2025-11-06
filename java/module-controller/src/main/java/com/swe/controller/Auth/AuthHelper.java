@@ -18,20 +18,13 @@ import java.util.Map;
  */
 public class AuthHelper {
 
-    /** DataStore used to save user profiles. */
-    private final DataStore dataStore;
-
     /** Google API URL to fetch user info. */
     private static final String GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
     /**
      * Constructor.
-     *
-     * @param store DataStore to save user profiles
      */
-    public AuthHelper(final DataStore store) {
-        this.dataStore = store;
-    }
+    public AuthHelper() {}
 
     /**
      * Handles Google login using a Credential object.
@@ -56,9 +49,6 @@ public class AuthHelper {
         final String name = (String) userInfo.get("name");
         final String logoUrl = (String) userInfo.get("picture");
 
-        final UserProfile user = new UserProfile(email, name, logoUrl, ParticipantRole.GUEST);
-        dataStore.addUser(user);
-
-        return user;
+        return new UserProfile(email, name, logoUrl, ParticipantRole.GUEST);
     }
 }

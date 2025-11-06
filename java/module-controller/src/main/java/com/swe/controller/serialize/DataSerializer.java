@@ -9,14 +9,17 @@ public class DataSerializer {
 
     static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static byte[] serializeParticipantsList(Object participant) throws JsonProcessingException {
+    public static byte[] serialize(Object participant) throws JsonProcessingException {
+        System.out.println("serializing");
         String data = objectMapper.writeValueAsString(participant);
 
         return data.getBytes(StandardCharsets.UTF_8);
     }
 
-    public static <T> T deserializeParticipantsList(byte[] data, Class<T> datatype) throws JsonProcessingException {
+    public static <T> T deserialize(byte[] data, Class<T> datatype) throws JsonProcessingException {
+        System.out.println("deserializing 1");
         String json = new String(data, StandardCharsets.UTF_8);
+        System.out.println("deserializing 2");
 
         return objectMapper.readValue(json, datatype);
     }

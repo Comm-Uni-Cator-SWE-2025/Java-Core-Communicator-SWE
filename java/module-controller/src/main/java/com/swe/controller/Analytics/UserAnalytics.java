@@ -81,7 +81,7 @@ public class UserAnalytics {
     public void printAllUsers() {
         System.out.println("=== All User Profiles ===");
         for (UserProfile user : users) {
-            System.out.println("ID: " + user.getUserId());
+//            System.out.println("ID: " + user.getUserId());
             System.out.println("Name: " + user.getDisplayName());
             System.out.println("Email: " + user.getEmail());
             System.out.println("Role: " + user.getRole());

@@ -15,13 +15,6 @@ import java.util.UUID;
 public class UserProfile {
 
     /**
-     * A unique, non-changing identifier for the user (e.g., a UUID).
-     * This is the primary key in the user database.
-     */
-    @JsonProperty("userId")
-    private String userId;
-
-    /**
      * The user's email address, used as their login username.
      */
     @JsonProperty("email")
@@ -66,7 +59,6 @@ public class UserProfile {
                        final String finalDisplayName,
                        final String finalLogoUrl,
                        final ParticipantRole finalUserRole) {
-        this.userId = UUID.randomUUID().toString(); // Generate a unique ID on creation
         this.email = finalEmail;
         this.displayName = finalDisplayName;
         this.role = finalUserRole;
@@ -74,15 +66,6 @@ public class UserProfile {
     }
 
     // --- Getters (These match the methods expected by the rest of the code) ---
-
-    /**
-     * Gets the user's unique ID.
-     *
-     * @return The user ID.
-     */
-    public String getUserId() {
-        return userId;
-    }
 
     /**
      * Gets the user's email address.
@@ -141,15 +124,6 @@ public class UserProfile {
     }
 
     /**
-     * Sets the user's unique ID.
-     *
-     * @param finalUserId The new user ID.
-     */
-    public void setUserId(final String finalUserId) {
-        this.userId = finalUserId;
-    }
-
-    /**
      * Sets the user's email address.
      *
      * @param finalEmail The new user email.
@@ -169,22 +143,6 @@ public class UserProfile {
 
     // --- Methods expected by DataStore.java ---
 
-    /**
-     * Returns a string representation of the UserProfile object for JSON.
-     * Note: The passwordHash is intentionally omitted for security.
-     *
-     * @return a JSON-like string representation
-     */
-    public String toJson() {
-        return "UserProfile{"
-                + "\"userId\":\"" + userId + "\","
-                + "\"email\":\"" + email + "\","
-                + "\"displayName\":\"" + displayName + "\","
-                + "\"logoUrl\":\"" + logoUrl + "\","
-                + "\"role\":\"" + role + "\""
-                + "}";
-    }
-
     // --- Overridden Methods (for Checkstyle and Robustness) ---
 
     /**
@@ -196,7 +154,6 @@ public class UserProfile {
     @Override
     public String toString() {
         return "UserProfile{"
-                + "userId='" + userId + '\''
                 + ", email='" + email + '\''
                 + ", displayName='" + displayName + '\''
                 + ", role='" + role + '\''
@@ -219,20 +176,14 @@ public class UserProfile {
             return false;
         }
         final UserProfile that = (UserProfile) obj;
-        return Objects.equals(userId, that.userId)
-                && Objects.equals(email, that.email)
+        return Objects.equals(email, that.email)
                 && Objects.equals(displayName, that.displayName)
                 && Objects.equals(role, that.role)
                 && Objects.equals(logoUrl, that.logoUrl);
     }
 
-    /**
-     * Generates a hash code for this UserProfile.
-     *
-     * @return The hash code.
-     */
     @Override
     public int hashCode() {
-        return Objects.hash(userId, email, displayName, role, logoUrl);
+        return Objects.hash(email, displayName, role, logoUrl);
     }
 }
