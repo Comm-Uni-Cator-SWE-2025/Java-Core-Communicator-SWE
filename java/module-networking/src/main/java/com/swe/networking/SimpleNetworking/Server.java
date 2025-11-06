@@ -1,20 +1,20 @@
 package com.swe.networking.SimpleNetworking;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
+import com.swe.networking.PacketInfo;
+import com.swe.networking.PacketParser;
+import com.swe.networking.ProtocolBase;
+import com.swe.networking.TCPCommunicator;
 
 /**
  * The main class for the server device.
@@ -24,11 +24,11 @@ public class Server implements IUser {
     /**
      * The variable to store the device IP address.
      */
-    private String deviceIp;
+    private final String deviceIp;
     /**
      * The variable to store the device port number.
      */
-    private int devicePort;
+    private final int devicePort;
     /**
      * The variable used by the server to connect to other devices.
      */
@@ -36,23 +36,29 @@ public class Server implements IUser {
     /**
      * The variable used by server to accept connections from clients.
      */
-    private ServerSocket receiveSocket;
+    private final ProtocolBase receiveSocket;
     /**
      * The singleton class object for packet parser.
      */
-    private PacketParser parser;
+    private final PacketParser parser;
     /**
      * The singleton class object for simplenetworking.
      */
-    private SimpleNetworking simpleNetworking;
+    private final SimpleNetworking simpleNetworking;
     /**
      * The variable to store the module type.
      */
-    private ModuleType moduleType = ModuleType.NETWORKING;
+    private final ModuleType moduleType = ModuleType.NETWORKING;
     /**
      * The variable isused to store connection timeout.
      */
     private final int connectionTimeout = 5000;
+
+    /** The variable to store chunk Manager. */
+    private SimpleChunkManager chunkManager;
+
+    /** The variable to store chunk Manager payload size. */
+    private final int payloadSize = 15 * 1024;
 
     /**
      * The constructor function for the server class.
@@ -64,12 +70,8 @@ public class Server implements IUser {
         devicePort = deviceAddr.port();
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
-        try {
-            receiveSocket = new ServerSocket(devicePort);
-            receiveSocket.setSoTimeout(0);
-        } catch (IOException e) {
-            System.err.println("Server1 Error: " + e.getMessage());
-        }
+        receiveSocket = new TCPCommunicator(devicePort);
+        chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
     }
 
     /**
@@ -93,8 +95,7 @@ public class Server implements IUser {
                 final OutputStream output = sendSocket.getOutputStream();
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 final InetAddress addr = InetAddress.getByName(ip);
-                dataOut.write(parser.createPkt(0, 0,
-                        module.ordinal(), 0, 0, addr, port, data));
+                dataOut.write(data);
                 System.out.println("Sent data succesfully...");
                 sendSocket.close();
             } catch (IOException e) {
@@ -108,15 +109,11 @@ public class Server implements IUser {
      */
     @Override
     public void receive() throws IOException {
-        try {
-            final Socket socket = receiveSocket.accept();
-            final InputStream input = socket.getInputStream();
-            final DataInputStream dataIn = new DataInputStream(input);
-            final byte[] packet = dataIn.readAllBytes();
-            System.out.println("Message from " + socket.toString() + " ...");
-            parsePacket(packet);
-        } catch (SocketTimeoutException e) {
-            System.err.println("Server3 Error: " + e.getMessage());
+        while (true) {
+            final byte[] packet = receiveSocket.receiveData();
+            if (packet != null) {
+                parsePacket(packet);
+            }
         }
     }
 
@@ -155,16 +152,22 @@ public class Server implements IUser {
      * @throws UnknownHostException throws when sending data to unknown host
      */
     public void parsePacket(final byte[] packet) throws UnknownHostException {
-        final int module = parser.getModule(packet);
+        final PacketInfo pktInfo = parser.parsePacket(packet);
+        final int module = pktInfo.getModule();
         final ModuleType type = moduleType.getType(module);
-        final InetAddress address = parser.getIpAddress(packet);
-        final int port = parser.getPortNum(packet);
+        final InetAddress address = pktInfo.getIpAddress();
+        final int port = pktInfo.getPortNum();
         final String addr = address.getHostAddress();
         if (addr.equals(deviceIp) && port == devicePort) {
-            final String data = new String(parser.getPayload(packet),
+            final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
             System.out.println("Server Data received : " + data);
-            simpleNetworking.callSubscriber(parser.getPayload(packet), type);
+            final byte[] message = chunkManager.addChunk(packet);
+            System.out.println("Server Data length received : " + data.length());
+            System.out.println("Server Module received : " + type);
+            if (message != null) {
+                simpleNetworking.callSubscriber(message, type);
+            }
         } else {
             final ClientNode dest = new ClientNode(address.getHostAddress(),
                     port);
@@ -179,9 +182,6 @@ public class Server implements IUser {
      */
     @Override
     public void closeUser() {
-        try {
-            receiveSocket.close();
-        } catch (IOException e) {
-        }
+        receiveSocket.close();
     }
 }

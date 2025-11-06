@@ -1,6 +1,6 @@
 package com.swe.core;
 
-import com.socketry.SocketryServer;
+import com.socketry.SocketryClient;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
@@ -12,10 +12,15 @@ import java.util.function.Function;
 public class RPC implements AbstractRPC {
     HashMap<String, Function<byte[], byte[]>> methods;
 
-    private SocketryServer socketryServer;
+    private SocketryClient socketryClient;
+    private Boolean isConnected = false;
 
     public RPC() {
         methods = new HashMap<>();
+    }
+
+    public Boolean isConnected() {
+        return isConnected;
     }
 
     @Override
@@ -23,25 +28,33 @@ public class RPC implements AbstractRPC {
         methods.put(methodName, method);
     }
 
-    @Override
     public Thread connect(int portNumber) throws IOException, InterruptedException, ExecutionException {
-        socketryServer = new SocketryServer(portNumber, methods);
-        Thread rpcThread = new Thread(socketryServer::listenLoop);
+
+        socketryClient = new SocketryClient(new byte[] {
+            1, // Chat
+            2, // Networking
+            5, // Screensharing
+            2, // Canvas
+            1, // Controller
+            1, // Misc
+        }, portNumber, methods);
+        Thread rpcThread = new Thread(socketryClient::listenLoop);
         rpcThread.start();
+        isConnected = true;
         return rpcThread;
     }
 
     @Override
     public CompletableFuture<byte[]> call(final String methodName, final byte[] data) {
-        if (socketryServer == null) {
+        if (socketryClient == null) {
             System.err.println("Server is null");
             return CompletableFuture.supplyAsync(() -> {
                 return new byte[0];
             });
         }
-        final byte methodId = socketryServer.getRemoteProcedureId(methodName);
+        final byte methodId = socketryClient.getRemoteProcedureId(methodName);
         try {
-            return socketryServer.makeRemoteCall(methodId, data, 0);
+            return socketryClient.makeRemoteCall(methodId, data, 0);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
