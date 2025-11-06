@@ -34,15 +34,15 @@ class Compressor implements ICompressor {
     /**
      * Time taken for ZigZag operations.
      */
-    private long zigZagTime = 0;
+    public long zigZagTime = 0;
     /**
      * Time taken for DCT operations.
      */
-    private long dctTime = 0;
+    public long dctTime = 0;
     /**
      * Time taken for quantization operations.
      */
-    private long quantTime = 0;
+    public long quantTime = 0;
 
 
     /**
@@ -54,7 +54,7 @@ class Compressor implements ICompressor {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
         quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = EncodeDecodeRLE.getInstance();
+        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
     }
 
     /**
@@ -73,17 +73,18 @@ class Compressor implements ICompressor {
 
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
+                long curr = System.nanoTime();
 //                dctmodule.fdct(matrix, i, j);
-//                dctTime += System.nanoTime() - curr;
-//                curr = System.nanoTime();
+                dctTime += System.nanoTime() - curr;
+                curr = System.nanoTime();
 //                quantmodule.quantisationChrome(matrix, i, j);
-//                quantTime += System.nanoTime() - curr;
+                quantTime += System.nanoTime() - curr;
             }
         }
 
-//        long curr = System.nanoTime();
+        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
-//        zigZagTime += System.nanoTime() - curr;
+        zigZagTime += System.nanoTime() - curr;
     }
 
     /**
@@ -102,16 +103,17 @@ class Compressor implements ICompressor {
 
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
+                long curr = System.nanoTime();
 //                dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
-//                curr = System.nanoTime();
+                curr = System.nanoTime();
 //                quantmodule.quantisationLumin(matrix, i, j);
 //                quantTime += System.nanoTime() - curr;
             }
         }
 
-//        long curr = System.nanoTime();
+        long curr = System.nanoTime();
         enDeRLE.zigZagRLE(matrix, resBuffer);
-//        zigZagTime += System.nanoTime() - curr;
+        zigZagTime += System.nanoTime() - curr;
     }
 }
