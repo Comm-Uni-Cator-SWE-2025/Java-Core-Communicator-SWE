@@ -2,12 +2,16 @@ package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import static com.swe.ScreenNVideo.Utils.getSelfIP;
 
 /**
  * Entry point for the screen and video integration test.
@@ -25,22 +29,26 @@ public class MainController {
 
 
     static void main(final String[] args) throws InterruptedException {
-        final AbstractNetworking networking = new DummyNetworkingWithQueue();
+        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
 
         List<String> allNetworks = new ArrayList<>();
-//        allNetworks.add("");
+        allNetworks.add("10.32.12.30");
 
         // Get IP address as string
-//        final String ipAddress = getSelfIP();
+        final String ipAddress = getSelfIP();
+        final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
+        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
 
         final AbstractRPC rpc = new DummyRPC();
 
         final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
+        networking.addUser(deviceNode, serverNode);
 //        System.out.println(allNetworks);
 
         screenNVideo.broadcastJoinMeeting(allNetworks);
         System.out.println("Connection RPC..");
+
 
         Thread handler = null;
         try {
