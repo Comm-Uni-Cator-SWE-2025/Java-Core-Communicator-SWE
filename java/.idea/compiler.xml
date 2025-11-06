@@ -18,8 +18,8 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="module-controller" target="24" />
-      <module name="module-ux" target="24" />
+      <module name="module-controller" target="16" />
+      <module name="module-ux" target="16" />
     </bytecodeTargetLevel>
   </component>
 </project>
