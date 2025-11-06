@@ -169,6 +169,13 @@ public class JpegCodec implements Codec {
      */
     public long quantTime = 0;
 
+    private boolean useANNDCT = false;
+
+    public void setUseANNDCT(boolean useANNDCT) {
+        this.useANNDCT = useANNDCT;
+        compressor.setUseANNDCT(useANNDCT);
+    }
+
     private final Compressor compressor = new Compressor();
     private final IDeCompressor decompressor = new DeCompressor();
     private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
@@ -184,7 +191,7 @@ public class JpegCodec implements Codec {
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        int maxLen = (int) ((1200*800 * 1.5 * 4 ) + (4 * 3) + 0.5);
+        int maxLen = (int) ((1200 * 800 * 1.5 * 4) + (4 * 3) + 0.5);
         resRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
@@ -204,12 +211,13 @@ public class JpegCodec implements Codec {
      *
      * @param topLeftX starting X coordinate
      * @param topLeftY starting Y coordinate
-     * @param height height of the region to encode
-     * @param width width of the region to encode
+     * @param height   height of the region to encode
+     * @param width    width of the region to encode
      * @return encoded byte array
      */
     @Override
-    public byte[] encode(final int[][] screenshot,final int topLeftX, final int topLeftY, final int height, final int width) {
+    public byte[] encode(final int[][] screenshot, final int topLeftX, final int topLeftY, final int height,
+                         final int width) {
 
         if (height % BLOCK_SIDE == 1 || width % BLOCK_SIDE == 1) {
             throw new RuntimeException("Invalid Matrix for encoding");
@@ -257,9 +265,9 @@ public class JpegCodec implements Codec {
                 final int crValue = (int) (crPixel / SUBSAMPLE_BLOCK_SIZE);
 
                 cbMatrix[posY / BLOCK_SIDE][posX / BLOCK_SIDE] =
-                        (short) (Math.min(COLOR_MAX, Math.max(0, cbValue)) - CHROMA_OFFSET);
+                    (short) (Math.min(COLOR_MAX, Math.max(0, cbValue)) - CHROMA_OFFSET);
                 crMatrix[posY / BLOCK_SIDE][posX / BLOCK_SIDE] =
-                        (short) (Math.min(COLOR_MAX, Math.max(0, crValue)) - CHROMA_OFFSET);
+                    (short) (Math.min(COLOR_MAX, Math.max(0, crValue)) - CHROMA_OFFSET);
 
             }
         }
@@ -310,9 +318,11 @@ public class JpegCodec implements Codec {
         final short[][] cbMatrix = enDeRLE.revZigZagRLE(buffer);
         final short[][] crMatrix = enDeRLE.revZigZagRLE(buffer);
 
-//        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
-//        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
-//        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+        if (useANNDCT) {
+            decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
+            decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
+            decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+        }
 
         return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }
