@@ -105,7 +105,7 @@ public class ImageStitcher {
      */
     private void resize(final int height, final int width, final boolean fill) {
         final int[][] newCanvas = new int[height][width];
-        System.out.println("Resizing to " + height + " " + width);
+        System.out.println("Resizing from" + currentHeight + " " + currentWidth +  " to " + height + " " + width);
 
         if (fill) {
             Utils.copyMatrix(this.canvas, newCanvas);

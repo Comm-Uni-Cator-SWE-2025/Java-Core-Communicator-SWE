@@ -51,7 +51,7 @@ public class VideoComponents {
     /**
      * Feed number.
      */
-    private int feedNumber = 0;
+    private int feedNumber = -1;
 
     /**
      * Current feed.
@@ -82,6 +82,9 @@ public class VideoComponents {
      * @return encoded Patches to be sent through the network
      */
     public byte[] captureFullImage() {
+        if (feed == null) {
+            return null;
+        }
 
         final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed);
 
@@ -220,7 +223,7 @@ public class VideoComponents {
 
         // Asynchronously send a serialized RImage to the UI so we don't block capture
         // (frame is deep-copied inside submitUIUpdate)
-        submitUIUpdate(feed);
+//        submitUIUpdate(feed);
 
         prev = System.nanoTime();
 //        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
