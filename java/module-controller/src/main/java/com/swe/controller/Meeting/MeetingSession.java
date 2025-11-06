@@ -30,7 +30,7 @@ public class MeetingSession {
     @JsonProperty("SessionMode")
     private final SessionMode sessionMode;
 
-    @JsonIgnore
+    @JsonProperty("participants")
     private final Map<String, UserProfile> participants = new ConcurrentHashMap<>();
 
     /**
@@ -50,7 +50,8 @@ public class MeetingSession {
             @JsonProperty("meetingId") String meetingId,
             @JsonProperty("createdBy") String createdBy,
             @JsonProperty("createdAt") long createdAt,
-            @JsonProperty("sessionMode") SessionMode sessionMode) {
+            @JsonProperty("sessionMode") SessionMode sessionMode,
+            @JsonProperty("participants") Map<String, UserProfile> participants){
         this.meetingId = meetingId;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
@@ -73,7 +74,8 @@ public class MeetingSession {
         return this.sessionMode;
     }
 
-    @JsonIgnore // Exclude this from JSON
+    public UserProfile getParticipant(String emailId) { return this.participants.get(emailId); }
+
     public Map<String, UserProfile> getParticipants() {
         return this.participants;
     }
@@ -83,8 +85,8 @@ public class MeetingSession {
      * @param p The participant to add.
      */
     public void addParticipant(UserProfile p) {
-        if (p != null && p.getUserId() != null) {
-            this.participants.put(p.getUserId(), p);
+        if (p != null && p.getEmail() != null) {
+            this.participants.put(p.getEmail(), p);
         }
     }
 }

@@ -9,4 +9,12 @@ public class dummyCloud {
     dummyCloud (AbstractRPC rpc) {
         this.rpc = rpc;
     }
+
+    public String getIpAddr(String meetId) {
+        return "127.0.0.1";
+    }
+
+    public int getPort(String meetId) {
+        return 8000;
+    }
 }

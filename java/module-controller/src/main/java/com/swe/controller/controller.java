@@ -4,19 +4,15 @@ import com.swe.controller.RPCinterface.AbstractRPC;
 
 public class controller {
     public static void main(String[] args) {
-        AbstractRPC rpc = new RPC();
+        final AbstractRPC rpc = new RPC();
 
         SimpleNetworking networking = new SimpleNetworking();
-
-        controllerServices services = new controllerServices(rpc, networking);
 
         dummyCloud cloud = new dummyCloud(rpc);
 
         canvasUI canUI = new canvasUI(rpc);
 
-        Thread controllerThread = new Thread(services::runController);
-
-        controllerThread.start();
+        controllerServices services = new controllerServices(rpc, networking, cloud);
 
         Thread handler = null;
         try {
@@ -25,10 +21,14 @@ public class controller {
             throw new RuntimeException(e);
         }
 
-        rpc.call("cloudMethod", new byte[] {5,6,7,8,9,1,3,5,6}).thenAccept(response -> {
-            System.out.println("Received response of length: " + response.length);
-        });
+        Thread controllerThread = new Thread(services::runController);
+        controllerThread.start();
 
-        handler.start();
+        try {
+            controllerThread.join();
+            handler.join();
+        } catch (Exception e) {
+
+        }
     }
 }
