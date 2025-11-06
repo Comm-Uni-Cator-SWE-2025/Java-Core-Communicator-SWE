@@ -21,7 +21,7 @@ public class VideoComponents {
     /**
      * Video codec object.
      */
-    private final Codec videoCodec;
+    private final JpegCodec videoCodec;
 
     /**
      * Patch generator object.
@@ -191,12 +191,24 @@ public class VideoComponents {
             return null;
         }
 
+        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+
+        long curr1 = System.nanoTime();
+        videoCodec.quantTime = 0;
+        videoCodec.dctTime = 0;
+        videoCodec.zigZagtime = 0;
+
         final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed);
 
         if (patches.isEmpty()) {
             prev = System.nanoTime();
             return null;
         }
+
+        System.out.println("COmpression TIme : " + (System.nanoTime() - curr1) / ((double) (Utils.MSEC_IN_NS)));
+        System.out.println("ZigTime : " + videoCodec.zigZagtime / ((double) (Utils.MSEC_IN_NS)));
+        System.out.println("DCT Time : " + videoCodec.dctTime / ((double) (Utils.MSEC_IN_NS)));
+        System.out.println("Quant Time : " + videoCodec.quantTime / ((double) (Utils.MSEC_IN_NS)));
 
         // increase the feed number and update the feed
         feed = newFeed;
@@ -226,7 +238,7 @@ public class VideoComponents {
 //        submitUIUpdate(feed);
 
         prev = System.nanoTime();
-//        System.out.print((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+        System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
 //        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }

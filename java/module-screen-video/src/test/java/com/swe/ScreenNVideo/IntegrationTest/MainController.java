@@ -1,16 +1,12 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.RPC.AbstractRPC;
-import com.swe.ScreenNVideo.CaptureManager;
 import com.swe.ScreenNVideo.MediaCaptureManager;
-import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -26,30 +22,25 @@ public class MainController {
      * Server port for ScreenNVideo.
      */
     static final int SERVERPORT = 40000;
-    /**
-     * Port where to ping to get self ip.
-     */
-    static final int PINGPORT = 10002;
 
-    private static String getSelfIP() {
-        // Get IP address as string
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.connect(InetAddress.getByName("8.8.8.8"), PINGPORT);
-            return socket.getLocalAddress().getHostAddress();
-        } catch (SocketException | UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     static void main(final String[] args) throws InterruptedException {
         final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
+        List<String> allNetworks = new ArrayList<>();
+//        allNetworks.add("");
+
         // Get IP address as string
-        final String ipAddress = getSelfIP();
+//        final String ipAddress = getSelfIP();
 
         final AbstractRPC rpc = new DummyRPC();
 
-        final CaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
+        final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
+
+//        System.out.println(allNetworks);
+
+        screenNVideo.broadcastJoinMeeting(allNetworks);
+        System.out.println("Connection RPC..");
 
         Thread handler = null;
         try {
