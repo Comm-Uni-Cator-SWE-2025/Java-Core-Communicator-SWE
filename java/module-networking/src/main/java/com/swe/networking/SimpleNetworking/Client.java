@@ -2,23 +2,19 @@
 
 package com.swe.networking.SimpleNetworking;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
+import com.swe.networking.ProtocolBase;
+import com.swe.networking.SplitPackets;
+import com.swe.networking.TCPCommunicator;
 
 /**
  * The main module of the client device.
@@ -40,7 +36,7 @@ public class Client implements IUser {
     /**
      * The variable used by server to accept connections from clients.
      */
-    private ServerSocket receiveSocket;
+    private ProtocolBase communicator;
     /**
      * The singleton class object for packet parser.
      */
@@ -78,12 +74,7 @@ public class Client implements IUser {
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
         chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
-        try {
-            receiveSocket = new ServerSocket(devicePort);
-            receiveSocket.setSoTimeout(0);
-        } catch (IOException e) {
-            System.err.println("Client1 Error: " + e.getMessage());
-        }
+        communicator = new TCPCommunicator(devicePort);
     }
 
     /**
@@ -98,21 +89,8 @@ public class Client implements IUser {
     public void send(final byte[] data, final ClientNode[] destIp,
             final ClientNode serverIp, final ModuleType module) {
         for (ClientNode client : destIp) {
-            final String ip = client.hostName();
-            final int port = client.port();
-            try {
-                sendSocket = new Socket();
-                sendSocket.connect(new InetSocketAddress(serverIp.hostName(),
-                        serverIp.port()), connectionTimeout);
-                final OutputStream output = sendSocket.getOutputStream();
-                final DataOutputStream dataOut = new DataOutputStream(output);
-                final InetAddress addr = InetAddress.getByName(ip);
-                dataOut.write(data);
-                System.out.println("Sent data succesfully...");
-                sendSocket.close();
-            } catch (IOException e) {
-                System.err.println("Client2 Error: " + e.getMessage());
-            }
+            communicator.sendData(data, client);
+            System.out.println("Sent data succesfully...");
         }
     }
 
@@ -121,14 +99,12 @@ public class Client implements IUser {
      */
     @Override
     public void receive() throws IOException {
-        try {
-            final Socket socket = receiveSocket.accept();
-            final InputStream input = socket.getInputStream();
-            final DataInputStream dataIn = new DataInputStream(input);
-            final byte[] packet = dataIn.readAllBytes();
-            parsePacket(packet);
-        } catch (SocketTimeoutException e) {
-            System.err.println("Client3 Error: " + e.getMessage());
+        final byte[] packet = communicator.receiveData();
+        if (packet != null) {
+            final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+            for (byte[] p : packets) {
+                parsePacket(p);
+            }
         }
     }
 
@@ -161,9 +137,6 @@ public class Client implements IUser {
      */
     @Override
     public void closeUser() {
-        try {
-            receiveSocket.close();
-        } catch (IOException e) {
-        }
+        communicator.close();
     }
 }
