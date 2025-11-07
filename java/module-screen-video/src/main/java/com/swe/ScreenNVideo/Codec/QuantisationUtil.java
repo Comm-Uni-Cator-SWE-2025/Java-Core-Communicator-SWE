@@ -70,7 +70,7 @@ public class QuantisationUtil {
     /**
      * Midpoint for quality factor logic switch.
      */
-    private static final int JPEG_QUALITY_MID = 90;
+    private static final int JPEG_QUALITY_MID = 50;
     /**
      * Scale factor for high-quality settings.
      */
@@ -136,7 +136,7 @@ public class QuantisationUtil {
         }
 
         // Initialize the scaled tables when created
-        setCompressonResolution(JPEG_QUALITY_MID);
+        setCompressonResolution(50);
     }
 
     /**
