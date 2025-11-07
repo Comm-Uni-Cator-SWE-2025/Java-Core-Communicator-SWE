@@ -28,7 +28,7 @@ public class CoalesceReceive {
             coalescedData.get(payload);
 
             // Call the module message listener based on the module type
-            Networking.getNetwork().callSubscriber(payload, moduleTypeInt);
+            Networking.getNetwork().callSubscriber(moduleTypeInt, payload);
         }
     }
 }
