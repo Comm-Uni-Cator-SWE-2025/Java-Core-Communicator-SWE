@@ -11,5 +11,9 @@ public enum NetworkPacketType {
     /**
      * Depicts a request to subscribe as a viewer.
      */
-    SUBSCRIBE_AS_VIEWER
+    SUBSCRIBE_AS_VIEWER,
+    /**
+     * Depicts a request to nullify the image at viewer side.
+     */
+    STOP_SHARE
 }

@@ -8,12 +8,15 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.security.spec.RSAOtherPrimeInfo;
+import java.util.List;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
 import com.swe.networking.ProtocolBase;
+import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
 /**
@@ -54,10 +57,14 @@ public class Server implements IUser {
      */
     private final int connectionTimeout = 5000;
 
-    /** The variable to store chunk Manager. */
+    /**
+     * The variable to store chunk Manager.
+     */
     private SimpleChunkManager chunkManager;
 
-    /** The variable to store chunk Manager payload size. */
+    /**
+     * The variable to store chunk Manager payload size.
+     */
     private final int payloadSize = 15 * 1024;
 
     /**
@@ -77,10 +84,10 @@ public class Server implements IUser {
     /**
      * Function to send the data to a list of destination.
      *
-     * @param data     the data to be sent
-     * @param destIp   the list fo destination to send the data
+     * @param data the data to be sent
+     * @param destIp the list fo destination to send the data
      * @param serverIp the Ip address of the main server
-     * @param module   the module to send th data to
+     * @param module the module to send th data to
      */
     @Override
     public void send(final byte[] data, final ClientNode[] destIp,
@@ -96,7 +103,7 @@ public class Server implements IUser {
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 final InetAddress addr = InetAddress.getByName(ip);
                 dataOut.write(data);
-                System.out.println("Sent data succesfully...");
+//                System.out.println("Sent data succesfully...");
                 sendSocket.close();
             } catch (IOException e) {
                 System.err.println("Server2 Error: " + e.getMessage());
@@ -112,17 +119,20 @@ public class Server implements IUser {
         while (true) {
             final byte[] packet = receiveSocket.receiveData();
             if (packet != null) {
-                parsePacket(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    parsePacket(p);
+                }
             }
         }
     }
 
     /**
-     * Function to send a packet directly instead of creating packet.
-     * Used in case of redirecting packets.
+     * Function to send a packet directly instead of creating packet. Used in
+     * case of redirecting packets.
      *
-     * @param packet   the packet to send
-     * @param destIp   the list of destination to send the packet
+     * @param packet the packet to send
+     * @param destIp the list of destination to send the packet
      * @param serverIp the main server IP address details
      */
     public void sendPkt(final byte[] packet, final ClientNode[] destIp,
@@ -166,15 +176,15 @@ public class Server implements IUser {
             System.out.println("Server Data length received : " + data.length());
             System.out.println("Server Module received : " + type);
             if (message != null) {
-                final PacketInfo newPktInfo = parser.parsePacket(message);
-                message = newPktInfo.getPayload();
+                final PacketInfo newpktInfo = parser.parsePacket(message);
+                message = newpktInfo.getPayload();
                 simpleNetworking.callSubscriber(message, type);
             }
         } else {
             final ClientNode dest = new ClientNode(address.getHostAddress(),
                     port);
             System.out.println("Redirecting data : " + dest.toString());
-            final ClientNode[] dests = {dest };
+            final ClientNode[] dests = {dest};
             sendPkt(packet, dests, dest);
         }
     }
