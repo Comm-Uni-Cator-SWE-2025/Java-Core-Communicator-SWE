@@ -129,9 +129,13 @@ public class SimpleNetworkingTest {
      * Function to test simpleNetworking server send.
      */
     @org.junit.jupiter.api.Test
-    public void simpleNetworkingServerSendTest() {
+    public void simpleNetworkingServerSendTest() throws IOException {
         try {
             final ClientNode cdevice = new ClientNode("127.0.0.1", 8101);
+            final byte[] message = new byte[5 * 1024 * 1024];
+            // final Path path = Paths.get("C:\\Users\\A\\Downloads\\nano5.pdf");
+            // final byte[] message;
+            // message = Files.readAllBytes(path);
             final Client client = new Client(cdevice);
             final Thread clientThread = new Thread(() -> {
                 try {
@@ -148,10 +152,16 @@ public class SimpleNetworkingTest {
             final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
             network.addUser(device, mainServer);
             final MessageListener func = (byte[] data) -> {
-                System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
+                // final Path newpath = Paths.get("C:\\Users\\A\\Downloads\\nano5.pdf");
+                // final byte[] newmessage;
+                // try {
+                // newmessage = Files.readAllBytes(path);
+                // System.out.println(Arrays.equals(data, newmessage));
+                // } catch (IOException ex) {
+                // }
+                System.out.println("Received data length : " + data.length / (1024 * 1024) + " MB");
             };
             network.subscribe(ModuleType.CHAT, func);
-            final byte[] message = new byte[40 * 1024];
             final String data = "Hello world to the new world";
             // System.out.println("Data length " + data.length());
             final ClientNode dest = new ClientNode("127.0.0.1", 8101);
