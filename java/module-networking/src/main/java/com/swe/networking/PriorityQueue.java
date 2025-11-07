@@ -56,6 +56,14 @@ public class PriorityQueue {
      * Last time queues were rotated.
      */
     private long lastRotation = System.currentTimeMillis();
+    /**
+     * Private variable to store the start time of the Priority Queue.
+     */
+    private long startTime;
+    /**
+     * Private Variable to store the number of packets sent.
+     */
+    private long numPacketsSent;
 
     /**
      * Creates a priority queue and initializes budgets and queues.
@@ -65,6 +73,8 @@ public class PriorityQueue {
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
+        startTime = System.currentTimeMillis();
+        numPacketsSent = 0;
         resetBudgets();
     }
 
@@ -171,10 +181,12 @@ public class PriorityQueue {
      *
      * @return The minimum throughput of the Priority Queue
      */
-    public int getThroughput() {
-        final int numMS = 1000;
-        final int numEpoch = numMS / EPOCH_MS;
-        return TOTAL_BUDGET * numEpoch;
+    public long getThroughput() {
+
+         long currTime = System.currentTimeMillis();
+         long timeTaken = currTime - startTime;
+
+        return (1000 * numPacketsSent) / timeTaken;
     }
 
     /**
@@ -354,6 +366,7 @@ public class PriorityQueue {
             // Gets the Packet from tryNextSend.
             packet = trySendNext();
             if (packet != null) {
+                numPacketsSent++;
                 return packet;
             }
 
