@@ -22,10 +22,6 @@ class Compressor implements ICompressor {
      * module which have Qunatisation table and implemented quantisation and dequantisation.
      */
     private final QuantisationUtil quantmodule;
-    /**
-     * this is the module which will be used for encoding and decoding.
-     */
-    private final IRLE enDeRLE;
 
     /**
      * Unit Matrix Dimension (8x8).
@@ -54,8 +50,7 @@ class Compressor implements ICompressor {
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
-//        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = EncodeDecodeRLE.getInstance();
+
     }
 
     /**
@@ -82,9 +77,6 @@ class Compressor implements ICompressor {
             }
         }
 
-        long curr = System.nanoTime();
-        enDeRLE.zigZagRLE(matrix, resBuffer);
-        zigZagTime += System.nanoTime() - curr;
     }
 
     /**
@@ -111,8 +103,5 @@ class Compressor implements ICompressor {
             }
         }
 
-        long curr = System.nanoTime();
-        enDeRLE.zigZagRLE(matrix, resBuffer);
-        zigZagTime += System.nanoTime() - curr;
     }
 }

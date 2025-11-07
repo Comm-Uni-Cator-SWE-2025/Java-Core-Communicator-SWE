@@ -171,7 +171,7 @@ public class JpegCodec implements Codec {
 
     private final Compressor compressor = new Compressor();
     private final IDeCompressor decompressor = new DeCompressor();
-    private final IRLE enDeRLE = EncodeDecodeRLE.getInstance();
+    private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
 
     /**
      * Buffer for RLE results.
@@ -265,15 +265,15 @@ public class JpegCodec implements Codec {
         // YMatrix;
         compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
 //        System.out.println("Compression Y : " + resRLEBuffer.position());
-
+        enDeRLE.zigZagRLE(yMatrix,resRLEBuffer);
         // CbMatrix;
         compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
 //        System.out.println("Compression Cb : " + resRLEBuffer.position());
-
+        enDeRLE.zigZagRLE(cbMatrix,resRLEBuffer);
         // CyMatrix
         compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
 //        System.out.println("Compression Cr : " + resRLEBuffer.position());
-
+        enDeRLE.zigZagRLE(crMatrix,resRLEBuffer);
 
         zigZagtime += compressor.zigZagTime;
         dctTime += compressor.dctTime;
