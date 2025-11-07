@@ -1,3 +1,5 @@
+//File owned by Loganath
+
 package com.swe.networking;
 
 import java.io.IOException;
@@ -140,7 +142,7 @@ public final class TCPCommunicator implements ProtocolBase {
                 destSocket.configureBlocking(true);
                 System.out.println("Waiting for " + clientConnectTimeout + " s to connect to the client...");
                 System.out.println("Client: " + dest + " ...");
-                destSocket.socket().connect(new InetSocketAddress(destIp, destPort), clientConnectTimeout);
+                destSocket.connect(new InetSocketAddress(destIp, destPort));
                 destSocket.configureBlocking(false);
                 destSocket.register(selector, SelectionKey.OP_READ);
                 System.out.println("New connection created successfully...");
