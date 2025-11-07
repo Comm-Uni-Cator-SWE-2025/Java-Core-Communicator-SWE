@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Comprehensive test suite for encodeDecodeRLE class.
+ * Comprehensive test suite for EncodeDecodeRLE class.
  * Tests ZigZag scanning and Run-Length Encoding (RLE)
  * compression and decompression for 8x8 short matrices.
  */
@@ -61,14 +61,14 @@ public class EncodeDecodeRLETest {
     /**
      * Encoder instance for testing.
      */
-    private encodeDecodeRLE encoder;
+    private EncodeDecodeRLE encoder;
 
     /**
      * Sets up test fixture before each test.
      */
     @BeforeEach
     public void setUp() {
-        encoder = encodeDecodeRLE.getInstance();
+        encoder = EncodeDecodeRLE.getInstance();
     }
 
     /**
@@ -84,8 +84,8 @@ public class EncodeDecodeRLETest {
      */
     @Test
     public void testGetInstanceSingleton() {
-        final encodeDecodeRLE instance1 = encodeDecodeRLE.getInstance();
-        final encodeDecodeRLE instance2 = encodeDecodeRLE.getInstance();
+        final EncodeDecodeRLE instance1 = EncodeDecodeRLE.getInstance();
+        final EncodeDecodeRLE instance2 = EncodeDecodeRLE.getInstance();
         assertSame(instance1, instance2);
     }
 

@@ -136,7 +136,7 @@ public class QuantisationUtil {
         }
 
         // Initialize the scaled tables when created
-        setCompressonResolution(JPEG_QUALITY_MID);
+        setCompressonResolution(90);
     }
 
     /**
