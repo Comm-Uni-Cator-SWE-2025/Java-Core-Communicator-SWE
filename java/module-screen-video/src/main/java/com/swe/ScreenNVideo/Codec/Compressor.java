@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.Codec;
 import java.nio.ByteBuffer;
 
 // Contributed by Anup Kumar
+
 /**
  * Implements the ICompressor interface to provide JPEG-like compression logic.
  * This class orchestrates the various steps:

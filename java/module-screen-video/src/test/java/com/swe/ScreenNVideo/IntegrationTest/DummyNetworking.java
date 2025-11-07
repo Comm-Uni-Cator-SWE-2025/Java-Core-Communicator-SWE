@@ -1,0 +1,196 @@
+package com.swe.ScreenNVideo.IntegrationTest;
+
+import com.swe.ScreenNVideo.Utils;
+import com.swe.networking.ClientNode;
+import com.swe.networking.ModuleType;
+import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.MessageListener;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.security.spec.RSAOtherPrimeInfo;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Simple dummy networking implementation using TCP sockets.
+ * Sends complete data over the network without chunking.
+ */
+public class DummyNetworking implements AbstractNetworking {
+
+    /** Simulated subscriptions. */
+    private final Map<String, MessageListener> subscriptions = new ConcurrentHashMap<>();
+
+    /** Port for listening to incoming connections. */
+    private final int listenPort;
+
+    /** Self IP address. */
+    private final String selfIP;
+
+    /** Server socket for receiving data. */
+    private ServerSocket serverSocket;
+
+    /** Flag indicating whether the receive loop should continue running. */
+    private volatile boolean running = true;
+
+    /**
+     * Constructor with specified port.
+     * @param port Port to listen on
+     */
+    public DummyNetworking(int port) {
+        this.listenPort = port;
+        try {
+            this.selfIP = InetAddress.getLocalHost().getHostAddress();
+            startReceiver();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize DummyNetworking", e);
+        }
+    }
+
+    /**
+     * Constructor with default port 9999.
+     */
+    public DummyNetworking() {
+        this(9999);
+    }
+
+    public String getSelfIP() {
+        return selfIP;
+    }
+
+    /**
+     * Start the receiver thread.
+     */
+    private void startReceiver() throws IOException {
+        serverSocket = new ServerSocket(listenPort);
+        Thread receiverThread = new Thread(this::receiveLoop, "DummyNetworkingReceiver");
+        receiverThread.start();
+    }
+
+    /**
+     * Send data to destination IP addresses.
+     * @param data Data to send
+     * @param dest Destination IP addresses
+     * @param port Destination ports
+     */
+    public void sendData(byte[] data, String[] dest, int[] port) {
+        if (data == null || dest == null || port == null) {
+            return;
+        }
+
+        for (int i = 0; i < dest.length && i < port.length; i++) {
+            try (Socket socket = new Socket(dest[i], port[i]);
+                 DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+                
+                // Send length first, then data
+                out.writeInt(data.length);
+                out.write(data);
+                out.flush();
+                
+            } catch (IOException e) {
+                System.err.println("Failed to send data to " + dest[i] + ":" + port[i] + " - " + e.getMessage());
+            }
+        }
+    }
+
+    public void sendData(byte[] data, ClientNode[] dest, ModuleType module) {
+        if (data == null || dest == null) {
+            return;
+        }
+        
+        String[] ips = new String[dest.length];
+        int[] ports = new int[dest.length];
+        
+        for (int i = 0; i < dest.length; i++) {
+            ips[i] = dest[i].hostName();
+            ports[i] = listenPort; // Use same port for all destinations
+        }
+        
+        sendData(data, ips, ports);
+    }
+
+    @Override
+    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
+        sendData(data, destIp, module);
+    }
+
+    @Override
+    public void subscribe(ModuleType name, MessageListener function) {
+        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
+    }
+
+    @Override
+    public void removeSubscription(ModuleType name) {
+        subscriptions.remove(Utils.MODULE_REMOTE_KEY);
+    }
+
+    /**
+     * Receiver loop: accepts incoming connections and reads complete data.
+     */
+    private void receiveLoop() {
+        while (running) {
+            try {
+                // Accept incoming connection
+                Socket clientSocket = serverSocket.accept();
+                
+                // Handle each connection in a separate thread
+                Thread handlerThread = new Thread(() -> handleConnection(clientSocket));
+                handlerThread.start();
+                
+            } catch (IOException e) {
+                if (running) {
+                    System.err.println("Error accepting connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle a single connection and read complete data.
+     */
+    private void handleConnection(Socket socket) {
+        try (DataInputStream in = new DataInputStream(socket.getInputStream())) {
+            
+            // Read length
+            int length = in.readInt();
+            
+            // Read complete data
+            byte[] data = new byte[length];
+            in.readFully(data);
+            
+            // Notify subscribers
+            MessageListener listener = subscriptions.get(Utils.MODULE_REMOTE_KEY);
+            if (listener != null) {
+                listener.receiveData(data);
+            }
+            
+        } catch (IOException e) {
+            System.err.println("Error reading data: " + e.getMessage());
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+    }
+
+    /**
+     * Shutdown the networking.
+     */
+    public void shutdown() {
+        running = false;
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Error closing server socket: " + e.getMessage());
+        }
+    }
+}
+
