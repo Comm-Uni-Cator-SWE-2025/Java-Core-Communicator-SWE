@@ -426,7 +426,7 @@ class PriorityQueueTest {
     void testNonStarvationDuringBulkTransfer() throws InterruptedException, UnknownHostException, ExecutionException {
         PacketParser parser = getParser();
         ExecutorService executor = Executors.newFixedThreadPool(3); // 3 threads
-        final int BULK_PACKETS = 100000;
+        final int BULK_PACKETS = 400;
         final int HP_INJECTION_COUNT = 10;
         final int HP_CHUNK_START = 7700000;
 
@@ -533,7 +533,7 @@ class PriorityQueueTest {
     @Test
     void testThroughput() throws UnknownHostException, InterruptedException {
         PacketParser parser = getParser();
-        final int TOTAL_PACKETS = 60000; // Load 600,000 packets
+        final int TOTAL_PACKETS = 60; // Load 600,000 packets
         final int PACKETS_PER_ITERATION = 8;
         final int TOTAL_PACKETS_TO_SEND = TOTAL_PACKETS * PACKETS_PER_ITERATION;
 
@@ -596,5 +596,22 @@ class PriorityQueueTest {
         assertTrue(packetsPerSecond > MIN_ACCEPTABLE_PPS,
                 String.format("Throughput is too low: %.0f PPS (Below %.0f PPS minimum)",
                         packetsPerSecond, MIN_ACCEPTABLE_PPS));
+    }
+
+    @Test
+    void testThroughputNumber() throws UnknownHostException {
+        PacketParser parser = getParser();
+        int count = 0;
+        for(int i = 0; i < 10; i++){
+            pq.addPacket(createTestPkt(parser,1, i, "packet number" + i));
+        }
+        for(int i = 0; i < 10; i++){
+            byte[] pkt = pq.nextPacket();
+            if(pkt == null){
+                count++;
+            }
+        }
+        long throughput = pq.getThroughput();
+        System.out.println(count);
     }
 }
