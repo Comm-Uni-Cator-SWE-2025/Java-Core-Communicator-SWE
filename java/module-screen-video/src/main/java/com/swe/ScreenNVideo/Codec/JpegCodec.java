@@ -171,7 +171,7 @@ public class JpegCodec implements Codec {
 
     private final Compressor compressor = new Compressor();
     private final IDeCompressor decompressor = new DeCompressor();
-    private final IRLE enDeRLE = EncodeDecodeRLE.getInstance();
+    private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
 
     /**
      * Buffer for RLE results.
@@ -303,9 +303,9 @@ public class JpegCodec implements Codec {
         final short[][] cbMatrix = enDeRLE.revZigZagRLE(buffer);
         final short[][] crMatrix = enDeRLE.revZigZagRLE(buffer);
 
-        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
-        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
-        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+//        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
+//        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
+//        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
 
         return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }
