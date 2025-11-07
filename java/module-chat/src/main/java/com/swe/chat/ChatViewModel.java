@@ -102,7 +102,7 @@ public class ChatViewModel {
         // Now, use your *existing* logic to show the message
         handleIncomingMessage(message); // This updates the UI
 
-        return null; // No reply needed
+        return new byte[0]; // No reply needed
     }
 
     public void sendMessage(String messageText) {

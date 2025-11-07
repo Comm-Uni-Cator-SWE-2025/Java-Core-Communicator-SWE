@@ -49,10 +49,10 @@ public class ChatManager implements IChatService {
         // messageBytes is a serialized ChatMessage from the frontend
 
         // TODO: Get the list of destination IPs from the Controller/Meeting
-        ClientNode[] dests = { new ClientNode("127.0.0.1", 5678) }; // Placeholder
+        ClientNode[] dests = { new ClientNode("10.128.10.190", 1234) }; // Placeholder
 
         // Send to the network (this part is the same as your old sendMessage)
-//        this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
+        this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
         System.out.println("Received from front");
 
 //        return byte[0]; // 'null' means "I received it, no reply needed"
@@ -84,7 +84,7 @@ public class ChatManager implements IChatService {
         // New: We must provide a destination and ModuleType.
         // TODO: You need a real way to get destinations.
         // For now, I am using the hard-coded destination from their example.
-        ClientNode[] dests = { new ClientNode("127.0.0.1", 5678) };
+        ClientNode[] dests = { new ClientNode("10.32.14.76", 1234) };
 
         network.sendData(data, dests, ModuleType.CHAT, 0);
     }
