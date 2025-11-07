@@ -155,7 +155,7 @@ public class CoalesceReceiveTest {
         assertArrayEquals(data1, listener1.getReceivedData().get(0));
 
         assertEquals(1, listener2.getReceivedData().size());
-        assertArrayEquals(data2, listener2.getReceivedData().get(1));
+        assertArrayEquals(data2, listener2.getReceivedData().get(0));
 
         networking.removeSubscription(moduleId1);
         networking.removeSubscription(moduleId2);
