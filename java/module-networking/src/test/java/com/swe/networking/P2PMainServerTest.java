@@ -15,7 +15,7 @@ public class P2PMainServerTest {
         Topology topology = Topology.getTopology();
         topology.addUser(mainServerNode, mainServerNode);
         try {
-            Thread.sleep(50000);
+            Thread.sleep(500000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
