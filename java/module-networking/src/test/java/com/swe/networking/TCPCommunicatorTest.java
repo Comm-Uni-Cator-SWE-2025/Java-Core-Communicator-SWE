@@ -30,7 +30,7 @@ public class TCPCommunicatorTest {
             final String data = "Welcome to the new world!!!";
             final ClientNode dest = new ClientNode("10.128.12.13", port1);
             // TODO: Write test cases to cause connection errors
-            final ClientNode dest1 = new ClientNode("127.0.0.1", port2);
+            // final ClientNode dest1 = new ClientNode("127.0.0.1", port2);
             tcp.sendData(data.getBytes(), dest);
             // tcp.sendData(data.getBytes(), dest1);
             // tcp.sendData(data.getBytes(), dest);
@@ -66,23 +66,33 @@ public class TCPCommunicatorTest {
     @org.junit.jupiter.api.Test
     public void testReceive() {
         try {
-            final ProtocolBase tcp = new TCPCommunicator(9000);
-            final Thread receiveThread = new Thread(() -> {
-                byte[] data = new byte[100];
+            final ProtocolBase tcp = new TCPCommunicator(8001);
+            // final Thread receiveThread = new Thread(() -> {
+            //     byte[] data = new byte[100];
+            //     data = tcp.receiveData();
+            //     if (data != null)
+            //         System.out.println("Received : " + new String(data));
+            //     data = tcp.receiveData();
+            //     if (data != null)
+            //         System.out.println("Received : " + new String(data));
+            //     data = tcp.receiveData();
+            //     if (data != null)
+            //         System.out.println("Received : " + new String(data));
+            // });
+            // receiveThread.start();
+            // send();
+            // receiveThread.join();
+            byte[] data = new byte[1000];
+            while (true) {
                 data = tcp.receiveData();
-                if (data != null)
-                    System.out.println("Received : " + new String(data));
-                data = tcp.receiveData();
-                if (data != null)
-                    System.out.println("Received : " + new String(data));
-                data = tcp.receiveData();
-                if (data != null)
-                    System.out.println("Received : " + new String(data));
-            });
-            receiveThread.start();
-            send();
-            receiveThread.join();
-        } catch (InterruptedException ex) {
+                if (data != null) {
+                    System.out.println("Data receievd: " + data);
+                } else {
+                    System.out.println("FInised loop...");
+                    break;
+                }
+            }
+        } catch (Exception ex) {
             System.out.println("Receive thread is interrupted...");
         }
     }
