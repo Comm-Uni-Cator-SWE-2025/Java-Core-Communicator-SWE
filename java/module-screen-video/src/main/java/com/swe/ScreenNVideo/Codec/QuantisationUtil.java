@@ -130,30 +130,13 @@ public class QuantisationUtil {
      */
     private QuantisationUtil() {
         aanScaleFactor = new double[MATRIX_DIM];
-
-        final double[] cVals = new double[MATRIX_DIM];
-        for (int i = 0; i < MATRIX_DIM; ++i) {
-            cVals[i] = Math.cos(Math.PI * i / COS_BASE);
-            aanScaleFactor[i] = ONE / (cVals[i] * FOUR);
-        }
-
         aanScaleFactor[0] = ONE / (TWO * Math.sqrt(TWO));
-        // Initialize the scaled tables when created
-        setCompressonResulation(JPEG_QUALITY_MID);
-//        resetQuantTables();
-    }
-
-    /**
-     * This will be set the quant tables to default.
-     */
-    private void resetQuantTables() {
-        for (int i = 0; i < MATRIX_DIM; i++) {
-            for (int j = 0; j < MATRIX_DIM; j++) {
-                scaledQuantChrome[i][j] = BASECHROME[i][j];
-                scaledQuantLumin[i][j] = BASELUMIN[i][j];
-            }
+        for (int i = 1; i < MATRIX_DIM; ++i) {
+            aanScaleFactor[i] = ONE / ((Math.cos(Math.PI * i / COS_BASE)) * FOUR);
         }
-//        scaleQuantTable(aanScaleFactor);
+
+        // Initialize the scaled tables when created
+        setCompressonResolution(JPEG_QUALITY_MID);
     }
 
     /**
@@ -171,9 +154,7 @@ public class QuantisationUtil {
      *
      * @param q : A quality factor from 1 to 99.
      */
-    public void setCompressonResulation(final int q) {
-
-        resetQuantTables();
+    public void setCompressonResolution(final int q) {
 
         int scaleFactor = JPEG_QUALITY_SCALE_HIGH - JPEG_QUALITY_SCALE_HIGH_FACTOR * q;
 
@@ -189,43 +170,19 @@ public class QuantisationUtil {
                 int scaledLVal = (BASELUMIN[i][j] * scaleFactor + JPEG_ROUNDING_OFFSET) / JPEG_SCALE_DIVISOR;
 
                 // Clamp values to the valid JPEG range [1, 255]
-                if (scaledCVal < JPEG_CLAMP_MIN) {
-                    scaledCVal = JPEG_CLAMP_MIN;
-                } else if (scaledCVal > JPEG_CLAMP_MAX) {
-                    scaledCVal = JPEG_CLAMP_MAX;
-                }
 
-                if (scaledLVal < JPEG_CLAMP_MIN) {
-                    scaledLVal = JPEG_CLAMP_MIN;
-                } else if (scaledLVal > JPEG_CLAMP_MAX) {
-                    scaledLVal = JPEG_CLAMP_MAX;
-                }
+                scaledCVal = Math.max(JPEG_CLAMP_MIN, Math.min(JPEG_CLAMP_MAX, scaledCVal));
+                scaledLVal = Math.max(JPEG_CLAMP_MIN, Math.min(JPEG_CLAMP_MAX, scaledLVal));
 
-                BASECHROME[i][j] = scaledCVal;
-                BASELUMIN[i][j] = scaledLVal;
+                final double scale = aanScaleFactor[i] * aanScaleFactor[j];
+
+                scaledQuantChrome[i][j] = (float) (scaledCVal / scale);
+                scaledQuantLumin[i][j] = (float) (scaledLVal / scale);
             }
         }
-    }
 
-    /**
-     * Scales the quantization tables by a given set of 1D scaling factors.
-     * This is used to "absorb" the scaling factors from a fast DCT (like AAN)
-     * into the quantization table, as you mentioned.
-     *
-     * <p>This method MODIFIES the class's quantChrome and quantLumin tables in-place.
-     *
-     * @param scalingFactors An 8-element array of 1D scaling factors from the DCT.
-     */
-    public void scaleQuantTable(final double[] scalingFactors) {
-        for (int i = 0; i < MATRIX_DIM; ++i) {
-            for (int j = 0; j < MATRIX_DIM; ++j) {
-                final double scale = scalingFactors[i] * scalingFactors[j];
-                scaledQuantChrome[i][j] = (float) (BASECHROME[i][j] / scale);
-                scaledQuantLumin[i][j] = (float) (BASELUMIN[i][j] / scale);
-            }
-        }
-    }
 
+    }
     /**
      * Applies quantization to a Chrominance block of DCT coefficients.
      *

@@ -26,10 +26,4 @@ public interface Codec {
      */
     int[][] decode(final byte[] encodedImage);
 
-    /**
-     * Sets the compression factor.
-     *
-     * @param qfactor quality factor
-     */
-    void setCompressionFactor(final short qfactor);
 }

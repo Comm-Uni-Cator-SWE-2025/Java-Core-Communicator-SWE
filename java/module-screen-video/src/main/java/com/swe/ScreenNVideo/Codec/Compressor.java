@@ -53,8 +53,8 @@ class Compressor implements ICompressor {
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
-        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+//        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
+        enDeRLE = EncodeDecodeRLE.getInstance();
     }
 
     /**
@@ -73,12 +73,11 @@ class Compressor implements ICompressor {
 
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
-                long curr = System.nanoTime();
-//                dctmodule.fdct(matrix, i, j);
-                dctTime += System.nanoTime() - curr;
-                curr = System.nanoTime();
-//                quantmodule.quantisationChrome(matrix, i, j);
-                quantTime += System.nanoTime() - curr;
+                dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
+                quantmodule.quantisationChrome(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
@@ -103,11 +102,10 @@ class Compressor implements ICompressor {
 
         for (short i = 0; i < height; i += MATRIX_DIM) {
             for (short j = 0; j < width; j += MATRIX_DIM) {
-                long curr = System.nanoTime();
-//                dctmodule.fdct(matrix, i, j);
+                dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
-                curr = System.nanoTime();
-//                quantmodule.quantisationLumin(matrix, i, j);
+//                curr = System.nanoTime();
+                quantmodule.quantisationLumin(matrix, i, j);
 //                quantTime += System.nanoTime() - curr;
             }
         }
