@@ -179,14 +179,14 @@ public class Networking implements AbstractNetworking, AbstractController {
     }
 
     /**
-     * The Function to call the function mentioned in the subscribers list.
+     * Function to call the subscirbed modules.
      *
-     * @param data          the data that is received
-     * @param moduleInt     the module to be called
+     * @param module the module to call
+     * @param data the data to sent
      */
-    public void callSubscriber(final byte[] data, final int moduleInt) {
-        final MessageListener listener = listeners.get(moduleInt);
-        listener.receiveData(data);
+    public void callSubscriber(final int module, final byte[] data) {
+        final MessageListener function = listeners.get(module);
+        function.receiveData(data);
     }
 
 }

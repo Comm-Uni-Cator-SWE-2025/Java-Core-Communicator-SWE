@@ -24,21 +24,21 @@ public enum ModuleType {
     CHAT;
 
     /** NETWORKING module ordinal. */
-    private static final int NETWORKING_TYPE = 3;
+    private static final int NETWORKING_TYPE = 0;
     /** SCREENSHARING module ordinal. */
-    private static final int SCREENSHARING_TYPE = 3;
+    private static final int SCREENSHARING_TYPE = 1;
     /** CANVAS module ordinal. */
-    private static final int CANVAS_TYPE = 3;
+    private static final int CANVAS_TYPE = 2;
     /** UIUX module ordinal. */
     private static final int UIUX_TYPE = 3;
     /** CONTROLLER module ordinal. */
-    private static final int CONTROLLER_TYPE = 3;
+    private static final int CONTROLLER_TYPE = 4;
     /** AI module ordinal. */
-    private static final int AI_TYPE = 3;
+    private static final int AI_TYPE = 5;
     /** CLOUD module ordinal. */
-    private static final int CLOUD_TYPE = 3;
+    private static final int CLOUD_TYPE = 6;
     /** CHAT module ordinal. */
-    private static final int CHAT_TYPE = 3;
+    private static final int CHAT_TYPE = 7;
 
     /**
      * static map to store mapping from integer to module type.
