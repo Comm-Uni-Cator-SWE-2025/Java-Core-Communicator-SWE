@@ -200,7 +200,7 @@ public class VideoComponents {
         System.out.println("\nServer FPS : "
             + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
-        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
         long curr1 = System.nanoTime();
         videoCodec.quantTime = 0;
@@ -214,10 +214,10 @@ public class VideoComponents {
             return null;
         }
 
-        System.out.println("COmpression TIme : " + (System.nanoTime() - curr1) / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("ZigTime : " + videoCodec.zigZagtime / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("DCT Time : " + videoCodec.dctTime / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("Quant Time : " + videoCodec.quantTime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("COmpression TIme : " + (System.nanoTime() - curr1) / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("ZigTime : " + videoCodec.zigZagtime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("DCT Time : " + videoCodec.dctTime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("Quant Time : " + videoCodec.quantTime / ((double) (Utils.MSEC_IN_NS)));
 
         // increase the feed number and update the feed
         feed = newFeed;
@@ -244,10 +244,10 @@ public class VideoComponents {
 
         // Asynchronously send a serialized RImage to the UI so we don't block capture
         // (frame is deep-copied inside submitUIUpdate)
-        submitUIUpdate(feed);
+//        submitUIUpdate(feed);
 
         prev = System.nanoTime();
-        System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+//        System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
 //        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }
