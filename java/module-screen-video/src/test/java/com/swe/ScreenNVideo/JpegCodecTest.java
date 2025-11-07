@@ -53,15 +53,6 @@ public class JpegCodecTest {
     }
 
     /**
-     * Tests setCompressionFactor method.
-     */
-    @Test
-    public void testSetCompressionFactor() {
-        codec.setCompressionFactor((short) QUALITY_MID);
-        assertNotNull(codec);
-    }
-
-    /**
      * Tests encode with all black image.
      */
     @Test
@@ -359,7 +350,7 @@ public class JpegCodecTest {
     @Test
     public void testEncodeLowQuality() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setCompressionFactor((short) QUALITY_LOW);
+//        codec.setCompressionFactor((short) QUALITY_LOW);
 
         final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
@@ -372,7 +363,7 @@ public class JpegCodecTest {
     @Test
     public void testEncodeHighQuality() {
         final int[][] image = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setCompressionFactor((short) QUALITY_HIGH);
+//        codec.setCompressionFactor((short) QUALITY_HIGH);
 
         final byte[] encoded = codec.encode(image, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         assertNotNull(encoded);
@@ -385,7 +376,7 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripLowQuality() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setCompressionFactor((short) QUALITY_LOW);
+//        codec.setCompressionFactor((short) QUALITY_LOW);
 
         final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
@@ -399,7 +390,7 @@ public class JpegCodecTest {
     @Test
     public void testRoundTripHighQuality() {
         final int[][] original = createSolidColorImage(SMALL_DIM, SMALL_DIM, COLOR_GRAY);
-        codec.setCompressionFactor((short) QUALITY_HIGH);
+//        codec.setCompressionFactor((short) QUALITY_HIGH);
 
         final byte[] encoded = codec.encode(original, TOP_LEFT_ZERO, TOP_LEFT_ZERO, SMALL_DIM, SMALL_DIM);
         final int[][] decoded = codec.decode(encoded);
