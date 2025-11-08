@@ -37,9 +37,13 @@ public class Utils {
      */
     public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
     /**
-     * Key constant for unsubscribe_as_viewer.
+     * Key constant for Updating UI.
      */
     public static final String UPDATE_UI = "updateUI";
+    /**
+     * Key constant for StopShare.
+     */
+    public static final String STOP_SHARE = "stopShare";
     /**
      * Key constant for unsubscribe_as_viewer.
      */

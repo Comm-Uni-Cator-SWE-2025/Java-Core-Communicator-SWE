@@ -7,13 +7,13 @@ import org.junit.Test;
 public class P2PMainServerTestDummy {
 
     private int mainServerPort = 8000;
-    private String loopBackAddress = "10.32.0.41";
+    private String loopBackAddress = "10.128.10.1";
     private String loganAddr = "10.32.0.41";
 
     @Test
     public void testMainServerInitialization() throws UnknownHostException {
         ClientNode mainServerNode = new ClientNode(loopBackAddress, mainServerPort);
-        ClientNode p2pserverNode = new ClientNode(loopBackAddress, mainServerPort + 3);
+        ClientNode p2pserverNode = new ClientNode("10.128.12.13", mainServerPort + 3);
         Topology topology = Topology.getTopology();
         topology.addUser(p2pserverNode, mainServerNode);
         try {
