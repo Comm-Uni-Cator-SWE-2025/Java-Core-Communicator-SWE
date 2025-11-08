@@ -7,6 +7,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
@@ -18,6 +20,11 @@ import com.swe.networking.PacketInfo;
  */
 public final class SimpleNetworking
         implements AbstractController, AbstractNetworking {
+
+    /**
+     * Variable to store the logger object.
+     */
+    private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     /**
      * The singeton variable to store the class object.
      */
@@ -43,14 +50,19 @@ public final class SimpleNetworking
      */
     private boolean exit = false;
 
-    /** The variable to store chunk Manager. */
-    private SimpleChunkManager chunkManager;
+    /**
+     * The variable to store chunk Manager.
+     */
+    private final SimpleChunkManager chunkManager;
 
-    /** The variable to store chunk Manager payload size. */
+    /**
+     * The variable to store chunk Manager payload size.
+     */
     private final int payloadSize = 15 * 1024;
 
     private SimpleNetworking() {
         chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
+        LOGGER.log(Level.INFO, "Simple Networking initialized...");
     }
 
     /**
@@ -70,19 +82,19 @@ public final class SimpleNetworking
      */
     public static SimpleNetworking getSimpleNetwork() {
         if (simpleNetwork == null) {
-            System.out.println("Instantiated SimpleNetworking module...");
+            System.out.println("[NETWORKING][SIMPLENETWORKING]Instantiated SimpleNetworking module...");
             simpleNetwork = new SimpleNetworking();
             return simpleNetwork;
         }
-        System.out.println("Already instantiated SimpleNetworking module...");
+        System.out.println("[NETWORKING][SIMPLENETWORKING]Already instantiated SimpleNetworking module...");
         return simpleNetwork;
     }
 
     /**
-     * Function to add Ip address details about the current user.
-     * Must be called only once
+     * Function to add Ip address details about the current user. Must be called
+     * only once
      *
-     * @param deviceAddress     the IP address of the device
+     * @param deviceAddress the IP address of the device
      * @param mainServerAddress the IP address of the mainServer
      */
     @Override
@@ -91,10 +103,10 @@ public final class SimpleNetworking
         serverAddr = mainServerAddress;
         if (deviceAddress.equals(mainServerAddress)) {
             user = new Server(deviceAddress);
-            System.out.println("Server has been instantiated...");
+            System.out.println("[NETWORKING][SIMPLENETWORKING]Server has been instantiated...");
         } else {
             user = new Client(deviceAddress);
-            System.out.println("Client has been instantiated...");
+            System.out.println("[NETWORKING][SIMPLENETWORKING]Client has been instantiated...");
         }
         receiveThread = new Thread(() -> receiveData());
         receiveThread.start();
@@ -103,10 +115,10 @@ public final class SimpleNetworking
     /**
      * Function to chunk the given data by the chunk manager.
      *
-     * @param data      the data to be sent
-     * @param dest      the dest to send the packet
-     * @param module    the module to be sent to
-     * @param priority  the priority of the packet
+     * @param data the data to be sent
+     * @param dest the dest to send the packet
+     * @param module the module to be sent to
+     * @param priority the priority of the packet
      * @param broadcast the data should broadcasted or not
      * @return the chunks of the data
      */
@@ -134,9 +146,9 @@ public final class SimpleNetworking
     /**
      * Function to send the given data to a list of destinations.
      *
-     * @param data     the data to be sent
-     * @param destIp   the list of destination to whom the data is sent
-     * @param module   the destination module id
+     * @param data the data to be sent
+     * @param destIp the list of destination to whom the data is sent
+     * @param module the destination module id
      * @param priority the priority of the send message
      */
     @Override
@@ -144,7 +156,7 @@ public final class SimpleNetworking
             final ModuleType module, final int priority) {
         final Vector<byte[]> chunks = getChunks(data, destIp, module.ordinal(), priority, 0);
         for (byte[] payload : chunks) {
-            System.out.println("Chunks size " + payload.length);
+            System.out.println("[NETWORKING][SIMPLENETWORKING]Chunks size " + payload.length);
             user.send(payload, destIp, serverAddr, module);
         }
     }
@@ -157,10 +169,10 @@ public final class SimpleNetworking
             try {
                 user.receive();
             } catch (IOException e) {
-                System.err.println("Error on receiving data...");
+                System.err.println("[NETWORKING][SIMPLENETWORKING]Error on receiving data...");
             }
         }
-        System.out.println("Thread exited...");
+        System.out.println("[NETWORKING][SIMPLENETWORKING]Thread exited...");
     }
 
     /**
@@ -173,7 +185,7 @@ public final class SimpleNetworking
     public void subscribe(final ModuleType name, final MessageListener func) {
         if (!listeners.containsKey(name)) {
             listeners.put(name, func);
-            System.out.println("Added a new subscriber...");
+            System.out.println("[NETWORKING][SIMPLENETWORKING]Added a new subscriber...");
             return;
         }
         System.out.println("The name already exist...");
@@ -196,7 +208,7 @@ public final class SimpleNetworking
     /**
      * The Function to call the function mentioned in the subscribers list.
      *
-     * @param data   the data that is received
+     * @param data the data that is received
      * @param module the module to be called
      */
     public void callSubscriber(final byte[] data, final ModuleType module) {
