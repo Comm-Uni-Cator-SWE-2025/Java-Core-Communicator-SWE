@@ -60,6 +60,7 @@ public class SplitPackets {
 
         if (incompleteBuffer.position() > 0) {
             incompleteBuffer.flip();
+            System.out.println("Remaining data from previous read");
             final byte[] oldData = new byte[incompleteBuffer.remaining()];
             incompleteBuffer.get(oldData);
 
