@@ -33,6 +33,14 @@ public class Utils {
      */
     public static final String STOP_SCREEN_CAPTURE = "stopScreenCapture";
     /**
+     * Key constant for start_audio_capture.
+     */
+    public static final String START_AUDIO_CAPTURE = "startAudioCapture";
+    /**
+     * Key constant for stop_audio_capture.
+     */
+    public static final String STOP_AUDIO_CAPTURE = "stopAudioCapture";
+    /**
      * Key constant for subscribe_as_viewer.
      */
     public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
@@ -52,6 +60,11 @@ public class Utils {
      * Key constant for unsubscribe_as_viewer.
      */
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
+
+    public static final float DEFAULT_SAMPLE_RATE = 44100f;
+    public static final int DEFAULT_CHANNELS = 2;
+    public static final int DEFAULT_SAMPLE_SIZE = 16;
+
     /**
      * Scale factor for X axis.
      */

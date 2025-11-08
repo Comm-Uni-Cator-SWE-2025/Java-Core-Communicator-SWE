@@ -3,7 +3,10 @@ package com.swe.ScreenNVideo;
 
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
+import com.swe.ScreenNVideo.Codec.ADPCMDecoder;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
+import com.swe.ScreenNVideo.Playback.AudioPlayer;
+import com.swe.ScreenNVideo.Serializer.APackets;
 import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
@@ -15,6 +18,7 @@ import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,6 +70,16 @@ public class MediaCaptureManager implements CaptureManager {
     private final ClientHandler clientHandler;
 
     /**
+     * Audio Player object.
+     */
+    private final AudioPlayer audioPlayer;
+
+    /**
+     * Audio Decoder object.
+     */
+    private final ADPCMDecoder audioDecoder;
+
+    /**
      * Constructor for the MediaCaptureManager.
      *
      * @param argNetworking Networking object
@@ -78,8 +92,18 @@ public class MediaCaptureManager implements CaptureManager {
         this.networking = argNetworking;
         final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port);
         videoComponent = new VideoComponents(Utils.FPS, rpc, captureComponents);
+        audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
+        audioDecoder = new ADPCMDecoder();
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
+
+        captureComponents.startAudioLoop();
         backgroundCaptureManager.start();
+        try {
+            audioPlayer.init();
+        } catch (LineUnavailableException e) {
+            System.err.println("Unable to connect to Line");
+        }
+
 
         imageSynchronizers = new HashMap<>();
         viewers = new HashSet<>();
@@ -144,10 +168,16 @@ public class MediaCaptureManager implements CaptureManager {
                     sendDataToViewers(subscribeData);
                     feed = newFeed;
                 }
+            } else {
+                feed = newFeed;
+                sendDataToViewers(encodedPatches);
+            }
+            // get audio Feed
+            final byte[] encodedAudio = videoComponent.captureAudio();
+            if (encodedAudio == null) {
                 continue;
             }
-            feed = newFeed;
-            sendDataToViewers(encodedPatches);
+            sendDataToViewers(encodedAudio);
         }
     }
 
@@ -185,7 +215,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (data.length == 0) {
                 return;
             }
-            System.out.println("first 40 bytes:" +(Arrays.toString(Arrays.copyOf(data, 20))));
+            System.out.println("first 40 bytes:" + (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
@@ -284,6 +314,11 @@ public class MediaCaptureManager implements CaptureManager {
                 case STOP_SHARE -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
                     rpc.call(Utils.STOP_SHARE, viewerIP.getBytes());
+                }
+                case APACKETS -> {
+                    final APackets audioPackets = APackets.deserialize(data);
+                    final byte[] audioBytes = audioDecoder.decode(audioPackets.data());
+                    audioPlayer.play(audioBytes);
                 }
                 default -> {
                 }

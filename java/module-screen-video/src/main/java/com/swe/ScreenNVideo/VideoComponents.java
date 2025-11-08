@@ -1,6 +1,8 @@
 package com.swe.ScreenNVideo;
 
 import com.swe.RPC.AbstractRPC;
+import com.swe.ScreenNVideo.Codec.ADPCMDecoder;
+import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.Codec.JpegCodec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
@@ -22,6 +24,11 @@ public class VideoComponents {
      * Video codec object.
      */
     private final JpegCodec videoCodec;
+
+    /**
+     * Audio Encoder.
+     */
+    private final ADPCMEncoder audioEncoder;
 
     /**
      * Patch generator object.
@@ -72,6 +79,7 @@ public class VideoComponents {
         this.captureComponents = captureComponentsArgs;
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         videoCodec = new JpegCodec();
+        audioEncoder = new ADPCMEncoder();
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         // initialize bounded queue and start worker thread that reads from the queue and updates the UI
         this.uiQueue = new ArrayBlockingQueue<>(UI_QUEUE_CAPACITY);
@@ -173,6 +181,17 @@ public class VideoComponents {
             // drop the frame
             System.err.println("UI queue full — dropping frame");
         }
+    }
+
+    /**
+     * Captures the Audio, encode it and return back the bytes.
+     */
+    protected byte[] captureAudio() {
+        final byte[] audioFeed = captureComponents.getAudioFeed();
+        if (audioFeed == null) {
+            return null;
+        }
+        return audioEncoder.encode(audioFeed);
     }
 
     /**
