@@ -6,10 +6,7 @@ import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.ScreenNVideo.MediaCaptureManager;
-import com.swe.core.ControllerServices;
-import com.swe.core.NetworkingInterface;
 import com.swe.core.RPC;
-import com.swe.core.SimpleNetworkingAdapter;
 import com.swe.core.Auth.AuthService;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
@@ -20,8 +17,13 @@ import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 public class Init {
     public static void main(String[] args) throws Exception {
-        String port = args[0];
-        int portNumber = Integer.parseInt(port);
+        int portNumber = 6942;
+
+        if (args.length > 0) { 
+            String port = args[0];
+            portNumber = Integer.parseInt(port);
+        }
+
         RPC rpc = new RPC();
         
         ControllerServices controllerServices = ControllerServices.getInstance();
@@ -57,12 +59,15 @@ public class Init {
         ControllerServices controllerServices = ControllerServices.getInstance();
 
         rpc.subscribe("core/register", (byte[] userData) -> {
+            System.out.println("Registering user");
             UserProfile RegisteredUser = null;
             try {
                 RegisteredUser = AuthService.register();
                 System.out.println("Registered user with emailId: " + RegisteredUser.getEmail());
             } catch (GeneralSecurityException | IOException e) {
-                throw new RuntimeException(e);
+                // throw new RuntimeException(e);
+                System.out.println("Error registering user: " + e.getMessage());
+                return new byte[0];
             }
 
             controllerServices.self = RegisteredUser;

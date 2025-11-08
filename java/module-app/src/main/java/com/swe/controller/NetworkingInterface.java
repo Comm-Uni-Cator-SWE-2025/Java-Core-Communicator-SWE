@@ -1,4 +1,4 @@
-package com.swe.core;
+package com.swe.controller;
 
 import com.swe.networking.SimpleNetworking.AbstractController;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;

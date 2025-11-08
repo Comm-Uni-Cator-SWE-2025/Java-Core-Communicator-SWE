@@ -1,6 +1,6 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
-import com.swe.RPC.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
@@ -52,7 +52,7 @@ public class MainController {
 
         Thread handler = null;
         try {
-            handler = rpc.connect();
+            handler = rpc.connect(SERVERPORT);
         } catch (IOException | ExecutionException e) {
             throw new RuntimeException(e);
         }

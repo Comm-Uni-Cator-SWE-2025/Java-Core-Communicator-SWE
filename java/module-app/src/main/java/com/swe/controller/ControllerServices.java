@@ -1,7 +1,8 @@
-package com.swe.core;
+package com.swe.controller;
 
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.Meeting.MeetingSession;
+import com.swe.core.RPC;
 
 public class ControllerServices {
     private static ControllerServices instance;
@@ -21,3 +22,4 @@ public class ControllerServices {
         return instance;
     }
 }
+

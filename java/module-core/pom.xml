@@ -28,16 +28,6 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.15.2</version>
         </dependency>
-        <dependency>
-            <groupId>com.swe</groupId>
-            <artifactId>module-networking</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.swe</groupId>
-            <artifactId>module-screen-video</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <!-- Google's OAuth Client Library with the Jetty server for the loopback flow -->
         <dependency>
             <groupId>com.google.oauth-client</groupId>
