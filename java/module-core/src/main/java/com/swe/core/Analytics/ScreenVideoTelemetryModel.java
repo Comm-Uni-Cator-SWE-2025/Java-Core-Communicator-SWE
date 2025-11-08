@@ -9,6 +9,9 @@ public class ScreenVideoTelemetryModel {
     private Long endTime;
     private ArrayList<Double> fpsEvery3Seconds;
 
+    private boolean withCamera;
+    private boolean withScreen;
+
     // Metrics
     private Double avgFps;
     private Double maxFps;
@@ -16,11 +19,24 @@ public class ScreenVideoTelemetryModel {
     private Double p95Fps; // 95th percentile (worst 5%)
 
     // --- Constructor ---
-    public ScreenVideoTelemetryModel() {
-        this.fpsEvery3Seconds = new ArrayList<>();
+    public ScreenVideoTelemetryModel(Long startTime, Long endTime, ArrayList<Double> fpsEvery3Seconds, boolean withCamera, boolean withScreen) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.fpsEvery3Seconds = fpsEvery3Seconds != null ? new ArrayList<>(fpsEvery3Seconds) : new ArrayList<>();
+        this.withCamera = withCamera;
+        this.withScreen = withScreen;
+        calculateMetrics(); // Calculate metrics from fpsEvery3Seconds
     }
 
     // --- Getters ---
+    public boolean isWithCamera() {
+        return withCamera;
+    }
+
+    public boolean isWithScreen() {
+        return withScreen;
+    }
+
     public Long getStartTime() {
         return startTime;
     }
@@ -49,38 +65,9 @@ public class ScreenVideoTelemetryModel {
         return p95Fps;
     }
 
-    // --- Setters ---
-    public void setStartTime(Long startTime) {
-        this.startTime = startTime;
-    }
-
-    public void setEndTime(Long endTime) {
-        this.endTime = endTime;
-    }
-
-    public void setFpsEvery3Seconds(ArrayList<Double> fpsEvery3Seconds) {
-        this.fpsEvery3Seconds = fpsEvery3Seconds;
-        calculateMetrics(); // Recalculate when new data is set
-    }
-
-    public void setAvgFps(Double avgFps) {
-        this.avgFps = avgFps;
-    }
-
-    public void setMaxFps(Double maxFps) {
-        this.maxFps = maxFps;
-    }
-
-    public void setMinFps(Double minFps) {
-        this.minFps = minFps;
-    }
-
-    public void setP95Fps(Double p95Fps) {
-        this.p95Fps = p95Fps;
-    }
 
     // --- Helper method to calculate metrics ---
-    public void calculateMetrics() {
+    private void calculateMetrics() {
         if (fpsEvery3Seconds == null || fpsEvery3Seconds.isEmpty()) {
             avgFps = maxFps = minFps = p95Fps = 0.0;
             return;
@@ -119,11 +106,4 @@ public class ScreenVideoTelemetryModel {
         p95Fps = sorted.get(index);
     }
 
-    // --- Add a single FPS sample ---
-    public void addFpsSample(Double fps) {
-        if (fps == null)
-            return;
-        fpsEvery3Seconds.add(fps);
-        calculateMetrics();
-    }
 }

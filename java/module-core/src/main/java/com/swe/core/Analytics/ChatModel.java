@@ -7,7 +7,7 @@ public class ChatModel {
 
     private String id;
 
-    private String author;
+    private String author; // email of the author
 
     private Long timeStamp;
 
