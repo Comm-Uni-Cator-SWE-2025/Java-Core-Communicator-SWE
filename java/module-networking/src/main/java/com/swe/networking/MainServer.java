@@ -8,6 +8,7 @@ import java.util.List;
  * The mainserver across all clusters.
  */
 public class MainServer implements P2PUser {
+
     /**
      * Communicator object to send and receive data.
      */
@@ -48,25 +49,35 @@ public class MainServer implements P2PUser {
      */
     private final int timerTimeoutMilliSeconds = 5 * 1000;
 
-    /** Variable to store the server IP address. */
+    /**
+     * Variable to store the server IP address.
+     */
     private final ClientNode mainserver;
 
-    /** Variable to store the static serializer. */
+    /**
+     * Variable to store the static serializer.
+     */
     private final NetworkSerializer serializer;
 
-    /** Variable to store header size. */
+    /**
+     * Variable to store header size.
+     */
     private final int packetHeaderSize = 22;
 
-    /** Variable to store chunk manager. */
+    /**
+     * Variable to store chunk manager.
+     */
     private final ChunkManager chunkManager;
 
-    /** Variable to store the chunksize. */
+    /**
+     * Variable to store the chunksize.
+     */
     private final int payloadSize = 10 * 1024;
 
     /**
      * Constructor function for the main server class.
      *
-     * @param deviceAddress     the IP address of the device
+     * @param deviceAddress the IP address of the device
      * @param mainServerAddress the IP address of the main server
      */
     public MainServer(final ClientNode deviceAddress,
@@ -87,7 +98,7 @@ public class MainServer implements P2PUser {
     /**
      * Function to send to list of a destinations.
      *
-     * @param data   the data to be sent
+     * @param data the data to be sent
      * @param destIp the destination to which the data is sent
      */
     @Override
@@ -102,7 +113,7 @@ public class MainServer implements P2PUser {
     /**
      * Function to send to a single destination.
      *
-     * @param data   the data to be sent
+     * @param data the data to be sent
      * @param destIp the destination to which the data is sent
      */
     @Override
@@ -174,8 +185,8 @@ public class MainServer implements P2PUser {
     /**
      * Function to handle the use packet after receiving.
      *
-     * @param packet         the packet to be parsed
-     * @param dest           the destination from which the packet was received
+     * @param packet the packet to be parsed
+     * @param dest the destination from which the packet was received
      * @param connectionType the connection type of the packet
      */
     private void handleUsePacket(final byte[] packet, final ClientNode dest, final int connectionType) {
@@ -201,7 +212,7 @@ public class MainServer implements P2PUser {
      * Function add client to timer.
      *
      * @param client the client to be added.
-     * @param idx    the index of the cluster it belongs
+     * @param idx the index of the cluster it belongs
      */
     private void addClientToTimer(final ClientNode client, final int idx) {
         if (idx == mainServerClusterIdx && !client.equals(mainserver)) {
@@ -245,8 +256,8 @@ public class MainServer implements P2PUser {
     /**
      * Function to send add packet to the given destination.
      *
-     * @param dest       the new client to add
-     * @param server     the server to send to
+     * @param dest the new client to add
+     * @param server the server to send to
      * @param clusterIdx the index of cluster it belongs to
      */
     private void sendAddPktResponse(final ClientNode dest, final ClientNode server, final int clusterIdx) {
@@ -277,7 +288,7 @@ public class MainServer implements P2PUser {
      * Function to remove client from the network.
      *
      * @param packet the packe containing data
-     * @param dest   the destination to be removed
+     * @param dest the destination to be removed
      * @throws UnknownHostException when host is unknown
      */
     private void handleRemove(final byte[] packet, final ClientNode dest) throws UnknownHostException {
@@ -318,7 +329,7 @@ public class MainServer implements P2PUser {
         // send add packet to all cluster servers.
         final List<ClientNode> servers = topology.getAllClusterServers();
         for (ClientNode server : servers) {
-            if (server.equals(mainserver)) {
+            if (server.equals(mainserver) || server.equals(dest)) {
                 continue;
             }
             sendAddPktResponse(dest, server, clusterIdx);
@@ -379,15 +390,17 @@ public class MainServer implements P2PUser {
             packetInfo.setPortNum(client.port());
             final byte[] removePacket = parser.createPkt(packetInfo);
             final List<ClientNode> servers = topology.getAllClusterServers();
+            System.out.println("servers " + servers);
             for (ClientNode server : servers) {
-                if (server.equals(mainserver)) {
+                if (server.equals(mainserver) || server.equals(client)) {
                     continue;
                 }
                 send(removePacket, server);
             }
             final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
+            System.out.println("clients " + clients);
             for (ClientNode newClient : clients) {
-                if (newClient.equals(mainserver)) {
+                if (newClient.equals(mainserver) || newClient.equals(client)) {
                     continue;
                 }
                 send(removePacket, newClient);

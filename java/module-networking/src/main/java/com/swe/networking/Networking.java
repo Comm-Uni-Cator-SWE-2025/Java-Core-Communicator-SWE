@@ -30,9 +30,6 @@ public class Networking implements AbstractNetworking, AbstractController {
     /** The variable to store singleton topology. */
     private final Topology topology;
 
-    /** The variable to store singleton packet parser. */
-    private final PacketParser parser;
-
     /** The variable to store maximum packet size to chunk. */
     private final int payloadSize = 10 * 1024; // 10 KB
 
@@ -43,7 +40,6 @@ public class Networking implements AbstractNetworking, AbstractController {
         chunkManager = ChunkManager.getChunkManager(payloadSize);
         priorityQueue = priorityQueue.getPriorityQueue();
         topology = Topology.getTopology();
-        parser = PacketParser.getPacketParser();
     }
 
     /**
@@ -85,16 +81,11 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void start() {
         while (true) {
-            if (!priorityQueue.isEmpty()) {
-                try {
-                    final byte[] packet = priorityQueue.nextPacket();
-                    final PacketInfo pktInfo = parser.parsePacket(packet);
-                    final String ipAddress = pktInfo.getIpAddress().toString();
-                    final int port = pktInfo.getPortNum();
-                    final ClientNode dest = new ClientNode(ipAddress, port);
-                    topology.sendPacket(packet, dest);
-                } catch (UnknownHostException ex) {
-                }
+            if (true) {
+                // change the condition to priorityQueue isEmpty
+                continue;
+            } else {
+                final byte[] packet = priorityQueue.nextPacket();
             }
         }
     }
@@ -114,7 +105,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         final PacketInfo pkt = new PacketInfo();
         pkt.setModule(module);
         pkt.setPriority(priority);
-        pkt.setBroadcast(broadcast);
+        pkt.setBroadcast(0);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
@@ -185,6 +176,17 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
         user = deviceAddress;
         topology.addUser(deviceAddress, mainServerAddress);
+    }
+
+    /**
+     * Function to call the subscirbed modules.
+     *
+     * @param module the module to call
+     * @param data the data to sent
+     */
+    public void callSubscriber(final int module, final byte[] data) {
+        final MessageListener function = listeners.get(module);
+        function.receiveData(data);
     }
 
 }
