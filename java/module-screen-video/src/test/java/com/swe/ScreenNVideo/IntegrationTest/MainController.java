@@ -32,7 +32,7 @@ public class MainController {
         final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
 
         List<String> allNetworks = new ArrayList<>();
-//        allNetworks.add("10.32.2.172");
+        allNetworks.add("10.32.2.172");
 //        allNetworks.add("10.128.15.115");
 
         // Get IP address as string

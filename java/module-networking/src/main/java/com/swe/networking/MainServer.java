@@ -405,6 +405,7 @@ public class MainServer implements P2PUser {
                 }
                 send(removePacket, newClient);
             }
+            communicator.closeSocket(client);
         } catch (UnknownHostException ex) {
         }
     }

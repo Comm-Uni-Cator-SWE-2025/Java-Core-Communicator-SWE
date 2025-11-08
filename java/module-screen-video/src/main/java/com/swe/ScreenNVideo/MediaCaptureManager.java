@@ -185,7 +185,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (data.length == 0) {
                 return;
             }
-
+            System.out.println("first 40 bytes:" +(Arrays.toString(Arrays.copyOf(data, 20))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;

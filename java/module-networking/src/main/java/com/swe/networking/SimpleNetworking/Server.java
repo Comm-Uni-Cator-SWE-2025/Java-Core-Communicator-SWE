@@ -1,3 +1,5 @@
+//File owned by Loganath
+
 package com.swe.networking.SimpleNetworking;
 
 import java.io.DataOutputStream;
@@ -8,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.List;
 
 import com.swe.networking.ClientNode;
@@ -103,7 +104,7 @@ public class Server implements IUser {
                 final DataOutputStream dataOut = new DataOutputStream(output);
                 final InetAddress addr = InetAddress.getByName(ip);
                 dataOut.write(data);
-//                System.out.println("Sent data succesfully...");
+                System.out.println("Sent data succesfully...");
                 sendSocket.close();
             } catch (IOException e) {
                 System.err.println("Server2 Error: " + e.getMessage());
@@ -171,7 +172,6 @@ public class Server implements IUser {
         if (addr.equals(deviceIp) && port == devicePort) {
             final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
-//            System.out.println("Server Data received : " + data);
             byte[] message = chunkManager.addChunk(packet);
             System.out.println("Server Data length received : " + data.length());
             System.out.println("Server Module received : " + type);

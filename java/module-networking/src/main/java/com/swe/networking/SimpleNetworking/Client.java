@@ -1,3 +1,5 @@
+//File owned by Loganath
+
 package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
@@ -88,7 +90,7 @@ public class Client implements IUser {
             final ClientNode serverIp, final ModuleType module) {
         for (ClientNode client : destIp) {
             communicator.sendData(data, client);
-//            System.out.println("Sent data succesfully...");
+            System.out.println("Sent data succesfully...");
         }
     }
 
@@ -115,15 +117,12 @@ public class Client implements IUser {
         try {
             final PacketInfo pktInfo = parser.parsePacket(packet);
             final int module = pktInfo.getModule();
-//            System.out.println("Module : " + module);
             final ModuleType type = moduleType.getType(module);
-//            System.out.println("Module : " + type);
             final String data = new String(pktInfo.getPayload(),
                     StandardCharsets.UTF_8);
-            // System.out.println("Client Data received : " + data);
             byte[] message = chunkManager.addChunk(packet);
-//            System.out.println("Client Data length received : " + data.length());
-//            System.out.println("Client Module received : " + type);
+            System.out.println("Client Data length received : " + data.length());
+            System.out.println("Client Module received : " + type);
             if (message != null) {
                 final PacketInfo newpktInfo = parser.parsePacket(message);
                 message = newpktInfo.getPayload();
