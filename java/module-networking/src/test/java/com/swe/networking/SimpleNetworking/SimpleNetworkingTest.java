@@ -137,7 +137,7 @@ public class SimpleNetworkingTest {
     public void simpleNetworkingServerSendTest() throws IOException {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
-            final ClientNode cdevice = new ClientNode("127.0.0.1", 8101);
+            final ClientNode cdevice = new ClientNode("10.32.0.41", 8101);
             // final byte[] message = new byte[5 * 1024 * 1024];
             final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
             final byte[] message;
@@ -154,8 +154,8 @@ public class SimpleNetworkingTest {
             });
             clientThread.start();
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-            final ClientNode device = new ClientNode("127.0.0.1", 8100);
-            final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
+            final ClientNode device = new ClientNode("10.32.0.41", 8100);
+            final ClientNode mainServer = new ClientNode("10.32.0.41", 8100);
             network.addUser(device, mainServer);
             final MessageListener func = (byte[] data) -> {
                 final Path newpath = Paths.get("/home/logan/Downloads/");
