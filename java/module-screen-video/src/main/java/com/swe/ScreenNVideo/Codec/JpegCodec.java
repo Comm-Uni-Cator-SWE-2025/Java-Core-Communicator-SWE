@@ -202,7 +202,7 @@ public class JpegCodec implements Codec {
      * @return encoded byte array
      */
     @Override
-    public byte[] encode(final int[][] screenshot,final int topLeftX, final int topLeftY, final int height, final int width) {
+    public byte[] encode(final int[][] screenshot,final int topLeftX, final int topLeftY, final int height, final int width, final boolean compress) {
 
         if (height % BLOCK_SIDE == 1 || width % BLOCK_SIDE == 1) {
             throw new RuntimeException("Invalid Matrix for encoding");
@@ -263,15 +263,24 @@ public class JpegCodec implements Codec {
         compressor.dctTime = 0;
 
         // YMatrix;
+        if (compress) {
+
         compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
+        }
 //        System.out.println("Compression Y : " + resRLEBuffer.position());
         enDeRLE.zigZagRLE(yMatrix,resRLEBuffer);
         // CbMatrix;
+        if (compress) {
+
         compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
+        }
 //        System.out.println("Compression Cb : " + resRLEBuffer.position());
         enDeRLE.zigZagRLE(cbMatrix,resRLEBuffer);
         // CyMatrix
+        if (compress) {
+
         compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
+        }
 //        System.out.println("Compression Cr : " + resRLEBuffer.position());
         enDeRLE.zigZagRLE(crMatrix,resRLEBuffer);
 
@@ -297,15 +306,17 @@ public class JpegCodec implements Codec {
      * </p>
      */
     @Override
-    public int[][] decode(final byte[] encodedImage) {
+    public int[][] decode(final byte[] encodedImage, final boolean compress) {
         final ByteBuffer buffer = ByteBuffer.wrap(encodedImage);
         final short[][] yMatrix = enDeRLE.revZigZagRLE(buffer);
         final short[][] cbMatrix = enDeRLE.revZigZagRLE(buffer);
         final short[][] crMatrix = enDeRLE.revZigZagRLE(buffer);
 
-//        decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
-//        decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
-//        decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+        if (compress) {
+            decompressor.decompressLumin(yMatrix, (short) yMatrix.length, (short) yMatrix[0].length);
+            decompressor.decompressChrome(cbMatrix, (short) cbMatrix.length, (short) cbMatrix[0].length);
+            decompressor.decompressChrome(crMatrix, (short) crMatrix.length, (short) crMatrix[0].length);
+        }
 
         return convertYCbCrToRGB(yMatrix, cbMatrix, crMatrix);
     }

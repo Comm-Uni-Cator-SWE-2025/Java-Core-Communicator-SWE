@@ -4,6 +4,7 @@ import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,22 +29,23 @@ public class MainController {
 
 
     static void main(final String[] args) throws InterruptedException {
-        final AbstractNetworking networking = new DummyNetworking(SERVERPORT);
+        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
 
         List<String> allNetworks = new ArrayList<>();
-//        allNetworks.add("10.128.10.248");
-//        allNetworks.add("10.32.1.250");
+//        allNetworks.add("10.32.2.172");
+//        allNetworks.add("10.128.15.115");
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
         final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
-        final ClientNode serverNode = new ClientNode("10.128.5.70", SERVERPORT);
+        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
+        networking.addUser(deviceNode, deviceNode);
 
         final AbstractRPC rpc = new DummyRPC();
 
         final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
 
-        // networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
+//         networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 //        System.out.println(allNetworks);
 
         screenNVideo.broadcastJoinMeeting(allNetworks);
@@ -77,8 +79,8 @@ public class MainController {
         handler.join();
         
         // Cleanup
-        if (networking instanceof DummyNetworking) {
-            ((DummyNetworking) networking).shutdown();
-        }
+//        if (networking instanceof DummyNetworking) {
+//            ((DummyNetworking) networking).shutdown();
+//        }
     }
 }

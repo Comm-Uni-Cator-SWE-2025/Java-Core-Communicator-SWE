@@ -34,13 +34,14 @@ public class PacketGenerator {
     /**
      * Generate a full image patch covering the entire frame.
      * @param curr is the image frame (int[width][height][3] RGB array)
+     * @param toCompress to compress the packets ot not
      * @return list containing a single compressed patch for the full image
      */
-    public List<CompressedPatch> generateFullImage(final int[][] curr) {
+    public List<CompressedPatch> generateFullImage(final int[][] curr, final boolean toCompress) {
         final int height = curr.length;
         final int width = curr[0].length;
 
-        final byte[] compressedString = this.compressor.encode(curr,0, 0, height, width);
+        final byte[] compressedString = this.compressor.encode(curr, 0, 0, height, width, toCompress);
         final List<CompressedPatch> patches = new ArrayList<>();
         patches.add(new CompressedPatch(0, 0, width, height, compressedString));
         return patches;
@@ -49,9 +50,10 @@ public class PacketGenerator {
     /**
      * Split frames into tiles, compare hashes, compress dirty tiles.
      * @param curr is the image frame (int[width][height][3] RGB array)
+     * @param toCompress to compress the packets ot not
      * @return list of compressed patches
      */
-    public List<CompressedPatch> generatePackets(final int[][] curr) {
+    public List<CompressedPatch> generatePackets(final int[][] curr, final boolean toCompress) {
         final int height = curr.length;
         final int width = curr[0].length;
 
@@ -82,7 +84,7 @@ public class PacketGenerator {
 
                 final long currHash = hasher.hash(curr, x, y, w, h);
                 if (currHash != prevHashes[tx][ty]) {
-                    final byte[] compressedString = this.compressor.encode(curr, x, y, h, w);
+                    final byte[] compressedString = this.compressor.encode(curr, x, y, h, w, toCompress);
                     patches.add(new CompressedPatch(x, y, w, h, compressedString));
                     prevHashes[tx][ty] = currHash;
                 }
