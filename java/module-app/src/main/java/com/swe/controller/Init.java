@@ -29,6 +29,8 @@ public class Init {
 
         // Provide RPC somehow here
         NetworkingInterface networking = new SimpleNetworkingAdapter(SimpleNetworking.getSimpleNetwork());
+        
+        networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
 
