@@ -354,6 +354,7 @@ public class P2PServer implements P2PUser {
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
             send(removePacket, c);
         }
+        communicator.closeSocket(client);
     }
 
     /**

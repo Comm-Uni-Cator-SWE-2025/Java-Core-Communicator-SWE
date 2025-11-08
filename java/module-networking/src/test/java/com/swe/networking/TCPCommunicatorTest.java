@@ -19,8 +19,8 @@ public class TCPCommunicatorTest {
     public void testSend() {
         try {
             int port1 = 8001;
-            int port2 = 8002;
-            // final Thread recieveThread1 = new Thread(() -> receive(port1));
+            // int port2 = 8002;
+            final Thread recieveThread1 = new Thread(() -> receive(port1));
             // final Thread recieveThread2 = new Thread(() -> receive(port2));
             // recieveThread1.start();
             // recieveThread2.start();
@@ -34,7 +34,7 @@ public class TCPCommunicatorTest {
             tcp.sendData(data.getBytes(), dest);
             // tcp.sendData(data.getBytes(), dest1);
             // tcp.sendData(data.getBytes(), dest);
-            // System.out.println("Data sent successfully...");
+            System.out.println("Data sent successfully...");
             // tcp.close();
             // tcp.closeSocket(dest);
             // tcp.closeSocket(dest1);

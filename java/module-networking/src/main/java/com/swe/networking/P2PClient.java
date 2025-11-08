@@ -80,6 +80,7 @@ public class P2PClient implements P2PUser {
         this.communicator = new TCPCommunicator(device.port());
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
 
+        updateClusterServer();
         // Starting the continuous receive loop
         this.receiveThread = new Thread(this::receive);
         this.receiveThread.setName("P2PClient-Receive-Thread");
@@ -87,7 +88,6 @@ public class P2PClient implements P2PUser {
 
         // start a scheduled ALIVE packets to the cluster server
         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-
         this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
                 ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }

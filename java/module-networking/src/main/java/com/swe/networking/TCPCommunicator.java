@@ -1,3 +1,4 @@
+//File owned by Loganath
 package com.swe.networking;
 
 import java.io.IOException;
@@ -74,6 +75,9 @@ public final class TCPCommunicator implements ProtocolBase {
             while (iter.hasNext()) {
                 final SelectionKey key = iter.next();
                 iter.remove();
+                if (!key.isValid()) {
+                    continue;
+                }
                 if (key.isAcceptable()) {
                     acceptConnection(key);
                 } else if (key.isReadable()) {
@@ -117,6 +121,10 @@ public final class TCPCommunicator implements ProtocolBase {
         final SocketChannel clientSocket = clientSockets.get(client);
         if (clientSocket != null) {
             try {
+                final SelectionKey key = clientSocket.keyFor(selector);
+                if (key != null) {
+                    key.cancel();
+                }
                 clientSocket.close();
                 clientSockets.remove(client);
                 System.out.println("Closed socket for " + client.hostName() + ":" + client.port());
@@ -140,7 +148,7 @@ public final class TCPCommunicator implements ProtocolBase {
                 destSocket.configureBlocking(true);
                 System.out.println("Waiting for " + clientConnectTimeout + " s to connect to the client...");
                 System.out.println("Client: " + dest + " ...");
-                destSocket.socket().connect(new InetSocketAddress(destIp, destPort), clientConnectTimeout);
+                destSocket.connect(new InetSocketAddress(destIp, destPort));
                 destSocket.configureBlocking(false);
                 destSocket.register(selector, SelectionKey.OP_READ);
                 System.out.println("New connection created successfully...");
@@ -163,6 +171,7 @@ public final class TCPCommunicator implements ProtocolBase {
      */
     public void acceptConnection(final SelectionKey key) {
         try {
+            System.out.println("Receiving new connection....");
             final ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
             final SocketChannel clientChannel = serverSocketChannel.accept();
             clientChannel.configureBlocking(false);
