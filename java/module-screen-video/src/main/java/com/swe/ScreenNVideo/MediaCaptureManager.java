@@ -153,7 +153,7 @@ public class MediaCaptureManager implements CaptureManager {
 
     private void sendDataToViewers(final byte[] feed) {
 
-        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+//        System.out.println("Size : " + feed.length / Utils.KB + " KB");
         CompletableFuture.runAsync(() -> {
             networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
     //        SimpleNetworking.getSimpleNetwork().closeNetworking();
@@ -198,7 +198,7 @@ public class MediaCaptureManager implements CaptureManager {
                 case NetworkPacketType.LIST_CPACKETS -> {
 //                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
-//                    System.out.println("Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
+                    System.err.println("Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
 //                    System.out.println("Height: " + networkPackets.height() + " Width: " + networkPackets.width());
 
                     ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
@@ -214,10 +214,10 @@ public class MediaCaptureManager implements CaptureManager {
 
                     if (networkPackets.isFullImage()) {
                         // reset expected feed number
-                        imageSynchronizer.expectedfeedNumber = networkPackets.packetNumber();
+                        imageSynchronizer.setExpectedFeedNumber(networkPackets.packetNumber());
 
                         // drop all entries older than this full image
-                        while (!imageSynchronizer.getHeap().isEmpty() && imageSynchronizer.getHeap().peek().getFeedNumber() < imageSynchronizer.expectedfeedNumber) {
+                        while (!imageSynchronizer.getHeap().isEmpty() && imageSynchronizer.getHeap().peek().getFeedNumber() < imageSynchronizer.getExpectedFeedNumber()) {
                             imageSynchronizer.getHeap().poll();
                         }
 
@@ -241,7 +241,7 @@ public class MediaCaptureManager implements CaptureManager {
 
                         // If the next expected patch hasn't arrived yet, wait
                         final FeedData feedData = imageSynchronizer.getHeap().peek();
-                        if (feedData == null || !(feedData.getFeedNumber() == imageSynchronizer.expectedfeedNumber)) {
+                        if (feedData == null || !(feedData.getFeedNumber() == imageSynchronizer.getExpectedFeedNumber())) {
                             return;
                         }
 
@@ -257,15 +257,16 @@ public class MediaCaptureManager implements CaptureManager {
                         newWidth = minFeedCPacket.width();
                     }
 
-                    imageSynchronizer.expectedfeedNumber++;
+                    imageSynchronizer.setExpectedFeedNumber(imageSynchronizer.getExpectedFeedNumber() + 1);
 
-                    final int[][] image = imageSynchronizer.synchronize(newHeight, newWidth, patches);
+                    final int[][] image = imageSynchronizer.synchronize(newHeight, newWidth, patches,
+                        networkPackets.compress());
                     final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
-                        byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
-                        boolean success = res[0] == 1;
+                        final byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
+                        final boolean success = res[0] == 1;
                         if (!success) {
                             addParticipant(networkPackets.ip());
                         }

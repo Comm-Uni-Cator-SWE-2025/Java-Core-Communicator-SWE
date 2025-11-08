@@ -90,9 +90,11 @@ public class VideoComponents {
             return null;
         }
 
-        final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed);
+        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, true, feed.length, feed[0].length, patches);
+        final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed, toCompress);
+
+        final CPackets networkPackets = new CPackets(feedNumber, localIp, true, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
@@ -197,8 +199,10 @@ public class VideoComponents {
             }
             return null;
         }
-        System.out.println("\nServer FPS : "
-            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+
+        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
+//        System.out.println("\nServer FPS : "
+//            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
 //        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
@@ -207,7 +211,7 @@ public class VideoComponents {
         videoCodec.dctTime = 0;
         videoCodec.zigZagtime = 0;
 
-        final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed);
+        final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed, toCompress);
 
         if (patches.isEmpty()) {
             prev = System.nanoTime();
@@ -223,7 +227,7 @@ public class VideoComponents {
         feed = newFeed;
         feedNumber++;
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, false, feed.length, feed[0].length, patches);
+        final CPackets networkPackets = new CPackets(feedNumber, localIp, false, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
