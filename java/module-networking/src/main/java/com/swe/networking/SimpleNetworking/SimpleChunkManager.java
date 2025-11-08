@@ -1,7 +1,7 @@
 package com.swe.networking.SimpleNetworking;
 
 import java.net.UnknownHostException;
-import java.util.Collections;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -13,6 +13,11 @@ import com.swe.networking.PacketParser;
  * Code for Chunk Manager.
  */
 public class SimpleChunkManager {
+
+    /**
+     * Variable to store the name of the module.
+     */
+    private static final String MODULENAME = "SIMPLECHUNKMANAGER";
     /**
      * Singleton chunkManger.
      */
@@ -29,8 +34,21 @@ public class SimpleChunkManager {
      * headerSize.
      */
     private final int headerSize = PacketParser.getHeaderSize();
+    /**
+     * Message id.
+     */
+    private int messageId = 0;
+    /**
+     * chunkListMap maps message id to list of chunks.
+     */
+    private final Map<Integer, ByteBuffer> chunkListMap = new HashMap<>();
+    /**
+     * chunkListMap maps message id to list of chunks.
+     */
+    private final Map<Integer, Integer> chunkLengthMap = new HashMap<>();
 
     private SimpleChunkManager(final int payloadSize) {
+        SimpleNetworkLogger.printInfo(MODULENAME, "Simple Chunk manager initialized...");
         defaultPayloadSize = payloadSize;
     }
 
@@ -45,36 +63,13 @@ public class SimpleChunkManager {
             chunkManager = new SimpleChunkManager(payloadSize);
             return chunkManager;
         }
+        SimpleNetworkLogger.printInfo(MODULENAME, "Passing already initialized Simple Chunk Manager...");
         return chunkManager;
     }
 
     /**
-     * Message id.
-     */
-    private int messageId = 0;
-
-    /**
-     * chunkListMap maps message id to list of chunks.
-     */
-    private final Map<Integer, Vector<byte[]>> chunkListMap = new HashMap<>();
-    /**
-     * messageList gets the list of merged chunks.
-     */
-    private final Vector<byte[]> messageList = new Vector<>();
-
-    /**
-     * Temporary function used to get the messageList.
-     * Used only for testing and to be replaced with some other function later.
-     * 
-     * @return messageList. All the messages recorded till now.
-     */
-    Vector<byte[]> getMessageList() {
-        return messageList;
-    }
-
-    /**
      * Add chunk function.
-     * 
+     *
      * @param chunk the byte of chunk coming in.
      * @return the combined message
      * @throws UnknownHostException the issue from packet parser.
@@ -83,15 +78,24 @@ public class SimpleChunkManager {
         final PacketInfo info = parser.parsePacket(chunk);
         final int msgId = info.getMessageId();
         final int maxNumChunks = info.getChunkLength();
+        final int chunkId = info.getChunkNum();
+        SimpleNetworkLogger.printInfo(MODULENAME, "Chunk id / total chunks : " + chunkId + " / " + maxNumChunks);
+        SimpleNetworkLogger.printInfo(MODULENAME, "msg id : " + msgId);
         if (chunkListMap.containsKey(msgId)) {
-            chunkListMap.get(msgId).add(chunk);
+            final ByteBuffer messageBuffer = chunkListMap.get(msgId);
+            messageBuffer.position(chunkId * defaultPayloadSize);
+            messageBuffer.put(info.getPayload());
+            final int newVal = chunkLengthMap.getOrDefault(msgId, 0) + 1;
+            chunkLengthMap.put(msgId, newVal);
         } else {
-            chunkListMap.put(msgId, new Vector<byte[]>());
-            chunkListMap.get(msgId).add(chunk);
+            final ByteBuffer messageBuffer = ByteBuffer.allocate(maxNumChunks * defaultPayloadSize);
+            messageBuffer.position(chunkId * defaultPayloadSize);
+            messageBuffer.put(info.getPayload());
+            chunkListMap.put(msgId, messageBuffer);
+            chunkLengthMap.put(msgId, 1);
         }
-        if (chunkListMap.get(msgId).size() == maxNumChunks) {
-            final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            messageList.add(messageChunk);
+        if (chunkLengthMap.get(msgId) == maxNumChunks) {
+            final byte[] messageChunk = chunkListMap.get(msgId).array();
             chunkListMap.remove(msgId);
             return messageChunk;
         }
@@ -99,44 +103,9 @@ public class SimpleChunkManager {
     }
 
     /**
-     * Merge Chunks function.
-     * 
-     * @param chunks The list of incoming chunks.
-     * @return merged packet.
-     */
-    private byte[] mergeChunks(final Vector<byte[]> chunks) throws UnknownHostException {
-        int dataSize = 0;
-        for (byte[] chunk : chunks) {
-            dataSize += chunk.length - headerSize;
-        }
-        final byte[] completePayload = new byte[dataSize];
-        PacketInfo info = parser.parsePacket(chunks.get(0));
-        final int lastChunkNum = info.getChunkLength() - 1;
-        final Vector<byte[]> sortedChunks = new Vector<>(Collections.nCopies(chunks.size(), null));
-        for (byte[] chunk : chunks) {
-            info = parser.parsePacket(chunk);
-            final int i = info.getChunkNum();
-            sortedChunks.set(i, chunk);
-        }
-        int i = 0;
-        for (byte[] chunk : sortedChunks) {
-            info = parser.parsePacket(chunk);
-            final int chunkSize = chunk.length - headerSize;
-            final byte[] chunkPayload = info.getPayload();
-            System.arraycopy(chunkPayload, 0, completePayload, i, chunkSize);
-            i += chunkSize;
-        }
-        info = parser.parsePacket(chunks.get(0));
-        info.setChunkLength(1);
-        info.setChunkNum(0);
-        info.setPayload(completePayload);
-        return parser.createPkt(info);
-    }
-
-    /**
      * Chunking function.
-     * 
-     * @param info        The Chunk information including payload of the message
+     *
+     * @param info The Chunk information including payload of the message
      * @param payloadSize The payload size of the message.
      * @return chunks The message broken into list of chunks.
      */
@@ -157,7 +126,7 @@ public class SimpleChunkManager {
             final int chunkNumber = i / payloadSize;
             info.setChunkNum(chunkNumber);
             info.setPayload(payloadChunk);
-            info.setLength(PacketParser.getHeaderSize() + pSize);
+            info.setLength(headerSize + pSize);
             final byte[] pkt = parser.createPkt(info);
             chunks.add(pkt);
         }
@@ -166,14 +135,5 @@ public class SimpleChunkManager {
 
     public Vector<byte[]> chunk(final PacketInfo info) {
         return chunk(info, defaultPayloadSize);
-    }
-
-    /**
-     * get last message id.
-     * 
-     * @return messageId.
-     */
-    public int getLastMessageId() {
-        return messageId - 1;
     }
 }

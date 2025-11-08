@@ -1,9 +1,6 @@
-//File owned by Loganath
-
 package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -16,47 +13,44 @@ import com.swe.networking.ProtocolBase;
 import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
+// File owned by Loganath
 /**
  * The main module of the client device.
  */
 public class Client implements IUser {
 
     /**
+     * Variable to store the name of the module.
+     */
+    private static final String MODULENAME = "CLIENT";
+    /**
      * The variable to store the device IP address.
      */
-    private String deviceIp;
+    private final String deviceIp;
     /**
      * The variable to store the device port number.
      */
-    private int devicePort;
-    /**
-     * The variable used by the server to connect to other devices.
-     */
-    private Socket sendSocket = new Socket();
+    private final int devicePort;
     /**
      * The variable used by server to accept connections from clients.
      */
-    private ProtocolBase communicator;
+    private final ProtocolBase communicator;
     /**
      * The singleton class object for packet parser.
      */
-    private PacketParser parser;
+    private final PacketParser parser;
     /**
      * The singleton class object for simplenetworking.
      */
-    private SimpleNetworking simpleNetworking;
+    private final SimpleNetworking simpleNetworking;
     /**
      * The variable to store the module type.
      */
-    private ModuleType moduleType = ModuleType.NETWORKING;
-    /**
-     * The variable isused to store connection timeout.
-     */
-    private final int connectionTimeout = 5000;
+    private final ModuleType moduleType = ModuleType.NETWORKING;
     /**
      * The variable to store chunk Manager.
      */
-    private SimpleChunkManager chunkManager;
+    private final SimpleChunkManager chunkManager;
 
     /**
      * The variable to store chunk Manager payload size.
@@ -73,8 +67,9 @@ public class Client implements IUser {
         devicePort = deviceAddr.port();
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
-        chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
         communicator = new TCPCommunicator(devicePort);
+        chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
+        SimpleNetworkLogger.printInfo(MODULENAME, "Client initialized...");
     }
 
     /**
@@ -86,11 +81,11 @@ public class Client implements IUser {
      * @param module the module to send th data to
      */
     @Override
-    public void send(final byte[] data, final ClientNode[] destIp,
-            final ClientNode serverIp, final ModuleType module) {
+    public void send(final byte[] data, final ClientNode[] destIp, final ClientNode serverIp, final ModuleType module) {
         for (ClientNode client : destIp) {
-            communicator.sendData(data, client);
-            System.out.println("Sent data succesfully...");
+            SimpleNetworkLogger.printInfo(MODULENAME, "Data size sent : " + data.length);
+            communicator.sendData(data, serverIp);
+            SimpleNetworkLogger.printInfo(MODULENAME, "Data sent successfully...");
         }
     }
 
@@ -118,17 +113,17 @@ public class Client implements IUser {
             final PacketInfo pktInfo = parser.parsePacket(packet);
             final int module = pktInfo.getModule();
             final ModuleType type = moduleType.getType(module);
-            final String data = new String(pktInfo.getPayload(),
-                    StandardCharsets.UTF_8);
+            final String data = new String(pktInfo.getPayload(), StandardCharsets.UTF_8);
+            SimpleNetworkLogger.printInfo(MODULENAME, "Client data size received : " + data.length());
+            SimpleNetworkLogger.printInfo(MODULENAME, "Client module received : " + type.toString());
             byte[] message = chunkManager.addChunk(packet);
-            System.out.println("Client Data length received : " + data.length());
-            System.out.println("Client Module received : " + type);
             if (message != null) {
                 final PacketInfo newpktInfo = parser.parsePacket(message);
                 message = newpktInfo.getPayload();
                 simpleNetworking.callSubscriber(message, type);
             }
         } catch (UnknownHostException ex) {
+            SimpleNetworkLogger.printError(MODULENAME, "Client Could not parse packet succesfully...");
         }
     }
 
@@ -137,6 +132,7 @@ public class Client implements IUser {
      */
     @Override
     public void closeUser() {
+        SimpleNetworkLogger.printInfo(MODULENAME, "Closing the receving socket...");
         communicator.close();
     }
 }
