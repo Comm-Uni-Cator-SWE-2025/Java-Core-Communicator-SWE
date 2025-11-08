@@ -23,6 +23,7 @@ public final class BackgroundCaptureManager {
      * Instance for capturing a specific video region.
      */
     private final ICapture videoCapture;
+
     /**
      * CaptureComponents Object.
      */
@@ -45,7 +46,6 @@ public final class BackgroundCaptureManager {
         if (captureThread != null && captureThread.isAlive()) {
             return; // Already running
         }
-
         captureThread = new Thread(this::captureLoop, "Background-Capture-Thread");
         captureThread.setDaemon(true); // Ensure thread doesn't block JVM shutdown
         captureThread.start();

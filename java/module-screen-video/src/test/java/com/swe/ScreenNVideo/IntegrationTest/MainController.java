@@ -3,6 +3,7 @@ package com.swe.ScreenNVideo.IntegrationTest;
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.networking.ClientNode;
+import com.swe.networking.Networking;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
@@ -29,7 +30,8 @@ public class MainController {
 
 
     static void main(final String[] args) throws InterruptedException {
-        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
+//        final Networking networking = Networking.getNetwork();
+//        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         List<String> allNetworks = new ArrayList<>();
         allNetworks.add("10.32.2.172");
@@ -39,11 +41,11 @@ public class MainController {
         final String ipAddress = getSelfIP();
         final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
         final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
-        networking.addUser(deviceNode, deviceNode);
+//        networking.addUser(deviceNode, deviceNode);
 
         final AbstractRPC rpc = new DummyRPC();
 
-        final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
+        final MediaCaptureManager screenNVideo = new MediaCaptureManager((AbstractNetworking) networking, rpc, SERVERPORT);
 
 //         networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 //        System.out.println(allNetworks);
