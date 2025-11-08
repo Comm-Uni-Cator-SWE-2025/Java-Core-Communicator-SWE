@@ -31,7 +31,7 @@ public class MainController {
 
     static void main(final String[] args) throws InterruptedException {
 //        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
-        final AbstractNetworking networking = new DummyNetworking();
+        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         List<String> allNetworks = new ArrayList<>();
         allNetworks.add("10.32.6.88");

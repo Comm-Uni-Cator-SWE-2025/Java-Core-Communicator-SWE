@@ -177,6 +177,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (encodedAudio == null) {
                 continue;
             }
+//            System.err.println("Sending audio");
             sendDataToViewers(encodedAudio);
         }
     }
@@ -243,6 +244,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final int newWidth;
 
                     if (networkPackets.isFullImage()) {
+                        System.out.println("Full Image");
                         // reset expected feed number
                         imageSynchronizer.setExpectedFeedNumber(networkPackets.packetNumber());
 
@@ -267,7 +269,7 @@ public class MediaCaptureManager implements CaptureManager {
 
                         // If the next expected patch hasn't arrived yet, wait
                         final FeedData feedData = imageSynchronizer.getHeap().peek();
-                        if (feedData == null || !(feedData.getFeedNumber() == imageSynchronizer.getExpectedFeedNumber())) {
+                        if (feedData == null || feedData.getFeedNumber() != imageSynchronizer.getExpectedFeedNumber()) {
                             return;
                         }
 
@@ -278,6 +280,7 @@ public class MediaCaptureManager implements CaptureManager {
                         }
 
                         final CPackets minFeedCPacket = minFeedNumPacket.getFeedPackets();
+//                        System.out.println("Min Feed Packet " + minFeedCPacket.packetNumber());
                         patches = minFeedCPacket.packets();
                         newHeight = minFeedCPacket.height();
                         newWidth = minFeedCPacket.width();
@@ -299,6 +302,7 @@ public class MediaCaptureManager implements CaptureManager {
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
                     try {
+//                        System.err.println(imageSynchronizer.getExpectedFeedNumber());
                         final byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
                         final boolean success = res[0] == 1;
                         if (!success) {
@@ -321,6 +325,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case APACKETS -> {
                     final APackets audioPackets = APackets.deserialize(data);
+//                    System.out.println("Audio" + audioPackets.packetNumber());
                     final byte[] audioBytes = audioDecoder.decode(audioPackets.data());
                     audioPlayer.play(audioBytes);
                 }

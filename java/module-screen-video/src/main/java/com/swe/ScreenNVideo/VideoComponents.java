@@ -1,7 +1,6 @@
 package com.swe.ScreenNVideo;
 
 import com.swe.RPC.AbstractRPC;
-import com.swe.ScreenNVideo.Codec.ADPCMDecoder;
 import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.Codec.JpegCodec;
@@ -9,6 +8,7 @@ import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.PatchGenerator.Hasher;
 import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
+import com.swe.ScreenNVideo.Serializer.APackets;
 import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.RImage;
 
@@ -56,9 +56,14 @@ public class VideoComponents {
     private final String localIp = Utils.getSelfIP();
 
     /**
-     * Feed number.
+     * Video Feed number.
      */
-    private int feedNumber = -1;
+    private int videoFeedNumber = -1;
+
+    /**
+     * Audio Feed number.
+     */
+    private int audioFeedNumber = -1;
 
     /**
      * Current feed.
@@ -102,7 +107,7 @@ public class VideoComponents {
 
         final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed, toCompress);
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, true, toCompress, feed.length, feed[0].length, patches);
+        final CPackets networkPackets = new CPackets(videoFeedNumber, localIp, true, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
@@ -191,7 +196,22 @@ public class VideoComponents {
         if (audioFeed == null) {
             return null;
         }
-        return audioEncoder.encode(audioFeed);
+        final byte[] feed = audioEncoder.encode(audioFeed);
+        final APackets audioPacket = new APackets(audioFeedNumber, feed);
+        audioFeedNumber += 1;
+        byte[] encodedPacket = null;
+        int tries = Utils.MAX_TRIES_TO_SERIALIZE;
+        while (tries-- > 0) {
+            // max tries 3 times to convert the patch
+            try {
+                encodedPacket = audioPacket.serializeAPackets();
+                break;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return encodedPacket;
     }
 
     /**
@@ -244,9 +264,9 @@ public class VideoComponents {
 
         // increase the feed number and update the feed
         feed = newFeed;
-        feedNumber++;
+        videoFeedNumber++;
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, false, toCompress, feed.length, feed[0].length, patches);
+        final CPackets networkPackets = new CPackets(videoFeedNumber, localIp, false, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {

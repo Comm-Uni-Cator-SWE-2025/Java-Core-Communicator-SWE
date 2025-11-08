@@ -22,7 +22,7 @@ public record APackets(int packetNumber, byte[] data) {
      * @return serialized byte array
      * @throws IOException Can have exception while writing to the outputStream while creating the buffer data
      */
-    public byte[] serializeCPackets() throws IOException {
+    public byte[] serializeAPackets() throws IOException {
 
         final ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + data.length);
         // Write the packet Type
