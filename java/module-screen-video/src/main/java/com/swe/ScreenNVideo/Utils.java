@@ -61,8 +61,8 @@ public class Utils {
      */
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
 
-    public static final float DEFAULT_SAMPLE_RATE = 44100f;
-    public static final int DEFAULT_CHANNELS = 2;
+    public static final float DEFAULT_SAMPLE_RATE = 48000f;
+    public static final int DEFAULT_CHANNELS = 1;
     public static final int DEFAULT_SAMPLE_SIZE = 16;
 
     /**

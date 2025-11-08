@@ -215,7 +215,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (data.length == 0) {
                 return;
             }
-            System.out.println("first 40 bytes:" + (Arrays.toString(Arrays.copyOf(data, 40))));
+//            System.out.println("first 40 bytes:" + (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
@@ -228,7 +228,7 @@ public class MediaCaptureManager implements CaptureManager {
                 case NetworkPacketType.LIST_CPACKETS -> {
 //                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
-                    System.err.println("Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
+//                    System.err.println("Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
 //                    System.out.println("Height: " + networkPackets.height() + " Width: " + networkPackets.width());
 
                     ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
@@ -258,11 +258,7 @@ public class MediaCaptureManager implements CaptureManager {
 
                         // if heap is growing too large, request a full frame to resync
                         if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
-                            System.err.println("Asking for data...");
-                            final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-                            final ClientNode destNode = new ClientNode(networkPackets.ip(), port);
-                            networking.sendData(subscribeData, new ClientNode[]{destNode}, ModuleType.SCREENSHARING, 2);
-
+                            askForFullImage(networkPackets.ip());
                             imageSynchronizer.getHeap().clear();
                             return;
                         }
@@ -289,8 +285,16 @@ public class MediaCaptureManager implements CaptureManager {
 
                     imageSynchronizer.setExpectedFeedNumber(imageSynchronizer.getExpectedFeedNumber() + 1);
 
-                    final int[][] image = imageSynchronizer.synchronize(newHeight, newWidth, patches,
-                        networkPackets.compress());
+                    final int[][] image;
+                    try {
+                         image = imageSynchronizer.synchronize(newHeight, newWidth, patches,
+                            networkPackets.compress());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        askForFullImage(networkPackets.ip());
+                        imageSynchronizer.getHeap().clear();
+                        return;
+                    }
                     final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     // Do not wait for result
@@ -323,6 +327,13 @@ public class MediaCaptureManager implements CaptureManager {
                 default -> {
                 }
             }
+        }
+
+        private void askForFullImage(final String ip) {
+            System.err.println("Asking for data...");
+            final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
+            final ClientNode destNode = new ClientNode(ip, port);
+            networking.sendData(subscribeData, new ClientNode[]{destNode}, ModuleType.SCREENSHARING, 2);
         }
 
         public void addUserNFullImageRequest(final String ip) {

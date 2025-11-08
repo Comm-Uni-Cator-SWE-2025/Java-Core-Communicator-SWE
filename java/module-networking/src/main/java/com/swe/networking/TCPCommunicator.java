@@ -112,7 +112,7 @@ public final class TCPCommunicator implements ProtocolBase {
     public SocketChannel openSocket() {
         try {
             final SocketChannel socket = SocketChannel.open();
-            NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + socket.socket().getLocalPort() + "...");
+            NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + socket.socket().getPort() + "...");
             return socket;
         } catch (IOException ex) {
             NetworkLogger.printError(MODULENAME, "Error occurred while opening socket...");
