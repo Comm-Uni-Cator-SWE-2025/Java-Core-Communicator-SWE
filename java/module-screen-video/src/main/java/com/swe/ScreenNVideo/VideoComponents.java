@@ -1,6 +1,6 @@
 package com.swe.ScreenNVideo;
 
-import com.swe.RPC.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.Codec.JpegCodec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;

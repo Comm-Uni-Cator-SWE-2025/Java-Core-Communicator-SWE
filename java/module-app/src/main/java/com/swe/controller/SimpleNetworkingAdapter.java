@@ -1,4 +1,4 @@
-package com.swe.core;
+package com.swe.controller;
 
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ClientNode;

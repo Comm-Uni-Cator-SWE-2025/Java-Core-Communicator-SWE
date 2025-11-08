@@ -1,7 +1,7 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.socketry.SocketryServer;
-import com.swe.RPC.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,9 +35,9 @@ public class DummyRPC implements AbstractRPC {
     }
 
     @Override
-    public Thread connect() throws IOException, ExecutionException, InterruptedException {
+    public Thread connect(int portNumber) throws IOException, ExecutionException, InterruptedException {
         System.out.println(procedures);
-        server = new SocketryServer(TEST_SERVER_PORT, procedures);
+        server = new SocketryServer(portNumber, procedures);
         final Thread handler = new Thread(server::listenLoop);
         handler.start();
         return handler;
