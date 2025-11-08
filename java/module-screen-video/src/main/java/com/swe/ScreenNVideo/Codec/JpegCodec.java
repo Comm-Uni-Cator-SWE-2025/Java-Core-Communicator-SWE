@@ -184,7 +184,7 @@ public class JpegCodec implements Codec {
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        int maxLen = (int) ((256*128 * 1.5 * 4 ) + (4 * 3) + 0.5);
+        int maxLen = (int) ((1200 * 800 * 1.5 * 4) + (4 * 3) + 0.5);
         resRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
