@@ -12,6 +12,7 @@ import java.util.Map;
  * Priority Queue with simple Multi-Level Feedback Queue (MLFQ).
  */
 public class PriorityQueue {
+
     /**
      * The static class object for the priority queue.
      */
@@ -95,7 +96,7 @@ public class PriorityQueue {
 
     /**
      * This function returns the current remaining total budget.
-     * 
+     *
      * @return the remaining total budget.
      */
     private int getTotalRemainingBudget() {
@@ -151,8 +152,8 @@ public class PriorityQueue {
     }
 
     /**
-     * Rotates MLFQ levels every 1000 ms.
-     * Level 0 → Level 1, Level 1 → Level 2, Level 2 → Level 0(recycled)
+     * Rotates MLFQ levels every 1000 ms. Level 0 → Level 1, Level 1 → Level 2,
+     * Level 2 → Level 0(recycled)
      */
     public void rotateQueues() {
         final long now = System.currentTimeMillis();
@@ -176,17 +177,18 @@ public class PriorityQueue {
     }
 
     /**
-     * This function gives the approx throughput of the Priority Queue.
-     * This assumes that there are enough number of packets.
+     * This function gives the approx throughput of the Priority Queue. This
+     * assumes that there are enough number of packets.
      *
      * @return The minimum throughput of the Priority Queue
      */
     public long getThroughput() {
 
-         long currTime = System.currentTimeMillis();
-         long timeTaken = currTime - startTime;
+        final long currTime = System.currentTimeMillis();
+        final long timeTaken = currTime - startTime;
+        final int packetLength = 1000;
 
-        return (1000 * numPacketsSent) / timeTaken;
+        return (packetLength * numPacketsSent) / timeTaken;
     }
 
     /**
@@ -219,7 +221,7 @@ public class PriorityQueue {
 
     /**
      * Processes and sends a packet from the Highest Priority Queue (P1/ZERO).
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processHighestPriority() {
@@ -236,7 +238,7 @@ public class PriorityQueue {
     /**
      * Processes and sends a packet from the Mid-Priority Queue (P2/ONE).
      * Work-conserving: uses P2's budget, then P1's unused budget.
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processMidPriority() {
@@ -265,7 +267,7 @@ public class PriorityQueue {
     /**
      * Processes and sends a packet from the Low Priority (MLFQ)Queues(P3/TWO).
      * Work-conserving: uses P3, then P2, then P1 budget.
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processLowPriority() {
@@ -305,8 +307,8 @@ public class PriorityQueue {
     }
 
     /**
-     * A private function which gets the packet from the queue.
-     * The packet could be null, and it signals to wait.
+     * A private function which gets the packet from the queue. The packet could
+     * be null, and it signals to wait.
      *
      * @return The Packet data or null
      */
@@ -326,7 +328,6 @@ public class PriorityQueue {
         rotateQueues();
 
         // 3. Process priorities in order: P1 > P2 > P3
-
         // Highest Priority (P1/ZERO)
         byte[] packet = processHighestPriority();
         if (packet != null) {
@@ -373,7 +374,8 @@ public class PriorityQueue {
             // If the packet is null it makes the thread wait and they retry.
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException ignored) { }
+            } catch (InterruptedException ignored) {
+            }
 
             retryCount++;
             // optional safety escape
