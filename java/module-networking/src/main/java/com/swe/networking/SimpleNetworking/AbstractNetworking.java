@@ -35,3 +35,4 @@ public interface AbstractNetworking {
      */
     void removeSubscription(ModuleType name);
 }
+

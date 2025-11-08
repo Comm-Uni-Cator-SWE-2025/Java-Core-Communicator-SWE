@@ -1,5 +1,6 @@
 package com.swe.core;
 
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.MessageListener;
@@ -39,6 +40,11 @@ public class SimpleNetworkingAdapter implements NetworkingInterface {
     @Override
     public void closeNetworking() {
         simpleNetworking.closeNetworking();
+    }
+
+    @Override
+    public void consumeRPC(AbstractRPC rpc) {
+        simpleNetworking.consumeRPC(rpc);
     }
 }
 
