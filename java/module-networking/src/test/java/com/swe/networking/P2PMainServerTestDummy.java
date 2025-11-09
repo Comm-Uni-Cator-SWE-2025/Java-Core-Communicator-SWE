@@ -30,6 +30,7 @@ public class P2PMainServerTestDummy {
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
+        networking.closeNetworking();
 //        topology.closeTopology();
     }
 
