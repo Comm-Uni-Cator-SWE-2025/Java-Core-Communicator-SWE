@@ -200,7 +200,12 @@ public class MainServer implements P2PUser {
                 System.out.println("Received alive packet from " + dest);
             } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
                 System.out.println("Passing to chunk manager...");
-                chunkManager.addChunk(packet);
+                final int module = parser.parsePacket(packet).getModule();
+                final byte[] data = chunkManager.addChunk(packet);
+                final Networking networking = Networking.getNetwork();
+                if (data != null) {
+                    networking.callSubscriber(module, data);
+                }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                 System.out.println("Closing the Main Server");
             }
@@ -405,6 +410,7 @@ public class MainServer implements P2PUser {
                 }
                 send(removePacket, newClient);
             }
+            communicator.closeSocket(client);
         } catch (UnknownHostException ex) {
         }
     }

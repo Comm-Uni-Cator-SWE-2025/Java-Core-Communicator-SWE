@@ -129,6 +129,8 @@ public final class Topology implements AbstractTopology, AbstractController {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
         final NetworkStructure structure = new NetworkStructure(clients, servers);
+        System.out.println(clusters);
+        System.out.println(clusterServers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -153,6 +155,8 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public int addClient(final ClientNode clientAddress) {
         numClients += 1;
+        // System.out.println(numClients + " " + numClusters);
+        // System.out.println(clusters + "\n" + clusterServers);
         if (numClusters < maxClusters) {
             numClusters += 1;
             final List<ClientNode> cluster = new ArrayList<>();
@@ -166,6 +170,8 @@ public final class Topology implements AbstractTopology, AbstractController {
             if (clusters.get(clusterIndex).size() == 1) {
                 System.out.println("Adding to a new cluster...");
                 clusterServers.add(clientAddress);
+                // System.out.println(numClients + " " + numClusters);
+                // System.out.println(clusters + "\n" + clusterServers);
             }
             final int idx = clusterIndex;
             clusterIndex = (clusterIndex + 1) % maxClusters;
@@ -194,13 +200,18 @@ public final class Topology implements AbstractTopology, AbstractController {
         final int idx = client.clusterIndex();
         final ClientNode removeClient = client.client();
         clusters.get(idx).remove(removeClient);
+        numClients -= 1;
         if (clusterServers.contains(removeClient)) {
             if (!clusters.get(idx).isEmpty()) {
                 final ClientNode newServer = clusters.get(idx).get(0);
                 clusterServers.set(idx, newServer);
                 System.out.println("A new server has been decided\n");
+                return;
             }
+            clusters.remove(idx);
             clusterServers.remove(removeClient);
+            System.out.println("Removed " + removeClient + "from the server list...");
+            // numClusters -= 1;
         }
     }
 
