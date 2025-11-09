@@ -1,3 +1,7 @@
+/**
+ * Contributed by : Sachin(112101052)
+ */
+
 package com.swe.chat;
 
 import java.nio.ByteBuffer;
@@ -8,6 +12,7 @@ import java.time.ZoneOffset;
 /**
  * Handles custom binary serialization and deserialization for ChatMessage objects.
  * This ensures cross-platform compatibility between Java and .NET.
+ *
  */
 public final class ChatMessageSerializer {
 
