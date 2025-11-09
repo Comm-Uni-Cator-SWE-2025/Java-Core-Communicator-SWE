@@ -8,13 +8,7 @@ package com.swe.ScreenNVideo.Codec;
  */
 public class AANdct implements IFIDCT {
     /**
-     * ScaleFactor which is used in FDCT to scale DCT coefficient
-     * but to prevent repeated calculation it will be used
-     * to scale quantisation table.
-     */
-    private final double[] aanScaleFactor;
-    /**
-     * count of aanScaleFactor.
+     * count of ScaleFactor.
      */
     private final int SCALE_FACTOR_COUNT = 8;
     /**
@@ -62,7 +56,6 @@ public class AANdct implements IFIDCT {
 
     private AANdct() {
 
-        aanScaleFactor = new double[SCALE_FACTOR_COUNT];
         final int multipliersCount = 5;
         multipliers = new double[multipliersCount];
         imultipliers = new double[multipliersCount];
@@ -70,14 +63,10 @@ public class AANdct implements IFIDCT {
         final double[] cVals = new double[SCALE_FACTOR_COUNT];
         final int cosBase = 16;
         for (int i = 0; i < SCALE_FACTOR_COUNT; ++i) {
-
             cVals[i] = Math.cos(Math.PI * i / cosBase);
-            aanScaleFactor[i] = 1.0 / (cVals[i] * FOUR);
         }
 
-        final int one = 1;
         final int two = 2;
-        aanScaleFactor[0] = one / (two * Math.sqrt(two));
 
         multipliers[0] = cVals[FOUR];
         multipliers[1] = cVals[two] - cVals[SIX];
@@ -101,11 +90,6 @@ public class AANdct implements IFIDCT {
      */
     public static AANdct getInstance() {
         return AANDCTINSTANCE;
-    }
-
-    @Override
-    public double[] getScaleFactor() {
-        return aanScaleFactor;
     }
 
     /**
@@ -251,7 +235,6 @@ public class AANdct implements IFIDCT {
         // column wise transformation
         fdctCol(data);
 
-        final double normalizeFactor = 1;
 
         // ---- store back the transformed block ----
         for (int i = 0; i < SCALE_FACTOR_COUNT; i++) {

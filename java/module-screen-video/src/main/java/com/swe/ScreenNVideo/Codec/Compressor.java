@@ -22,10 +22,6 @@ class Compressor implements ICompressor {
      * module which have Qunatisation table and implemented quantisation and dequantisation.
      */
     private final QuantisationUtil quantmodule;
-    /**
-     * this is the module which will be used for encoding and decoding.
-     */
-    private final IRLE enDeRLE;
 
     /**
      * Unit Matrix Dimension (8x8).
@@ -45,11 +41,6 @@ class Compressor implements ICompressor {
      */
     public long quantTime = 0;
 
-    private boolean UseANNDCT = false;
-
-    public void setUseANNDCT(boolean useANNDCT) {
-        UseANNDCT = useANNDCT;
-    }
 
     /**
      * Package-private constructor.
@@ -59,8 +50,7 @@ class Compressor implements ICompressor {
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
-        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
-        enDeRLE = EncodeDecodeRLEHuffman.getInstance();
+
     }
 
     /**
@@ -75,25 +65,18 @@ class Compressor implements ICompressor {
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressChrome(final short[][] matrix, final short height, final short width,
-                               final ByteBuffer resBuffer) {
+    public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        if (UseANNDCT) {
-            for (short i = 0; i < height; i += MATRIX_DIM) {
-                for (short j = 0; j < width; j += MATRIX_DIM) {
-                    long curr = System.nanoTime();
-                    dctmodule.fdct(matrix, i, j);
-                    dctTime += System.nanoTime() - curr;
-                    curr = System.nanoTime();
-                    quantmodule.quantisationChrome(matrix, i, j);
-                    quantTime += System.nanoTime() - curr;
-                }
+        for (short i = 0; i < height; i += MATRIX_DIM) {
+            for (short j = 0; j < width; j += MATRIX_DIM) {
+                dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
+                quantmodule.quantisationChrome(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
-        long curr = System.nanoTime();
-        enDeRLE.zigZagRLE(matrix, resBuffer);
-        zigZagTime += System.nanoTime() - curr;
     }
 
     /**
@@ -108,24 +91,17 @@ class Compressor implements ICompressor {
      * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressLumin(final short[][] matrix, final short height, final short width,
-                              final ByteBuffer resBuffer) {
+    public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
 
-        if (UseANNDCT) {
-            for (short i = 0; i < height; i += MATRIX_DIM) {
-                for (short j = 0; j < width; j += MATRIX_DIM) {
-                    long curr = System.nanoTime();
-                    dctmodule.fdct(matrix, i, j);
-                    dctTime += System.nanoTime() - curr;
-                    curr = System.nanoTime();
-                    quantmodule.quantisationLumin(matrix, i, j);
-                    quantTime += System.nanoTime() - curr;
-                }
+        for (short i = 0; i < height; i += MATRIX_DIM) {
+            for (short j = 0; j < width; j += MATRIX_DIM) {
+                dctmodule.fdct(matrix, i, j);
+//                dctTime += System.nanoTime() - curr;
+//                curr = System.nanoTime();
+                quantmodule.quantisationLumin(matrix, i, j);
+//                quantTime += System.nanoTime() - curr;
             }
         }
 
-        long curr = System.nanoTime();
-        enDeRLE.zigZagRLE(matrix, resBuffer);
-        zigZagTime += System.nanoTime() - curr;
     }
 }

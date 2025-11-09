@@ -25,9 +25,4 @@ public interface IFIDCT {
      */
     void idct(short[][] matrix, short row, short col);
 
-    /**
-     * Scale factor will be used by Quantisation.
-     * @return : ScaleFactor Array.
-     */
-    double[] getScaleFactor();
 }

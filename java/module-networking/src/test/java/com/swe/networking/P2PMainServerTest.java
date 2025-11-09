@@ -1,24 +1,32 @@
 package com.swe.networking;
+
 import java.net.UnknownHostException;
 
 import org.junit.Test;
 
-
 public class P2PMainServerTest {
 
     private int mainServerPort = 8000;
-    private String loopBackAddress = "10.128.10.1";
+    private String loopBackAddress = "10.32.0.41";
 
     @Test
     public void testMainServerInitialization() throws UnknownHostException {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         ClientNode mainServerNode = new ClientNode(loopBackAddress, mainServerPort);
-        Topology topology = Topology.getTopology();
-        topology.addUser(mainServerNode, mainServerNode);
+        Networking networking = Networking.getNetwork();
+        // Topology topology = Topology.getTopology();
+        // topology.addUser(mainServerNode, mainServerNode);
+        networking.addUser(mainServerNode, mainServerNode);
+        final MessageListener func = (byte[] data) -> {
+            System.out.println("This Server Received data: " + data.length);
+        };
+        networking.subscribe(0, func);
         try {
-            Thread.sleep(50000);
+            Thread.sleep(500000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
+        networking.closeNetworking();
     }
 
 }

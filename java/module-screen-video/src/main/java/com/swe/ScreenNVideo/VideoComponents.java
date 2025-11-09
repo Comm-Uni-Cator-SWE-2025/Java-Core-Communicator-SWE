@@ -1,12 +1,14 @@
 package com.swe.ScreenNVideo;
 
-import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.RPC.AbstractRPC;
+import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.Codec.JpegCodec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.PatchGenerator.Hasher;
 import com.swe.ScreenNVideo.PatchGenerator.IHasher;
 import com.swe.ScreenNVideo.PatchGenerator.PacketGenerator;
+import com.swe.ScreenNVideo.Serializer.APackets;
 import com.swe.ScreenNVideo.Serializer.CPackets;
 import com.swe.ScreenNVideo.Serializer.RImage;
 
@@ -22,6 +24,11 @@ public class VideoComponents {
      * Video codec object.
      */
     private final JpegCodec videoCodec;
+
+    /**
+     * Audio Encoder.
+     */
+    private final ADPCMEncoder audioEncoder;
 
     /**
      * Patch generator object.
@@ -49,9 +56,14 @@ public class VideoComponents {
     private final String localIp = Utils.getSelfIP();
 
     /**
-     * Feed number.
+     * Video Feed number.
      */
-    private int feedNumber = -1;
+    private int videoFeedNumber = -1;
+
+    /**
+     * Audio Feed number.
+     */
+    private int audioFeedNumber = -1;
 
     /**
      * Current feed.
@@ -72,6 +84,7 @@ public class VideoComponents {
         this.captureComponents = captureComponentsArgs;
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
         videoCodec = new JpegCodec();
+        audioEncoder = new ADPCMEncoder();
         patchGenerator = new PacketGenerator(videoCodec, hasher);
         // initialize bounded queue and start worker thread that reads from the queue and updates the UI
         this.uiQueue = new ArrayBlockingQueue<>(UI_QUEUE_CAPACITY);
@@ -90,9 +103,11 @@ public class VideoComponents {
             return null;
         }
 
-        final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed);
+        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, true, feed.length, feed[0].length, patches);
+        final List<CompressedPatch> patches = patchGenerator.generateFullImage(feed, toCompress);
+
+        final CPackets networkPackets = new CPackets(videoFeedNumber, localIp, true, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
@@ -174,6 +189,32 @@ public class VideoComponents {
     }
 
     /**
+     * Captures the Audio, encode it and return back the bytes.
+     */
+    protected byte[] captureAudio() {
+        final byte[] audioFeed = captureComponents.getAudioFeed();
+        if (audioFeed == null) {
+            return null;
+        }
+        final byte[] feed = audioEncoder.encode(audioFeed);
+        final APackets audioPacket = new APackets(audioFeedNumber, feed);
+        audioFeedNumber += 1;
+        byte[] encodedPacket = null;
+        int tries = Utils.MAX_TRIES_TO_SERIALIZE;
+        while (tries-- > 0) {
+            // max tries 3 times to convert the patch
+            try {
+                encodedPacket = audioPacket.serializeAPackets();
+                break;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return encodedPacket;
+    }
+
+    /**
      * Captures the Video using CaptureComponents, handles overlay ,diffing and converting it to bytes  .
      *
      * @return encoded Patches to be sent through the network
@@ -197,33 +238,35 @@ public class VideoComponents {
             }
             return null;
         }
-        System.out.println("\nServer FPS : "
-            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
-        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
+//        System.out.println("\nServer FPS : "
+//            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+
+//        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
         long curr1 = System.nanoTime();
         videoCodec.quantTime = 0;
         videoCodec.dctTime = 0;
         videoCodec.zigZagtime = 0;
 
-        final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed);
+        final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed, toCompress);
 
         if (patches.isEmpty()) {
             prev = System.nanoTime();
             return null;
         }
 
-        System.out.println("COmpression TIme : " + (System.nanoTime() - curr1) / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("ZigTime : " + videoCodec.zigZagtime / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("DCT Time : " + videoCodec.dctTime / ((double) (Utils.MSEC_IN_NS)));
-        System.out.println("Quant Time : " + videoCodec.quantTime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("COmpression TIme : " + (System.nanoTime() - curr1) / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("ZigTime : " + videoCodec.zigZagtime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("DCT Time : " + videoCodec.dctTime / ((double) (Utils.MSEC_IN_NS)));
+//        System.out.println("Quant Time : " + videoCodec.quantTime / ((double) (Utils.MSEC_IN_NS)));
 
         // increase the feed number and update the feed
         feed = newFeed;
-        feedNumber++;
+        videoFeedNumber++;
 
-        final CPackets networkPackets = new CPackets(feedNumber, localIp, false, feed.length, feed[0].length, patches);
+        final CPackets networkPackets = new CPackets(videoFeedNumber, localIp, false, toCompress, feed.length, feed[0].length, patches);
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
@@ -244,10 +287,10 @@ public class VideoComponents {
 
         // Asynchronously send a serialized RImage to the UI so we don't block capture
         // (frame is deep-copied inside submitUIUpdate)
-        submitUIUpdate(feed);
+//        submitUIUpdate(feed);
 
         prev = System.nanoTime();
-        System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
+//        System.out.println((prev - curr1) / (double) (Utils.MSEC_IN_NS));
 //        System.out.println("\nSending to " + networkPackets.getIp());
         return encodedPatches;
     }

@@ -30,7 +30,7 @@ public class DeCompressor implements IDeCompressor {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
         // Ensure quantization tables are scaled with the same DCT scale factors
-        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
+//        quantmodule.scaleQuantTable(dctmodule.getScaleFactor());
     }
 
     /**
