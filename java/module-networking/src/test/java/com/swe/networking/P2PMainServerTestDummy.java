@@ -24,9 +24,9 @@ public class P2PMainServerTestDummy {
         };
         networking.subscribe(0, func);
         ClientNode[] dest = {mainServerNode};
-        networking.sendData(new byte[5*1024*1024], dest, 0, 0);
+        networking.sendData(new byte[5*1024], dest, 0, 0);
         try {
-            Thread.sleep(10000);
+            Thread.sleep(5000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }

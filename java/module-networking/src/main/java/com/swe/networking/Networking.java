@@ -90,7 +90,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         System.out.println("chunk number : " + chunks.size());
         for (byte[] chunk : chunks) {
             try {
-                PacketInfo pktInfo = parser.parsePacket(chunk);
+                final PacketInfo pktInfo = parser.parsePacket(chunk);
                 final InetAddress addr = pktInfo.getIpAddress();
                 final int port = pktInfo.getPortNum();
                 final ClientNode newdest = new ClientNode(addr.getHostName(), port);
@@ -106,14 +106,13 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void start() {
         while (true) {
-            if (priorityQueue.isEmpty()) {
-            } else {
+            if (!priorityQueue.isEmpty()) {
                 final byte[] packet = priorityQueue.nextPacket();
                 try {
                     final PacketInfo pktInfo = parser.parsePacket(packet);
-                    InetAddress addr = pktInfo.getIpAddress();
-                    int port = pktInfo.getPortNum();
-                    ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                    final InetAddress addr = pktInfo.getIpAddress();
+                    final int port = pktInfo.getPortNum();
+                    final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
                     topology.sendPacket(packet, dest);
                 } catch (UnknownHostException e) {
                 }
@@ -142,7 +141,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         for (ClientNode client : dest) {
             try {
 //                final int type = topology.getNetworkType(user, client);
-                pkt.setType(3);
+                final int type = 3;
+                pkt.setType(type);
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());

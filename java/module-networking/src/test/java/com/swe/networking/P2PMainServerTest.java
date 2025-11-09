@@ -17,7 +17,7 @@ public class P2PMainServerTest {
         // Topology topology = Topology.getTopology();
         // topology.addUser(mainServerNode, mainServerNode);
         networking.addUser(mainServerNode, mainServerNode);
-        final MessageListener func = (byte[] data) -> {
+        final MessageListener fun c = (byte[] data) -> {
             System.out.println("This Server Received data: " + data.length);
         };
         networking.subscribe(0, func);

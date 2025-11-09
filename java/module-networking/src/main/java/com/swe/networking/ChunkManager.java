@@ -74,6 +74,7 @@ public class ChunkManager {
      * Add chunk function.
      *
      * @param chunk the byte of chunk coming in.
+     * @return the combined chunk if present
      * @throws UnknownHostException the issue from packet parser.
      */
     public byte[] addChunk(final byte[] chunk) throws UnknownHostException {
@@ -163,7 +164,7 @@ public class ChunkManager {
             final byte[] pkt = parser.createPkt(info);
             chunks.add(pkt);
         }
-        System.out.println("Chunk size : "+ chunks.size());
+        System.out.println("Chunk size : " + chunks.size());
         return chunks;
     }
 
