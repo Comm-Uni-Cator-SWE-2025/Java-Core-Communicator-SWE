@@ -38,7 +38,7 @@ public class MainController {
         final AbstractNetworking networking = new DummyNetworking();
 
         List<String> allNetworks = new ArrayList<>();
-//        allNetworks.add("10.32.2.172");
+        allNetworks.add("10.32.2.172");
 //        allNetworks.add("10.128.15.115");
 
         // Get IP address as string
@@ -51,8 +51,8 @@ public class MainController {
 
         final MediaCaptureManager screenNVideo = new MediaCaptureManager((AbstractNetworking) networking, rpc, SERVERPORT);
 
-        AbstractController networkingCom = (AbstractController) Networking.getNetwork();
-         networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
+//        AbstractController networkingCom = (AbstractController) Networking.getNetwork();
+//         networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 //        System.out.println(allNetworks);
 
         screenNVideo.broadcastJoinMeeting(allNetworks);
