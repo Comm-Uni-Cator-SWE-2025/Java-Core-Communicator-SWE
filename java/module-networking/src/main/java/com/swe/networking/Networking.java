@@ -221,4 +221,12 @@ public class Networking implements AbstractNetworking, AbstractController {
         function.receiveData(data);
     }
 
+    /**
+     * Function called to close the networking module.
+     */
+    public void closeNetworking() {
+        System.out.println("Closing Networking module...");
+        topology.closeTopology();
+    }
+
 }
