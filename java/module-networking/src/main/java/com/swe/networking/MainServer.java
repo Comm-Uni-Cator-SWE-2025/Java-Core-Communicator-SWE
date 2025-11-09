@@ -202,7 +202,7 @@ public class MainServer implements P2PUser {
                 System.out.println("Passing to chunk manager...");
                 final int module = parser.parsePacket(packet).getModule();
                 final byte[] data = chunkManager.addChunk(packet);
-                Networking networking = Networking.getNetwork();
+                final Networking networking = Networking.getNetwork();
                 if (data != null) {
                     networking.callSubscriber(module, data);
                 }

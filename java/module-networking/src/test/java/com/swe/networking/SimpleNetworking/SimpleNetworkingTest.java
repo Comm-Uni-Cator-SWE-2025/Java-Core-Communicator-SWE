@@ -18,12 +18,13 @@ import com.swe.networking.ModuleType;
  * Test class for simplenetworking class.
  */
 public class SimpleNetworkingTest {
-
+    
     /**
      * Function to test the simpleNetwokring server receive.
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingServerTestReceive() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
             final Integer sleepTime = 2000;
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
@@ -46,6 +47,7 @@ public class SimpleNetworkingTest {
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingClientTestReceive() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
             final Integer sleepTime = 2000;
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
@@ -79,6 +81,7 @@ public class SimpleNetworkingTest {
      * Test function to send message.
      */
     public void sendServer() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final Socket destSocket = new Socket();
         try {
             final Integer port = 8000;
@@ -99,6 +102,7 @@ public class SimpleNetworkingTest {
      * Test function to send message.
      */
     public void sendClient() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final Socket destSocket = new Socket();
         try {
             final Integer port = 9000;
@@ -120,6 +124,7 @@ public class SimpleNetworkingTest {
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingSubscribeTest() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
         final MessageListener func = (byte[] data) -> {
             System.out.println("Received data: " + new String(data, StandardCharsets.UTF_8));
@@ -137,7 +142,7 @@ public class SimpleNetworkingTest {
     public void simpleNetworkingServerSendTest() throws IOException {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
-            final ClientNode cdevice = new ClientNode("10.32.0.41", 8101);
+            final ClientNode cdevice = new ClientNode("10.32.0.41", 8005);
             // final byte[] message = new byte[5 * 1024 * 1024];
             final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
             final byte[] message;
@@ -170,7 +175,7 @@ public class SimpleNetworkingTest {
             network.subscribe(ModuleType.CHAT, func);
             final String data = "Hello world to the new world";
             // System.out.println("Data length " + data.length());
-            final ClientNode dest = new ClientNode("127.0.0.1", 8101);
+            final ClientNode dest = new ClientNode("127.0.0.1", 8005);
             final ClientNode[] dests = {dest};
             network.sendData(message, dests, ModuleType.CHAT, 0);
             Thread.sleep(2000);
@@ -186,6 +191,7 @@ public class SimpleNetworkingTest {
      */
     @org.junit.jupiter.api.Test
     public void simpleNetworkingIOTest() {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final ClientNode device = new ClientNode("127.0.0.1", 8100);
         final Server server = new Server(device);
         final String data = "Hello from server !!!";

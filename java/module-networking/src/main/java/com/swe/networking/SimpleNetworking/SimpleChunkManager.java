@@ -82,12 +82,16 @@ public class SimpleChunkManager {
      * Add chunk function.
      *
      * @param chunk the byte of chunk coming in.
+     * @return the combined message if present
      * @throws UnknownHostException the issue from packet parser.
      */
     public byte[] addChunk(final byte[] chunk) throws UnknownHostException {
         final PacketInfo info = parser.parsePacket(chunk);
         final int msgId = info.getMessageId();
         final int maxNumChunks = info.getChunkLength();
+        final int chunkNum = info.getChunkNum();
+        System.out.println("Message ID: " + msgId);
+        System.out.println("Chunk num / Max chunks: " + chunkNum + " / " + maxNumChunks);
         if (chunkListMap.containsKey(msgId)) {
             chunkListMap.get(msgId).add(chunk);
         } else {
@@ -96,7 +100,7 @@ public class SimpleChunkManager {
         }
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            // TOD use appropriate function once the message is ready
+            System.out.println("Merged Message ID: " + msgId + " Size: " + messageChunk.length);
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
             return messageChunk;
