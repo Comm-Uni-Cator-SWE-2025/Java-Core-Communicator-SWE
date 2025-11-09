@@ -33,8 +33,7 @@ public class ChatManager implements IChatService {
         this.rpc = rpc;
         this.network = network;
 
-        // 5. THE SUBSCRIBE CALL IS UPDATED
-// 1. Subscribe to calls from the Frontend
+        // 1. Subscribe to calls from the Frontend
         this.rpc.subscribe("chat:send-message", this::handleFrontendMessage);
 
         // 2. Subscribe to calls from the Network
@@ -55,7 +54,6 @@ public class ChatManager implements IChatService {
         this.network.sendData(messageBytes, dests, ModuleType.CHAT, 0);
         System.out.println("Received from front");
 
-//        return byte[0]; // 'null' means "I received it, no reply needed"
         return new byte[0];
     }
 
@@ -75,18 +73,7 @@ public class ChatManager implements IChatService {
      */
     @Override
     public void sendMessage(final ChatMessage message) {
-        final String json = MessageParser.serialize(message);
-        final byte[] data = json.getBytes(StandardCharsets.UTF_8);
-
-        // 6. THE SENDDATA CALL IS UPDATED
-        // Old: network.sendData(data, new String[]{}, new int[]{}); // broadcast
-
-        // New: We must provide a destination and ModuleType.
-        // TODO: You need a real way to get destinations.
-        // For now, I am using the hard-coded destination from their example.
-        ClientNode[] dests = { new ClientNode("10.32.14.76", 1234) };
-
-        network.sendData(data, dests, ModuleType.CHAT, 0);
+        // "Dummy send message";
     }
 
     /**
@@ -99,12 +86,7 @@ public class ChatManager implements IChatService {
      */
     @Override
     public void receiveMessage(final String json) {
-        final ChatMessage message = MessageParser.deserialize(json);
-
-        // Instead of printing to the console, notify our UI listener
-        if (onMessageReceivedListener != null) {
-            onMessageReceivedListener.accept(message);
-        }
+        // dummy receiver message
     }
 
     /**
@@ -125,9 +107,7 @@ public class ChatManager implements IChatService {
      * @param data raw byte array received from the network
      */
     private void receiveFromNetwork(final byte[] data) {
-        final String json = new String(data, StandardCharsets.UTF_8);
-        // This now correctly calls the method from your contract
-        receiveMessage(json);
+        // Dummy try function;
     }
 
     /**

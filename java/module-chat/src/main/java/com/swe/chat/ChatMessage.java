@@ -48,7 +48,7 @@ public class ChatMessage {
      *
      * @param messageId         Unique ID for the message.
      * @param userId            Stable, unique ID of the sender.
-//     * @param senderDisplayName The name to show in the UI.
+    //     * @param senderDisplayName The name to show in the UI.
      * @param content           The message text.
      * @param timestampEpoch    The raw timestamp (epoch seconds).
      * @param replyToId         The ID of the message being replied to (or null).

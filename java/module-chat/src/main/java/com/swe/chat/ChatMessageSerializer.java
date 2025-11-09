@@ -77,7 +77,7 @@ public final class ChatMessageSerializer {
     public static ChatMessage deserialize(final byte[] data) {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
 
-        // Read in the *exact* same order we wrote
+        // Read in the exact same order we wrote
         final String messageId = readString(buffer);
         final String userId = readString(buffer);
         final String senderName = readString(buffer);
