@@ -15,8 +15,8 @@ import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
@@ -116,7 +116,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         clientHandler = new MediaCaptureManager.ClientHandler();
 
-        networking.subscribe(ModuleType.SCREENSHARING, clientHandler);
+        networking.subscribe(ModuleType.SCREENSHARING.ordinal(), clientHandler);
     }
 
     /**
@@ -130,7 +130,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
         final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING, 2);
+        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
     }
 
     @Override
@@ -186,7 +186,7 @@ public class MediaCaptureManager implements CaptureManager {
 
 //        System.out.println("Size : " + feed.length / Utils.KB + " KB");
         CompletableFuture.runAsync(() -> {
-            networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
+            networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING.ordinal(), 2);
     //        SimpleNetworking.getSimpleNetwork().closeNetworking();
 //            System.out.println("Sent to viewers " + viewers.size());
 //            viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
@@ -338,7 +338,7 @@ public class MediaCaptureManager implements CaptureManager {
             System.err.println("Asking for data...");
             final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
             final ClientNode destNode = new ClientNode(ip, port);
-            networking.sendData(subscribeData, new ClientNode[]{destNode}, ModuleType.SCREENSHARING, 2);
+            networking.sendData(subscribeData, new ClientNode[]{destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
         }
 
         public void addUserNFullImageRequest(final String ip) {
@@ -347,7 +347,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (fullImageEncoded == null) {
                 return;
             }
-            networking.sendData(fullImageEncoded, new ClientNode[]{new ClientNode(ip, port)}, ModuleType.SCREENSHARING, 2);
+            networking.sendData(fullImageEncoded, new ClientNode[]{new ClientNode(ip, port)}, ModuleType.SCREENSHARING.ordinal(), 2);
         }
     }
 }

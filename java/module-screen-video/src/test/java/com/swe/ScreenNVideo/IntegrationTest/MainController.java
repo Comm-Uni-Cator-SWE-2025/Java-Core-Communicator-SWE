@@ -2,9 +2,12 @@ package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.RPC.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.networking.AbstractController;
+import com.swe.networking.AbstractNetworking;
 import com.swe.networking.ClientNode;
 import com.swe.networking.Networking;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
+//import com.swe.networking.SimpleNetworking.AbstractController;
+//import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
@@ -31,10 +34,11 @@ public class MainController {
 
     static void main(final String[] args) throws InterruptedException {
 //        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
-        final AbstractNetworking networking = new DummyNetworking();
+        final AbstractNetworking networking = Networking.getNetwork();
+//        final AbstractNetworking networking = new DummyNetworking();
 
         List<String> allNetworks = new ArrayList<>();
-        allNetworks.add("10.32.6.88");
+        allNetworks.add("10.32.1.250");
 //        allNetworks.add("10.128.15.115");
 
         // Get IP address as string
@@ -47,7 +51,8 @@ public class MainController {
 
         final MediaCaptureManager screenNVideo = new MediaCaptureManager((AbstractNetworking) networking, rpc, SERVERPORT);
 
-//         networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
+        AbstractController networkingCom = (AbstractController) Networking.getNetwork();
+         networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 //        System.out.println(allNetworks);
 
         screenNVideo.broadcastJoinMeeting(allNetworks);
