@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The main architecture of the networking module.
- * Implements the cluster networks
+ * The main architecture of the networking module. Implements the cluster
+ * networks
  */
 public final class Topology implements AbstractTopology, AbstractController {
+
     /**
      * The List of all cluster clients.
      *
@@ -31,7 +32,7 @@ public final class Topology implements AbstractTopology, AbstractController {
     /**
      * The maximum of clusters.
      */
-    private final int maxClusters = 8;
+    private final int maxClusters = 2;
     /**
      * The variable to iterate through the clusters.
      */
@@ -68,8 +69,8 @@ public final class Topology implements AbstractTopology, AbstractController {
     }
 
     /**
-     * Function returns the cluster server in which the client is present.
-     * TODO Update all the functions.
+     * Function returns the cluster server in which the client is present. TODO
+     * Update all the functions.
      *
      * @param dest The ip address of the destination client
      */
@@ -90,10 +91,10 @@ public final class Topology implements AbstractTopology, AbstractController {
     }
 
     /**
-     * Add a user to the topology.
-     * Logic: choose a cluster, add the user, and update bookkeeping.
+     * Add a user to the topology. Logic: choose a cluster, add the user, and
+     * update bookkeeping.
      *
-     * @param deviceAddress     Ip address of the current device
+     * @param deviceAddress Ip address of the current device
      * @param mainServerAddress Ip address of the server device
      */
     @Override
@@ -128,6 +129,8 @@ public final class Topology implements AbstractTopology, AbstractController {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
         final NetworkStructure structure = new NetworkStructure(clients, servers);
+        System.out.println(clusters);
+        System.out.println(clusterServers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -152,7 +155,9 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public int addClient(final ClientNode clientAddress) {
         numClients += 1;
-        if (numClusters <= maxClusters) {
+        // System.out.println(numClients + " " + numClusters);
+        // System.out.println(clusters + "\n" + clusterServers);
+        if (numClusters < maxClusters) {
             numClusters += 1;
             final List<ClientNode> cluster = new ArrayList<>();
             cluster.add(clientAddress);
@@ -165,6 +170,8 @@ public final class Topology implements AbstractTopology, AbstractController {
             if (clusters.get(clusterIndex).size() == 1) {
                 System.out.println("Adding to a new cluster...");
                 clusterServers.add(clientAddress);
+                // System.out.println(numClients + " " + numClusters);
+                // System.out.println(clusters + "\n" + clusterServers);
             }
             final int idx = clusterIndex;
             clusterIndex = (clusterIndex + 1) % maxClusters;
@@ -193,18 +200,24 @@ public final class Topology implements AbstractTopology, AbstractController {
         final int idx = client.clusterIndex();
         final ClientNode removeClient = client.client();
         clusters.get(idx).remove(removeClient);
+        numClients -= 1;
         if (clusterServers.contains(removeClient)) {
             if (!clusters.get(idx).isEmpty()) {
                 final ClientNode newServer = clusters.get(idx).get(0);
                 clusterServers.set(idx, newServer);
                 System.out.println("A new server has been decided\n");
+                return;
             }
+            clusters.remove(idx);
+            clusterServers.remove(removeClient);
+            System.out.println("Removed " + removeClient + "from the server list...");
+            // numClusters -= 1;
         }
     }
 
     /**
      * Function to replace the current network with a new one.
-     * 
+     *
      * @param network the new network structure
      */
     public void replaceNetwork(final NetworkStructure network) {
@@ -223,7 +236,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get the cluster index of a client.
-     * 
+     *
      * @param client the client whose index is needed
      * @return the cluster index of the client
      */
@@ -238,7 +251,7 @@ public final class Topology implements AbstractTopology, AbstractController {
 
     /**
      * Function to get all clients in a cluster.
-     * 
+     *
      * @param index the index of the cluster
      * @return list of all clients in the cluster
      */
@@ -274,7 +287,7 @@ public final class Topology implements AbstractTopology, AbstractController {
      * Function to get the network type based in source and destination.
      *
      * @param source the source IP address
-     * @param dest   the destination IP address
+     * @param dest the destination IP address
      * @return the type number
      */
     public int getNetworkType(final ClientNode source, final ClientNode dest) {
@@ -291,7 +304,7 @@ public final class Topology implements AbstractTopology, AbstractController {
      * Function to get the destination to send the packet to in the topology.
      *
      * @param source the source IP address
-     * @param dest   the destination IP address
+     * @param dest the destination IP address
      * @return the destination to send to
      */
     public ClientNode getDestination(final ClientNode source, final ClientNode dest) {
@@ -309,7 +322,7 @@ public final class Topology implements AbstractTopology, AbstractController {
      * Function to send the packet to underlying user.
      *
      * @param packet the packet to be send
-     * @param dest   the destination to send
+     * @param dest the destination to send
      */
     public void sendPacket(final byte[] packet, final ClientNode dest) {
         user.send(packet, dest);

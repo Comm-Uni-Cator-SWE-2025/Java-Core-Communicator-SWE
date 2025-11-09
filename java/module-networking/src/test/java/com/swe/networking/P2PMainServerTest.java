@@ -7,7 +7,7 @@ import org.junit.Test;
 public class P2PMainServerTest {
 
     private int mainServerPort = 8000;
-    private String loopBackAddress = "10.128.10.1";
+    private String loopBackAddress = "10.32.0.41";
 
     @Test
     public void testMainServerInitialization() throws UnknownHostException {
@@ -15,7 +15,7 @@ public class P2PMainServerTest {
         Topology topology = Topology.getTopology();
         topology.addUser(mainServerNode, mainServerNode);
         try {
-            Thread.sleep(50000);
+            Thread.sleep(500000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
