@@ -1,7 +1,8 @@
 package com.swe.ScreenNVideo;
 
 
-import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.RPC.AbstractRPC;
+import com.swe.ScreenNVideo.Capture.AudioCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
@@ -10,7 +11,7 @@ import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.AbstractNetworking;
 
 import java.awt.image.BufferedImage;
 
@@ -45,6 +46,11 @@ public class CaptureComponents {
         return isScreenCaptureOn;
     }
 
+    public boolean isAudioCaptureOn() {
+        return isAudioCaptureOn;
+    }
+
+
     /**
      * Flag for video capture.
      */
@@ -54,10 +60,21 @@ public class CaptureComponents {
      * Flag for screen capture.
      */
     private boolean isScreenCaptureOn;
+
+    /**
+     * Flag for audio capture.
+     */
+    private boolean isAudioCaptureOn;
+
     /**
      * Image scaler object.
      */
     private final ImageScaler scalar;
+
+    /**
+     * AudioCapture object.
+     */
+    private final AudioCapture audioCapture;
 
 
     /**
@@ -85,10 +102,16 @@ public class CaptureComponents {
     CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
+        isAudioCaptureOn = false;
         this.networking = argNetworking;
         scalar = new BilinearScaler();
         imageStitcher = new ImageStitcher();
+        audioCapture = new AudioCapture();
         initializeHandlers(rpc, port);
+    }
+
+    public void startAudioLoop() {
+        audioCapture.init();
     }
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
@@ -155,6 +178,13 @@ public class CaptureComponents {
         return feed;
     }
 
+    public byte[] getAudioFeed() {
+        if (isAudioCaptureOn) {
+            return audioCapture.getChunk();
+        }
+        return null;
+    }
+
     private void initializeHandlers(final AbstractRPC rpc, final int port) {
         rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
             isVideoCaptureOn = true;
@@ -184,6 +214,20 @@ public class CaptureComponents {
             return res;
         });
 
+        rpc.subscribe(Utils.START_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = true;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
+        });
+
+        rpc.subscribe(Utils.STOP_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = false;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
+        });
+
         rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
             // Get the destination user IP
             final String destIP = NetworkSerializer.deserializeIP(args);
@@ -192,7 +236,7 @@ public class CaptureComponents {
 
             // Get IP address as string
             final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
 
             final byte[] res = new byte[1];
             res[0] = 1;

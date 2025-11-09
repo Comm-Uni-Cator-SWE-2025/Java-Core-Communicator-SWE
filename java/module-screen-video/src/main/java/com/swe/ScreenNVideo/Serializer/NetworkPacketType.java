@@ -15,5 +15,9 @@ public enum NetworkPacketType {
     /**
      * Depicts a request to nullify the image at viewer side.
      */
-    STOP_SHARE
+    STOP_SHARE,
+    /**
+     * Depicts audio Packet.
+     */
+    APACKETS,
 }
