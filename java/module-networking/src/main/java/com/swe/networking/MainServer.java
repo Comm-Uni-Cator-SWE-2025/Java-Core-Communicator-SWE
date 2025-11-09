@@ -42,7 +42,7 @@ public class MainServer implements P2PUser {
     /**
      * The timer object to monitor client timeouts.
      */
-    private final Timer timer;
+    private final Timer timer = null;
 
     /**
      * Variable to start the timer.
@@ -88,7 +88,7 @@ public class MainServer implements P2PUser {
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
-        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+//        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         System.out.println("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -118,8 +118,9 @@ public class MainServer implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
-        System.out.println("Sending data");
+        System.out.println("Sending data"+destIp);
         final ClientNode sendDest = topology.getDestination(mainserver, destIp);
+        System.out.println("Sending data"+sendDest);
         communicator.sendData(data, sendDest); // check of this should be dest
     }
 
@@ -196,7 +197,7 @@ public class MainServer implements P2PUser {
             } else if (NetworkConnectionType.REMOVE.ordinal() == connectionType) {
                 handleRemove(packet, dest);
             } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
-                timer.updateTimeout(dest);
+//                timer.updateTimeout(dest);
                 System.out.println("Received alive packet from " + dest);
             } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
                 System.out.println("Passing to chunk manager...");
@@ -204,7 +205,8 @@ public class MainServer implements P2PUser {
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
                 if (data != null) {
-                    networking.callSubscriber(module, data);
+                    PacketInfo destpktInfo = parser.parsePacket(data);
+                    networking.callSubscriber(module, destpktInfo.getPayload());
                 }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                 System.out.println("Closing the Main Server");
@@ -221,9 +223,9 @@ public class MainServer implements P2PUser {
      */
     private void addClientToTimer(final ClientNode client, final int idx) {
         if (idx == mainServerClusterIdx && !client.equals(mainserver)) {
-            timer.addClient(client);
+//            timer.addClient(client);
         } else if (topology.getAllClusterServers().contains(client)) {
-            timer.addClient(client);
+//            timer.addClient(client);
         }
     }
 

@@ -92,6 +92,7 @@ public class ChunkManager {
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
             // TOD use appropriate function once the message is ready
+            System.out.println("message length: " + messageChunk.length);
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
             return messageChunk;

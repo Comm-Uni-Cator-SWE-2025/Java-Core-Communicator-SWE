@@ -112,7 +112,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
-        addParticipant(localIp);
+//        addParticipant(localIp);
 
         clientHandler = new MediaCaptureManager.ClientHandler();
 
@@ -184,18 +184,19 @@ public class MediaCaptureManager implements CaptureManager {
 
     private void sendDataToViewers(final byte[] feed) {
 
-//        System.out.println("Size : " + feed.length / Utils.KB + " KB");
-        CompletableFuture.runAsync(() -> {
-            networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING.ordinal(), 2);
+        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING.ordinal(), 2);
+
+        System.out.println("Sent to viewers " + viewers.size());
+//        CompletableFuture.runAsync(() -> {
     //        SimpleNetworking.getSimpleNetwork().closeNetworking();
-//            System.out.println("Sent to viewers " + viewers.size());
-//            viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
-    //        try {
-    //            Thread.sleep(30000);
-    //        } catch (InterruptedException e) {
-    //            throw new RuntimeException(e);
-    //        }
-        });
+            try {
+                Thread.sleep(30000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+//        });
     }
 
 
