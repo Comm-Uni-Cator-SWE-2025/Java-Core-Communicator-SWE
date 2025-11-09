@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -83,10 +84,18 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public void sendData(final byte[] data, final ClientNode[] dest, final int module, final int priority) {
+        System.out.println("Data length : " + data.length);
+        System.out.println("Destination : " + Arrays.toString(dest));
         final Vector<byte[]> chunks = getChunks(data, dest, module, priority, 0);
+        System.out.println("chunk number : " + chunks.size());
         for (byte[] chunk : chunks) {
             try {
-                priorityQueue.addPacket(chunk);
+                PacketInfo pktInfo = parser.parsePacket(chunk);
+                final InetAddress addr = pktInfo.getIpAddress();
+                final int port = pktInfo.getPortNum();
+                final ClientNode newdest = new ClientNode(addr.getHostName(), port);
+                System.out.println("Destination " + newdest);
+                topology.sendPacket(chunk, newdest);
             } catch (UnknownHostException ex) {
             }
         }
@@ -128,11 +137,12 @@ public class Networking implements AbstractNetworking, AbstractController {
         pkt.setModule(module);
         pkt.setPriority(priority);
         pkt.setBroadcast(0);
+        pkt.setPayload(data);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
-                final int type = topology.getNetworkType(user, client);
-                pkt.setType(type);
+//                final int type = topology.getNetworkType(user, client);
+                pkt.setType(3);
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());

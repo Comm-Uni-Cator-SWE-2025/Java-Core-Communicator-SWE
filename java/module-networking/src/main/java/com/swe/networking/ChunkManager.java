@@ -10,6 +10,7 @@ import java.util.Vector;
  * Code for Chunk Manager.
  */
 public class ChunkManager {
+
     /**
      * Singleton chunkManger.
      */
@@ -60,9 +61,9 @@ public class ChunkManager {
     private final Vector<byte[]> messageList = new Vector<>();
 
     /**
-     * Temporary function used to get the messageList.
-     * Used only for testing and to be replaced with some other function later.
-     * 
+     * Temporary function used to get the messageList. Used only for testing and
+     * to be replaced with some other function later.
+     *
      * @return messageList. All the messages recorded till now.
      */
     Vector<byte[]> getMessageList() {
@@ -71,14 +72,16 @@ public class ChunkManager {
 
     /**
      * Add chunk function.
-     * 
+     *
      * @param chunk the byte of chunk coming in.
      * @throws UnknownHostException the issue from packet parser.
      */
-    public void addChunk(final byte[] chunk) throws UnknownHostException {
+    public byte[] addChunk(final byte[] chunk) throws UnknownHostException {
         final PacketInfo info = parser.parsePacket(chunk);
         final int msgId = info.getMessageId();
         final int maxNumChunks = info.getChunkLength();
+        final int chunkId = info.getChunkNum();
+        System.out.println("Chunk id / total chunks " + chunkId + " / " + maxNumChunks);
         if (chunkListMap.containsKey(msgId)) {
             chunkListMap.get(msgId).add(chunk);
         } else {
@@ -90,12 +93,14 @@ public class ChunkManager {
             // TOD use appropriate function once the message is ready
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
+            return messageChunk;
         }
+        return null;
     }
 
     /**
      * Merge Chunks function.
-     * 
+     *
      * @param chunks The list of incoming chunks.
      * @return merged packet.
      */
@@ -130,8 +135,8 @@ public class ChunkManager {
 
     /**
      * Chunking function.
-     * 
-     * @param info        The Chunk information including payload of the message
+     *
+     * @param info The Chunk information including payload of the message
      * @param payloadSize The payload size of the message.
      * @return chunks The message broken into list of chunks.
      */
@@ -141,12 +146,14 @@ public class ChunkManager {
 
         final byte[] data = info.getPayload();
         final int numChunks = (data.length + payloadSize - 1) / payloadSize;
+        System.out.println("chunk length " + numChunks);
         info.setChunkLength(numChunks);
         info.setMessageId(messageId);
         messageId++;
         // reset message id to zero once it exceed limit
         for (int i = 0; i < data.length; i += payloadSize) {
             final int pSize = Math.min(payloadSize, data.length - i);
+            System.out.println("payload size " + pSize);
             final byte[] payloadChunk = new byte[pSize];
             System.arraycopy(data, i, payloadChunk, 0, pSize);
             final int chunkNumber = i / payloadSize;
@@ -156,6 +163,7 @@ public class ChunkManager {
             final byte[] pkt = parser.createPkt(info);
             chunks.add(pkt);
         }
+        System.out.println("Chunk size : "+ chunks.size());
         return chunks;
     }
 
@@ -165,7 +173,7 @@ public class ChunkManager {
 
     /**
      * get last message id.
-     * 
+     *
      * @return messageId.
      */
     public int getLastMessageId() {
