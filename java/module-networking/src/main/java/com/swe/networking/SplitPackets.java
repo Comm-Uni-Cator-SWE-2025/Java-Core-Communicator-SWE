@@ -83,7 +83,7 @@ public class SplitPackets {
             if (len <= 2 || len > MAX_PACKET_SIZE) {
                 System.out.println("Invalid packet length " + len);
             }
-            if (buffer.remaining() < len) {
+            if (buffer.remaining() < len - 2) {
                 buffer.reset();
                 break;
             }
