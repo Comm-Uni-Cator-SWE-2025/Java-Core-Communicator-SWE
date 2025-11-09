@@ -3,8 +3,8 @@ package com.swe.ScreenNVideo.IntegrationTest;
 import com.swe.ScreenNVideo.Utils;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -97,33 +97,7 @@ public class DummyNetworking implements AbstractNetworking {
         }
     }
 
-    public void sendData(byte[] data, ClientNode[] dest, ModuleType module) {
-        if (data == null || dest == null) {
-            return;
-        }
-        
-        String[] ips = new String[dest.length];
-        int[] ports = new int[dest.length];
-        
-        for (int i = 0; i < dest.length; i++) {
-            ips[i] = dest[i].hostName();
-            ports[i] = listenPort; // Use same port for all destinations
-        }
-        
-        sendData(data, ips, ports);
-    }
 
-    @Override
-    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
-        sendData(data, destIp, module);
-    }
-
-    @Override
-    public void subscribe(ModuleType name, MessageListener function) {
-        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
-    }
-
-    @Override
     public void removeSubscription(ModuleType name) {
         subscriptions.remove(Utils.MODULE_REMOTE_KEY);
     }
@@ -190,6 +164,38 @@ public class DummyNetworking implements AbstractNetworking {
         } catch (IOException e) {
             System.err.println("Error closing server socket: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void sendData(byte[] data, ClientNode[] dest, int module, int priority) {
+        if (data == null || dest == null) {
+            return;
+        }
+
+        String[] ips = new String[dest.length];
+        int[] ports = new int[dest.length];
+
+        for (int i = 0; i < dest.length; i++) {
+            ips[i] = dest[i].hostName();
+            ports[i] = listenPort; // Use same port for all destinations
+        }
+
+        sendData(data, ips, ports);
+    }
+
+    @Override
+    public void broadcast(byte[] data, int module, int priority) {
+
+    }
+
+    @Override
+    public void subscribe(int name, MessageListener function) {
+        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
+    }
+
+    @Override
+    public void removeSubscription(int name) {
+
     }
 }
 
