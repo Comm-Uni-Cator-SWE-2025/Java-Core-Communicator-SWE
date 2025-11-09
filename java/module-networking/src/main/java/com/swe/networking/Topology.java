@@ -310,6 +310,7 @@ public final class Topology implements AbstractTopology, AbstractController {
     public ClientNode getDestination(final ClientNode source, final ClientNode dest) {
         final int srcClusterIdx = getClusterIndex(source);
         final int destClusterIdx = getClusterIndex(dest);
+        System.out.println("Netowkr "+topology.getNetwork());
         if (srcClusterIdx == destClusterIdx) {
             return dest;
         } else {

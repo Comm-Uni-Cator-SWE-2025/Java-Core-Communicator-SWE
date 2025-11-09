@@ -144,6 +144,7 @@ public final class TCPCommunicator implements ProtocolBase {
     public void sendData(final byte[] data, final ClientNode dest) {
         final String destIp = dest.hostName();
         final Integer destPort = dest.port();
+        System.out.println("sending to "+destIp + destPort);
         try {
             final SocketChannel destSocket;
             if (clientSockets.containsKey(dest)) {
