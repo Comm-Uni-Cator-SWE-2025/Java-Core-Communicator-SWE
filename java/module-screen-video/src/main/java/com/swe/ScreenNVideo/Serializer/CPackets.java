@@ -17,10 +17,11 @@ import java.util.List;
  * @param packets Packets transferred from different user.
  * @param ip      IP of the User who transferred these packets.
  * @param isFullImage whether this is a full image
+ * @param compress to compress/decompress these packets or not
  * @param height height of the image
  * @param width width of the image
  */
-public record CPackets(int packetNumber, String ip, boolean isFullImage, int height, int width,
+public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean compress, int height, int width,
                        List<CompressedPatch> packets) {
 
     /**
@@ -37,9 +38,13 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, int hei
         bufferOut.write((byte) NetworkPacketType.LIST_CPACKETS.ordinal());
         // Write the feed Number
         Utils.writeInt(bufferOut, packetNumber);
+
         // write if full image
-        final byte fullImageFlag = isFullImage ? (byte) 1 : (byte) 0;
-        bufferOut.write(fullImageFlag);
+        byte flags = isFullImage ? (byte) 1 : (byte) 0;
+        // write if to compress or not
+        flags = (byte) (flags | ((compress ? 1 : 0) << 1));
+
+        bufferOut.write(flags);
         // Write the height
         Utils.writeInt(bufferOut, height);
         // Write the width
@@ -76,8 +81,10 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, int hei
         }
         // get feed number
         final int packetNumber = buffer.getInt();
-        // get if full image
-        final boolean isFullImage = buffer.get() == 1;
+        // get flags
+        final byte flags = buffer.get();
+        final boolean isFullImage = (flags & 1) == 1;
+        final boolean toCompress = ((flags & 2) >> 1) == 1;
         // get height
         final int height = buffer.getInt();
         // get width
@@ -102,6 +109,6 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, int hei
                 patches.add(patch);
             }
         }
-        return new CPackets(packetNumber, ip, isFullImage, height, width, patches);
+        return new CPackets(packetNumber, ip, isFullImage, toCompress, height, width, patches);
     }
 }

@@ -2,6 +2,7 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.RPC.AbstractRPC;
+import com.swe.ScreenNVideo.Capture.AudioCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
@@ -45,6 +46,11 @@ public class CaptureComponents {
         return isScreenCaptureOn;
     }
 
+    public boolean isAudioCaptureOn() {
+        return isAudioCaptureOn;
+    }
+
+
     /**
      * Flag for video capture.
      */
@@ -54,10 +60,21 @@ public class CaptureComponents {
      * Flag for screen capture.
      */
     private boolean isScreenCaptureOn;
+
+    /**
+     * Flag for audio capture.
+     */
+    private boolean isAudioCaptureOn;
+
     /**
      * Image scaler object.
      */
     private final ImageScaler scalar;
+
+    /**
+     * AudioCapture object.
+     */
+    private final AudioCapture audioCapture;
 
 
     /**
@@ -85,10 +102,16 @@ public class CaptureComponents {
     CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
+        isAudioCaptureOn = false;
         this.networking = argNetworking;
         scalar = new BilinearScaler();
         imageStitcher = new ImageStitcher();
+        audioCapture = new AudioCapture();
         initializeHandlers(rpc, port);
+    }
+
+    public void startAudioLoop() {
+        audioCapture.init();
     }
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
@@ -155,6 +178,13 @@ public class CaptureComponents {
         return feed;
     }
 
+    public byte[] getAudioFeed() {
+        if (isAudioCaptureOn) {
+            return audioCapture.getChunk();
+        }
+        return null;
+    }
+
     private void initializeHandlers(final AbstractRPC rpc, final int port) {
         rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
             isVideoCaptureOn = true;
@@ -179,6 +209,20 @@ public class CaptureComponents {
 
         rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, (final byte[] args) -> {
             isScreenCaptureOn = false;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
+        });
+
+        rpc.subscribe(Utils.START_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = true;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
+        });
+
+        rpc.subscribe(Utils.STOP_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = false;
             final byte[] res = new byte[1];
             res[0] = 1;
             return res;

@@ -1,14 +1,9 @@
 package com.swe.networking.SimpleNetworking;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.List;
 
 import com.swe.networking.ClientNode;
@@ -19,11 +14,16 @@ import com.swe.networking.ProtocolBase;
 import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
+//File owned by Loganath.
 /**
  * The main class for the server device.
  */
 public class Server implements IUser {
 
+    /**
+     * Variable to store the name of the module.
+     */
+    private static final String MODULENAME = "SERVER";
     /**
      * The variable to store the device IP address.
      */
@@ -33,13 +33,9 @@ public class Server implements IUser {
      */
     private final int devicePort;
     /**
-     * The variable used by the server to connect to other devices.
-     */
-    private Socket sendSocket = new Socket();
-    /**
      * The variable used by server to accept connections from clients.
      */
-    private final ProtocolBase receiveSocket;
+    private final ProtocolBase communicator;
     /**
      * The singleton class object for packet parser.
      */
@@ -53,14 +49,9 @@ public class Server implements IUser {
      */
     private final ModuleType moduleType = ModuleType.NETWORKING;
     /**
-     * The variable isused to store connection timeout.
-     */
-    private final int connectionTimeout = 5000;
-
-    /**
      * The variable to store chunk Manager.
      */
-    private SimpleChunkManager chunkManager;
+    private final SimpleChunkManager chunkManager;
 
     /**
      * The variable to store chunk Manager payload size.
@@ -77,8 +68,9 @@ public class Server implements IUser {
         devicePort = deviceAddr.port();
         parser = PacketParser.getPacketParser();
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
-        receiveSocket = new TCPCommunicator(devicePort);
+        communicator = new TCPCommunicator(devicePort);
         chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
+        SimpleNetworkLogger.printInfo(MODULENAME, "Server initialized...");
     }
 
     /**
@@ -93,21 +85,9 @@ public class Server implements IUser {
     public void send(final byte[] data, final ClientNode[] destIp,
             final ClientNode serverIp, final ModuleType module) {
         for (ClientNode client : destIp) {
-            final String ip = client.hostName();
-            final int port = client.port();
-            try {
-                sendSocket = new Socket();
-                sendSocket.connect(new InetSocketAddress(ip, port),
-                        connectionTimeout);
-                final OutputStream output = sendSocket.getOutputStream();
-                final DataOutputStream dataOut = new DataOutputStream(output);
-                final InetAddress addr = InetAddress.getByName(ip);
-                dataOut.write(data);
-//                System.out.println("Sent data succesfully...");
-                sendSocket.close();
-            } catch (IOException e) {
-                System.err.println("Server2 Error: " + e.getMessage());
-            }
+            communicator.sendData(data, client);
+            SimpleNetworkLogger.printInfo(MODULENAME, "Sending data of size : " + data.length);
+            SimpleNetworkLogger.printInfo(MODULENAME, "Destination : " + client);
         }
     }
 
@@ -117,7 +97,7 @@ public class Server implements IUser {
     @Override
     public void receive() throws IOException {
         while (true) {
-            final byte[] packet = receiveSocket.receiveData();
+            final byte[] packet = communicator.receiveData();
             if (packet != null) {
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {
@@ -135,23 +115,10 @@ public class Server implements IUser {
      * @param destIp the list of destination to send the packet
      * @param serverIp the main server IP address details
      */
-    public void sendPkt(final byte[] packet, final ClientNode[] destIp,
-            final ClientNode serverIp) {
+    public void sendPkt(final byte[] packet, final ClientNode[] destIp, final ClientNode serverIp) {
         for (ClientNode client : destIp) {
-            final String ip = client.hostName();
-            final int port = client.port();
-            try {
-                sendSocket = new Socket();
-                sendSocket.connect(new InetSocketAddress(ip, port),
-                        connectionTimeout);
-                final OutputStream output = sendSocket.getOutputStream();
-                final DataOutputStream dataOut = new DataOutputStream(output);
-                dataOut.write(packet);
-                System.out.println("Sent data succesfully...");
-                sendSocket.close();
-            } catch (IOException e) {
-                System.err.println("Server2 Error: " + e.getMessage());
-            }
+            communicator.sendData(packet, client);
+            System.out.println("Sent data succesfully...");
         }
     }
 
@@ -161,31 +128,34 @@ public class Server implements IUser {
      * @param packet the packet to parse
      * @throws UnknownHostException throws when sending data to unknown host
      */
-    public void parsePacket(final byte[] packet) throws UnknownHostException {
-        final PacketInfo pktInfo = parser.parsePacket(packet);
-        final int module = pktInfo.getModule();
-        final ModuleType type = moduleType.getType(module);
-        final InetAddress address = pktInfo.getIpAddress();
-        final int port = pktInfo.getPortNum();
-        final String addr = address.getHostAddress();
-        if (addr.equals(deviceIp) && port == devicePort) {
-            final String data = new String(pktInfo.getPayload(),
-                    StandardCharsets.UTF_8);
-//            System.out.println("Server Data received : " + data);
-            byte[] message = chunkManager.addChunk(packet);
-            System.out.println("Server Data length received : " + data.length());
-            System.out.println("Server Module received : " + type);
-            if (message != null) {
-                final PacketInfo newpktInfo = parser.parsePacket(message);
-                message = newpktInfo.getPayload();
-                simpleNetworking.callSubscriber(message, type);
+    public void parsePacket(final byte[] packet) {
+
+        try {
+            final PacketInfo pktInfo = parser.parsePacket(packet);
+            final int module = pktInfo.getModule();
+            final ModuleType type = moduleType.getType(module);
+            final InetAddress address = pktInfo.getIpAddress();
+            final int port = pktInfo.getPortNum();
+            final String addr = address.getHostAddress();
+
+            if (addr.equals(deviceIp) && port == devicePort) {
+                final String data = new String(pktInfo.getPayload(), StandardCharsets.UTF_8);
+                byte[] message = chunkManager.addChunk(packet);
+                SimpleNetworkLogger.printInfo(MODULENAME, "Server Data length received : " + data.length());
+                SimpleNetworkLogger.printInfo(MODULENAME, "Server Module received : " + type);
+                if (message != null) {
+                    final PacketInfo newpktInfo = parser.parsePacket(message);
+                    message = newpktInfo.getPayload();
+                    simpleNetworking.callSubscriber(message, type);
+                }
+            } else {
+                final ClientNode dest = new ClientNode(address.getHostAddress(), port);
+                SimpleNetworkLogger.printInfo(MODULENAME, "Redirecting data to : " + dest);
+                final ClientNode[] dests = {dest};
+                sendPkt(packet, dests, dest);
             }
-        } else {
-            final ClientNode dest = new ClientNode(address.getHostAddress(),
-                    port);
-            System.out.println("Redirecting data : " + dest.toString());
-            final ClientNode[] dests = {dest};
-            sendPkt(packet, dests, dest);
+        } catch (UnknownHostException ex) {
+            SimpleNetworkLogger.printError(MODULENAME, "Server Could not parse packet succesfully...");
         }
     }
 
@@ -194,6 +164,7 @@ public class Server implements IUser {
      */
     @Override
     public void closeUser() {
-        receiveSocket.close();
+        SimpleNetworkLogger.printInfo(MODULENAME, "Closing the receving socket...");
+        communicator.close();
     }
 }

@@ -12,6 +12,7 @@ import java.util.Map;
  * Priority Queue with simple Multi-Level Feedback Queue (MLFQ).
  */
 public class PriorityQueue {
+
     /**
      * The static class object for the priority queue.
      */
@@ -56,6 +57,14 @@ public class PriorityQueue {
      * Last time queues were rotated.
      */
     private long lastRotation = System.currentTimeMillis();
+    /**
+     * Private variable to store the start time of the Priority Queue.
+     */
+    private long startTime;
+    /**
+     * Private Variable to store the number of packets sent.
+     */
+    private long numPacketsSent;
 
     /**
      * Creates a priority queue and initializes budgets and queues.
@@ -65,6 +74,8 @@ public class PriorityQueue {
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
+        startTime = System.currentTimeMillis();
+        numPacketsSent = 0;
         resetBudgets();
     }
 
@@ -85,7 +96,7 @@ public class PriorityQueue {
 
     /**
      * This function returns the current remaining total budget.
-     * 
+     *
      * @return the remaining total budget.
      */
     private int getTotalRemainingBudget() {
@@ -141,8 +152,8 @@ public class PriorityQueue {
     }
 
     /**
-     * Rotates MLFQ levels every 1000 ms.
-     * Level 0 → Level 1, Level 1 → Level 2, Level 2 → Level 0(recycled)
+     * Rotates MLFQ levels every 1000 ms. Level 0 → Level 1, Level 1 → Level 2,
+     * Level 2 → Level 0(recycled)
      */
     public void rotateQueues() {
         final long now = System.currentTimeMillis();
@@ -166,15 +177,18 @@ public class PriorityQueue {
     }
 
     /**
-     * This function gives the approx throughput of the Priority Queue.
-     * This assumes that there are enough number of packets.
+     * This function gives the approx throughput of the Priority Queue. This
+     * assumes that there are enough number of packets.
      *
      * @return The minimum throughput of the Priority Queue
      */
-    public int getThroughput() {
-        final int numMS = 1000;
-        final int numEpoch = numMS / EPOCH_MS;
-        return TOTAL_BUDGET * numEpoch;
+    public long getThroughput() {
+
+        final long currTime = System.currentTimeMillis();
+        final long timeTaken = currTime - startTime;
+        final int packetLength = 1000;
+
+        return (packetLength * numPacketsSent) / timeTaken;
     }
 
     /**
@@ -207,7 +221,7 @@ public class PriorityQueue {
 
     /**
      * Processes and sends a packet from the Highest Priority Queue (P1/ZERO).
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processHighestPriority() {
@@ -224,7 +238,7 @@ public class PriorityQueue {
     /**
      * Processes and sends a packet from the Mid-Priority Queue (P2/ONE).
      * Work-conserving: uses P2's budget, then P1's unused budget.
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processMidPriority() {
@@ -253,7 +267,7 @@ public class PriorityQueue {
     /**
      * Processes and sends a packet from the Low Priority (MLFQ)Queues(P3/TWO).
      * Work-conserving: uses P3, then P2, then P1 budget.
-     * 
+     *
      * @return The packet data, or null.
      */
     private byte[] processLowPriority() {
@@ -293,8 +307,8 @@ public class PriorityQueue {
     }
 
     /**
-     * A private function which gets the packet from the queue.
-     * The packet could be null, and it signals to wait.
+     * A private function which gets the packet from the queue. The packet could
+     * be null, and it signals to wait.
      *
      * @return The Packet data or null
      */
@@ -314,7 +328,6 @@ public class PriorityQueue {
         rotateQueues();
 
         // 3. Process priorities in order: P1 > P2 > P3
-
         // Highest Priority (P1/ZERO)
         byte[] packet = processHighestPriority();
         if (packet != null) {
@@ -354,13 +367,15 @@ public class PriorityQueue {
             // Gets the Packet from tryNextSend.
             packet = trySendNext();
             if (packet != null) {
+                numPacketsSent++;
                 return packet;
             }
 
             // If the packet is null it makes the thread wait and they retry.
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException ignored) { }
+            } catch (InterruptedException ignored) {
+            }
 
             retryCount++;
             // optional safety escape

@@ -138,8 +138,7 @@ public class DummyNetworking implements AbstractNetworking {
                 Socket clientSocket = serverSocket.accept();
                 
                 // Handle each connection in a separate thread
-                Thread handlerThread = new Thread(() -> handleConnection(clientSocket));
-                handlerThread.start();
+                handleConnection(clientSocket);
                 
             } catch (IOException e) {
                 if (running) {
