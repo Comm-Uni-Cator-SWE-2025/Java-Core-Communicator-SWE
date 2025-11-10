@@ -70,7 +70,7 @@ public class PriorityQueue {
      * Creates a priority queue and initializes budgets and queues.
      */
     private PriorityQueue() {
-        // System.out.println("MLFQ has been created");
+        // System.out.println("Networking][Priority Queue] MLFQ has been created");
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
@@ -87,10 +87,10 @@ public class PriorityQueue {
     public static PriorityQueue getPriorityQueue() {
         if (priorityQueue == null) {
             priorityQueue = new PriorityQueue();
-            System.out.println("Instantated a new priority Queue...");
+            System.out.println("Networking][Priority Queue] Instantated a new priority Queue...");
             return priorityQueue;
         }
-        System.out.println("Passing already instantiated priority Queue...");
+        System.out.println("Networking][Priority Queue] Passing already instantiated priority Queue...");
         return priorityQueue;
     }
 
@@ -147,7 +147,7 @@ public class PriorityQueue {
             final int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
-        // System.out.println("Reset Initiated...");
+        // System.out.println("Networking][Priority Queue] Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -158,7 +158,7 @@ public class PriorityQueue {
     public void rotateQueues() {
         final long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
-            // System.out.println("Rotating MLFQ levels...");
+            // System.out.println("Networking][Priority Queue] Rotating MLFQ levels...");
             final Deque<byte[]> level2 = mlfq.get(2);
             final Deque<byte[]> level1 = mlfq.get(1);
             final Deque<byte[]> level0 = mlfq.get(0);
@@ -205,16 +205,16 @@ public class PriorityQueue {
         switch (priority) {
             case ZERO, ONE, TWO:
                 highestPriorityQueue.add(data);
-                // System.out.println("Packet added to highest priority queue");
+                // System.out.println("[Networking][Priority Queue] Packet added to highest priority queue");
                 break;
             case THREE, FOUR, FIVE, SIX:
                 midPriorityQueue.add(data);
-                // System.out.println("Packet added to mid priority queue");
+                // System.out.println("[Networking][Priority Queue] Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
                 mlfq.get(0).add(data);
-                // System.out.println("Packet added to MLFQ level 0");
+                // System.out.println("[Networking][Priority Queue] Packet added to MLFQ level 0");
                 break;
         }
     }
@@ -229,7 +229,7 @@ public class PriorityQueue {
                 && currentBudget.get(PacketPriority.ZERO) > 0) {
             currentBudget.put(PacketPriority.ZERO,
                     currentBudget.get(PacketPriority.ZERO) - 1);
-            // System.out.println("Highest Priority Packet sent ");
+            // System.out.println("[Networking][Priority Queue] Highest Priority Packet sent ");
             return highestPriorityQueue.pollFirst();
         }
         return null;
@@ -252,13 +252,13 @@ public class PriorityQueue {
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                // System.out.println(("mid priority sent from p2"));
+                // System.out.println(("[Networking][Priority Queue] Mid-priority sent from p2"));
             } else if (p1Current > 0) {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
-                // System.out.println(("Mid priority sent from p1"));
+                // System.out.println(("[Networking][Priority Queue] Mid-priority sent from p1"));
             }
-            // System.out.println("Mid Priority Packet sent");
+            // System.out.println("[Networking][Priority Queue] Mid-priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
         return null;
@@ -284,11 +284,14 @@ public class PriorityQueue {
                     // Decrement the budget in order: P3 -> P2 -> P1
                     if (p3Current > 0) {
                         currentBudget.put(PacketPriority.TWO, p3Current - 1);
+//                        System.out.println("[Networking][Priority Queue] Low Priority Packet sent");
                     } else if (p2Current > 0) {
                         currentBudget.put(PacketPriority.ONE, p2Current - 1);
+//                        System.out.println("[Networking][Priority Queue] Low Priority Packet sent");
                     } else if (p1Current > 0) { // Use P1's budget
                         currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
+//                        System.out.println("[Networking][Priority Queue] Low Priority Packet sent");
                     } else {
                         // This case should be covered by
                         // the totalP3Budget > 0 check,
@@ -298,7 +301,7 @@ public class PriorityQueue {
                     }
 
                     // System.out.println(
-                    // "Low Priority Packet sent from MLFQ level " + i);
+                    // "[Networking][Priority Queue] Low Priority Packet sent from MLFQ level " + i);
                     return q.pollFirst();
                 }
             }
@@ -373,6 +376,7 @@ public class PriorityQueue {
 
             // If the packet is null it makes the thread wait and they retry.
             try {
+//              System.out.println("[Networking][Priority Queue] No packets has been received, Thread going to sleep");
                 Thread.sleep(1);
             } catch (InterruptedException ignored) {
             }
@@ -380,6 +384,7 @@ public class PriorityQueue {
             retryCount++;
             // optional safety escape
             if (retryCount > maxRetryCount) {
+//              System.out.println("[Networking][Priority Queue] Max number of retires has been reached, Returning null.");
                 return null;
             }
         }
