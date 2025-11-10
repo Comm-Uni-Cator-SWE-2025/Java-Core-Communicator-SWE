@@ -75,15 +75,15 @@ public class SplitPackets {
         }
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         System.out.println("Buffer size : " + data.length);
-        while (buffer.hasRemaining()) {
+        while (buffer.hasRemaining() && buffer.remaining() > 2) {
             buffer.mark();
             final int len = buffer.getShort();
             System.out.println("Packet length " + len);
-            buffer.position(buffer.position() - 2);
+            buffer.reset();
             if (len <= 2 || len > MAX_PACKET_SIZE) {
                 System.out.println("Invalid packet length " + len);
             }
-            if (buffer.remaining() < len - 2) {
+            if (buffer.remaining() < len) {
                 buffer.reset();
                 break;
             }

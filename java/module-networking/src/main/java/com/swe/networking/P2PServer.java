@@ -249,7 +249,13 @@ public class P2PServer implements P2PUser {
                     break;
                 case MODULE:
                     System.out.println("MODULE packet received");
-                    chunkManager.addChunk(packet);
+                    final int module = parser.parsePacket(packet).getModule();
+                    final byte[] data = chunkManager.addChunk(packet);
+                    final Networking networking = Networking.getNetwork();
+                    if (data != null) {
+                        final PacketInfo destpktInfo = parser.parsePacket(data);
+                        networking.callSubscriber(module, destpktInfo.getPayload());
+                    }
                     break;
                 case CLOSE:
                     close();
