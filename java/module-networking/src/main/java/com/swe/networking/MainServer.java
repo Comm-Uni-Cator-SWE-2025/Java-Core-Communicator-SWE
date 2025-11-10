@@ -131,11 +131,6 @@ public class MainServer implements P2PUser {
         while (true) {
             final byte[] packet = communicator.receiveData();
             if (packet != null) {
-                String payload = "";
-                try {
-                    payload = new String(parser.parsePacket(packet).getPayload());
-                } catch (UnknownHostException e) {
-                }
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {
                     parsePacket(p);
