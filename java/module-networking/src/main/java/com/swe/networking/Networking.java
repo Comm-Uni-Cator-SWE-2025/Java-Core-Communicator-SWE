@@ -93,12 +93,12 @@ public class Networking implements AbstractNetworking, AbstractController {
                 final PacketInfo pktInfo = parser.parsePacket(chunk);
                 final InetAddress addr = pktInfo.getIpAddress();
                 final int port = pktInfo.getPortNum();
-                // long startTime = System.currentTimeMillis();
+//                 long startTime = System.currentTimeMillis();
                 final ClientNode newdest = new ClientNode(addr.getHostAddress(), port);
-                // long endTime = System.currentTimeMillis();
-                // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
                 topology.sendPacket(chunk, newdest);
+//                 long endTime = System.currentTimeMillis();
+//                 System.out.println("Time to Send one packet: " + (endTime - startTime) + " ms");
             } catch (UnknownHostException ex) {
             }
         }

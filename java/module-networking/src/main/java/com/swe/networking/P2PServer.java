@@ -100,10 +100,10 @@ public class P2PServer implements P2PUser {
         sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
-        sendThread.start();
+//        sendThread.start();
         receiveThread.start();
 
-        System.out.println("Created a new P2P Server at " + deviceAddress + "...");
+        // System.out.println("Created a new P2P Server at " + deviceAddress + "...");
     }
 
     /**
@@ -115,7 +115,7 @@ public class P2PServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
-            System.out.println("Sending data to " + dest.hostName() + ":" + dest.port());
+            // System.out.println("Sending data to " + dest.hostName() + ":" + dest.port());
             communicator.sendData(data, dest);
         }
     }
@@ -128,7 +128,7 @@ public class P2PServer implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
-        System.out.println("Sending data to " + destIp.hostName() + ":" + destIp.port());
+        // System.out.println("Sending data to " + destIp.hostName() + ":" + destIp.port());
         communicator.sendData(data, destIp);
     }
 
@@ -138,6 +138,7 @@ public class P2PServer implements P2PUser {
     @Override
     public void receive() {
         while (true) {
+            long startTime = System.nanoTime();
             final byte[] packet = communicator.receiveData();
             if (packet == null) {
                 continue;
@@ -147,6 +148,8 @@ public class P2PServer implements P2PUser {
                 for (byte[] p : packets) {
                     handlePacket(p);
                 }
+                long endTime = System.nanoTime();
+                System.out.println("Time to receive one packet: " + (endTime - startTime)/(double)(1e9) + " ms");
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
@@ -172,7 +175,7 @@ public class P2PServer implements P2PUser {
 
         // check for broadcast
         if (packetInfo.getBroadcast() == 1) {
-            System.out.println("Broadcast packet received at P2PServer.");
+            // System.out.println("Broadcast packet received at P2PServer.");
             // modify packet to dest as self
             packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
             packetInfo.setPortNum(deviceNode.port());
@@ -194,7 +197,7 @@ public class P2PServer implements P2PUser {
             final ClientNode clusterServer = topology.getServer(dest);
             send(packet, clusterServer);
         } else {
-            System.out.println("Unknown packet type received.");
+            // System.out.println("Unknown packet type received.");
         }
     }
 
@@ -232,11 +235,11 @@ public class P2PServer implements P2PUser {
         try {
             switch (conn) {
                 case HELLO:
-                    System.out.println("HELLO packet received, not supported by P2PServer.");
+                    // System.out.println("HELLO packet received, not supported by P2PServer.");
                     break;
                 case ALIVE:
                     timer.updateTimeout(dest);
-                    System.out.println("ALIVE packet received from " + dest.hostName() + ".");
+                    // System.out.println("ALIVE packet received from " + dest.hostName() + ".");
                     break;
                 case ADD:
                     handleAdd(packet, dest);
@@ -248,14 +251,20 @@ public class P2PServer implements P2PUser {
                     handleNetwork(packet);
                     break;
                 case MODULE:
-                    System.out.println("MODULE packet received");
-                    chunkManager.addChunk(packet);
+//                    // System.out.println("Passing to chunk manager...");
+                    final int module = parser.parsePacket(packet).getModule();
+                    final byte[] data = chunkManager.addChunk(packet);
+                    final Networking networking = Networking.getNetwork();
+                    if (data != null) {
+                        PacketInfo destpktInfo = parser.parsePacket(data);
+                        networking.callSubscriber(module, destpktInfo.getPayload());
+                    }
                     break;
                 case CLOSE:
                     close();
                     break;
                 default:
-                    System.out.println("Unknown connection type received.");
+                    // System.out.println("Unknown connection type received.");
                     break;
             }
         } catch (UnknownHostException e) {
@@ -269,8 +278,8 @@ public class P2PServer implements P2PUser {
         topology.updateNetwork(client);
         if (client.clusterIndex() == topology.getClusterIndex(deviceNode)) {
             timer.addClient(dest);
-            System.out.println("Client " + client.client().hostName()
-                    + " added to timer.");
+            // System.out.println("Client " + client.client().hostName()
+//                    + " added to timer.");
         }
         final int myCluster = topology.getClusterIndex(deviceNode);
         for (ClientNode c : topology.getClients(myCluster)) {
@@ -279,9 +288,9 @@ public class P2PServer implements P2PUser {
             }
             send(packet, c);
         }
-        System.out.println("Client " + client.client().hostName()
-                + " added to cluster"
-                + client.clusterIndex());
+        // System.out.println("Client " + client.client().hostName()
+//                + " added to cluster"
+//                + client.clusterIndex());
     }
 
     private void handleRemove(final byte[] packet, final ClientNode dest) throws UnknownHostException {
@@ -298,16 +307,16 @@ public class P2PServer implements P2PUser {
             }
             send(packet, c);
         }
-        System.out.println("Client " + remClient.client().hostName()
-                + " removed from cluster"
-                + remClient.clusterIndex());
+        // System.out.println("Client " + remClient.client().hostName()
+//                + " removed from cluster"
+//                + remClient.clusterIndex());
     }
 
     private void handleNetwork(final byte[] packet) throws UnknownHostException {
         final PacketInfo packetInfo = parser.parsePacket(packet);
         final NetworkStructure network = serializer.deserializeNetworkStructure(packetInfo.getPayload());
         topology.replaceNetwork(network);
-        System.out.println("Network structure updated at server.");
+        // System.out.println("Network structure updated at server.");
     }
 
     /**
@@ -323,14 +332,14 @@ public class P2PServer implements P2PUser {
         try {
             packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
         } catch (UnknownHostException e) {
-            System.out.println("Unknown host: " + deviceNode.hostName());
+            // System.out.println("Unknown host: " + deviceNode.hostName());
             e.printStackTrace();
             return;
         }
         packetInfo.setPortNum(deviceNode.port());
         final byte[] alivePacket = parser.createPkt(packetInfo);
         while (true) {
-            System.out.println("Sending ALIVE to main server...");
+            // System.out.println("Sending ALIVE to main server...");
             send(alivePacket, mainServer);
             try {
                 Thread.sleep(timeoutThreshold);
@@ -381,7 +390,7 @@ public class P2PServer implements P2PUser {
     public void close() {
         communicator.close();
         receiveThread.interrupt();
-        sendThread.interrupt();
+//        sendThread.interrupt();
         timer.close();
     }
 
