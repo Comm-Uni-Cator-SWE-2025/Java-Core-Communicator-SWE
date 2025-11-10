@@ -75,7 +75,7 @@ public class SplitPackets {
         }
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         System.out.println("Buffer size : " + data.length);
-        while (buffer.hasRemaining()) {
+        while (buffer.hasRemaining() && buffer.remaining() > 2) {
             buffer.mark();
             final int len = buffer.getShort();
             System.out.println("Packet length " + len);
