@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,8 +33,14 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
      */
     public byte[] serializeCPackets() throws IOException {
 
+        final long serializeStart = System.currentTimeMillis();
         final int len = packets.size();
         final ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
+        final ByteBuffer b = ByteBuffer.allocate(8);
+        b.putLong(serializeStart);
+        bufferOut.write(b.array());
+        System.out.println(serializeStart);
+        System.out.println(Arrays.toString(bufferOut.toByteArray()));
         // Write the packet Type
         bufferOut.write((byte) NetworkPacketType.LIST_CPACKETS.ordinal());
         // Write the feed Number
@@ -74,7 +81,6 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
         final ByteBuffer buffer = ByteBuffer.wrap(data);
         final long packetStart = buffer.getLong();
         System.out.println(packetStart);
-        System.out.println(System.nanoTime() + " "  + packetStart);
         System.out.println("Packet took " + (System.currentTimeMillis() - packetStart)/(double)(Utils.SEC_IN_MS));
         // get packet type
         final byte packetType = buffer.get();

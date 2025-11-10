@@ -110,7 +110,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         // Cache local IP once to avoid repeated socket operations during capture
         this.localIp = Utils.getSelfIP();
-        // System.out.println(this.localIp);
+         System.out.println(this.localIp);
 
 //        addParticipant(localIp);
 
