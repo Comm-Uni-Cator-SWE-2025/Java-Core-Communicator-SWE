@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
 
+import com.swe.core.RPCinteface.AbstractRPC;
+
 /**
  * The main class of the networking module.
  */
@@ -48,6 +50,11 @@ public class Networking implements AbstractNetworking, AbstractController {
      * The variable to store maximum packet size to chunk.
      */
     private final int payloadSize = 10 * 1024; // 10 KB
+
+    /**
+     * Variable to store the rpc for the app.
+     */
+    private AbstractRPC moduleRPC = null;
 
     /**
      * Private constructor for Netwroking class.
@@ -138,7 +145,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         final PacketInfo pkt = new PacketInfo();
         pkt.setModule(module);
         pkt.setPriority(priority);
-        pkt.setBroadcast(0);
+        pkt.setBroadcast(broadcast);
         pkt.setPayload(data);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
@@ -227,9 +234,26 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Function called to close the networking module.
      */
+    @Override
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
     }
 
+    /**
+     * Function to consume the RPC.
+     *
+     * @param rpc the rpc to consume by the networking
+     */
+    @Override
+    public void consumeRPC(final AbstractRPC rpc) {
+        moduleRPC = rpc;
+        final NetworkRPC networkRPC = NetworkRPC.getNetworkRPC();
+        moduleRPC.subscribe("getNetworkRPCAddUser", networkRPC::networkRPCAddUser);
+        moduleRPC.subscribe("networkRPCBroadcast", networkRPC::networkRPCBroadcast);
+        moduleRPC.subscribe("networkRPCRemoveSubscription", networkRPC::networkRPCRemoveSubscription);
+        moduleRPC.subscribe("networkRPCSendData", networkRPC::networkRPCSendData);
+        moduleRPC.subscribe("networkRPCSubscribe", networkRPC::networkRPCSubscribe);
+        moduleRPC.subscribe("networkRPCCloseNetworking", networkRPC::networkRPCCloseNetworking);
+    }
 }
