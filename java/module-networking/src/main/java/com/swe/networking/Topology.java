@@ -8,7 +8,7 @@ import java.util.List;
  * The main architecture of the networking module. Implements the cluster
  * networks
  */
-public final class Topology implements AbstractTopology, AbstractController {
+public final class Topology implements AbstractTopology {
 
     /**
      * The List of all cluster clients.
@@ -97,7 +97,6 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @param deviceAddress Ip address of the current device
      * @param mainServerAddress Ip address of the server device
      */
-    @Override
     public void addUser(final ClientNode deviceAddress,
             final ClientNode mainServerAddress) {
         // update the network and add the client
