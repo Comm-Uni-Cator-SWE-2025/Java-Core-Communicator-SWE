@@ -122,16 +122,12 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * Broadcast join meeting to available IPs.
      * Only till broadcast is supported, multicast not supported yet.
-     *
-     * @param availableIPs list of available IPs
      */
-    public void broadcastJoinMeeting(final List<String> availableIPs) {
-        final ClientNode[] clientNodes =
-            availableIPs.stream().map(ip -> new ClientNode(ip, port)).toArray(ClientNode[]::new);
+    public void broadcastJoinMeeting() {
 
         // System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
         final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
+        networking.broadcast(subscribeData, ModuleType.SCREENSHARING.ordinal(), 2);
     }
 
     @Override
