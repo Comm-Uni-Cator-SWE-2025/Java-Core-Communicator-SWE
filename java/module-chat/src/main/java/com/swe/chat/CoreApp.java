@@ -19,7 +19,7 @@ public class CoreApp {
 
             // 2. Configure Networking
             // (In reality, Controller determines these IPs)
-            network.addUser(new ClientNode("10.128.12.99", 1234), new ClientNode("10.128.10.190", 1234));
+            network.addUser(new ClientNode("127.0.0.1", 5678), new ClientNode("127.0.0.1", 5678));
 
             // 3. Create Managers (They will SUBSCRIBE now)
             // This pushes "chat:send-message" into the SocketryServerRPC's hashmap
