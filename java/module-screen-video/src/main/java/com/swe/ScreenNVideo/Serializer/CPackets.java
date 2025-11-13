@@ -39,8 +39,8 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
         final ByteBuffer b = ByteBuffer.allocate(8);
         b.putLong(serializeStart);
         bufferOut.write(b.array());
-        System.out.println(serializeStart);
-        System.out.println(Arrays.toString(bufferOut.toByteArray()));
+//        System.out.println(serializeStart);
+//        System.out.println(Arrays.toString(bufferOut.toByteArray()));
         // Write the packet Type
         bufferOut.write((byte) NetworkPacketType.LIST_CPACKETS.ordinal());
         // Write the feed Number

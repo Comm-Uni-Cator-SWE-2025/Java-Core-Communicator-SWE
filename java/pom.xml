@@ -27,6 +27,7 @@
     <modules>
         <module>module-screen-video</module>
         <module>module-networking</module>
+        <module>module-core</module>
     </modules>
 
     <repositories>

@@ -100,7 +100,7 @@ public class CaptureComponents {
      */
 
     CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
-        isScreenCaptureOn = false;
+        isScreenCaptureOn = true;
         isVideoCaptureOn = false;
         isAudioCaptureOn = false;
         this.networking = argNetworking;

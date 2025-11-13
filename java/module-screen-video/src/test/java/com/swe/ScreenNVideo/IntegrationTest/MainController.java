@@ -38,7 +38,7 @@ public class MainController {
 //        final AbstractNetworking networking = new DummyNetworking();
 
         List<String> allNetworks = new ArrayList<>();
-        allNetworks.add("10.32.1.250");
+//        allNetworks.add("10.32.1.250");
 //        allNetworks.add("10.128.2.172");
 
         // Get IP address as string
