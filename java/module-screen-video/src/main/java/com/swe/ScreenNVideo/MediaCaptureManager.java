@@ -122,16 +122,12 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * Broadcast join meeting to available IPs.
      * Only till broadcast is supported, multicast not supported yet.
-     *
-     * @param availableIPs list of available IPs
      */
-    public void broadcastJoinMeeting(final List<String> availableIPs) {
-        final ClientNode[] clientNodes =
-            availableIPs.stream().map(ip -> new ClientNode(ip, port)).toArray(ClientNode[]::new);
+    public void broadcastJoinMeeting() {
 
         // System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
         final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
+        networking.broadcast(subscribeData, ModuleType.SCREENSHARING.ordinal(), 2);
     }
 
     @Override
@@ -173,30 +169,31 @@ public class MediaCaptureManager implements CaptureManager {
                 feed = newFeed;
                 sendDataToViewers(encodedPatches);
             }
-            // get audio Feed
-            final byte[] encodedAudio = videoComponent.captureAudio();
-            if (encodedAudio == null) {
-                continue;
-            }
-//            System.err.println("Sending audio");
-            sendDataToViewers(encodedAudio);
+//            // get audio Feed
+//            final byte[] encodedAudio = videoComponent.captureAudio();
+//            if (encodedAudio == null) {
+//                continue;
+//            }
+////            System.err.println("Sending audio");
+//            sendDataToViewers(encodedAudio);
         }
     }
 
     private void sendDataToViewers(final byte[] feed) {
 
-        // System.out.println("Size : " + feed.length / Utils.KB + " KB");
-        CompletableFuture.runAsync(() -> {
-            viewers.forEach(v -> // System.out.println("Viewer IP : " + v.hostName()));
-            networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING.ordinal(), 2));
+         System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        viewers.forEach(v -> // System.out.println("Viewer IP : " + v.hostName()));
+        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING.ordinal(), 2));
 
-            // System.out.println("Sent to viewers " + viewers.size());
+         System.out.println("Sent to viewers " + viewers.size());
+//        CompletableFuture.runAsync(() -> {
 //        try {
-//            Thread.sleep(30000);
+//            Thread.sleep(250);
 //        } catch (InterruptedException e) {
+//            System.err.println("Error in timer");
 //            throw new RuntimeException(e);
 //        }
-        });
+//        });
     }
 
 
@@ -327,9 +324,9 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);
-                    // System.out.println("Viewer joined" + viewerIP);
+                     System.out.println("Viewer joined" + viewerIP);
                     addUserNFullImageRequest(viewerIP);
-                    // System.out.println("Handled packet type: " + type);
+                     System.out.println("Handled packet type: " + type);
                 }
                 case STOP_SHARE -> {
                     final String viewerIP = NetworkSerializer.deserializeIP(data);

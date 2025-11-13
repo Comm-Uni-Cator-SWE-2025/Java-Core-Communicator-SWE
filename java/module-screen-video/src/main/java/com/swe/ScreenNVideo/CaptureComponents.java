@@ -1,7 +1,7 @@
 package com.swe.ScreenNVideo;
 
 
-import com.swe.RPC.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.AudioCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
@@ -100,7 +100,7 @@ public class CaptureComponents {
      */
 
     CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
-        isScreenCaptureOn = false;
+        isScreenCaptureOn = true;
         isVideoCaptureOn = false;
         isAudioCaptureOn = false;
         this.networking = argNetworking;
