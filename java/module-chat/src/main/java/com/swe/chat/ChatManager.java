@@ -1,95 +1,111 @@
-/**
- * Contributed by : Sachin(112101052)
- */
-
 package com.swe.chat;
 
-// 1. IMPORT THE REAL NETWORKING FILES
 import com.swe.RPC.AbstractRPC;
 import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
-import com.swe.chat.Utilities;
 
-import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.Deflater;
-import java.time.ZoneOffset;
+
 /**
- * Manages chat functionality between the networking layer and the UI.
- * Handles sending, receiving, and notifying listeners about chat messages.
- * This class IMPLEMENTS the IChatService contract.
+ * ============================================================================
+ * BACKEND - ChatManager
+ * ============================================================================
+ *
+ * Responsibilities:
+ *   1. Receive PATH-mode file messages from frontend
+ *   2. Read and compress files from disk
+ *   3. Cache compressed data in memory
+ *   4. Send to remote peers via network
+ *   5. Decompress and save files when user clicks "Save"
+ *
+ * The frontend NEVER sees compressed file data.
  */
-// 2. RE-ADD THE IChatService INTERFACE
 public class ChatManager implements IChatService {
 
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
-    /** 3. THE FIELD IS THE REAL SimpleNetworking OBJECT */
+    private static final byte FLAG_FILE_METADATA = (byte) 0x03;
+
     private final AbstractRPC rpc;
     private final SimpleNetworking network;
 
-    /** Listener that gets notified when a new message is received. */
-    private Consumer<ChatMessage> onMessageReceivedListener; // Listener for the UI
-
     /**
-     * 4. THE CONSTRUCTOR NOW TAKES THE REAL SimpleNetworking OBJECT
-     *
-     * @param networkingService the networking service used for communication
+     * FILE CACHE - Stores compressed files temporarily
+     * Key: messageId
+     * Value: compressed file bytes
      */
+    private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
+
     public ChatManager(SimpleNetworking network, AbstractRPC rpc) {
         this.rpc = rpc;
         this.network = network;
 
-        // 1. Subscribe to calls from the Frontend (Strategy Pattern)
+        // Subscribe to frontend RPC calls
         this.rpc.subscribe("chat:send-text", this::handleFrontendTextMessage);
-        this.rpc.subscribe("chat:send-file", this::handleFrontendFileMessage); // NEW
+        this.rpc.subscribe("chat:send-file", this::handleFrontendFileMessage);
         this.rpc.subscribe("chat:delete-message", this::handleDeleteMessage);
 
-        // 2. Subscribe to calls from the Network
-        // This one handler will now route all message types
+        // ⭐ NEW: Handle save-to-disk requests from frontend
+        this.rpc.subscribe("chat:save-file-to-disk", this::handleSaveFileToDisk);
+
+        // Subscribe to network messages
         this.network.subscribe(ModuleType.CHAT, this::handleNetworkMessage);
     }
 
     /**
-     * Handles an incoming message from the Frontend via RPC.
-     * Its job is to send this message to the network.
+     * ============================================================================
+     * HANDLER 1: Text Message from Frontend
+     * ============================================================================
      */
     private byte[] handleFrontendTextMessage(byte[] messageBytes) {
-        System.out.println("[Core] Received Text Message from Frontend.");
+        System.out.println("[Core] Received text message from frontend");
 
-        // 1. Add the protocol flag for the network
-        byte[] networkPacket = addProtocolFlag(messageBytes, FLAG_TEXT_MESSAGE);
+        try {
+            byte[] networkPacket = addProtocolFlag(messageBytes, FLAG_TEXT_MESSAGE);
+            ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
+            this.network.sendData(networkPacket, dests, ModuleType.CHAT, 0);
 
-        // 2. Send to the network
-        // TODO: Get real destinations
-        ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) }; // Send to User 1
-        this.network.sendData(networkPacket, dests, ModuleType.CHAT, 0);
-
-        return new byte[0];
+            return new byte[0];  // Empty array with brackets
+        } catch (Exception e) {
+            System.err.println("[Core] Error sending text message: " + e.getMessage());
+            return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
     }
 
+    /**
+     * ============================================================================
+     * HANDLER 2: File Message from Frontend (PATH MODE)
+     * ============================================================================
+     *
+     * Frontend sends FileMessage with PATH (no file bytes)
+     * Backend will:
+     *   1. Read file from disk
+     *   2. Compress it
+     *   3. Cache compressed data
+     *   4. Send metadata to frontend
+     *   5. Send compressed data to network
+     */
     private byte[] handleFrontendFileMessage(byte[] messageBytes) {
-        System.out.println("[Core] Received File Message (with path) from Frontend.");
-        try {
-            // 1. Deserialize Path-Mode message
-            FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
+        System.out.println("[Core] Received file message from frontend (PATH mode)");
 
-            // 2. Validate file path
-            String filePath = fileMsg.getFilePath();
+        try {
+            // 1. Deserialize PATH mode message
+            FileMessage pathModeMsg = FileMessageSerializer.deserialize(messageBytes);
+            String filePath = pathModeMsg.getFilePath();
+
             if (filePath == null || filePath.isEmpty()) {
-                System.err.println("[Core] ERROR: File path is null or empty.");
-                System.err.println("[Core] Message ID: " + fileMsg.getMessageId());
-                System.err.println("[Core] File Name: " + fileMsg.getFileName());
                 throw new IllegalArgumentException("File path is null or empty");
             }
 
-            // 3. Sanitize the path (defensive)
+            // Sanitize path
             filePath = filePath.trim();
             if (filePath.startsWith("*")) {
                 filePath = filePath.substring(1).trim();
@@ -97,78 +113,194 @@ public class ChatManager implements IChatService {
 
             System.out.println("[Core] Reading file: " + filePath);
 
-            // 4. Check if file exists
-            java.nio.file.Path path = java.nio.file.Paths.get(filePath);
-            if (!java.nio.file.Files.exists(path)) {
+            // Check if file exists
+            if (!Files.exists(Paths.get(filePath))) {
                 throw new IllegalArgumentException("File does not exist: " + filePath);
             }
 
-            // 5. Read and compress the file
-            byte[] uncompressedData = java.nio.file.Files.readAllBytes(path);
+            // 2. Read and compress
+            byte[] uncompressedData = Files.readAllBytes(Paths.get(filePath));
+            System.out.println("[Core] File size: " + uncompressedData.length + " bytes");
+
             byte[] compressedData = Utilities.Compress(uncompressedData, Deflater.BEST_SPEED);
             if (compressedData == null) {
-                throw new IOException("Failed to compress file.");
+                throw new IOException("Failed to compress file");
             }
-            System.out.println("[Core] File compressed: " + uncompressedData.length + " → " + compressedData.length + " bytes");
 
-            // 6. Create Content-Mode message (with compressed bytes)
+            System.out.println("[Core] Compressed: " + uncompressedData.length + " → " +
+                    compressedData.length + " bytes");
+
+            // ===== STEP 1: Send METADATA-ONLY to frontend =====
+            FileMessage metadataMsg = new FileMessage(
+                    pathModeMsg.getMessageId(),
+                    pathModeMsg.getUserId(),
+                    pathModeMsg.getSenderDisplayName(),
+                    pathModeMsg.getCaption(),
+                    pathModeMsg.getFileName(),
+                    null,  // NO file path
+                    pathModeMsg.getReplyToMessageId()
+            );
+            byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
+            this.rpc.call("chat:file-metadata-received", metadataBytes);
+
+            System.out.println("[Core] Sent metadata to frontend");
+
+            // ===== STEP 2: Cache the compressed file =====
+            fileCache.put(pathModeMsg.getMessageId(), compressedData);
+            System.out.println("[Core] Cached compressed file: " + pathModeMsg.getMessageId());
+
+            // ===== STEP 3: Send to remote peers (with compressed data) =====
             FileMessage contentModeMsg = new FileMessage(
-                    fileMsg.getMessageId(),
-                    fileMsg.getUserId(),
-                    fileMsg.getSenderDisplayName(),
-                    fileMsg.getCaption(),
-                    fileMsg.getFileName(),
-                    compressedData,
-                    System.currentTimeMillis() / 1000,  // Epoch seconds
-                    fileMsg.getReplyToMessageId()
+                    pathModeMsg.getMessageId(),
+                    pathModeMsg.getUserId(),
+                    pathModeMsg.getSenderDisplayName(),
+                    pathModeMsg.getCaption(),
+                    pathModeMsg.getFileName(),
+                    compressedData,  // ⭐ Compressed bytes for network
+                    System.currentTimeMillis() / 1000,
+                    pathModeMsg.getReplyToMessageId()
             );
 
-            // 7. Serialize Content-Mode message
             byte[] contentModeBytes = FileMessageSerializer.serialize(contentModeMsg);
             byte[] networkPacket = addProtocolFlag(contentModeBytes, FLAG_FILE_MESSAGE);
 
-            // ===== CRITICAL: REMOVE THE LOCAL BROADCAST =====
-            // System.out.println("[Core] Broadcasting file to local frontends via RPC.");
-            // this.rpc.call("chat:file-received", contentModeBytes); // <--- DELETE THIS LINE
-
-            // 8. Also send to network for remote users
-            System.out.println("[Core] Sending to network for remote users.");
             ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
             this.network.sendData(networkPacket, dests, ModuleType.CHAT, 0);
 
-            System.out.println("[Core] File processed successfully.");
+            System.out.println("[Core] Sent file to network");
 
-            // ===== NEW: RETURN THE CONTENT MESSAGE AS THE RESPONSE =====
-            return contentModeBytes; // <--- THIS IS THE FIX
+            return new byte[0];
 
         } catch (Exception e) {
-            System.err.println("[Core] FAILED to process file message: " + e.getMessage());
+            System.err.println("[Core] Error processing file: " + e.getMessage());
             e.printStackTrace();
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
         }
     }
 
-    // NEW: Helper method to notify all subscribed frontends
-    private void notifyAllFrontends(String topic, byte[] data) {
-        // This broadcasts to all connected clients subscribed to this topic
-        // Your Socketry RPC likely has a method for this
-        // Check your AbstractRPC interface for broadcast/publish methods
-        this.rpc.call(topic, data); // For now, this may only notify one client
-        // You may need to implement a proper pub/sub broadcast method
-    }
+    /**
+     * ============================================================================
+     * HANDLER 3: Save File to Disk Request from Frontend
+     * ============================================================================
+     */
+    private byte[] handleSaveFileToDisk(byte[] messageIdBytes) {
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        System.out.println("[Core] User requested save for: " + messageId);
 
+        try {
+            // Retrieve compressed file from cache
+            byte[] compressedData = fileCache.get(messageId);
+            if (compressedData == null) {
+                throw new Exception("File not found in cache: " + messageId);
+            }
+
+            System.out.println("[Core] Retrieved compressed file (" + compressedData.length + " bytes)");
+
+            // Decompress
+            byte[] decompressedData = Utilities.Decompress(compressedData);
+            if (decompressedData == null) {
+                throw new Exception("Failed to decompress file");
+            }
+
+            System.out.println("[Core] Decompressed: " + compressedData.length + " → " +
+                    decompressedData.length + " bytes");
+
+            // Save to Downloads folder
+            String downloadsPath = System.getProperty("user.home") + "/Downloads";
+            String filePath = downloadsPath + "/" + messageId + "_file";
+
+            Files.write(Paths.get(filePath), decompressedData);
+            System.out.println("[Core] Saved to: " + filePath);
+
+            // Notify frontend of success
+            String successMsg = "File saved to: " + filePath;
+            this.rpc.call("chat:file-saved-success", successMsg.getBytes(StandardCharsets.UTF_8));
+
+            return successMsg.getBytes(StandardCharsets.UTF_8);
+
+        } catch (Exception e) {
+            System.err.println("[Core] Error saving file: " + e.getMessage());
+            e.printStackTrace();
+
+            String errorMsg = "Failed to save file: " + e.getMessage();
+            this.rpc.call("chat:file-saved-error", errorMsg.getBytes(StandardCharsets.UTF_8));
+
+            return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
 
     /**
-     * Handles an incoming delete request from the Frontend via RPC.
-     * Its job is to broadcast this deletion.
+     * ============================================================================
+     * HANDLER 4: Delete Message
+     * ============================================================================
      */
     private byte[] handleDeleteMessage(byte[] messageIdBytes) {
-        System.out.println("Core: Broadcasting deletion to all frontends.");
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        System.out.println("[Core] Deleting message: " + messageId);
+
+        // Remove from cache if exists
+        fileCache.remove(messageId);
+
+        // Broadcast deletion
         this.rpc.call("chat:message-deleted", messageIdBytes);
-        return new byte[0];
+
+        return new byte[0];  // Empty array with brackets
+
     }
 
-    // --- Helper for adding the protocol flag ---
+    /**
+     * ============================================================================
+     * HANDLER 5: Network Message (from Remote Peer)
+     * ============================================================================
+     */
+    private void handleNetworkMessage(byte[] networkPacket) {
+        if (networkPacket == null || networkPacket.length == 0) return;
+
+        byte flag = networkPacket[0];
+        byte[] messageBytes = Arrays.copyOfRange(networkPacket, 1, networkPacket.length);
+
+        try {
+            switch (flag) {
+                case FLAG_TEXT_MESSAGE:
+                    System.out.println("[Core] Received text from network");
+                    this.rpc.call("chat:new-message", messageBytes);
+                    break;
+
+                case FLAG_FILE_MESSAGE:
+                    System.out.println("[Core] Received file from network");
+                    FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
+
+                    // Cache the received compressed file
+                    fileCache.put(fileMsg.getMessageId(), fileMsg.getFileContent());
+
+                    // Send ONLY metadata to frontend
+                    FileMessage metadataMsg = new FileMessage(
+                            fileMsg.getMessageId(),
+                            fileMsg.getUserId(),
+                            fileMsg.getSenderDisplayName(),
+                            fileMsg.getCaption(),
+                            fileMsg.getFileName(),
+                            null,  // NO file data
+                            fileMsg.getReplyToMessageId()
+                    );
+                    byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
+                    this.rpc.call("chat:file-metadata-received", metadataBytes);
+                    break;
+
+                default:
+                    System.err.println("[Core] Unknown message type: " + flag);
+            }
+        } catch (Exception e) {
+            System.err.println("[Core] Error handling network message: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * ============================================================================
+     * UTILITY METHODS
+     * ============================================================================
+     */
     private byte[] addProtocolFlag(byte[] data, byte flag) {
         byte[] flaggedPacket = new byte[data.length + 1];
         flaggedPacket[0] = flag;
@@ -176,96 +308,19 @@ public class ChatManager implements IChatService {
         return flaggedPacket;
     }
 
-    /**
-     * The UI Controller will call this method to listen for new messages.
-     * @param listener A function that accepts a ChatMessage.
-     */
-    public void setOnMessageReceived(final Consumer<ChatMessage> listener) {
-        this.onMessageReceivedListener = listener;
-    }
-
-    /**
-     * Sends a chat message through the network.
-     * (This method correctly implements the IChatService contract)
-     *
-     * @param message the chat message to send
-     */
     @Override
-    public void sendMessage(final ChatMessage message) {
-        // "Dummy send message";
+    public void sendMessage(ChatMessage message) {
+        // Implemented via RPC
     }
 
-    /**
-     * 7. RE-ADD receiveMessage TO FULFILL THE CONTRACT
-     * Receives a chat message (from JSON), deserializes it,
-     * and notifies the listener if present.
-     * (This method correctly implements the IChatService contract)
-     *
-     * @param json serialized chat message
-     */
     @Override
-    public void receiveMessage(final String json) {
-        // dummy receiver message
+    public void receiveMessage(String json) {
+        // Implemented via RPC
     }
 
-    /**
-     * Handles an incoming message from the Network.
-     * Its job is to broadcast this message to all Frontends via RPC.
-     */
-    private void handleNetworkMessage(final byte[] networkPacket) {
-        if (networkPacket == null || networkPacket.length == 0) return;
-
-        // 1. Read the protocol flag
-        byte flag = networkPacket[0];
-
-        // 2. Strip the flag to get the original message bytes
-        byte[] messageBytes = Arrays.copyOfRange(networkPacket, 1, networkPacket.length);
-
-        // 3. Route to the correct broadcast
-        switch (flag) {
-            case FLAG_TEXT_MESSAGE:
-                System.out.println("[Core] Received Text from Network, broadcasting to Frontends.");
-                notifyAllFrontends("chat:new-message", messageBytes);
-                break;
-            case FLAG_FILE_MESSAGE:
-                System.out.println("[Core] Received File from Network, broadcasting to Frontends.");
-                notifyAllFrontends("chat:file-received", messageBytes);
-                break;
-            default:
-                System.err.println("[Core] Received unknown message type: " + flag);
-        }
-    }
-
-
-    /**
-     * This is the private callback from the network.
-     * It calls the public receiveMessage, just like your original code.
-     *
-     * @param data raw byte array received from the network
-     */
-    private void receiveFromNetwork(final byte[] data) {
-        // Dummy try function;
-    }
-
-    /**
-     * 8. RE-ADD deleteMessage TO FULFILL THE CONTRACT
-     * Deletes a message by its unique ID.
-     * (This method correctly implements the IChatService contract)
-     *
-     * @param messageId the ID of the message to delete
-     */
     @Override
-    public void deleteMessage(final String messageId) {
-        System.out.println("Core: Broadcasting deletion of " + messageId + " to all frontends.");
-
-        // TODO: In a real system, you would ALSO send a delete packet
-        // over the SimpleNetworking to other Core servers.
-        // network.sendData(deletePacket, ...);
-
-        // Broadcast the delete command to all local frontends
-        byte[] messageIdBytes = messageId.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    public void deleteMessage(String messageId) {
+        byte[] messageIdBytes = messageId.getBytes(StandardCharsets.UTF_8);
         this.rpc.call("chat:message-deleted", messageIdBytes);
     }
 }
-
-
