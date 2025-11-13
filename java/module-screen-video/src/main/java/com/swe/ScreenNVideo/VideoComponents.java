@@ -240,8 +240,8 @@ public class VideoComponents {
         }
 
         final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
-//        System.out.println("\nServer FPS : "
-//            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+        System.out.println("Server FPS : "
+            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
 //        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
@@ -253,6 +253,7 @@ public class VideoComponents {
         final List<CompressedPatch> patches = patchGenerator.generatePackets(newFeed, toCompress);
 
         if (patches.isEmpty()) {
+            System.out.println("Empty");
             prev = System.nanoTime();
             return null;
         }
@@ -266,7 +267,9 @@ public class VideoComponents {
         feed = newFeed;
         videoFeedNumber++;
 
+
         final CPackets networkPackets = new CPackets(videoFeedNumber, localIp, false, toCompress, feed.length, feed[0].length, patches);
+        System.out.println("Feed number : " + networkPackets.packetNumber());
         byte[] encodedPatches = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
         while (tries-- > 0) {
