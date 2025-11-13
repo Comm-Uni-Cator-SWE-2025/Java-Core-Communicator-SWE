@@ -75,13 +75,11 @@
   <!-- ===================================================== -->
   <modules>
     <module>module-networking</module>
-    <module>module-ux</module>
     <module>module-chat</module>
-    <module>module-canvas</module>
     <module>module-screen-video</module>
     <module>module-ai-insights</module>
     <module>module-cloud</module>
-    <module>module-controller</module>
+    <module>module-core</module>
     <module>module-app</module>
     <module>module-integration-tests</module>
   </modules>
@@ -89,6 +87,13 @@
   <!-- ===================================================== -->
   <!-- Dependency Management -->
   <!-- ===================================================== -->
+  <repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
   <dependencyManagement>
     <dependencies>
       <!-- JUnit 4 -->
@@ -98,6 +103,11 @@
         <version>4.13.2</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>com.github.enchanteddev</groupId>
+        <artifactId>socketry</artifactId>
+        <version>V3</version>
+      </dependency>
 
       <!-- JUnit 5 -->
       <dependency>
@@ -106,6 +116,7 @@
         <version>5.10.2</version>
         <scope>test</scope>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -120,11 +131,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.10.1</version>
-          <configuration>
-            <source>16</source>
-            <target>16</target>
-          </configuration>
+          <version>3.13.0</version>
+           <configuration>
+             <source>24</source>
+             <target>24</target>
+           </configuration>
         </plugin>
 
         <!-- Checkstyle Plugin -->
@@ -231,12 +242,12 @@
   <!-- ===================================================== -->
   <!-- Properties -->
   <!-- ===================================================== -->
-  <properties>
-    <maven.compiler.source>16</maven.compiler.source>
-    <maven.compiler.target>16</maven.compiler.target>
-    <encoding>UTF-8</encoding>
-    <checkstyle.version>3.3.1</checkstyle.version>
-  </properties>
+   <properties>
+     <maven.compiler.source>24</maven.compiler.source>
+     <maven.compiler.target>24</maven.compiler.target>
+     <encoding>UTF-8</encoding>
+     <checkstyle.version>3.3.1</checkstyle.version>
+   </properties>
 
 </project>
 >>>>>>> 1b2697e84e1859b32df9f6544d72aed8bed8634a

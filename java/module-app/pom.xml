@@ -12,4 +12,33 @@
   <artifactId>module-app</artifactId>
   <name>Module - app</name>
   <packaging>jar</packaging>
+  <dependencies>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-networking</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-screen-video</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <mainClass>com.swe.controller.Init</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

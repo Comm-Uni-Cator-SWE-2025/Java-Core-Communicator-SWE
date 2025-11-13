@@ -6,6 +6,9 @@
 Networking/.idea/
 Networking/.mvn/
 
+# For java class files
+**/*.class
+
 # User-specific files
 *.rsuser
 *.suo
@@ -419,3 +422,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+
+tokens/

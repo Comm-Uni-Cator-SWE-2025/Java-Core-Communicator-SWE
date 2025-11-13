@@ -1,0 +1,28 @@
+// contributed by Anup Kumar
+
+package com.swe.ScreenNVideo.Codec;
+
+/**
+ * Interface for Forward and Inverse Discrete Cosine Transform (DCT) operations.
+ */
+public interface IFIDCT {
+
+    /**
+     * Main public function to perform the 2D Forward DCT.
+     *
+     * @param matrix The input/output matrix.
+     * @param row    The starting row of the 8x8 block.
+     * @param col    The starting col of the 8x8 block.
+     */
+    void fdct(short[][] matrix, short row, short col);
+
+    /**
+     * Main public function to perform the 2D Inverse DCT.
+     *
+     * @param matrix The input/output matrix.
+     * @param row    The starting row of the 8x8 block.
+     * @param col    The starting col of the 8x8 block.
+     */
+    void idct(short[][] matrix, short row, short col);
+
+}
