@@ -36,7 +36,7 @@ public class Init {
 
         controllerServices.networking = networking;
 
-        MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(networking, rpc, portNumber);
+        MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(SimpleNetworking.getSimpleNetwork(), rpc, portNumber);
         Thread mediaCaptureManagerThread = new Thread(() -> {
             try {
                 mediaCaptureManager.startCapture();
