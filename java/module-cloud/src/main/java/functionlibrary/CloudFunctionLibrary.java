@@ -10,8 +10,8 @@
 package functionlibrary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import datastructures.CloudResponse;
 import datastructures.Entity;
-import datastructures.Response;
 import io.github.cdimascio.dotenv.Dotenv;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class CloudFunctionLibrary {
      * @param api Endpoint after base URL
      * @param method HTTP method ("POST" or "PUT")
      * @param payload JSON payload
-     * @return Response body as string
+     * @return CloudResponse body as string
      */
     private String callAPI(final String api, final String method, final String payload) throws IOException, InterruptedException {
         final HttpRequest.Builder httpBuilder = HttpRequest.newBuilder()
@@ -77,56 +77,56 @@ public class CloudFunctionLibrary {
     /** Calls /cloudcreate endpoint.
      *
      * @param request Contains the request with type Entity
-     * @return response from cloud function with type Response
+     * @return response from cloud function with type CloudResponse
      * */
-    public Response cloudCreate(final Entity request) throws IOException, InterruptedException {
+    public CloudResponse cloudCreate(final Entity request) throws IOException, InterruptedException {
         final String payload = objectMapper.writeValueAsString(request);
         final String jsonResponse = callAPI("/cloudcreate", "POST", payload);
-        return objectMapper.readValue(jsonResponse, Response.class);
+        return objectMapper.readValue(jsonResponse, CloudResponse.class);
     }
 
     /** Calls /clouddelete endpoint.
      *
      * @param request Contains the request with type Entity
-     * @return response from cloud function with type Response
+     * @return response from cloud function with type CloudResponse
      * */
-    public Response cloudDelete(final Entity request) throws IOException, InterruptedException {
+    public CloudResponse cloudDelete(final Entity request) throws IOException, InterruptedException {
         final String payload = objectMapper.writeValueAsString(request);
         final String jsonResponse = callAPI("/clouddelete", "POST", payload);
-        return objectMapper.readValue(jsonResponse, Response.class);
+        return objectMapper.readValue(jsonResponse, CloudResponse.class);
     }
 
     /** Calls /cloudget endpoint.
      *
      * @param request Contains the request with type Entity
-     * @return response from cloud function with type Response
+     * @return response from cloud function with type CloudResponse
      * */
-    public Response cloudGet(final Entity request) throws IOException, InterruptedException {
+    public CloudResponse cloudGet(final Entity request) throws IOException, InterruptedException {
         final String payload = objectMapper.writeValueAsString(request);
         final String jsonResponse = callAPI("/cloudget", "POST", payload);
-        return objectMapper.readValue(jsonResponse, Response.class);
+        return objectMapper.readValue(jsonResponse, CloudResponse.class);
     }
 
     /** Calls /cloudpost endpoint.
      *
      * @param request Contains the request with type Entity
-     * @return response from cloud function with type Response
+     * @return response from cloud function with type CloudResponse
      * */
-    public Response cloudPost(final Entity request) throws IOException, InterruptedException {
+    public CloudResponse cloudPost(final Entity request) throws IOException, InterruptedException {
         final String payload = objectMapper.writeValueAsString(request);
         final String jsonResponse = callAPI("/cloudpost", "POST", payload);
-        return objectMapper.readValue(jsonResponse, Response.class);
+        return objectMapper.readValue(jsonResponse, CloudResponse.class);
     }
 
     /** Calls /cloudupdate endpoint.
      *
      * @param request Contains the request with type Entity
-     * @return response from cloud function with type Response
+     * @return response from cloud function with type CloudResponse
      * */
-    public Response cloudUpdate(final Entity request) throws IOException, InterruptedException {
+    public CloudResponse cloudUpdate(final Entity request) throws IOException, InterruptedException {
         final String payload = objectMapper.writeValueAsString(request);
         final String jsonResponse = callAPI("/cloudupdate", "PUT", payload);
-        return objectMapper.readValue(jsonResponse, Response.class);
+        return objectMapper.readValue(jsonResponse, CloudResponse.class);
     }
 
 }

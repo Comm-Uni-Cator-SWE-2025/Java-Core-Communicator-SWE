@@ -8,8 +8,8 @@
 
 package interfaces;
 
+import datastructures.CloudResponse;
 import datastructures.Entity;
-import datastructures.Response;
 
 /**
  * Interface for performing CRUD operations on cloud database entities.
@@ -18,13 +18,13 @@ public interface IdbConnector {
 
     void init();
 
-    Response getData(Entity request);
+    CloudResponse getData(Entity request);
 
-    Response postData(Entity request);
+    CloudResponse postData(Entity request);
 
-    Response createData(Entity request);
+    CloudResponse createData(Entity request);
 
-    Response deleteData(Entity request);
+    CloudResponse deleteData(Entity request);
 
-    Response updateData(Entity request);
+    CloudResponse updateData(Entity request);
 }

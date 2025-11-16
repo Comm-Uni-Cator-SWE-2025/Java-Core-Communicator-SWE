@@ -1,12 +1,13 @@
 /******************************************************************************
- * Filename    = TimeRange.java
+ * Filename    = CloudResponse.java
  * Author      = Kallepally Sai Kiran, Nikhil S Thomas
  * Product     = cloud-function-app
  * Project     = Comm-Uni-Cator
- * Description = Defines a helper data structure for Entity.java.
+ * Description = Defines a common data structure for the cloud API responses.
  *****************************************************************************/
 
 package datastructures;
 
-public record TimeRange(double fromTime, double toTime) {
-}
+import com.fasterxml.jackson.databind.JsonNode;
+
+public record CloudResponse(int status_code, String message, JsonNode data) { }
