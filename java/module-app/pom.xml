@@ -28,6 +28,11 @@
       <artifactId>module-screen-video</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-cloud</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

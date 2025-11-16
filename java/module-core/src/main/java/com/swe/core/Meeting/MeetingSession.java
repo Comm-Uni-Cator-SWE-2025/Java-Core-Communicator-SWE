@@ -26,7 +26,7 @@ public class MeetingSession {
     private final long createdAt;
     
     /** Session mode: TEST or CLASS. */
-    @JsonProperty("SessionMode")
+    @JsonProperty("sessionMode")
     private final SessionMode sessionMode;
 
     @JsonProperty("participants")

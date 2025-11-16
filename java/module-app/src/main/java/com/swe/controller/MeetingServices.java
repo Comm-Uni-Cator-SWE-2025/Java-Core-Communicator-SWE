@@ -15,10 +15,12 @@ public class MeetingServices {
      * @return MeetingSession if created, null if user is not an instructor
      */
     public static MeetingSession createMeeting(final UserProfile userParam, SessionMode mode) {
-        if (userParam.getRole() != ParticipantRole.INSTRUCTOR) {
-            System.err.println("MEETING-SERVICE: Create failed. User is not an instructor.");
-            return null;
-        }
+        // if (userParam.getRole() != ParticipantRole.INSTRUCTOR) {
+        //     System.err.println("MEETING-SERVICE: Create failed. User is not an instructor.");
+        //     return null;
+        // }
+
+        userParam.setRole(ParticipantRole.INSTRUCTOR); // SET creator as INSTRUCTOR
 
         final MeetingSession meeting = new MeetingSession(userParam.getEmail(), mode);
 

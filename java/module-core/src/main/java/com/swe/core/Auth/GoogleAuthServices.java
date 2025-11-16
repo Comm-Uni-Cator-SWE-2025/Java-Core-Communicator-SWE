@@ -50,10 +50,11 @@ public class GoogleAuthServices {
      * @throws GeneralSecurityException if transport setup fails
      */
     public Credential getCredentials() throws IOException, GeneralSecurityException {
-        final InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
+        System.out.println("Found credentials file in classpath: " + CREDENTIALS_FILE_PATH);
 
         final GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
                 JSON_FACTORY,
