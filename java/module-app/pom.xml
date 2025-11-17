@@ -23,6 +23,11 @@
       <artifactId>module-networking</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-chat</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- Temporarily commented out due to compilation errors -->
     <!--
     <dependency>

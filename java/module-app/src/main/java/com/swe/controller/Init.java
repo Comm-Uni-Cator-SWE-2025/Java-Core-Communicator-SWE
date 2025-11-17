@@ -12,6 +12,7 @@ import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
+import com.swe.chat.ChatManager;
 import com.swe.core.ClientNode;
 import com.swe.networking.Networking;
 
@@ -41,6 +42,8 @@ public class Init {
 
         controllerServices.networking = networking;
         MeetingNetworkingCoordinator.initialize(networking);
+
+        new ChatManager(Networking.getNetwork(), rpc);
 
         // MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(SimpleNetworking.getSimpleNetwork(), rpc, portNumber);
         // Thread mediaCaptureManagerThread = new Thread(() -> {
