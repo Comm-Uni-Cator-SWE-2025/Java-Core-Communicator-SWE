@@ -120,7 +120,9 @@ public class MeetingSession {
      *
      * @return copy of the mapping (ClientNode → email)
      */
+    @JsonIgnore
     public Map<ClientNode, String> getNodeToEmailMap() {
+        System.out.println("CALLED getNodeToEmailMap");
         return Collections.unmodifiableMap(new HashMap<>(ipToEmailMap));
     }
 

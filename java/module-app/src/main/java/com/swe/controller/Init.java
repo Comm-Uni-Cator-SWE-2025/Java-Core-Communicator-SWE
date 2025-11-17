@@ -1,6 +1,7 @@
 package com.swe.controller;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -102,7 +103,9 @@ public class Init {
 
             try {
                 System.out.println("Returning meeting session");
-                return DataSerializer.serialize(meetingSession);
+                byte[] serializedMeetingSession = DataSerializer.serialize(meetingSession);
+                System.out.println("Serialized meeting session: " + new String(serializedMeetingSession, StandardCharsets.UTF_8));
+                return serializedMeetingSession;
             } catch (Exception e) {
                 System.out.println("Error serializing meeting session: " + e.getMessage());
                 throw new RuntimeException(e);
