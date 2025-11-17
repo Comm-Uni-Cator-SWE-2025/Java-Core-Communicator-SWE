@@ -46,7 +46,6 @@ public final class MeetingNetworkingCoordinator {
         final ClientNode localNode = getLocalClientNode();
         meeting.upsertParticipantNode(services.self.getEmail(), localNode);
         System.out.println(TAG + " Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
-        broadcastAnnounce(List.of(localNode));
     }
 
     /**
@@ -79,6 +78,8 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
         final MeetingPacketType type = PACKET_TYPES[ordinal];
+
+        System.out.println(TAG + " Handling packet type: " + type);
 
         switch (type) {
             case JOIN -> handleJoinPacket(data);
