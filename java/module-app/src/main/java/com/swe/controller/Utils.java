@@ -39,10 +39,13 @@ public class Utils {
 
             // Post to cloud
             Response response = cloud.cloudGet(request);
-            JsonNode node = request.data();
+            JsonNode node = response.data();
 
-            String ipAddress = node.get("ipAddress").asText();
-            int port = node.get("port").asInt();
+            System.out.println("Data from cloud: " + node.toString());
+            JsonNode dataNode = node.get("data");
+
+            String ipAddress = dataNode.get("ipAddress").asText();
+            int port = dataNode.get("port").asInt();
 
             ClientNode serverNode = new ClientNode(ipAddress, port);
             System.out.println("Retrieved server node from cloud: " + serverNode.toString());

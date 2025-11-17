@@ -114,9 +114,12 @@ public class Init {
                 throw new RuntimeException(e);
             }
 
+            System.out.println("Joining meeting with id: " + id);
+
             try {
                 ClientNode localClientNode = Utils.getLocalClientNode();
                 ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.cloud);
+                System.out.println("Server client node: " + serverClientNode.toString());
                 controllerServices.networking.addUser(localClientNode, serverClientNode);
             } catch (Exception e) {
                 System.out.println("Error getting server client node: " + e.getMessage());
