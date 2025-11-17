@@ -252,12 +252,12 @@ public class P2PServer implements P2PUser {
                     handleNetwork(packet);
                     break;
                 case MODULE:
-//                    // System.out.println("Passing to chunk manager...");
+                    System.out.println("MODULE packet received");
                     final int module = parser.parsePacket(packet).getModule();
                     final byte[] data = chunkManager.addChunk(packet);
                     final Networking networking = Networking.getNetwork();
                     if (data != null) {
-                        PacketInfo destpktInfo = parser.parsePacket(data);
+                        final PacketInfo destpktInfo = parser.parsePacket(data);
                         networking.callSubscriber(module, destpktInfo.getPayload());
                     }
                     break;

@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
 
+import com.swe.core.RPCinteface.AbstractRPC;
+
 /**
  * The main class of the networking module.
  */
@@ -51,6 +53,15 @@ public class Networking implements AbstractNetworking, AbstractController {
     private final int payloadSize = 10 * 1024; // 10 KB
 
     /**
+     * Variable to store the rpc for the app.
+     */
+    private AbstractRPC moduleRPC = null;
+    /**
+     * Variable to store the thread to start the send packets.
+     */
+    private final Thread sendThread;
+
+    /**
      * Private constructor for Netwroking class.
      */
     private Networking() {
@@ -58,6 +69,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = priorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
+        sendThread = new Thread(this::start);
     }
 
     /**
@@ -97,9 +109,8 @@ public class Networking implements AbstractNetworking, AbstractController {
 //                 long startTime = System.currentTimeMillis();
                 final ClientNode newdest = new ClientNode(addr.getHostAddress(), port);
                 System.out.println("Destination " + newdest);
-                topology.sendPacket(chunk, newdest);
-//                 long endTime = System.currentTimeMillis();
-//                 System.out.println("Time to Send one packet: " + (endTime - startTime) + " ms");
+                // topology.sendPacket(chunk, newdest);
+                priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -139,7 +150,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         final PacketInfo pkt = new PacketInfo();
         pkt.setModule(module);
         pkt.setPriority(priority);
-        pkt.setBroadcast(0);
+        pkt.setBroadcast(broadcast);
         pkt.setPayload(data);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
@@ -228,9 +239,26 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Function called to close the networking module.
      */
+    @Override
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
     }
 
+    /**
+     * Function to consume the RPC.
+     *
+     * @param rpc the rpc to consume by the networking
+     */
+    @Override
+    public void consumeRPC(final AbstractRPC rpc) {
+        moduleRPC = rpc;
+        final NetworkRPC networkRPC = NetworkRPC.getNetworkRPC();
+        moduleRPC.subscribe("getNetworkRPCAddUser", networkRPC::networkRPCAddUser);
+        moduleRPC.subscribe("networkRPCBroadcast", networkRPC::networkRPCBroadcast);
+        moduleRPC.subscribe("networkRPCRemoveSubscription", networkRPC::networkRPCRemoveSubscription);
+        moduleRPC.subscribe("networkRPCSendData", networkRPC::networkRPCSendData);
+        moduleRPC.subscribe("networkRPCSubscribe", networkRPC::networkRPCSubscribe);
+        moduleRPC.subscribe("networkRPCCloseNetworking", networkRPC::networkRPCCloseNetworking);
+    }
 }
