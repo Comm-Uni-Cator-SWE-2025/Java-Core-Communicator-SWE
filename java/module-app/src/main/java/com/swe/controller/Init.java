@@ -2,7 +2,6 @@ package com.swe.controller;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 // import com.swe.ScreenNVideo.MediaCaptureManager;
@@ -12,7 +11,7 @@ import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import functionlibrary.CloudFunctionLibrary;
@@ -40,6 +39,7 @@ public class Init {
         networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
+        MeetingNetworkingCoordinator.initialize(networking);
 
         // MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(SimpleNetworking.getSimpleNetwork(), rpc, portNumber);
         // Thread mediaCaptureManagerThread = new Thread(() -> {
@@ -85,15 +85,18 @@ public class Init {
         });
 
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
-            MeetingSession meetingSession = null;
-            meetingSession = MeetingServices.createMeeting(controllerServices.self, SessionMode.CLASS);
+            System.out.println("[CONTROLLER] Creating meeting");
+            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.self, SessionMode.CLASS);
+            controllerServices.meetingSession = meetingSession;
 
             try {
-                ClientNode localClientNode = Utils.getLocalClientNode();
+                final ClientNode localClientNode = Utils.getLocalClientNode();
                 Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.cloud);
                 controllerServices.networking.addUser(localClientNode, localClientNode);
+
+                MeetingNetworkingCoordinator.handleMeetingCreated(meetingSession);
             } catch (Exception e) {
-                System.out.println("Error setting server client node: " + e.getMessage());
+                System.out.println("Error initializing networking for meeting host: " + e.getMessage());
                 throw new RuntimeException(e);
             }
 
@@ -117,10 +120,12 @@ public class Init {
             System.out.println("Joining meeting with id: " + id);
 
             try {
-                ClientNode localClientNode = Utils.getLocalClientNode();
-                ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.cloud);
+                final ClientNode localClientNode = Utils.getLocalClientNode();
+                final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.cloud);
                 System.out.println("Server client node: " + serverClientNode.toString());
+
                 controllerServices.networking.addUser(localClientNode, serverClientNode);
+                MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
                 System.out.println("Error getting server client node: " + e.getMessage());
                 throw new RuntimeException(e);

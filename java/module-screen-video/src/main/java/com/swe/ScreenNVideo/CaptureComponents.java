@@ -9,7 +9,7 @@ import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
 import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
 import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.AbstractNetworking;
 

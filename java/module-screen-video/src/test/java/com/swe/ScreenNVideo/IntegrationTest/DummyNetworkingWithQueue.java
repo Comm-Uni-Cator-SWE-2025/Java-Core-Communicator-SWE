@@ -1,7 +1,7 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.ScreenNVideo.Utils;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.AbstractNetworking;
 import com.swe.networking.SimpleNetworking.MessageListener;

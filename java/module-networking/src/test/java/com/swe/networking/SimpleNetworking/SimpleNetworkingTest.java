@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 
 /**
