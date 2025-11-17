@@ -4,6 +4,12 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 class CoalescedPacket {
+
+    /**
+     * Variable to store the name of the module.
+     */
+    private static final String MODULENAME = "[COALESCEDPACKET]";
+
     /**
      * Variable to store the name of the module.
      */

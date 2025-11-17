@@ -8,7 +8,7 @@ import org.junit.Test;
 public class P2PMainServerTest {
 
     private int mainServerPort = 8000;
-    private String loopBackAddress = "10.32.0.41";
+    private String loopBackAddress = "10.32.0.41"; // TODO THIS IS NOT LOOPBACK?????
 
     @Test
     public void testMainServerInitialization() throws UnknownHostException {

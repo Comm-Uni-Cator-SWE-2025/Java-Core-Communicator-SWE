@@ -11,6 +11,11 @@ import java.util.List;
 public class SplitPackets {
 
     /**
+     * The module name for logging.
+     */
+    private static final String MODULENAME = "[SPLITPACKETS]";
+
+    /**
      * Singleton design pattern to prevent repeating class instantiations.
      *
      */
@@ -41,10 +46,10 @@ public class SplitPackets {
      */
     public static SplitPackets getSplitPackets() {
         if (splitPackets == null) {
-            System.out.println("Creating new SplitPackets object...");
+            NetworkLogger.printInfo(MODULENAME, "Creating new SplitPackets object...");
             splitPackets = new SplitPackets();
         }
-        System.out.println("Passing already instantiated SplitPackets object...");
+        NetworkLogger.printInfo(MODULENAME, "Passing already instantiated SplitPackets object...");
         return splitPackets;
     }
 
@@ -65,7 +70,7 @@ public class SplitPackets {
             incompleteBuffer.get(oldData);
 
             final byte[] combined = new byte[oldData.length + data.length];
-            System.out.println("Combined length " + combined.length + " ...");
+            NetworkLogger.printInfo(MODULENAME, "Combined length: " + combined.length + " bytes.");
             System.arraycopy(oldData, 0, combined, 0, oldData.length);
             System.arraycopy(data, 0, combined, oldData.length, data.length);
             buffer = ByteBuffer.wrap(combined);
@@ -81,7 +86,7 @@ public class SplitPackets {
             System.out.println("Packet length " + len);
             buffer.reset();
             if (len <= 2 || len > MAX_PACKET_SIZE) {
-                System.out.println("Invalid packet length " + len);
+                NetworkLogger.printWarning(MODULENAME, "Invalid packet length " + len);
             }
             if (buffer.remaining() < len) {
                 buffer.reset();
@@ -95,7 +100,9 @@ public class SplitPackets {
 
         incompleteBuffer.clear();
         if (buffer.hasRemaining()) {
+            final int remaining = buffer.remaining();
             incompleteBuffer.put(buffer);
+            NetworkLogger.printInfo(MODULENAME, "Carrying over " + remaining + " bytes to next read.");
         }
         return packets;
     }
