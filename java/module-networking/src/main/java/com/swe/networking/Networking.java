@@ -129,6 +129,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                     final InetAddress addr = pktInfo.getIpAddress();
                     final int port = pktInfo.getPortNum();
                     final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                    System.out.println("Sending packet to " + dest);
                     topology.sendPacket(packet, dest);
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
