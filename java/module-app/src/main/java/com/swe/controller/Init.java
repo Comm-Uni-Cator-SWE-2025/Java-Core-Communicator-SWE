@@ -13,6 +13,7 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.core.ClientNode;
+import com.swe.networking.Networking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import functionlibrary.CloudFunctionLibrary;
@@ -35,8 +36,8 @@ public class Init {
 
 
         // Provide RPC somehow here
-        NetworkingInterface networking = new SimpleNetworkingAdapter(SimpleNetworking.getSimpleNetwork());
-        
+        // NetworkingInterface networking = new SimpleNetworkingAdapter(SimpleNetworking.getSimpleNetwork());
+        NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
         networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
