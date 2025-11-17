@@ -10,6 +10,7 @@ import java.util.List;
  *
  */
 public class P2PCluster implements P2PUser {
+
     /**
      * List of all clients belonging to the same cluster.
      */
@@ -53,7 +54,7 @@ public class P2PCluster implements P2PUser {
 
     /**
      * Function to add current user to the network.
-     * 
+     *
      * @param client details of the current client
      * @param server details of the mainserver
      */
@@ -87,8 +88,9 @@ public class P2PCluster implements P2PUser {
                 clusterServer = client;
                 this.user = new P2PServer(client, server, tcpCommunicator);
                 for (ClientNode c : networkStructure.clusters().get(i)) {
-                    if(!c.equals(client))
+                    if (!c.equals(client)) {
                         ((P2PServer) this.user).monitor(c);
+                    }
                 }
                 this.isServer = true;
                 break;
@@ -96,7 +98,7 @@ public class P2PCluster implements P2PUser {
             if (networkStructure.clusters().get(i).contains(client)) {
                 clusterServer = networkStructure.servers().get(i);
                 this.isServer = false;
-                user = new P2PClient(client, server);
+                user = new P2PClient(client, server, tcpCommunicator);
                 break;
             }
         }
@@ -104,7 +106,7 @@ public class P2PCluster implements P2PUser {
 
     /**
      * Function to resize the cluster dynamically.
-     * 
+     *
      * @param size The required size of cluster
      */
     public void resizeCluster(final Integer size) {
@@ -115,8 +117,8 @@ public class P2PCluster implements P2PUser {
 
     /**
      * Function to send data by the user.
-     * 
-     * @param data   the data to be sent
+     *
+     * @param data the data to be sent
      * @param destIp the destinations to send the data
      */
     @Override
@@ -126,12 +128,13 @@ public class P2PCluster implements P2PUser {
 
     /**
      * Function to send data by the user.
-     * 
-     * @param data   the data to be sent
+     *
+     * @param data the data to be sent
      * @param destIp the one destination to send the data
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
+//        System.out.println("P2pCluster send to " + destIp.hostName());
         this.user.send(data, destIp);
     }
 
@@ -143,7 +146,6 @@ public class P2PCluster implements P2PUser {
         while (true) {
             final byte[] packet = tcpCommunicator.receiveData();
             if (packet == null) {
-                System.out.println("No packet received, continuing...");
                 continue;
             } else {
                 try {

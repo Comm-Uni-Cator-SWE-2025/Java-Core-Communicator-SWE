@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 /**
  * The server of a particular P2P Cluster.
@@ -46,7 +47,7 @@ public class P2PServer implements P2PUser {
     /**
      * The thread to send ALIVE.
      */
-    private final Thread sendThread;
+    private final Thread sendThread = null;
 
     /**
      * The thread to monitor client timeouts.
@@ -58,10 +59,14 @@ public class P2PServer implements P2PUser {
      */
     private final int timeoutThreshold = 1000;
 
-    /** Variable to store header size. */
+    /**
+     * Variable to store header size.
+     */
     private final int packetHeaderSize = 22;
 
-    /** Variable to store chunk manager. */
+    /**
+     * Variable to store chunk manager.
+     */
     private final ChunkManager chunkManager;
 
     /**
@@ -77,9 +82,9 @@ public class P2PServer implements P2PUser {
     /**
      * Constructor function for the cluster server class.
      *
-     * @param deviceAddress     the ClientNode of the device
+     * @param deviceAddress the ClientNode of the device
      * @param mainServerAddress the IP address of the main server
-     * @param tcpCommunicator   the tcp communicator object to send messages
+     * @param tcpCommunicator the tcp communicator object to send messages
      */
     public P2PServer(final ClientNode deviceAddress,
             final ClientNode mainServerAddress, final ProtocolBase tcpCommunicator) {
@@ -92,11 +97,13 @@ public class P2PServer implements P2PUser {
         this.mainServer = mainServerAddress;
 
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
-        sendThread = new Thread(this::sendAliveToMainServer);
+//        sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
-        sendThread.start();
+//        sendThread.start();
         receiveThread.start();
+
+        System.out.println("P2PServer");
 
         System.out.println("Created a new P2P Server at " + deviceAddress + "...");
     }
@@ -104,7 +111,7 @@ public class P2PServer implements P2PUser {
     /**
      * Function to send to list of destinations.
      *
-     * @param data   the data to be sent
+     * @param data the data to be sent
      * @param destIp the destination to which the data is sent
      */
     @Override
@@ -118,7 +125,7 @@ public class P2PServer implements P2PUser {
     /**
      * Function to send to a single destination.
      *
-     * @param data   the data to be sent
+     * @param data the data to be sent
      * @param destIp the destination to which the data is sent
      */
     @Override
@@ -138,7 +145,10 @@ public class P2PServer implements P2PUser {
                 continue;
             }
             try {
-                handlePacket(packet);
+                final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
+                for (byte[] p : packets) {
+                    handlePacket(p);
+                }
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
@@ -194,7 +204,7 @@ public class P2PServer implements P2PUser {
      * Function to handle broadcasting a packet.
      *
      * @param newPacket the packet to be broacasted
-     * @param dest      the destination from which the packet was received
+     * @param dest the destination from which the packet was received
      */
     private void handleBroadcast(final byte[] newPacket, final ClientNode dest) {
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
@@ -213,10 +223,10 @@ public class P2PServer implements P2PUser {
 
     /**
      * Handle packets whose NetworkType is USE or CLUSTERSERVER.
-     * 
+     *
      * @param connectionType the connection type of the packet
-     * @param packet         the received packet
-     * @param dest           the destination client node
+     * @param packet the received packet
+     * @param dest the destination client node
      */
     private void handleUsePacket(final int connectionType, final byte[] packet,
             final ClientNode dest) {
@@ -241,7 +251,13 @@ public class P2PServer implements P2PUser {
                     break;
                 case MODULE:
                     System.out.println("MODULE packet received");
-                    chunkManager.addChunk(packet);
+                    final int module = parser.parsePacket(packet).getModule();
+                    final byte[] data = chunkManager.addChunk(packet);
+                    final Networking networking = Networking.getNetwork();
+                    if (data != null) {
+                        final PacketInfo destpktInfo = parser.parsePacket(data);
+                        networking.callSubscriber(module, destpktInfo.getPayload());
+                    }
                     break;
                 case CLOSE:
                     close();
@@ -354,11 +370,12 @@ public class P2PServer implements P2PUser {
         for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
             send(removePacket, c);
         }
+        communicator.closeSocket(client);
     }
 
     /**
      * Function to monitor a new client.
-     * 
+     *
      * @param client the client to monitor
      */
     public void monitor(final ClientNode client) {
