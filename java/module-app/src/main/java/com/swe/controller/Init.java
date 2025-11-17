@@ -14,7 +14,6 @@ import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.core.ClientNode;
 import com.swe.networking.Networking;
-import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import functionlibrary.CloudFunctionLibrary;
 

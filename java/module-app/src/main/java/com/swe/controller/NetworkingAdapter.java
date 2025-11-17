@@ -55,7 +55,7 @@ public class NetworkingAdapter implements NetworkingInterface {
             }
 
             @Override
-            public java.util.concurrent.Thread connect(int portNumber) throws java.io.IOException, java.util.concurrent.ExecutionException, java.util.concurrent.InterruptedException {
+            public Thread connect(int portNumber) throws java.io.IOException, java.util.concurrent.ExecutionException, InterruptedException {
                 return rpc.connect(portNumber);
             }
 

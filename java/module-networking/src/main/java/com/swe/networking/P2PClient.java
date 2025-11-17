@@ -4,7 +4,9 @@ import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The Client belonging to a certain cluster.
@@ -48,7 +50,7 @@ public class P2PClient implements P2PUser {
     /**
      * alive thread manager.
      */
-    private final ScheduledExecutorService aliveScheduler = null;
+    private final ScheduledExecutorService aliveScheduler;
 
     /**
      * time interval gap to send alive packet.

@@ -23,11 +23,14 @@
       <artifactId>module-networking</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- Temporarily commented out due to compilation errors -->
+    <!--
     <dependency>
       <groupId>com.swe</groupId>
       <artifactId>module-screen-video</artifactId>
       <version>${project.version}</version>
     </dependency>
+    -->
     <dependency>
       <groupId>com.swe</groupId>
       <artifactId>module-cloud</artifactId>
