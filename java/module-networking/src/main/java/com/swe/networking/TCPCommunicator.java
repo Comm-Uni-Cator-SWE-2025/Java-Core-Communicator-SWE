@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
