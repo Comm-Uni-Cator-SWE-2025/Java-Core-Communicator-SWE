@@ -156,7 +156,7 @@ public class P2PCluster implements P2PUser {
                     Topology.getTopology().replaceNetwork(networkStructure);
                     break;
                 } catch (Exception e) {
-                    System.out.println("Error while receiving data in P2P Cluster...");
+                    System.out.println("Error while receiving data in P2P Cluster..." + e.toString());
                 }
             }
         }

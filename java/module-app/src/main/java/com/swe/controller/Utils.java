@@ -16,7 +16,7 @@ import java.net.UnknownHostException;
 
 public class Utils {
     public static ClientNode getLocalClientNode() throws UnknownHostException {
-        return new ClientNode(InetAddress.getLocalHost().getHostAddress(), 6942);
+        return new ClientNode(InetAddress.getLocalHost().getHostAddress(), 6943);
     }
 
     public static ClientNode getServerClientNode(String meetingId, CloudFunctionLibrary cloud) throws UnknownHostException {

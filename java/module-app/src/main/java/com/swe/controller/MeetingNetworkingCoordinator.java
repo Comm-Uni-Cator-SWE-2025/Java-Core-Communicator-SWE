@@ -1,5 +1,6 @@
 package com.swe.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.controller.serializer.AnnouncePacket;
 import com.swe.controller.serializer.JoinAckPacket;
 import com.swe.controller.serializer.JoinPacket;
@@ -7,6 +8,7 @@ import com.swe.controller.serializer.MeetingPacketType;
 import com.swe.core.ClientNode;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
+import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
 
 import java.net.UnknownHostException;
@@ -87,6 +89,14 @@ public final class MeetingNetworkingCoordinator {
             case ANNOUNCE -> handleAnnouncePacket(data);
             default -> System.out.println(TAG + " Unhandled packet type: " + type);
         }
+
+        final ControllerServices services = ControllerServices.getInstance();
+        try {
+            services.rpc.call("core/setIpToMailMap", DataSerializer.serialize(services.meetingSession.getNodeToEmailMap())).get();
+        } catch (Exception e) {
+            System.out.println("Error calling setIpToMailMap: " + e.getMessage());
+        }
+        System.out.println("Total participants: " + services.meetingSession.getNodeToEmailMap());
     }
 
     private static void handleJoinPacket(final byte[] data) {
