@@ -30,6 +30,7 @@ public final class TCPCommunicator implements ProtocolBase {
      * The selector for the sockets.
      */
     private Selector selector;
+
     /**
      * The list of all connected clients and their sockets.
      *
@@ -64,6 +65,14 @@ public final class TCPCommunicator implements ProtocolBase {
             NetworkLogger.printError(MODULENAME, "Unable to initialize TCP comunicator...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
+    }
+
+    /**
+     * Function to print all keys in the selector.
+     */
+    @Override
+    public void printKeys() {
+        selector.keys().stream().forEach(kay -> System.out.println(kay.channel()));
     }
 
     @Override
