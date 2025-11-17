@@ -62,8 +62,8 @@ public final class TCPCommunicator implements ProtocolBase {
             deviceServerPort = serverPort;
             setServerPort();
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Unable to initialize TCP comunicator...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Unable to initialize TCP comunicator...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
 
@@ -95,8 +95,8 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             return null;
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Error while using the selector...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Error while using the selector...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             return null;
         }
     }
@@ -121,10 +121,11 @@ public final class TCPCommunicator implements ProtocolBase {
     public SocketChannel openSocket() {
         try {
             final SocketChannel socket = SocketChannel.open();
+            NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + socket.socket().getLocalPort() + "...");
             return socket;
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Error occurred while opening socket...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Error occurred while opening socket...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
         return null;
     }
@@ -136,15 +137,14 @@ public final class TCPCommunicator implements ProtocolBase {
             try {
                 final SelectionKey key = clientSocket.keyFor(selector);
                 if (key != null) {
-                    System.out.println("Closing socket ");
                     key.cancel();
                     clientSocket.close();
                     clientSockets.remove(client);
                     NetworkLogger.printInfo(MODULENAME, "Closing socket for client " + client + " ...");
                 }
             } catch (IOException ex) {
-                // NetworkLogger.printError(MODULENAME, "Error occurred while closing socket...");
-                // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+                NetworkLogger.printError(MODULENAME, "Error occurred while closing socket...");
+                NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             }
         }
     }
@@ -165,7 +165,6 @@ public final class TCPCommunicator implements ProtocolBase {
                 destSocket.connect(new InetSocketAddress(destIp, destPort));
                 destSocket.configureBlocking(false);
                 destSocket.register(selector, SelectionKey.OP_READ);
-                NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + destSocket.socket().getLocalPort());
                 NetworkLogger.printInfo(MODULENAME, "New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
@@ -199,8 +198,8 @@ public final class TCPCommunicator implements ProtocolBase {
             NetworkLogger.printInfo(MODULENAME, "New connection esthablished...");
             NetworkLogger.printInfo(MODULENAME, "Client " + client + " ...");
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Error occured while accepting connection...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Error occured while accepting connection...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
 
@@ -224,8 +223,8 @@ public final class TCPCommunicator implements ProtocolBase {
             buffer.get(data);
             return data;
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Error occured while reading data...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Error occured while reading data...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             return null;
         }
     }
@@ -243,8 +242,8 @@ public final class TCPCommunicator implements ProtocolBase {
                 socket.close();
             }
         } catch (IOException ex) {
-            // NetworkLogger.printError(MODULENAME, "Error occured while closing socket...");
-            // NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            NetworkLogger.printError(MODULENAME, "Error occured while closing socket...");
+            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
 

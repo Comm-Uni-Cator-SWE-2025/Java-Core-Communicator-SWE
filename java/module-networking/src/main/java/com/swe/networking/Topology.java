@@ -134,7 +134,8 @@ public final class Topology implements AbstractTopology {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
         final NetworkStructure structure = new NetworkStructure(clients, servers);
-        NetworkLogger.printInfo(MODULENAME, "Getting network structure. Clusters: " + clusters + ", Servers: " + clusterServers);
+        System.out.println(clusters);
+        System.out.println(clusterServers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -163,7 +164,7 @@ public final class Topology implements AbstractTopology {
         final List<ClientNode> lastCluster = clusters.get(clusters.size() - 1);
         if (lastCluster.size() < singleClusterSize) {
             lastCluster.add(clientAddress);
-            NetworkLogger.printInfo(MODULENAME, "Added client " + clientAddress + " to cluster " + (numClusters - 1) + "...");
+            System.out.println("Added to cluster " + (numClusters - 1) + " ...");
             return numClusters - 1;
         } else {
             final List<ClientNode> cluster = new ArrayList<>();
@@ -171,7 +172,7 @@ public final class Topology implements AbstractTopology {
             clusters.add(cluster);
             clusterServers.add(clientAddress);
             numClusters++;
-            NetworkLogger.printInfo(MODULENAME, "Added client " + clientAddress + " to a new cluster " + (numClusters - 1) + "...");
+            System.out.println("Adding to a new cluster...");
             return numClusters - 1;
         }
     }
@@ -198,17 +199,16 @@ public final class Topology implements AbstractTopology {
         final ClientNode removeClient = client.client();
         clusters.get(idx).remove(removeClient);
         numClients -= 1;
-        NetworkLogger.printInfo(MODULENAME, "Removed client " + removeClient + " from cluster " + idx);
         if (clusterServers.contains(removeClient)) {
             if (!clusters.get(idx).isEmpty()) {
                 final ClientNode newServer = clusters.get(idx).get(0);
                 clusterServers.set(idx, newServer);
-                NetworkLogger.printInfo(MODULENAME, "New server for cluster " + idx + " is " + newServer);
+                System.out.println("A new server has been decided\n");
                 return;
             }
             clusters.remove(idx);
             clusterServers.remove(removeClient);
-            NetworkLogger.printInfo(MODULENAME, "Removed " + removeClient + " from the server list.");
+            System.out.println("Removed " + removeClient + "from the server list...");
             // numClusters -= 1;
         }
     }

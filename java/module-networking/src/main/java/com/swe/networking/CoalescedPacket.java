@@ -11,6 +11,11 @@ class CoalescedPacket {
     private static final String MODULENAME = "[COALESCEDPACKET]";
 
     /**
+     * Variable to store the name of the module.
+     */
+    private static final String MODULENAME = "[COALESCEDPACKET]";
+
+    /**
      * Queue storing packets to be coalesced.
      */
     private final Queue<byte[]> queue = new LinkedList<byte[]>();
@@ -40,8 +45,7 @@ class CoalescedPacket {
 
         queue.add(packet);
         totalSize += packet.length;
-        NetworkLogger.printInfo(MODULENAME, "Packet of size "
-                + packet.length + " added to queue. New total size: " + totalSize);
+        NetworkLogger.printInfo(MODULENAME, "Packet of size " + packet.length + " added to queue. New total size: " + totalSize);
     }
 
     public long getStartTime() {
@@ -56,8 +60,7 @@ class CoalescedPacket {
         final byte[] head = this.queue.poll();
         if (head != null) {
             this.totalSize -= head.length;
-            NetworkLogger.printInfo(MODULENAME, "Packet of size "
-                    + head.length + " retrieved from queue. New total size: " + totalSize);
+            NetworkLogger.printInfo(MODULENAME, "Packet of size " + head.length + " retrieved from queue. New total size: " + totalSize);
         } else {
             NetworkLogger.printInfo(MODULENAME, "Attempted to retrieve packet from empty queue.");
         }

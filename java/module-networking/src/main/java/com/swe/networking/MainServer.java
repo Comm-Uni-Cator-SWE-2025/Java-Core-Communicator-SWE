@@ -88,7 +88,7 @@ public class MainServer implements P2PUser {
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
-//        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         NetworkLogger.printInfo("MainServer", "Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -131,7 +131,6 @@ public class MainServer implements P2PUser {
         while (true) {
             final byte[] packet = communicator.receiveData();
             if (packet != null) {
-//                System.out.println("Packet " + packet.length);
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {
                     parsePacket(p);
@@ -200,8 +199,7 @@ public class MainServer implements P2PUser {
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
                 if (data != null) {
-                    final byte[] payload = parser.parsePacket(data).getPayload();
-                    networking.callSubscriber(module, payload);
+                    networking.callSubscriber(module, data);
                 }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                 NetworkLogger.printInfo("MainServer", "Closing the Main Server");

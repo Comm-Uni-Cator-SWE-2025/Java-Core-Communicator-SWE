@@ -19,16 +19,13 @@ public class CoalesceReceive {
      * @param coalescedData  coalesced payload.
      */
     public void receiveCoalescedPacket(final ByteBuffer coalescedData) {
-        NetworkLogger.printInfo(MODULENAME, "Receiving coalesced packet of size: " + coalescedData.remaining());
         while (coalescedData.hasRemaining()) {
             // Get the size of the packet
             final int packetSize = coalescedData.getInt();
-            NetworkLogger.printInfo(MODULENAME, "Extracted packet size: " + packetSize);
 
             // Get the module type
             final byte moduleTypeByte = coalescedData.get();
             final int moduleTypeInt = moduleTypeByte;
-            NetworkLogger.printInfo(MODULENAME, "Extracted module type: " + moduleTypeInt);
 
             // Get the payload
             final int payloadSize = packetSize - 4 - 1;
@@ -36,7 +33,6 @@ public class CoalesceReceive {
             coalescedData.get(payload);
 
             // Call the module message listener based on the module type
-            NetworkLogger.printInfo(MODULENAME, "Dispatching packet to module: " + moduleTypeInt);
             Networking.getNetwork().callSubscriber(moduleTypeInt, payload);
         }
     }

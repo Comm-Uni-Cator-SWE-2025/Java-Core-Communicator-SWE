@@ -65,9 +65,8 @@ public class SplitPackets {
 
         if (incompleteBuffer.position() > 0) {
             incompleteBuffer.flip();
-            final int oldDataLen = incompleteBuffer.remaining();
-            NetworkLogger.printInfo(MODULENAME, "Remaining data from previous read: " + oldDataLen + " bytes.");
-            final byte[] oldData = new byte[oldDataLen];
+            System.out.println("Remaining data from previous read");
+            final byte[] oldData = new byte[incompleteBuffer.remaining()];
             incompleteBuffer.get(oldData);
 
             final byte[] combined = new byte[oldData.length + data.length];
@@ -80,11 +79,11 @@ public class SplitPackets {
             buffer = ByteBuffer.wrap(data);
         }
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        NetworkLogger.printInfo(MODULENAME, "Processing buffer of size: " + data.length + " bytes.");
+        System.out.println("Buffer size : " + data.length);
         while (buffer.hasRemaining() && buffer.remaining() > 2) {
             buffer.mark();
             final int len = buffer.getShort();
-            NetworkLogger.printInfo(MODULENAME, "Extracted packet length: " + len);
+            System.out.println("Packet length " + len);
             buffer.reset();
             if (len <= 2 || len > MAX_PACKET_SIZE) {
                 NetworkLogger.printWarning(MODULENAME, "Invalid packet length " + len);

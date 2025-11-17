@@ -13,6 +13,12 @@ public class NetworkRPC {
      * Private constructor for networkRPC.
      */
     private static NetworkRPC networkRPC = null;
+
+    /**
+     * Private constructor for networkRPC.
+     */
+    private final Map<Integer, MessageListener> listeners = new HashMap<>();
+
     /**
      * Variable to store the networking.
      */
