@@ -9,6 +9,11 @@ import java.nio.ByteBuffer;
 public class CoalesceReceive {
 
     /**
+     * The module name for logging.
+     */
+    private static final String MODULENAME = "[COALESCERECEIVE]";
+
+    /**
      * function to parse coalesce packet and pass to corresponding listener.
      *
      * @param coalescedData  coalesced payload.

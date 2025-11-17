@@ -42,7 +42,7 @@ public class MainServer implements P2PUser {
     /**
      * The timer object to monitor client timeouts.
      */
-    private final Timer timer;
+    private final Timer timer = null;
 
     /**
      * Variable to start the timer.
@@ -324,7 +324,9 @@ public class MainServer implements P2PUser {
     private void handleHello(final ClientNode dest) {
         NetworkLogger.printInfo("MainServer", "Responding " + dest + " with a Hello packet...");
         final int clusterIdx = topology.addClient(dest);
-        addClientToTimer(dest, clusterIdx);
+//        addClientToTimer(dest, clusterIdx);
+        // The controller is notified of any new client that is added.
+        Networking.getNetwork().callSubscriber(0, serializer.serializeClientNode(dest));
         sendNetworkPktResponse(dest);
         // send add packet to all cluster servers.
         final List<ClientNode> servers = topology.getAllClusterServers();
@@ -363,7 +365,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
-        timer.close();
+//        timer.close();
     }
 
     /**

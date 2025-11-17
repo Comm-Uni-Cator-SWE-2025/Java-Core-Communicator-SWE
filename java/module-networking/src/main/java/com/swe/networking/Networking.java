@@ -69,6 +69,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
         sendThread = new Thread(this::start);
+        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -131,6 +132,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                     final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
                     topology.sendPacket(packet, dest);
                 } catch (UnknownHostException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -234,7 +236,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        function.receiveData(data);
+        if (function != null) {
+            function.receiveData(data);
+        }
     }
 
     /**
