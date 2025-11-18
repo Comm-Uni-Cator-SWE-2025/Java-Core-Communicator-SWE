@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Vector;
 
 import com.swe.core.RPCinteface.AbstractRPC;
-import com.swe.networking.SimpleNetworking.Client;
 
 /**
  * The main class of the networking module.

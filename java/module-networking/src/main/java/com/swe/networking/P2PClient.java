@@ -86,9 +86,9 @@ public class P2PClient implements P2PUser {
         this.receiveThread.start();
 
         // start a scheduled ALIVE packets to the cluster server
-        this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-        this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
-                ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        // this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
+        // this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
+        //         ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override

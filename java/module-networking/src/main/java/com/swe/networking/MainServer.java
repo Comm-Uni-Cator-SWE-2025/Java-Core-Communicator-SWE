@@ -42,7 +42,7 @@ public class MainServer implements P2PUser {
     /**
      * The timer object to monitor client timeouts.
      */
-    private final Timer timer = null;
+    private final Timer timer;
 
     /**
      * Variable to start the timer.

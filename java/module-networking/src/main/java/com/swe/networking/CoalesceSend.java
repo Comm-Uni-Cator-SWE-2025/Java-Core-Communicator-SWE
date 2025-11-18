@@ -16,12 +16,6 @@ public class CoalesceSend {
      * Variable to store the name of the module.
      */
     private static final String MODULENAME = "[COALESCESEND]";
-
-    /**
-     * Variable to store the name of the module.
-     */
-    private static final String MODULENAME = "[COALESCESEND]";
-
     /**
      * Map which stores a list of packets corresponding to the same destination.
      */

@@ -11,11 +11,6 @@ class CoalescedPacket {
     private static final String MODULENAME = "[COALESCEDPACKET]";
 
     /**
-     * Variable to store the name of the module.
-     */
-    private static final String MODULENAME = "[COALESCEDPACKET]";
-
-    /**
      * Queue storing packets to be coalesced.
      */
     private final Queue<byte[]> queue = new LinkedList<byte[]>();
