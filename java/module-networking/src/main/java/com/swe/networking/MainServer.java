@@ -149,21 +149,39 @@ public class MainServer implements P2PUser {
      */
     private void parsePacket(final byte[] packet) {
         try {
-            final int connectionType = parser.parsePacket(packet).getConnectionType();
-            final int type = parser.parsePacket(packet).getType();
-            final InetAddress destInet = parser.parsePacket(packet).getIpAddress();
+            final PacketInfo packetInfo = parser.parsePacket(packet);
+            final int connectionType = packetInfo.getConnectionType();
+            final int type = packetInfo.getType();
+            final InetAddress destInet = packetInfo.getIpAddress();
             final String destinationIp = destInet.getHostAddress();
-            final int destinationPort = parser.parsePacket(packet).getPortNum();
+            final int destinationPort = packetInfo.getPortNum();
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
             NetworkLogger.printInfo("MainServer", "Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
             // check for broadcast packet
-            if (parser.parsePacket(packet).getBroadcast() == 1) {
+            if (packetInfo.getBroadcast() == 1) {
+                // Check if this broadcast was sent by the main server itself
+                final boolean isSelfBroadcast = dest.equals(mainserver);
+                
+                // Forward to clients in main server's own cluster
+                final List<ClientNode> ownClusterClients = topology.getClients(mainServerClusterIdx);
+                for (ClientNode c : ownClusterClients) {
+                    if (!c.equals(mainserver) && !c.equals(dest)) {
+                        send(packet, c);
+                    }
+                }
+                
+                // Forward to other cluster servers
                 for (ClientNode c : topology.getAllClusterServers()) {
                     if (!c.equals(mainserver) && !c.equals(dest)) {
                         send(packet, c);
                     }
+                }
+                
+                // Skip local delivery if this is a self-broadcast (sender shouldn't receive via network)
+                if (isSelfBroadcast) {
+                    return; // Don't process locally - sender already has the message
                 }
             }
             if (type == NetworkType.USE.ordinal()) {
