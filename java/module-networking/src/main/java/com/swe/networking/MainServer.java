@@ -147,7 +147,7 @@ public class MainServer implements P2PUser {
      */
     private void parsePacket(final byte[] packet) {
         try {
-            PacketInfo packetInfo = parser.parsePacket(packet);
+            final PacketInfo packetInfo = parser.parsePacket(packet);
             final int connectionType = packetInfo.getConnectionType();
             final int type = packetInfo.getType();
             final InetAddress destInet = packetInfo.getIpAddress();
@@ -172,7 +172,7 @@ public class MainServer implements P2PUser {
                 send(newPacket, dest);
             } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
                 final ClientNode clusterServer = topology.getServer(dest);
-                if(clusterServer.equals(dest)){
+                if (clusterServer.equals(dest)) {
                     packetInfo.setType(NetworkType.USE.ordinal());
                 } else {
                     packetInfo.setType(NetworkType.SAMECLUSTER.ordinal());
@@ -219,26 +219,25 @@ public class MainServer implements P2PUser {
     /**
      * Function to handle broadcasting a packet.
      *
-     * @param newPacket the packet to be broacasted
-     * @param dest the destination from which the packet was received
+     * @param packetInfo function to handle packet.
      */
     private void handleBroadcast(final PacketInfo packetInfo) {
-        if(packetInfo.getType() == NetworkType.USE.ordinal()){
+        if (packetInfo.getType() == NetworkType.USE.ordinal()) {
             // send to other servers
             final List<ClientNode> servers = topology.getAllClusterServers();
             for (ClientNode server : servers) {
-                if(server.equals(mainserver)){
+                if (server.equals(mainserver)) {
                     continue;
                 }
                 packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
                 final byte[] newPacket = parser.createPkt(packetInfo);
                 send(newPacket, server);
             }
-        } else if (packetInfo.getType() == NetworkType.OTHERCLUSTER.ordinal()){
+        } else if (packetInfo.getType() == NetworkType.OTHERCLUSTER.ordinal()) {
             // to just send to clients in the cluster
             final List<ClientNode> dests = topology.getClients(topology.getClusterIndex(mainserver));
             for (ClientNode dest : dests) {
-                if(dest.equals(mainserver)){
+                if (dest.equals(mainserver)) {
                     continue;
                 }
                 packetInfo.setType(NetworkType.USE.ordinal());
