@@ -4,9 +4,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 import com.swe.core.RPCinteface.AbstractRPC;
+import com.swe.networking.SimpleNetworking.Client;
 
 /**
  * The main class of the networking module.
@@ -158,8 +160,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
-//                final int type = topology.getNetworkType(user, client);
-                final int type = 3;
+                final int type = topology.getNetworkType(user, client);
                 pkt.setType(type);
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
@@ -181,12 +182,19 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public void broadcast(final byte[] data, final int module, final int priority) {
-        final ClientNode[] dest = {topology.getServer(user)};
-        final Vector<byte[]> chunks = getChunks(data, dest, module, priority, 1);
+        // Get all the destinations to send the broadcast
+        final List<ClientNode> dest = topology.getClients(topology.getClusterIndex(user));
+        if(user == topology.getServer(user)){
+            final List<ClientNode> servers = topology.getAllClusterServers();
+            dest.addAll(servers);
+            dest.remove(user);
+        }
+        dest.remove(user);
+        final ClientNode[] destArray = dest.toArray(new ClientNode[0]);
+        final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
-            try {
-                priorityQueue.addPacket(chunk);
-            } catch (UnknownHostException ex) {
+            for(ClientNode client : dest){
+                topology.sendPacket(chunk, client);
             }
         }
     }
