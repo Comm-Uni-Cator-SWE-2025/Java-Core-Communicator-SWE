@@ -183,7 +183,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
         final List<ClientNode> dest = topology.getClients(topology.getClusterIndex(user));
-        if(user == topology.getServer(user)){
+        if (user == topology.getServer(user)) {
             final List<ClientNode> servers = topology.getAllClusterServers();
             dest.addAll(servers);
             dest.remove(user);
@@ -192,7 +192,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         final ClientNode[] destArray = dest.toArray(new ClientNode[0]);
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
-            for(ClientNode client : dest){
+            for (ClientNode client : dest) {
                 topology.sendPacket(chunk, client);
             }
         }

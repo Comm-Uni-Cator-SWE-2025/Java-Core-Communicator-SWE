@@ -12,6 +12,11 @@ import java.util.Map;
 public class NetworkRPC {
 
     /**
+     * Variable to log the module name.
+     */
+    private static final String MODULENAME = "NETWORKRPC";
+
+    /**
      * Private constructor for networkRPC.
      */
     private static NetworkRPC networkRPC = null;
@@ -68,6 +73,7 @@ public class NetworkRPC {
         final int serverPort = buffer.getInt();
         final ClientNode mainServerAddress = new ClientNode(serverHost, serverPort);
 
+        NetworkLogger.printInfo(MODULENAME, "Device " + deviceAddress + " Server " + mainServerAddress);
         networking.addUser(deviceAddress, mainServerAddress);
         return null;
     }
