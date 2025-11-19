@@ -95,8 +95,9 @@ public class MediaCaptureManager implements CaptureManager {
      * @param argRpc        RPC object
      * @param portArgs      Port for the server
      */
-    public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
-        this.rpc = argRpc;
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs) {
+        Context context = Context.getInstance();
+        this.rpc = context.rpc;
         this.port = portArgs;
         this.networking = argNetworking;
         final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port, (k,v) -> updateImage(k,v));
