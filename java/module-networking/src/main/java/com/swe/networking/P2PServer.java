@@ -404,6 +404,7 @@ public class P2PServer implements P2PUser {
      */
     @Override
     public void close() {
+        SplitPackets.getSplitPackets().emptyBuffer();
         communicator.close();
         receiveThread.interrupt();
         sendThread.interrupt();

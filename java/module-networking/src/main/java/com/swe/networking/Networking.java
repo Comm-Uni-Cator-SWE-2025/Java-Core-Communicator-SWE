@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +57,11 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Variable to store the rpc for the app.
      */
     private AbstractRPC moduleRPC = null;
+
     /**
      * Variable to store the thread to start the send packets.
      */
-    private final Thread sendThread;
+    // private final Thread sendThread;
 
     /**
      * Private constructor for Netwroking class.
@@ -69,8 +71,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = PriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        sendThread = new Thread(this::start);
-        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
+        // sendThread = new Thread(this::start);
+        // sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -116,8 +118,8 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-                // topology.sendPacket(chunk, newdest);
-                priorityQueue.addPacket(chunk);
+                topology.sendPacket(chunk, newdest);
+                // priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -186,13 +188,10 @@ public class Networking implements AbstractNetworking, AbstractController {
     @Override
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
-        final List<ClientNode> dest = topology.getClients(topology.getClusterIndex(user));
-        if (dest == null) {
-            System.out.println("No destination to send to...");
-            return;
-        }
+        final List<ClientNode> dest = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+
         if (user == topology.getServer(user)) {
-            final List<ClientNode> servers = topology.getAllClusterServers();
+            final List<ClientNode> servers = new ArrayList<>(topology.getAllClusterServers());
             dest.addAll(servers);
             dest.remove(user);
         }

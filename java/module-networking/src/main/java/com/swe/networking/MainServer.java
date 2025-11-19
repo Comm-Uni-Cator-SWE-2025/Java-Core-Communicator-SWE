@@ -384,7 +384,7 @@ public class MainServer implements P2PUser {
         // send add packet to all cluster clients of this cluster
         final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
         for (ClientNode client : clients) {
-            if (client.equals(mainserver)) {
+            if (client.equals(mainserver) || client.equals(dest)) {
                 continue;
             }
             sendAddPktResponse(dest, client, clusterIdx);
@@ -409,6 +409,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+        SplitPackets.getSplitPackets().emptyBuffer();
 //        timer.close();
     }
 
