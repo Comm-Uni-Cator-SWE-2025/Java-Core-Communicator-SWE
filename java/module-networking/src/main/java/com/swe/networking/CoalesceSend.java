@@ -16,12 +16,6 @@ public class CoalesceSend {
      * Variable to store the name of the module.
      */
     private static final String MODULENAME = "[COALESCESEND]";
-
-    /**
-     * Variable to store the name of the module.
-     */
-    private static final String MODULENAME = "[COALESCESEND]";
-
     /**
      * Map which stores a list of packets corresponding to the same destination.
      */
@@ -56,7 +50,8 @@ public class CoalesceSend {
 
         CoalescedPacket coalescedPacket = coalescedPackets.get(destination);
         if (coalescedPacket == null) {
-            NetworkLogger.printInfo(MODULENAME, "No existing coalesced packet for " + destination + ". Creating new one.");
+            NetworkLogger.printInfo(MODULENAME, "No existing coalesced packet for "
+                    + destination + ". Creating new one.");
             coalescedPacket = new CoalescedPacket();
             coalescedPackets.put(destination, coalescedPacket);
         }
@@ -99,7 +94,8 @@ public class CoalesceSend {
             buffer.flip();
             buffer.get(payload);
 
-            NetworkLogger.printInfo(MODULENAME, "Coalesced packet of size " + payload.length + " sent to " + destination);
+            NetworkLogger.printInfo(MODULENAME, "Coalesced packet of size "
+                    + payload.length + " sent to " + destination);
             // Todo: Send the module: networking, destIP, port and payload to the chunk
             // manager.
         } catch (UnknownHostException e) {
@@ -123,7 +119,8 @@ public class CoalesceSend {
             final CoalescedPacket coalescedPacket = entry.getValue();
 
             if (now - coalescedPacket.getStartTime() >= maxTime) {
-                NetworkLogger.printInfo(MODULENAME, "Timeout reached for " + entry.getKey() + ". Sending coalesced packet.");
+                NetworkLogger.printInfo(MODULENAME, "Timeout reached for "
+                        + entry.getKey() + ". Sending coalesced packet.");
                 sendCoalescedPacket(entry.getKey(), coalescedPacket);
                 iterator.remove();
             }
