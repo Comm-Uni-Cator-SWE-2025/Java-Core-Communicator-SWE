@@ -44,7 +44,7 @@ public class Init {
         new ChatManager(Networking.getNetwork());
 
         MediaCaptureManager
-            mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), portNumber);
+            mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
         Thread mediaCaptureManagerThread = new Thread(() -> {
             try {
                 mediaCaptureManager.startCapture();
