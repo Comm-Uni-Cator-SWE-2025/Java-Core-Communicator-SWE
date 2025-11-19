@@ -301,7 +301,7 @@ public class P2PClient implements P2PUser {
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
-
+        SplitPackets.getSplitPackets().emptyBuffer();
         System.out.println("p2pclient closed");
     }
 }

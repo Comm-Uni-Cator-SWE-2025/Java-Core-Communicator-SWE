@@ -409,6 +409,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+        SplitPackets.getSplitPackets().emptyBuffer();
 //        timer.close();
     }
 

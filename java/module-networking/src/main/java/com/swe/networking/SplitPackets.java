@@ -106,4 +106,11 @@ public class SplitPackets {
         }
         return packets;
     }
+
+    /**
+     * Function to clean the buffer.
+     */
+    public void emptyBuffer() {
+        incompleteBuffer.clear();
+    }
 }
