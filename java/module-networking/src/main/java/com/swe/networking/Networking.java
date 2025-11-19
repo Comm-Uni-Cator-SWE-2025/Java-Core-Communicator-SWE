@@ -69,8 +69,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = PriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        sendThread = new Thread(this::start);
-        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
+        // sendThread = new Thread(this::start);
+        // sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
