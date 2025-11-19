@@ -46,7 +46,7 @@ public final class MeetingNetworkingCoordinator {
     public static void handleMeetingCreated(final MeetingSession meeting) {
         final ControllerServices services = ControllerServices.getInstance();
         final ClientNode localNode = getLocalClientNode();
-        meeting.upsertParticipantNode(services.self.getEmail(), localNode);
+        meeting.upsertParticipantNode(services.context.self.getEmail(), localNode);
         System.out.println(TAG + " Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
     }
 
@@ -61,8 +61,8 @@ public final class MeetingNetworkingCoordinator {
         final MeetingSession session = ensureMeetingSession(services, meetingId);
         final ClientNode localNode = getLocalClientNode();
 
-        if (services.self != null) {
-            session.upsertParticipantNode(services.self.getEmail(), localNode);
+        if (services.context.self != null) {
+            session.upsertParticipantNode(services.context.self.getEmail(), localNode);
         }
 
         sendJoinPacket(serverNode, localNode);
@@ -92,23 +92,23 @@ public final class MeetingNetworkingCoordinator {
 
         final ControllerServices services = ControllerServices.getInstance();
         try {
-            services.rpc.call("core/setIpToMailMap", DataSerializer.serialize(services.meetingSession.getNodeToEmailMap())).get();
+            services.context.rpc.call("core/setIpToMailMap", DataSerializer.serialize(services.context.meetingSession.getNodeToEmailMap())).get();
         } catch (Exception e) {
             System.out.println("Error calling setIpToMailMap: " + e.getMessage());
         }
-        System.out.println("Total participants: " + services.meetingSession.getNodeToEmailMap());
+        System.out.println("Total participants: " + services.context.meetingSession.getNodeToEmailMap());
     }
 
     private static void handleJoinPacket(final byte[] data) {
         final ControllerServices services = ControllerServices.getInstance();
-        final MeetingSession meeting = services.meetingSession;
+        final MeetingSession meeting = services.context.meetingSession;
         if (meeting == null) {
             System.out.println(TAG + " No active meeting to process JOIN packet");
             return;
         }
 
         // Only the meeting creator should process JOIN packets
-        if (services.self == null || !meeting.getCreatedBy().equals(services.self.getEmail())) {
+        if (services.context.self == null || !meeting.getCreatedBy().equals(services.context.self.getEmail())) {
             System.out.println(TAG + " Ignoring JOIN packet because this controller is not the server");
             return;
         }
@@ -157,12 +157,12 @@ public final class MeetingNetworkingCoordinator {
 
     private static void sendJoinPacket(final ClientNode serverNode, final ClientNode localNode) {
         final ControllerServices services = ControllerServices.getInstance();
-        if (services.networking == null || services.self == null) {
+        if (services.networking == null || services.context.self == null) {
             System.out.println(TAG + " Cannot send JOIN: networking or self profile not initialized");
             return;
         }
 
-        final JoinPacket joinPacket = new JoinPacket(services.self.getEmail(), localNode);
+        final JoinPacket joinPacket = new JoinPacket(services.context.self.getEmail(), localNode);
         sendBytes(joinPacket.serialize(), new ClientNode[]{serverNode});
     }
 
@@ -171,13 +171,13 @@ public final class MeetingNetworkingCoordinator {
         if (recipients == null || recipients.isEmpty()) {
             return;
         }
-        if (services.networking == null || services.self == null) {
+        if (services.networking == null || services.context.self == null) {
             System.out.println(TAG + " Cannot send ANNOUNCE: networking or self profile not initialized");
             return;
         }
 
         final ClientNode localNode = getLocalClientNode();
-        final AnnouncePacket packet = new AnnouncePacket(services.self.getEmail(), localNode);
+        final AnnouncePacket packet = new AnnouncePacket(services.context.self.getEmail(), localNode);
         sendBytes(packet.serialize(), recipients.toArray(new ClientNode[0]));
     }
 
@@ -191,20 +191,20 @@ public final class MeetingNetworkingCoordinator {
     }
 
     private static MeetingSession ensureMeetingSession(final ControllerServices services, final String meetingId) {
-        if (services.meetingSession != null) {
-            return services.meetingSession;
+        if (services.context.meetingSession != null) {
+            return services.context.meetingSession;
         }
 
         final String id = meetingId != null ? meetingId : UUID.randomUUID().toString();
-        services.meetingSession = new MeetingSession(
+        services.context.meetingSession = new MeetingSession(
                 id,
-                services.self != null ? services.self.getEmail() : "",
+                services.context.self != null ? services.context.self.getEmail() : "",
                 System.currentTimeMillis(),
                 SessionMode.CLASS,
                 null
         );
         System.out.println(TAG + " Created placeholder MeetingSession for networking with ID " + id);
-        return services.meetingSession;
+        return services.context.meetingSession;
     }
 
     private static ClientNode getLocalClientNode() {

@@ -31,19 +31,18 @@ public class Init {
         CloudFunctionLibrary cloud = new CloudFunctionLibrary();
         
         ControllerServices controllerServices = ControllerServices.getInstance();
-        controllerServices.rpc = rpc;
+        controllerServices.context.rpc = rpc;
         controllerServices.cloud = cloud;
 
 
         // Provide RPC somehow here
-        // NetworkingInterface networking = new SimpleNetworkingAdapter(SimpleNetworking.getSimpleNetwork());
         NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
         networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork(), rpc);
+        new ChatManager(Networking.getNetwork());
 
         // MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(SimpleNetworking.getSimpleNetwork(), rpc, portNumber);
         // Thread mediaCaptureManagerThread = new Thread(() -> {
@@ -79,7 +78,7 @@ public class Init {
                 return new byte[0];
             }
 
-            controllerServices.self = RegisteredUser;
+            controllerServices.context.self = RegisteredUser;
             
             try {
                 return DataSerializer.serialize(RegisteredUser);
@@ -90,8 +89,8 @@ public class Init {
 
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
             System.out.println("[CONTROLLER] Creating meeting");
-            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.self, SessionMode.CLASS);
-            controllerServices.meetingSession = meetingSession;
+            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.context.self, SessionMode.CLASS);
+            controllerServices.context.meetingSession = meetingSession;
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
