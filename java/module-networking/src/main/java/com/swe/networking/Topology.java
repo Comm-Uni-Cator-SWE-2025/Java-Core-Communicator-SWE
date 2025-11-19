@@ -121,7 +121,8 @@ public final class Topology implements AbstractTopology {
                 user = new P2PCluster();
                 ((P2PCluster) user).addUser(deviceAddress, mainServerAddress);
             } catch (UnknownHostException ex) {
-                NetworkLogger.printError(MODULENAME, "Error while adding user " + deviceAddress + " to the P2P cluster: " + ex.getMessage());
+                NetworkLogger.printError(MODULENAME, "Error while adding user "
+                        + deviceAddress + " to the P2P cluster: " + ex.getMessage());
             }
         }
     }
@@ -231,7 +232,8 @@ public final class Topology implements AbstractTopology {
         for (List<ClientNode> cluster : clusters) {
             numClients += cluster.size();
         }
-        NetworkLogger.printInfo(MODULENAME, "Replaced network structure. New number of clusters: " + numClusters + ", New number of clients: " + numClients);
+        NetworkLogger.printInfo(MODULENAME, "Replaced network structure. New number of clusters: "
+                + numClusters + ", New number of clients: " + numClients);
     }
 
     /**
@@ -256,6 +258,9 @@ public final class Topology implements AbstractTopology {
      * @return list of all clients in the cluster
      */
     public List<ClientNode> getClients(final int index) {
+        if (index >= clusters.size() || index < 0) {
+            return null;
+        }
         return clusters.get(index);
     }
 
@@ -326,6 +331,10 @@ public final class Topology implements AbstractTopology {
      * @param dest the destination to send
      */
     public void sendPacket(final byte[] packet, final ClientNode dest) {
-        user.send(packet, dest);
+        try {
+            user.send(packet, dest);
+        } catch (Exception e) {
+            NetworkLogger.printInfo(MODULENAME, "Exception occured: " + e.getMessage() + " Closing topology...");
+        }
     }
 }

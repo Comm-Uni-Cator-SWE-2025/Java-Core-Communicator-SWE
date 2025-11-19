@@ -139,6 +139,20 @@ public class Init {
 
             return meetId;
         });
+
+        rpc.subscribe("core/logout", (byte[] userData) -> {
+            System.out.println("Logging out user");
+            try {
+                AuthService.logout();
+                System.out.println("User logged out successfully");
+                // Clear the current user profile from context
+                controllerServices.context.self = null;
+                return "Logged out successfully".getBytes(StandardCharsets.UTF_8);
+            } catch (GeneralSecurityException | IOException e) {
+                System.out.println("Error logging out user: " + e.getMessage());
+                return ("Error logging out: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
+        });
     }
 }
 

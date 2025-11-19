@@ -6,11 +6,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.swe.core.RPCinterface.AbstractRPC;
+
 //File owned by Loganath
 /**
  * Class object for the Network RPC.
  */
 public class NetworkRPC {
+
+    /**
+     * Variable to log the module name.
+     */
+    private static final String MODULENAME = "NETWORKRPC";
 
     /**
      * Private constructor for networkRPC.
@@ -69,6 +76,7 @@ public class NetworkRPC {
         final int serverPort = buffer.getInt();
         final ClientNode mainServerAddress = new ClientNode(serverHost, serverPort);
 
+        NetworkLogger.printInfo(MODULENAME, "Device " + deviceAddress + " Server " + mainServerAddress);
         networking.addUser(deviceAddress, mainServerAddress);
         return null;
     }
@@ -84,6 +92,7 @@ public class NetworkRPC {
         final int module = buffer.getInt();
 
         networking.removeSubscription(module);
+        NetworkLogger.printInfo(MODULENAME, "Remove subscription for module " + module + " ...");
         return null;
     }
 
@@ -102,9 +111,11 @@ public class NetworkRPC {
             final ByteBuffer callBuffer = ByteBuffer.allocate(bufferSize);
             callBuffer.putInt(module);
             callBuffer.put(data);
-            // call rpc our callSubscriber function in Frontend
-            // networkFrontCallSubscriber(int module,byte[] data)
+            final AbstractRPC rpc = networking.getRPC();
+            rpc.call("networkFrontCallSubscriber", callBuffer.array());
         });
+
+        NetworkLogger.printInfo(MODULENAME, "Added subscription for module " + module + " ...");
         return null;
     }
 
@@ -165,16 +176,6 @@ public class NetworkRPC {
     public byte[] networkRPCCloseNetworking(final byte[] args) {
         networking.closeNetworking();
         return null;
-    }
-
-    /**
-     * function to call back in the frontend.
-     *
-     * @param module the module to call
-     * @param data the data to be passed
-     */
-    public void networkRPCCallSubscriber(final int module, final byte[] data) {
-        networking.callSubscriber(module, data);
     }
 
 }

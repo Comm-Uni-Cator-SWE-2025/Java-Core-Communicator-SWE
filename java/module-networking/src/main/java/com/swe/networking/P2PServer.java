@@ -119,7 +119,8 @@ public class P2PServer implements P2PUser {
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
             System.out.println("Sending data to " + dest.hostName() + ":" + dest.port());
-            communicator.sendData(data, dest);
+            final ClientNode sendDest = topology.getDestination(deviceNode, dest);
+            communicator.sendData(data, sendDest);
         }
     }
 
@@ -132,7 +133,8 @@ public class P2PServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
         System.out.println("Sending data to " + destIp.hostName() + ":" + destIp.port());
-        communicator.sendData(data, destIp);
+        final ClientNode sendDest = topology.getDestination(deviceNode, destIp);
+        communicator.sendData(data, sendDest);
     }
 
     /**
@@ -176,12 +178,8 @@ public class P2PServer implements P2PUser {
         // check for broadcast
         if (packetInfo.getBroadcast() == 1) {
             System.out.println("Broadcast packet received at P2PServer.");
-            // modify packet to dest as self
-            packetInfo.setIpAddress(InetAddress.getByName(deviceNode.hostName()));
-            packetInfo.setPortNum(deviceNode.port());
-            final byte[] newPacket = parser.createPkt(packetInfo);
-            handleBroadcast(newPacket, dest);
-            return;
+            handleBroadcast(packetInfo);
+            packetInfo.setBroadcast(0);
         }
 
         // handle based on type and connection type
@@ -193,8 +191,12 @@ public class P2PServer implements P2PUser {
             final byte[] newPacket = parser.createPkt(pktInfo);
             send(newPacket, dest);
         } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
-            // TOD change the type to appropriate one
             final ClientNode clusterServer = topology.getServer(dest);
+            if (clusterServer.equals(dest)) {
+                packetInfo.setType(NetworkType.USE.ordinal());
+            } else {
+                packetInfo.setType(NetworkType.SAMECLUSTER.ordinal());
+            }
             send(packet, clusterServer);
         } else {
             System.out.println("Unknown packet type received.");
@@ -204,26 +206,41 @@ public class P2PServer implements P2PUser {
     /**
      * Function to handle broadcasting a packet.
      *
-     * @param newPacket the packet to be broacasted
-     * @param dest the destination from which the packet was received
+     * @param packetInfo function to handle packet.
      */
-    private void handleBroadcast(final byte[] newPacket, final ClientNode dest) {
-        for (ClientNode c : topology.getClients(topology.getClusterIndex(deviceNode))) {
-            if (c.equals(deviceNode) || c.equals(dest)) {
-                continue;
+    private void handleBroadcast(final PacketInfo packetInfo) {
+        if (packetInfo.getType() == NetworkType.USE.ordinal()) {
+            // send to other servers
+            final List<ClientNode> servers = topology.getAllClusterServers();
+            for (ClientNode server : servers) {
+                if (server.equals(deviceNode)) {
+                    continue;
+                }
+                packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
+                final byte[] newPacket = parser.createPkt(packetInfo);
+                send(newPacket, server);
             }
-            send(newPacket, c);
-        }
-        for (ClientNode servers : topology.getAllClusterServers()) {
-            if (servers.equals(deviceNode) || servers.equals(dest)) {
-                continue;
+        } else if (packetInfo.getType() == NetworkType.OTHERCLUSTER.ordinal()) {
+            // to just send to clients in the cluster
+            final List<ClientNode> dests = topology.getClients(topology.getClusterIndex(deviceNode));
+            for (ClientNode dest : dests) {
+                if (dest.equals(deviceNode)) {
+                    continue;
+                }
+                packetInfo.setType(NetworkType.USE.ordinal());
+                packetInfo.setBroadcast(0);
+                final byte[] newPacket = parser.createPkt(packetInfo);
+                send(newPacket, dest);
             }
-            send(newPacket, servers);
+        } else {
+            System.out.println("Broadcast packet of unknown type received at P2PServer.");
+            return;
         }
+
     }
 
     /**
-     * Handle packets whose NetworkType is USE or CLUSTERSERVER.
+     * Handle packets whose NetworkType is USE or OTHERSERVER.
      *
      * @param connectionType the connection type of the packet
      * @param packet the received packet

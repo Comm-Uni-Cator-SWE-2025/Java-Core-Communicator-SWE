@@ -43,6 +43,12 @@ public class MeetingSession {
     private final Map<ClientNode, String> ipToEmailMap = new ConcurrentHashMap<>();
 
     /**
+     * In-memory mapping of email to participant display name.
+     */
+    @JsonIgnore
+    private final Map<String, String> emailToDisplayNameMap = new ConcurrentHashMap<>();
+
+    /**
      * Creates a new meeting with a unique ID.
      *
      * @param createdByParam email of the instructor who created the meeting
@@ -103,17 +109,32 @@ public class MeetingSession {
     }
 
     /**
-     * Update or insert the ClientNode to email mapping.
+     * Update or insert the ClientNode to email mapping and email to displayName mapping.
      *
      * @param email participant email
+     * @param displayName participant display name
      * @param node client node coordinates
      */
-    public void upsertParticipantNode(final String email, final ClientNode node) {
+    public void upsertParticipantNode(final String email, final String displayName, final ClientNode node) {
         System.out.println("New ip " + email + " " + node);
         if (email == null || node == null) {
             return;
         }
         ipToEmailMap.put(node, email);
+        if (displayName != null) {
+            emailToDisplayNameMap.put(email, displayName);
+        }
+    }
+
+    /**
+     * Update or insert the ClientNode to email mapping (backward compatibility).
+     * Note: This method does not update displayName. Use the 3-parameter version instead.
+     *
+     * @param email participant email
+     * @param node client node coordinates
+     */
+    public void upsertParticipantNode(final String email, final ClientNode node) {
+        upsertParticipantNode(email, null, node);
     }
 
     /**
@@ -125,6 +146,16 @@ public class MeetingSession {
     public Map<ClientNode, String> getNodeToEmailMap() {
         System.out.println("CALLED getNodeToEmailMap");
         return Collections.unmodifiableMap(new HashMap<>(ipToEmailMap));
+    }
+
+    /**
+     * Retrieve an immutable copy of email → displayName mappings.
+     *
+     * @return copy of the mapping (email → displayName)
+     */
+    @JsonIgnore
+    public Map<String, String> getEmailToDisplayNameMap() {
+        return Collections.unmodifiableMap(new HashMap<>(emailToDisplayNameMap));
     }
 
     /**
@@ -150,5 +181,6 @@ public class MeetingSession {
             return;
         }
         ipToEmailMap.entrySet().removeIf(entry -> email.equals(entry.getValue()));
+        emailToDisplayNameMap.remove(email);
     }
 }
