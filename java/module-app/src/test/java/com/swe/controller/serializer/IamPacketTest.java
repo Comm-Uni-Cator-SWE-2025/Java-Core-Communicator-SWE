@@ -8,20 +8,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Tests for JoinPacket serialization and deserialization.
+ * Tests for IamPacket serialization and deserialization.
  */
-public class JoinPacketTest {
+public class IamPacketTest {
 
     @org.junit.jupiter.api.Test
     public void testBasicRoundTrip() {
         final String email = "user@example.com";
+        final String displayName = "John Doe";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, displayName, node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
+        assertEquals(displayName, deserialized.getDisplayName());
         assertEquals(node.hostName(), deserialized.getClientNode().hostName());
         assertEquals(node.port(), deserialized.getClientNode().port());
     }
@@ -30,10 +32,10 @@ public class JoinPacketTest {
     public void testLocalhostRoundTrip() {
         final String email = "test@localhost";
         final ClientNode node = new ClientNode("127.0.0.1", 6942);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
         assertEquals("127.0.0.1", deserialized.getClientNode().hostName());
@@ -44,10 +46,10 @@ public class JoinPacketTest {
     public void testMinimumPort() {
         final String email = "user@test.com";
         final ClientNode node = new ClientNode("10.0.0.1", 0);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
         assertEquals(0, deserialized.getClientNode().port());
@@ -57,10 +59,10 @@ public class JoinPacketTest {
     public void testMaximumPort() {
         final String email = "user@test.com";
         final ClientNode node = new ClientNode("172.16.0.1", 65535);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
         assertEquals(65535, deserialized.getClientNode().port());
@@ -70,10 +72,10 @@ public class JoinPacketTest {
     public void testEmptyEmail() {
         final String email = "";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals("", deserialized.getEmail());
         assertEquals(node.hostName(), deserialized.getClientNode().hostName());
@@ -84,10 +86,10 @@ public class JoinPacketTest {
     public void testVeryLongEmail() {
         final String email = "a".repeat(1000) + "@example.com";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
     }
@@ -96,10 +98,10 @@ public class JoinPacketTest {
     public void testEmailWithSpecialCharacters() {
         final String email = "user+tag@example.co.uk";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
     }
@@ -108,10 +110,10 @@ public class JoinPacketTest {
     public void testEmailWithUnicode() {
         final String email = "tëst@exämple.com";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, "Display Name", node);
 
         final byte[] serialized = original.serialize();
-        final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
 
         assertEquals(email, deserialized.getEmail());
     }
@@ -120,51 +122,60 @@ public class JoinPacketTest {
     public void testNullEmail() {
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
         assertThrows(IllegalArgumentException.class, () -> {
-            new JoinPacket(null, node);
+            new IamPacket(null, "Display Name", node);
+        });
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testNullDisplayName() {
+        final ClientNode node = new ClientNode("192.168.1.1", 8080);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new IamPacket("user@example.com", null, node);
         });
     }
 
     @org.junit.jupiter.api.Test
     public void testNullClientNode() {
         assertThrows(IllegalArgumentException.class, () -> {
-            new JoinPacket("user@example.com", null);
+            new IamPacket("user@example.com", "Display Name", null);
         });
     }
 
     @org.junit.jupiter.api.Test
     public void testDeserializeNullData() {
         assertThrows(InvalidParameterException.class, () -> {
-            JoinPacket.deserialize(null);
+            IamPacket.deserialize(null);
         });
     }
 
     @org.junit.jupiter.api.Test
     public void testDeserializeTooShort() {
-        final byte[] shortData = new byte[]{0, 1, 2, 3, 4, 5}; // Only 6 bytes, need at least 7
+        final byte[] shortData = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Only 14 bytes, need at least 15
         assertThrows(InvalidParameterException.class, () -> {
-            JoinPacket.deserialize(shortData);
+            IamPacket.deserialize(shortData);
         });
     }
 
     @org.junit.jupiter.api.Test
     public void testDeserializeWrongPacketType() {
         final String email = "user@example.com";
+        final String displayName = "John Doe";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        final JoinPacket original = new JoinPacket(email, node);
+        final IamPacket original = new IamPacket(email, displayName, node);
         final byte[] serialized = original.serialize();
 
         // Corrupt the packet type byte
         serialized[0] = (byte) 99; // Invalid packet type
 
         assertThrows(InvalidParameterException.class, () -> {
-            JoinPacket.deserialize(serialized);
+            IamPacket.deserialize(serialized);
         });
     }
 
     @org.junit.jupiter.api.Test
     public void testDeserializeInsufficientPortData() {
         final byte[] data = new byte[6]; // Only 6 bytes: packet type (1) + IP (4) + missing port
-        data[0] = (byte) MeetingPacketType.JOIN.ordinal();
+        data[0] = (byte) MeetingPacketType.IAM.ordinal();
         data[1] = (byte) 192;
         data[2] = (byte) 168;
         data[3] = (byte) 1;
@@ -172,7 +183,7 @@ public class JoinPacketTest {
         // Missing port bytes
 
         assertThrows(InvalidParameterException.class, () -> {
-            JoinPacket.deserialize(data);
+            IamPacket.deserialize(data);
         });
     }
 
@@ -183,9 +194,9 @@ public class JoinPacketTest {
 
         for (final String ip : ips) {
             final ClientNode node = new ClientNode(ip, 8080);
-            final JoinPacket original = new JoinPacket(email, node);
+            final IamPacket original = new IamPacket(email, "Display Name", node);
             final byte[] serialized = original.serialize();
-            final JoinPacket deserialized = JoinPacket.deserialize(serialized);
+            final IamPacket deserialized = IamPacket.deserialize(serialized);
 
             assertEquals(ip, deserialized.getClientNode().hostName());
         }
@@ -194,29 +205,71 @@ public class JoinPacketTest {
     @org.junit.jupiter.api.Test
     public void testMinimumSize() {
         final String email = ""; // Empty email
+        final String displayName = ""; // Empty displayName
         final ClientNode node = new ClientNode("0.0.0.0", 0);
-        final JoinPacket packet = new JoinPacket(email, node);
+        final IamPacket packet = new IamPacket(email, displayName, node);
         final byte[] serialized = packet.serialize();
 
-        // Minimum: 1 (type) + 4 (IP) + 2 (port) + 0 (empty email) = 7 bytes
-        assertEquals(7, serialized.length);
+        // Minimum: 1 (type) + 4 (IP) + 2 (port) + 4 (email length) + 0 (email) + 4 (displayName length) + 0 (displayName) = 15 bytes
+        assertEquals(15, serialized.length);
     }
 
     @org.junit.jupiter.api.Test
     public void testMultipleRoundTrips() {
         final String email = "user@example.com";
+        final String displayName = "John Doe";
         final ClientNode node = new ClientNode("192.168.1.1", 8080);
-        JoinPacket packet = new JoinPacket(email, node);
+        IamPacket packet = new IamPacket(email, displayName, node);
 
         // Perform 10 round-trips
         for (int i = 0; i < 10; i++) {
             final byte[] serialized = packet.serialize();
-            packet = JoinPacket.deserialize(serialized);
+            packet = IamPacket.deserialize(serialized);
         }
 
         assertEquals(email, packet.getEmail());
+        assertEquals(displayName, packet.getDisplayName());
         assertEquals(node.hostName(), packet.getClientNode().hostName());
         assertEquals(node.port(), packet.getClientNode().port());
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testEmptyDisplayName() {
+        final String email = "user@example.com";
+        final String displayName = "";
+        final ClientNode node = new ClientNode("192.168.1.1", 8080);
+        final IamPacket original = new IamPacket(email, displayName, node);
+
+        final byte[] serialized = original.serialize();
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
+
+        assertEquals("", deserialized.getDisplayName());
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testVeryLongDisplayName() {
+        final String email = "user@example.com";
+        final String displayName = "A".repeat(1000);
+        final ClientNode node = new ClientNode("192.168.1.1", 8080);
+        final IamPacket original = new IamPacket(email, displayName, node);
+
+        final byte[] serialized = original.serialize();
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
+
+        assertEquals(displayName, deserialized.getDisplayName());
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testDisplayNameWithUnicode() {
+        final String email = "user@example.com";
+        final String displayName = "José García";
+        final ClientNode node = new ClientNode("192.168.1.1", 8080);
+        final IamPacket original = new IamPacket(email, displayName, node);
+
+        final byte[] serialized = original.serialize();
+        final IamPacket deserialized = IamPacket.deserialize(serialized);
+
+        assertEquals(displayName, deserialized.getDisplayName());
     }
 }
 
