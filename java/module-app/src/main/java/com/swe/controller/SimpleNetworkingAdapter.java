@@ -1,7 +1,7 @@
 package com.swe.controller;
 
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.MessageListener;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;

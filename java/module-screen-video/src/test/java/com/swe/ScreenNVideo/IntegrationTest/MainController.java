@@ -8,7 +8,7 @@ import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.core.RPC;
 import com.swe.networking.AbstractController;
 import com.swe.networking.AbstractNetworking;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.Networking;
 import com.swe.networking.SimpleNetworking.SimpleNetworking;
 

@@ -1,6 +1,6 @@
 package com.swe.networking.SimpleNetworking;
 
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 
 /**
@@ -35,4 +35,3 @@ public interface AbstractNetworking {
      */
     void removeSubscription(ModuleType name);
 }
-

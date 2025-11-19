@@ -47,6 +47,12 @@
             <artifactId>google-http-client-jackson2</artifactId>
             <version>1.43.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <packaging>jar</packaging>
 </project>

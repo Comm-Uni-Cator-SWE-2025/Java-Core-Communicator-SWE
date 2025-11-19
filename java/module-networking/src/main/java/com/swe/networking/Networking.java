@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -69,6 +70,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
         sendThread = new Thread(this::start);
+        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -129,8 +131,10 @@ public class Networking implements AbstractNetworking, AbstractController {
                     final InetAddress addr = pktInfo.getIpAddress();
                     final int port = pktInfo.getPortNum();
                     final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                    System.out.println("Sending packet to " + dest);
                     topology.sendPacket(packet, dest);
                 } catch (UnknownHostException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -234,7 +238,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        function.receiveData(data);
+        if (function != null) {
+            function.receiveData(data);
+        }
     }
 
     /**

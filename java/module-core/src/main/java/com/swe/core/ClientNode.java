@@ -1,4 +1,4 @@
-package com.swe.networking;
+package com.swe.core;
 
 /**
  * A simple data class to hold client information (hostname and port).
@@ -8,3 +8,4 @@ package com.swe.networking;
  */
 public record ClientNode(String hostName, int port) {
 }
+

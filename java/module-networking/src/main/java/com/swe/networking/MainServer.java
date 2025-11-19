@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -88,7 +89,7 @@ public class MainServer implements P2PUser {
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
-        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+       timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         NetworkLogger.printInfo("MainServer", "Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -324,7 +325,9 @@ public class MainServer implements P2PUser {
     private void handleHello(final ClientNode dest) {
         NetworkLogger.printInfo("MainServer", "Responding " + dest + " with a Hello packet...");
         final int clusterIdx = topology.addClient(dest);
-        addClientToTimer(dest, clusterIdx);
+//        addClientToTimer(dest, clusterIdx);
+        // The controller is notified of any new client that is added.
+        Networking.getNetwork().callSubscriber(0, serializer.serializeClientNode(dest));
         sendNetworkPktResponse(dest);
         // send add packet to all cluster servers.
         final List<ClientNode> servers = topology.getAllClusterServers();
@@ -363,7 +366,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
-        timer.close();
+//        timer.close();
     }
 
     /**

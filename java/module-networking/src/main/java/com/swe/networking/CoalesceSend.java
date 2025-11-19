@@ -11,6 +11,7 @@ import java.util.Map;
  * The class implementing coalescing before data is sent.
  */
 public class CoalesceSend {
+
     /**
      * Variable to store the name of the module.
      */
@@ -38,11 +39,11 @@ public class CoalesceSend {
 
     /**
      * Adds packets to coalescing lists based on their destination.
-     * 
-     * @param data     The payload of the packet.
-     * @param destIP   The IP of the destination.
+     *
+     * @param data The payload of the packet.
+     * @param destIP The IP of the destination.
      * @param destPort The port of the destination.
-     * @param module   The module where the data is to be sent.
+     * @param module The module where the data is to be sent.
      */
     public void handlePacket(final byte[] data, final InetAddress destIP, final int destPort, final byte module) {
         final String destination = destIP.getHostAddress() + ":" + destPort;

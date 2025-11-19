@@ -2,16 +2,24 @@ package com.swe.networking;
 
 import java.nio.channels.SocketChannel;
 
+import com.swe.core.ClientNode;
+
 /**
  * Common interface to send data using various protocols.
  */
 public interface ProtocolBase {
+
     /**
      * Opens a socket in the current device.
      *
      * @return the created socket
      */
     SocketChannel openSocket();
+
+    /**
+     * Function to print all keys in a slector.
+     */
+    void printKeys();
 
     /**
      * To close an opened socket.

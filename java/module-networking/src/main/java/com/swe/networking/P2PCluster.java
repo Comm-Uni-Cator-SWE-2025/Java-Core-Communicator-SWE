@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -98,7 +99,7 @@ public class P2PCluster implements P2PUser {
             if (networkStructure.clusters().get(i).contains(client)) {
                 clusterServer = networkStructure.servers().get(i);
                 this.isServer = false;
-                user = new P2PClient(client, server);
+                user = new P2PClient(client, server, tcpCommunicator);
                 break;
             }
         }
@@ -134,6 +135,7 @@ public class P2PCluster implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
+//        System.out.println("P2pCluster send to " + destIp.hostName());
         this.user.send(data, destIp);
     }
 
@@ -154,7 +156,7 @@ public class P2PCluster implements P2PUser {
                     Topology.getTopology().replaceNetwork(networkStructure);
                     break;
                 } catch (Exception e) {
-                    System.out.println("Error while receiving data in P2P Cluster...");
+                    System.out.println("Error while receiving data in P2P Cluster..." + e.toString());
                 }
             }
         }

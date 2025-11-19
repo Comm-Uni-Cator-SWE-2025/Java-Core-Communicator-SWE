@@ -1,5 +1,6 @@
 package com.swe.controller;
 
+import functionlibrary.CloudFunctionLibrary;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPC;
@@ -11,6 +12,7 @@ public class ControllerServices {
     public NetworkingInterface networking;
     public UserProfile self;
     public MeetingSession meetingSession;
+    public CloudFunctionLibrary cloud;
 
     private ControllerServices() {
 

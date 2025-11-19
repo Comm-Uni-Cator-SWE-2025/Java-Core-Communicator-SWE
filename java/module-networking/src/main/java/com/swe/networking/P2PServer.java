@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -47,7 +48,7 @@ public class P2PServer implements P2PUser {
     /**
      * The thread to send ALIVE.
      */
-    private final Thread sendThread;
+    private final Thread sendThread = null;
 
     /**
      * The thread to monitor client timeouts.
@@ -97,11 +98,13 @@ public class P2PServer implements P2PUser {
         this.mainServer = mainServerAddress;
 
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
-        sendThread = new Thread(this::sendAliveToMainServer);
+//        sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
         sendThread.start();
         receiveThread.start();
+
+        System.out.println("P2PServer");
 
         System.out.println("Created a new P2P Server at " + deviceAddress + "...");
     }

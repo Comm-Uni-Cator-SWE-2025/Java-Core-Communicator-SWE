@@ -1,9 +1,13 @@
 package com.swe.core.Meeting;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.swe.core.ClientNode;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,11 +30,17 @@ public class MeetingSession {
     private final long createdAt;
     
     /** Session mode: TEST or CLASS. */
-    @JsonProperty("SessionMode")
+    @JsonProperty("sessionMode")
     private final SessionMode sessionMode;
 
     @JsonProperty("participants")
     private final Map<String, UserProfile> participants = new ConcurrentHashMap<>();
+
+    /**
+     * In-memory mapping of ClientNode to participant email.
+     */
+    @JsonIgnore
+    private final Map<ClientNode, String> ipToEmailMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a new meeting with a unique ID.
@@ -55,6 +65,9 @@ public class MeetingSession {
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.sessionMode = sessionMode;
+        if (participants != null) {
+            this.participants.putAll(participants);
+        }
     }
 
     public String getMeetingId() {
@@ -87,5 +100,54 @@ public class MeetingSession {
         if (p != null && p.getEmail() != null) {
             this.participants.put(p.getEmail(), p);
         }
+    }
+
+    /**
+     * Update or insert the ClientNode to email mapping.
+     *
+     * @param email participant email
+     * @param node client node coordinates
+     */
+    public void upsertParticipantNode(final String email, final ClientNode node) {
+        if (email == null || node == null) {
+            return;
+        }
+        ipToEmailMap.put(node, email);
+    }
+
+    /**
+     * Retrieve an immutable copy of ClientNode → email mappings.
+     *
+     * @return copy of the mapping (ClientNode → email)
+     */
+    @JsonIgnore
+    public Map<ClientNode, String> getNodeToEmailMap() {
+        System.out.println("CALLED getNodeToEmailMap");
+        return Collections.unmodifiableMap(new HashMap<>(ipToEmailMap));
+    }
+
+    /**
+     * Remove a participant's mapping by ClientNode.
+     *
+     * @param node client node coordinates
+     */
+    public void removeParticipantByNode(final ClientNode node) {
+        if (node == null) {
+            return;
+        }
+        ipToEmailMap.remove(node);
+    }
+
+    /**
+     * Remove a participant's mapping by email.
+     * Note: This requires iterating through the map since it's keyed by ClientNode.
+     *
+     * @param email participant email
+     */
+    public void removeParticipantByEmail(final String email) {
+        if (email == null) {
+            return;
+        }
+        ipToEmailMap.entrySet().removeIf(entry -> email.equals(entry.getValue()));
     }
 }

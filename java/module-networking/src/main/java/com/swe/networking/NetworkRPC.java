@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,7 +18,7 @@ public class NetworkRPC {
     private static NetworkRPC networkRPC = null;
 
     /**
-     * Variable to store the listener functions to run.
+     * Private constructor for networkRPC.
      */
     private final Map<Integer, MessageListener> listeners = new HashMap<>();
 
@@ -123,7 +124,6 @@ public class NetworkRPC {
         final int priority = buffer.getInt();
         networking.broadcast(data, module, priority);
         return null;
-
     }
 
     /**
@@ -174,10 +174,7 @@ public class NetworkRPC {
      * @param data the data to be passed
      */
     public void networkRPCCallSubscriber(final int module, final byte[] data) {
-        final MessageListener function = listeners.get(module);
-        if (function != null) {
-            function.receiveData(data);
-        }
+        networking.callSubscriber(module, data);
     }
 
 }

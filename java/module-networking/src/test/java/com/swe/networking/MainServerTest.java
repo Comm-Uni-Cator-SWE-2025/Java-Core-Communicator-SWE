@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.util.ArrayList;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
