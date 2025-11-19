@@ -1,5 +1,5 @@
 /**
- * Contributed by @andhkr
+ * Contributed by @anup
  */
 
 package com.swe.ScreenNVideo;
