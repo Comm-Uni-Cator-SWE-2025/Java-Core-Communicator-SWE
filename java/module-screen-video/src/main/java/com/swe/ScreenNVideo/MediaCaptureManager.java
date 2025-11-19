@@ -19,6 +19,8 @@ import com.swe.ScreenNVideo.Playback.AudioPlayer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import com.swe.core.ClientNode;
+import com.swe.core.Context;
+import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.AbstractNetworking;
 import com.swe.networking.MessageListener;
@@ -28,6 +30,7 @@ import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -92,7 +95,6 @@ public class MediaCaptureManager implements CaptureManager {
      * Constructor for the MediaCaptureManager.
      *
      * @param argNetworking Networking object
-     * @param argRpc        RPC object
      * @param portArgs      Port for the server
      */
     public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs) {
@@ -104,7 +106,7 @@ public class MediaCaptureManager implements CaptureManager {
         audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
         audioDecoder = new ADPCMDecoder();
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
-        videoComponent = new VideoComponents(Utils.FPS, rpc, captureComponents, backgroundCaptureManager);
+        videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
 
         captureComponents.startAudioLoop();
         backgroundCaptureManager.start();
@@ -371,8 +373,13 @@ public class MediaCaptureManager implements CaptureManager {
                         return;
                     }
 
+                    final ClientNode ipNode = new ClientNode(networkPackets.ip(), port);
+                    final String email = Utils.getEmailFromIp(ipNode);
+                    if (email == null) {
+                        return;
+                    }
 
-                    final RImage rImage = new RImage(image, networkPackets.ip());
+                    final RImage rImage = new RImage(image, email);
                     final byte[] serializedImage = rImage.serialize();
                     System.out.println("Sending to UI" + ("; Expected : "
                         + imageSynchronizer.getExpectedFeedNumber()));

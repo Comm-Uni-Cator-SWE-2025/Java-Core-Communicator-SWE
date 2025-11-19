@@ -7,5 +7,9 @@ package com.swe.core;
  * @param port The PORT.
  */
 public record ClientNode(String hostName, int port) {
+    @Override
+    public int hashCode() {
+        return (hostName + port).hashCode();
+    }
 }
 
