@@ -6,6 +6,7 @@ import com.swe.networking.AbstractController;
 import com.swe.networking.AbstractNetworking;
 import com.swe.networking.ClientNode;
 import com.swe.networking.Networking;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -29,8 +30,9 @@ public class MainController {
 
     static void main(final String[] args) throws InterruptedException {
 //        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
-        final AbstractNetworking networking = Networking.getNetwork();
+//        final AbstractNetworking networking = Networking.getNetwork();
 //        final AbstractNetworking networking = new DummyNetworking();
+        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
@@ -51,10 +53,13 @@ public class MainController {
             throw new RuntimeException(e);
         }
 
-        AbstractController networkingCom = Networking.getNetwork();
-        networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
+//        SimpleNetworking.getSimpleNetwork().addUser(deviceNode, serverNode);
+
+//        AbstractController networkingCom = Networking.getNetwork();
+//        networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
 
         screenNVideo.broadcastJoinMeeting();
+        System.out.println("COnnected");
 
         final Thread screenNVideoThread = new Thread(() -> {
             try {
