@@ -1,3 +1,7 @@
+/**
+ * Contributed by @chirag9528
+ */
+
 package com.swe.ScreenNVideo.Model;
 
 import com.swe.networking.ClientNode;

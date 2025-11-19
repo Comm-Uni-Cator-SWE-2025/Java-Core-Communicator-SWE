@@ -1,5 +1,5 @@
 /**
- * Contributed by Devansh Manoj Kesan.
+ * Contributed by Priyanshu Pandey.
  * Enhanced with Huffman encoding/decoding following JPEG standard.
  */
 

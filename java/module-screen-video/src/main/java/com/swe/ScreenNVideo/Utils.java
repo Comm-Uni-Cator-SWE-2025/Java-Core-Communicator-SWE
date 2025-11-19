@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo;
 
 import java.awt.image.BufferedImage;

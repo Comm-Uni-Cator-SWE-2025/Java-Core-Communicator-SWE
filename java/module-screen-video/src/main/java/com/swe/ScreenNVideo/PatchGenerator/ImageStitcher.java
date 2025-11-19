@@ -1,3 +1,7 @@
+/**
+ * Contributed by @Devansh-Kesan
+ */
+
 package com.swe.ScreenNVideo.PatchGenerator;
 
 import com.swe.ScreenNVideo.Utils;

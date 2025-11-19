@@ -1,3 +1,7 @@
+/**
+ * Contributed by @andhkr
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;

@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.Serializer;
 
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;

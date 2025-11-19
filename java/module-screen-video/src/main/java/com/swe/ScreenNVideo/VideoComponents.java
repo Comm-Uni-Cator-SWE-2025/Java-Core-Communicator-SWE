@@ -1,3 +1,7 @@
+/**
+ * Contributed by @chirag9528
+ */
+
 package com.swe.ScreenNVideo;
 
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;

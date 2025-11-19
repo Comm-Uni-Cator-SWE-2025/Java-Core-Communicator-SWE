@@ -1,3 +1,7 @@
+/**
+ * Contributed by @aman112201041
+ */
+
 package com.swe.ScreenNVideo.Capture;
 
 import javax.sound.sampled.AudioFormat;

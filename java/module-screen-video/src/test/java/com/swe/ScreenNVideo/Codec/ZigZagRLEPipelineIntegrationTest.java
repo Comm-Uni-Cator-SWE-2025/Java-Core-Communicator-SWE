@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
