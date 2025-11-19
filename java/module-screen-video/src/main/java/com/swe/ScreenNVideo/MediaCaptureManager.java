@@ -18,9 +18,9 @@ import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.Playback.AudioPlayer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.AbstractNetworking;
-import com.swe.networking.ClientNode;
 import com.swe.networking.MessageListener;
 import com.swe.networking.ModuleType;
 
@@ -82,6 +82,11 @@ public class MediaCaptureManager implements CaptureManager {
      * Audio Decoder object.
      */
     private final ADPCMDecoder audioDecoder;
+
+    /**
+     * IP to email list for the participants
+     */
+    private HashMap<String, String> ipToEmail;
 
     /**
      * Constructor for the MediaCaptureManager.
@@ -199,6 +204,11 @@ public class MediaCaptureManager implements CaptureManager {
             networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
 //            sendDataToViewers(encodedAudio, viewer -> true);
         }
+    }
+
+    @Override
+    public void updateIpToEmail(HashMap<String, String> ipMap) {
+
     }
 
     /**

@@ -48,7 +48,7 @@ public class NetworkingAdapter implements NetworkingInterface {
     public void consumeRPC(AbstractRPC rpc) {
         // Convert RPCinterface.AbstractRPC to RPCinteface.AbstractRPC
         // Create an adapter wrapper since they're in different packages
-        com.swe.core.RPCinteface.AbstractRPC adaptedRpc = new com.swe.core.RPCinteface.AbstractRPC() {
+        com.swe.core.RPCinterface.AbstractRPC adaptedRpc = new com.swe.core.RPCinterface.AbstractRPC() {
             @Override
             public void subscribe(String methodName, java.util.function.Function<byte[], byte[]> method) {
                 rpc.subscribe(methodName, method);

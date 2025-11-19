@@ -109,6 +109,7 @@ public class MeetingSession {
      * @param node client node coordinates
      */
     public void upsertParticipantNode(final String email, final ClientNode node) {
+        System.out.println("New ip " + email + " " + node);
         if (email == null || node == null) {
             return;
         }

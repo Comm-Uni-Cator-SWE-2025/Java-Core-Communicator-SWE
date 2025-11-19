@@ -4,7 +4,8 @@
 
 package com.swe.ScreenNVideo.Model;
 
-import com.swe.networking.ClientNode;
+
+import com.swe.core.ClientNode;
 
 /**
  * Represents a Viewer for Screen Share module.

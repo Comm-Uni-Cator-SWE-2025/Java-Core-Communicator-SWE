@@ -34,7 +34,7 @@ public class CloudFunctionLibrary {
     /** JSON serializer/deserializer. */
     private final ObjectMapper objectMapper;
 
-    /** Constructor loads base URL from .env and initializes client/mapper. */
+    /** Constructor loads base URL from ..env and initializes client/mapper. */
     public CloudFunctionLibrary() {
         baseUrl = System.getenv("CLOUD_BASE_URL");
         if (baseUrl == null || baseUrl.isEmpty()) {

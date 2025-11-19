@@ -16,6 +16,7 @@ import com.swe.ScreenNVideo.Model.CPackets;
 import com.swe.ScreenNVideo.Model.Feed;
 import com.swe.ScreenNVideo.Model.FeedPatch;
 import com.swe.ScreenNVideo.Model.RImage;
+import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
@@ -150,6 +151,7 @@ public class VideoComponents {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
+
                     final RImage rImage = new RImage(frame, localIp);
                     final byte[] serializedImage = rImage.serialize();
 

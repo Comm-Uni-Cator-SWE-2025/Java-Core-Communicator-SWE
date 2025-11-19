@@ -8,6 +8,7 @@ import com.swe.controller.serializer.MeetingPacketType;
 import com.swe.core.ClientNode;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
 

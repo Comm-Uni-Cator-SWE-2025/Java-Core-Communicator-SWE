@@ -4,6 +4,7 @@
 
 package com.swe.ScreenNVideo;
 
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -16,4 +17,8 @@ public interface CaptureManager {
      */
     void startCapture() throws ExecutionException, InterruptedException;
 
+    /**
+     * Add Participant Ip to email.
+     */
+    void updateIpToEmail(HashMap<String, String> ipMap);
 }

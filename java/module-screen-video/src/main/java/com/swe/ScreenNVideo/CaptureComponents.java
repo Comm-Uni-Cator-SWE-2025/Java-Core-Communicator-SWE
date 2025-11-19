@@ -6,6 +6,7 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.ScreenNVideo.Model.NetworkPacketType;
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.AudioCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
@@ -13,7 +14,6 @@ import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
 import com.swe.ScreenNVideo.Model.IPPacket;
-import com.swe.networking.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.AbstractNetworking;
 
