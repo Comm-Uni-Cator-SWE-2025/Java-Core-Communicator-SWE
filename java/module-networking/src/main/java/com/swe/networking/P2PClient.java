@@ -50,7 +50,7 @@ public class P2PClient implements P2PUser {
     /**
      * alive thread manager.
      */
-    private final ScheduledExecutorService aliveScheduler;
+    private ScheduledExecutorService aliveScheduler;
 
     /**
      * time interval gap to send alive packet.
