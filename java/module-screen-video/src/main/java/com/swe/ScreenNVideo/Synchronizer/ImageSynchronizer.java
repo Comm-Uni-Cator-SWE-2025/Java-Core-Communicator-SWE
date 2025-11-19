@@ -32,9 +32,13 @@ public class ImageSynchronizer {
      */
     private int expectedFeedNumber;
 
+    public boolean waitingForFullImage = false;
+
     public int getExpectedFeedNumber() {
         return expectedFeedNumber;
     }
+
+    public boolean reqCompression = false;
 
     /**
      * Sets the expected feedNumber.
@@ -93,6 +97,9 @@ public class ImageSynchronizer {
 //            break;
         }
         previousImage = imageStitcher.getCanvas();
+        if (previousImage == null) {
+            System.out.println("------------------GOT-NULL-------------");
+        }
         return previousImage;
     }
 
