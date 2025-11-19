@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo;
 
 import java.awt.image.BufferedImage;
@@ -44,6 +48,10 @@ public class Utils {
      * Key constant for subscribe_as_viewer.
      */
     public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
+    /**
+     * Key constant for unSubscribe_as_viewer.
+     */
+    public static final String UNSUBSCRIBE_AS_VIEWER = "unSubscribeAsViewer";
     /**
      * Key constant for Updating UI.
      */

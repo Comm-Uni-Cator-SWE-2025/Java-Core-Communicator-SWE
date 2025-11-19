@@ -2,7 +2,7 @@
  * Contributed by @alonot
  */
 
-package com.swe.ScreenNVideo.Serializer;
+package com.swe.ScreenNVideo.Model;
 
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.Utils;
@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**

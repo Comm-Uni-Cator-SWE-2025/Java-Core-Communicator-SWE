@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.socketry.SocketryServer;
