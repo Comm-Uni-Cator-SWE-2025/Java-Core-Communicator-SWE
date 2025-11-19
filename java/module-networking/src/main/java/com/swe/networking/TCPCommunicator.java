@@ -79,7 +79,8 @@ public final class TCPCommunicator implements ProtocolBase {
     @Override
     public byte[] receiveData() {
         try {
-            selector.select();
+            final int timeout = 1000;
+            selector.select(timeout);
             final Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
             while (iter.hasNext()) {
                 final SelectionKey key = iter.next();
@@ -166,6 +167,7 @@ public final class TCPCommunicator implements ProtocolBase {
                 NetworkLogger.printInfo(MODULENAME, "Client : " + dest + " ...");
                 destSocket.connect(new InetSocketAddress(destIp, destPort));
                 destSocket.configureBlocking(false);
+                NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + destSocket.socket().getLocalPort());
                 destSocket.register(selector, SelectionKey.OP_READ);
                 NetworkLogger.printInfo(MODULENAME, "New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
