@@ -2,6 +2,7 @@ package com.swe.chat;
 
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
 
@@ -44,8 +45,9 @@ public class ChatManager implements IChatService {
      */
     private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
 
-    public ChatManager(Networking network, AbstractRPC rpc) {
-        this.rpc = rpc;
+    public ChatManager(Networking network) {
+        Context context = Context.getInstance();
+        this.rpc = context.rpc;
         this.network = network;
 
         // Subscribe to frontend RPC calls
