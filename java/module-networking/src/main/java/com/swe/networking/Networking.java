@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
-import com.swe.core.RPCinteface.AbstractRPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 
 /**
  * The main class of the networking module.
@@ -66,7 +66,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     private Networking() {
         chunkManager = ChunkManager.getChunkManager(payloadSize);
-        priorityQueue = priorityQueue.getPriorityQueue();
+        priorityQueue = PriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
         sendThread = new Thread(this::start);
@@ -98,6 +98,10 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public void sendData(final byte[] data, final ClientNode[] dest, final int module, final int priority) {
+        if (dest == null) {
+            System.out.println("No destination to send to...");
+            return;
+        }
         System.out.println("Data length : " + data.length);
         System.out.println("Destination : " + Arrays.toString(dest));
         final Vector<byte[]> chunks = getChunks(data, dest, module, priority, 0);
@@ -183,6 +187,10 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
         final List<ClientNode> dest = topology.getClients(topology.getClusterIndex(user));
+        if (dest == null) {
+            System.out.println("No destination to send to...");
+            return;
+        }
         if (user == topology.getServer(user)) {
             final List<ClientNode> servers = topology.getAllClusterServers();
             dest.addAll(servers);
@@ -272,5 +280,14 @@ public class Networking implements AbstractNetworking, AbstractController {
         moduleRPC.subscribe("networkRPCSendData", networkRPC::networkRPCSendData);
         moduleRPC.subscribe("networkRPCSubscribe", networkRPC::networkRPCSubscribe);
         moduleRPC.subscribe("networkRPCCloseNetworking", networkRPC::networkRPCCloseNetworking);
+    }
+
+    /**
+     * Function to get the RPC.
+     *
+     * @return the moduleRPC
+     */
+    public AbstractRPC getRPC() {
+        return moduleRPC;
     }
 }

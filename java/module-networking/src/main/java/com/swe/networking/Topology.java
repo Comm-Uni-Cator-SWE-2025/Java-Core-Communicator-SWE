@@ -257,6 +257,9 @@ public final class Topology implements AbstractTopology {
      * @return list of all clients in the cluster
      */
     public List<ClientNode> getClients(final int index) {
+        if (index >= clusters.size() || index < 0) {
+            return null;
+        }
         return clusters.get(index);
     }
 
@@ -327,6 +330,10 @@ public final class Topology implements AbstractTopology {
      * @param dest the destination to send
      */
     public void sendPacket(final byte[] packet, final ClientNode dest) {
-        user.send(packet, dest);
+        try {
+            user.send(packet, dest);
+        } catch (Exception e) {
+            NetworkLogger.printInfo(MODULENAME, "Exception occured: " + e.getMessage() + " Closing topology...");
+        }
     }
 }
