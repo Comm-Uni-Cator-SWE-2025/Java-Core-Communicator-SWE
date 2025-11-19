@@ -19,6 +19,7 @@ import com.swe.ScreenNVideo.Playback.AudioPlayer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.AbstractNetworking;
 import com.swe.networking.MessageListener;
