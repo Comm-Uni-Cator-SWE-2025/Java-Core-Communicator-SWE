@@ -1,17 +1,16 @@
 package com.swe.networking;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test class for MainServer.
@@ -58,7 +57,7 @@ public class MainServerTest {
             Thread.sleep(sleepTime);
             final ClientNode dest3 = new ClientNode("127.0.0.1", 8003);
             final ClientNode dest4 = new ClientNode("127.0.0.1", 8004);
-            final ClientNode[] clients = { dest3, dest4 };
+            final ClientNode[] clients = {dest3, dest4};
             mainServer.send(data.getBytes(), clients);
             mainServer.closeClient(dest3);
             mainServer.closeClient(dest4);
@@ -73,7 +72,7 @@ public class MainServerTest {
 
     /**
      * Test function to check send is working.
-     * 
+     *
      * @param serverPort to set the port of server
      */
     public void receive(final int serverPort) {
@@ -203,6 +202,7 @@ public class MainServerTest {
     /**
      * A receiver method that listens on a port, prints the received message,
      * and can be safely interrupted by closing the socket.
+     *
      * @param port The port number to listen on.
      * @param serverSocketToClose The ServerSocket to close for shutdown.
      */
@@ -226,7 +226,9 @@ public class MainServerTest {
     private NetworkStructure createTopology(ClientNode mainServer, ClientNode... additionalClients) {
         List<ClientNode> cluster = new ArrayList<>();
         cluster.add(mainServer);
-        for (ClientNode c : additionalClients) cluster.add(c);
+        for (ClientNode c : additionalClients) {
+            cluster.add(c);
+        }
         List<List<ClientNode>> clusters = new ArrayList<>();
         clusters.add(cluster);
         List<ClientNode> servers = new ArrayList<>();
@@ -239,25 +241,36 @@ public class MainServerTest {
         mainCluster.add(mainServer);
         List<List<ClientNode>> clusters = new ArrayList<>();
         clusters.add(mainCluster);
-        if (otherCluster != null) clusters.add(otherCluster);
+        if (otherCluster != null) {
+            clusters.add(otherCluster);
+        }
         List<ClientNode> servers = new ArrayList<>();
         servers.add(mainServer);
-        if (otherServer != null) servers.add(otherServer);
+        if (otherServer != null) {
+            servers.add(otherServer);
+        }
         return new NetworkStructure(clusters, servers);
     }
 
     private void cleanup(MainServer mainServer, ServerSocket[]... sockets) {
-        if (mainServer != null) mainServer.close();
+        if (mainServer != null) {
+            mainServer.close();
+        }
         for (ServerSocket[] sockArr : sockets) {
             if (sockArr[0] != null && !sockArr[0].isClosed()) {
-                try { sockArr[0].close(); } catch (IOException e) {}
+                try {
+                    sockArr[0].close();
+                } catch (IOException e) {
+                }
             }
         }
     }
 
     private void cleanupThreads(Thread... threads) {
         for (Thread t : threads) {
-            if (t != null && t.isAlive()) t.interrupt();
+            if (t != null && t.isAlive()) {
+                t.interrupt();
+            }
         }
     }
 
@@ -268,7 +281,9 @@ public class MainServerTest {
         pkt.setConnectionType(connectionType);
         pkt.setIpAddress(InetAddress.getByName(dest.hostName()));
         pkt.setPortNum(dest.port());
-        if (payload != null) pkt.setPayload(payload);
+        if (payload != null) {
+            pkt.setPayload(payload);
+        }
         return pkt;
     }
 
@@ -557,6 +572,7 @@ public class MainServerTest {
             System.out.println("Finished malformed packet test.");
         }
     }
+
     /**
      * Test for routing functionality to a client in another cluster.
      */
@@ -626,300 +642,306 @@ public class MainServerTest {
             if (otherServerThread != null && otherServerThread.isAlive()) {
                 otherServerThread.interrupt();
             }
-                        System.out.println("Finished another routing to other cluster test.");
-                    }
+            System.out.println("Finished another routing to other cluster test.");
+        }
+    }
+
+    /**
+     * Tests the server's ability to handle a client removal notification.
+     */
+    @org.junit.jupiter.api.Test
+    public void testHandleRemove() {
+        System.out.println("Testing handle remove...");
+        final int mainServerPort = 8070;
+        final int clientAPort = 9070;
+        final int clientBPort = 9071;
+        final ServerSocket[] clientBSock = new ServerSocket[1];
+        MainServer mainServer = null;
+        Thread clientBThread = null;
+
+        try {
+            // Setup
+            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            final ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
+            final ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
+
+            // Reset and manually set up topology
+            Topology topology = Topology.getTopology();
+            topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            topology.addClient(mainServerNode);
+            topology.addClient(clientANode);
+            topology.addClient(clientBNode);
+
+            // Start a listener for Client B to verify it receives the remove message
+            clientBThread = new Thread(() -> stoppableReceive(clientBPort, clientBSock));
+            clientBThread.start();
+
+            // Start the main server
+            mainServer = new MainServer(mainServerNode, mainServerNode);
+            Thread.sleep(500);
+
+            // Create and send a REMOVE packet for Client A
+            byte[] removePacket = getRemovePacket(clientANode);
+
+            // Send packet to main server
+            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
+                dataOut.write(removePacket);
+                dataOut.flush();
+            }
+
+            clientBThread.join(2000); // Wait for Client B to receive the broadcast
+
+            // Verify Client A was removed from the topology
+            if (topology.getClusterIndex(clientANode) == -1) {
+                System.out.println("Client A successfully removed from topology.");
+            } else {
+                System.out.println("Client A was NOT removed from topology.");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Teardown
+            if (mainServer != null) {
+                mainServer.close();
+            }
+            if (clientBSock[0] != null && !clientBSock[0].isClosed()) {
+                try {
+                    clientBSock[0].close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                /**
-                 * Tests the server's ability to handle a client removal notification.
-                 */
-                @org.junit.jupiter.api.Test
-                public void testHandleRemove() {
-                    System.out.println("Testing handle remove...");
-                    final int mainServerPort = 8070;
-                    final int clientAPort = 9070;
-                    final int clientBPort = 9071;
-                    final ServerSocket[] clientBSock = new ServerSocket[1];
-                    MainServer mainServer = null;
-                    Thread clientBThread = null;
-            
-                    try {
-                        // Setup
-                        final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-                        final ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
-                        final ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
-            
-                        // Reset and manually set up topology
-                        Topology topology = Topology.getTopology();
-                        topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-                        topology.addClient(mainServerNode);
-                        topology.addClient(clientANode);
-                        topology.addClient(clientBNode);
-            
-                        // Start a listener for Client B to verify it receives the remove message
-                        clientBThread = new Thread(() -> stoppableReceive(clientBPort, clientBSock));
-                        clientBThread.start();
-            
-                        // Start the main server
-                        mainServer = new MainServer(mainServerNode, mainServerNode);
-                        Thread.sleep(500);
-            
-                        // Create and send a REMOVE packet for Client A
-                        byte[] removePacket = getRemovePacket(clientANode);
-            
-                        // Send packet to main server
-                        try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                            DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                            dataOut.write(removePacket);
-                            dataOut.flush();
-                        }
-            
-                        clientBThread.join(2000); // Wait for Client B to receive the broadcast
-            
-                        // Verify Client A was removed from the topology
-                        if (topology.getClusterIndex(clientANode) == -1) {
-                            System.out.println("Client A successfully removed from topology.");
-                        } else {
-                            System.out.println("Client A was NOT removed from topology.");
-                        }
-            
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        // Teardown
-                        if (mainServer != null) {
-                            mainServer.close();
-                        }
-                        if (clientBSock[0] != null && !clientBSock[0].isClosed()) {
-                            try {
-                                clientBSock[0].close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        if (clientBThread != null && clientBThread.isAlive()) {
-                            clientBThread.interrupt();
-                        }
-                                    System.out.println("Finished handle remove test.");
-                                }
-                            }
-                            /**
-                             * A simple listener to capture messages for testing.
-                             */
-                            class TestMessageListener implements MessageListener {
-                                private byte[] receivedData = null;
-                        
-                                @Override
-                                public void receiveData(byte[] data) {
-                                    this.receivedData = data;
-                                    System.out.println("TestMessageListener received data.");
-                                }
-                        
-                                public byte[] getReceivedData() {
-                                    return receivedData;
-                                }
-                            }
-                            /**
-                             * Tests the server's handling of MODULE type packets via the ChunkManager.
-                             */
-                            @org.junit.jupiter.api.Test
-                            public void testModulePacketHandling() {
-                                System.out.println("Testing MODULE packet handling...");
-                                final int mainServerPort = 8080;
-                                MainServer mainServer = null;
-                        
-                                try {
-                                    // Setup
-                                    final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-                                    Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-                                    mainServer = new MainServer(mainServerNode, mainServerNode);
-                        
-                                    // Register a listener to catch the output
-                                    TestMessageListener listener = new TestMessageListener();
-                                    Networking.getNetwork().subscribe(ModuleType.NETWORKING.ordinal(), listener);
-                        
-                                    Thread.sleep(500);
-                        
-                                    // Create a MODULE packet
-                                    String testPayload = "This is the module payload.";
-                                    PacketInfo packetInfo = new PacketInfo();
-                                    packetInfo.setLength(22 + testPayload.getBytes().length);
-                                    packetInfo.setType(NetworkType.USE.ordinal());
-                                    packetInfo.setConnectionType(NetworkConnectionType.MODULE.ordinal());
-                                    packetInfo.setModule(ModuleType.NETWORKING.ordinal());
-                                    packetInfo.setIpAddress(InetAddress.getByName("127.0.0.1"));
-                                    packetInfo.setPortNum(9080);
-                                    packetInfo.setPayload(testPayload.getBytes());
-                                    packetInfo.setChunkNum(0); // First and only chunk
-                                    packetInfo.setChunkLength(1);
-                                    byte[] modulePacket = PacketParser.getPacketParser().createPkt(packetInfo);
-                        
-                                    // Send the packet
-                                    try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                                        DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                                        dataOut.write(modulePacket);
-                                        dataOut.flush();
-                                    }
-                        
-                                    Thread.sleep(1000); // Give server time to process
-                        
-                                    // Verification
-                                    if (listener.getReceivedData() != null && new String(listener.getReceivedData()).equals(testPayload)) {
-                                        System.out.println("Successfully received and processed MODULE packet.");
-                                    } else {
-                                        System.out.println("Failed to process MODULE packet correctly.");
-                                    }
-                        
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                } finally {
-                                    // Teardown
-                                    if (mainServer != null) {
-                                        mainServer.close();
-                                    }
-                                                System.out.println("Finished MODULE packet handling test.");
-                                            }
-                                        }
-                                        /**
-                                         * Tests the server's handling of an OTHERCLUSTER broadcast.
-                                         */
-                                        @org.junit.jupiter.api.Test
-                                        public void testOtherClusterBroadcast() {
-                                            System.out.println("Testing OTHERCLUSTER broadcast...");
-                                            final int mainServerPort = 8090;
-                                            final int clientPort = 9090;
-                                            final ServerSocket[] clientSock = new ServerSocket[1];
-                                            MainServer mainServer = null;
-                                            Thread clientThread = null;
-                                    
-                                            try {
-                                                // Setup
-                                                final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-                                                final ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
-                                                final ClientNode otherServerNode = new ClientNode("127.0.0.1", 8091); // Does not need to be listening
-                                    
-                                                // Reset and manually set up topology
-                                                Topology topology = Topology.getTopology();
-                                                topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-                                                topology.addClient(mainServerNode);
-                                                topology.addClient(clientNode);
-                                                topology.addClient(otherServerNode); // Belongs to a different cluster
-                                    
-                                                // Start a listener for the client
-                                                clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
-                                                clientThread.start();
-                                    
-                                                // Start the main server
-                                                mainServer = new MainServer(mainServerNode, mainServerNode);
-                                                Thread.sleep(500);
-                                    
-                                                // Create an OTHERCLUSTER broadcast packet
-                                                PacketInfo packetInfo = new PacketInfo();
-                                                packetInfo.setLength(22);
-                                                packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
-                                                packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
-                                                packetInfo.setIpAddress(InetAddress.getByName(otherServerNode.hostName())); // Pretend it's from the other server
-                                                packetInfo.setPortNum(otherServerNode.port());
-                                                packetInfo.setBroadcast(1);
-                                                packetInfo.setPayload("Cross-cluster broadcast".getBytes());
-                                                byte[] packet = PacketParser.getPacketParser().createPkt(packetInfo);
-                                    
-                                                // Send the packet to the main server
-                                                try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                                                    DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                                                    dataOut.write(packet);
-                                                    dataOut.flush();
-                                                }
-                                    
-                                                clientThread.join(2000); // Wait for the client to receive the forwarded packet
-                                    
-                                                // Verification happens in the stoppableReceive method, which prints to console.
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            } finally {
-                                                // Teardown
-                                                if (mainServer != null) {
-                                                    mainServer.close();
-                                                }
-                                                if (clientSock[0] != null && !clientSock[0].isClosed()) {
-                                                    try {
-                                                        clientSock[0].close();
-                                                    } catch (IOException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-                                                if (clientThread != null && clientThread.isAlive()) {
-                                                    clientThread.interrupt();
-                                                }
-                                                            System.out.println("Finished OTHERCLUSTER broadcast test.");
-                                                        }
-                                                    }
-                                                    /**
-                                                     * Tests the server's stability when receiving a packet of an unknown type.
-                                                     */
-                                                    @org.junit.jupiter.api.Test
-                                                    public void testUnknownPacketType() {
-                                                        System.out.println("Testing unknown packet type...");
-                                                        final int mainServerPort = 8100;
-                                                        MainServer mainServer = null;
-                                                
-                                                        try {
-                                                            // Setup
-                                                            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-                                                            Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-                                                            mainServer = new MainServer(mainServerNode, mainServerNode);
-                                                            Thread.sleep(500);
-                                                
-                                                            // Create a packet with an invalid type
-                                                            PacketInfo packetInfo = new PacketInfo();
-                                                            packetInfo.setLength(22);
-                                                            packetInfo.setType(99); // Invalid type
-                                                            packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
-                                                            packetInfo.setIpAddress(InetAddress.getByName("127.0.0.1"));
-                                                            packetInfo.setPortNum(9100);
-                                                            packetInfo.setPayload("Unknown type test".getBytes());
-                                                            byte[] unknownPacket = PacketParser.getPacketParser().createPkt(packetInfo);
-                                                
-                                                            // Send the unknown packet
-                                                            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                                                                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                                                                dataOut.write(unknownPacket);
-                                                                dataOut.flush();
-                                                            }
-                                                            System.out.println("Sent a packet with an unknown type.");
-                                                            Thread.sleep(500); // Give server time to process
-                                                
-                                                            // Send a valid packet to ensure the server is still responsive
-                                                            System.out.println("Sending a valid HELLO packet to check server status...");
-                                                            try (Socket testSocket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                                                                DataOutputStream out = new DataOutputStream(testSocket.getOutputStream());
-                                                                DataInputStream in = new DataInputStream(testSocket.getInputStream());
-                                                
-                                                                byte[] helloPacket = getHelloPacket(new ClientNode("127.0.0.1", testSocket.getLocalPort()));
-                                                                out.write(helloPacket);
-                                                
-                                                                // The server should respond with a NETWORK packet.
-                                                                testSocket.setSoTimeout(2000);
-                                                                byte[] response = in.readAllBytes();
-                                                                if (response.length > 0) {
-                                                                    System.out.println("Server responded to valid packet after unknown one. Server is stable.");
-                                                                } else {
-                                                                    System.out.println("Server did NOT respond after unknown packet.");
-                                                                }
-                                                            }
-                                                
-                                                        } catch (Exception e) {
-                                                            // If this exception happens, it might mean the server died.
-                                                            System.out.println("An exception occurred during the test, possibly because the server is down.");
-                                                            e.printStackTrace();
-                                                        } finally {
-                                                            // Teardown
-                                                            if (mainServer != null) {
-                                                                mainServer.close();
-                                                            }
-                                                            System.out.println("Finished unknown packet type test.");
-                                                        }
-                                                    }
-                                                
+            }
+            if (clientBThread != null && clientBThread.isAlive()) {
+                clientBThread.interrupt();
+            }
+            System.out.println("Finished handle remove test.");
+        }
+    }
+
+    /**
+     * A simple listener to capture messages for testing.
+     */
+    class TestMessageListener implements MessageListener {
+
+        private byte[] receivedData = null;
+
+        @Override
+        public void receiveData(byte[] data) {
+            this.receivedData = data;
+            System.out.println("TestMessageListener received data.");
+        }
+
+        public byte[] getReceivedData() {
+            return receivedData;
+        }
+    }
+
+    /**
+     * Tests the server's handling of MODULE type packets via the ChunkManager.
+     */
+    @org.junit.jupiter.api.Test
+    public void testModulePacketHandling() {
+        System.out.println("Testing MODULE packet handling...");
+        final int mainServerPort = 8080;
+        MainServer mainServer = null;
+
+        try {
+            // Setup
+            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            mainServer = new MainServer(mainServerNode, mainServerNode);
+
+            // Register a listener to catch the output
+            TestMessageListener listener = new TestMessageListener();
+            Networking.getNetwork().subscribe(ModuleType.NETWORKING.ordinal(), listener);
+
+            Thread.sleep(500);
+
+            // Create a MODULE packet
+            String testPayload = "This is the module payload.";
+            PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(22 + testPayload.getBytes().length);
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.MODULE.ordinal());
+            packetInfo.setModule(ModuleType.NETWORKING.ordinal());
+            packetInfo.setIpAddress(InetAddress.getByName("127.0.0.1"));
+            packetInfo.setPortNum(9080);
+            packetInfo.setPayload(testPayload.getBytes());
+            packetInfo.setChunkNum(0); // First and only chunk
+            packetInfo.setChunkLength(1);
+            byte[] modulePacket = PacketParser.getPacketParser().createPkt(packetInfo);
+
+            // Send the packet
+            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
+                dataOut.write(modulePacket);
+                dataOut.flush();
+            }
+
+            Thread.sleep(1000); // Give server time to process
+
+            // Verification
+            if (listener.getReceivedData() != null && new String(listener.getReceivedData()).equals(testPayload)) {
+                System.out.println("Successfully received and processed MODULE packet.");
+            } else {
+                System.out.println("Failed to process MODULE packet correctly.");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Teardown
+            if (mainServer != null) {
+                mainServer.close();
+            }
+            System.out.println("Finished MODULE packet handling test.");
+        }
+    }
+
+    /**
+     * Tests the server's handling of an OTHERCLUSTER broadcast.
+     */
+    @org.junit.jupiter.api.Test
+    public void testOtherClusterBroadcast() {
+        System.out.println("Testing OTHERCLUSTER broadcast...");
+        final int mainServerPort = 8090;
+        final int clientPort = 9090;
+        final ServerSocket[] clientSock = new ServerSocket[1];
+        MainServer mainServer = null;
+        Thread clientThread = null;
+
+        try {
+            // Setup
+            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            final ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
+            final ClientNode otherServerNode = new ClientNode("127.0.0.1", 8091); // Does not need to be listening
+
+            // Reset and manually set up topology
+            Topology topology = Topology.getTopology();
+            topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            topology.addClient(mainServerNode);
+            topology.addClient(clientNode);
+            topology.addClient(otherServerNode); // Belongs to a different cluster
+
+            // Start a listener for the client
+            clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
+            clientThread.start();
+
+            // Start the main server
+            mainServer = new MainServer(mainServerNode, mainServerNode);
+            Thread.sleep(500);
+
+            // Create an OTHERCLUSTER broadcast packet
+            PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(22);
+            packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+            packetInfo.setIpAddress(InetAddress.getByName(otherServerNode.hostName())); // Pretend it's from the other server
+            packetInfo.setPortNum(otherServerNode.port());
+            packetInfo.setBroadcast(1);
+            packetInfo.setPayload("Cross-cluster broadcast".getBytes());
+            byte[] packet = PacketParser.getPacketParser().createPkt(packetInfo);
+
+            // Send the packet to the main server
+            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
+                dataOut.write(packet);
+                dataOut.flush();
+            }
+
+            clientThread.join(2000); // Wait for the client to receive the forwarded packet
+
+            // Verification happens in the stoppableReceive method, which prints to console.
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Teardown
+            if (mainServer != null) {
+                mainServer.close();
+            }
+            if (clientSock[0] != null && !clientSock[0].isClosed()) {
+                try {
+                    clientSock[0].close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (clientThread != null && clientThread.isAlive()) {
+                clientThread.interrupt();
+            }
+            System.out.println("Finished OTHERCLUSTER broadcast test.");
+        }
+    }
+
+    /**
+     * Tests the server's stability when receiving a packet of an unknown type.
+     */
+    @org.junit.jupiter.api.Test
+    public void testUnknownPacketType() {
+        System.out.println("Testing unknown packet type...");
+        final int mainServerPort = 8100;
+        MainServer mainServer = null;
+
+        try {
+            // Setup
+            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            mainServer = new MainServer(mainServerNode, mainServerNode);
+            Thread.sleep(500);
+
+            // Create a packet with an invalid type
+            PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(22);
+            packetInfo.setType(99); // Invalid type
+            packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
+            packetInfo.setIpAddress(InetAddress.getByName("127.0.0.1"));
+            packetInfo.setPortNum(9100);
+            packetInfo.setPayload("Unknown type test".getBytes());
+            byte[] unknownPacket = PacketParser.getPacketParser().createPkt(packetInfo);
+
+            // Send the unknown packet
+            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
+                dataOut.write(unknownPacket);
+                dataOut.flush();
+            }
+            System.out.println("Sent a packet with an unknown type.");
+            Thread.sleep(500); // Give server time to process
+
+            // Send a valid packet to ensure the server is still responsive
+            System.out.println("Sending a valid HELLO packet to check server status...");
+            try (Socket testSocket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                DataOutputStream out = new DataOutputStream(testSocket.getOutputStream());
+                DataInputStream in = new DataInputStream(testSocket.getInputStream());
+
+                byte[] helloPacket = getHelloPacket(new ClientNode("127.0.0.1", testSocket.getLocalPort()));
+                out.write(helloPacket);
+
+                // The server should respond with a NETWORK packet.
+                testSocket.setSoTimeout(2000);
+                byte[] response = in.readAllBytes();
+                if (response.length > 0) {
+                    System.out.println("Server responded to valid packet after unknown one. Server is stable.");
+                } else {
+                    System.out.println("Server did NOT respond after unknown packet.");
+                }
+            }
+
+        } catch (Exception e) {
+            // If this exception happens, it might mean the server died.
+            System.out.println("An exception occurred during the test, possibly because the server is down.");
+            e.printStackTrace();
+        } finally {
+            // Teardown
+            if (mainServer != null) {
+                mainServer.close();
+            }
+            System.out.println("Finished unknown packet type test.");
+        }
+    }
+
     @org.junit.jupiter.api.Test
     public void testHandleClientTimeout() throws InterruptedException {
         System.out.println("Testing client timeout...");
@@ -1220,7 +1242,9 @@ public class MainServerTest {
             byte[] alivePacket = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), NetworkConnectionType.ALIVE.ordinal(), clientNode, null));
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{alivePacket, clientNode, NetworkConnectionType.ALIVE.ordinal()});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1237,7 +1261,9 @@ public class MainServerTest {
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{closePacket, clientNode, NetworkConnectionType.CLOSE.ordinal()});
             Thread.sleep(500);
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1314,7 +1340,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, 0});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1456,7 +1484,9 @@ public class MainServerTest {
             pkt.setBroadcast(1);
             invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1476,7 +1506,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientANode), clientANode});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1494,7 +1526,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1513,7 +1547,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{otherServerNode, topology.getClusterIndex(otherServerNode)});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1607,7 +1643,9 @@ public class MainServerTest {
             pkt.setChunkLength(2);
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{PacketParser.getPacketParser().createPkt(pkt), clientNode, NetworkConnectionType.MODULE.ordinal()});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1626,7 +1664,9 @@ public class MainServerTest {
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
             mainServer.closeClient(clientNode);
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1710,7 +1750,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1749,7 +1791,9 @@ public class MainServerTest {
             pkt.setBroadcast(1);
             invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1766,7 +1810,9 @@ public class MainServerTest {
             pkt.setBroadcast(1);
             invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1783,7 +1829,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientANode), clientANode});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1799,7 +1847,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1817,7 +1867,9 @@ public class MainServerTest {
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{otherServerNode});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1884,7 +1936,9 @@ public class MainServerTest {
             }
             Thread.sleep(500);
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1901,7 +1955,9 @@ public class MainServerTest {
             byte[] packet = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), 99, clientNode, null));
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{packet, clientNode, 99});
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 
@@ -1921,8 +1977,9 @@ public class MainServerTest {
             }
             Thread.sleep(1000);
         } finally {
-            if (mainServer != null) mainServer.close();
+            if (mainServer != null) {
+                mainServer.close();
+            }
         }
     }
 }
-                                                
