@@ -125,9 +125,9 @@ public class AudioSynchronizer {
             expectedFeedNumber ++;
 
             // setting the decoder state before decoding
-            int predictedPCM = minFeedCPacket.predictedPCM();
-            int indexPCM = minFeedCPacket.indexPCM();
-            decoder.setState(predictedPCM, indexPCM);
+//            int predictedPCM = minFeedCPacket.predictedPCM();
+//            int indexPCM = minFeedCPacket.indexPCM();
+//            decoder.setState(predictedPCM, indexPCM);
 
             // playing the decoded audio sample
             this.audioPlayer.play(decoder.decode(minFeedCPacket.data()));

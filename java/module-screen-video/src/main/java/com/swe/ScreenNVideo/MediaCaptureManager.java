@@ -106,6 +106,12 @@ public class MediaCaptureManager implements CaptureManager {
         final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port, (k,v) -> updateImage(k,v));
         audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
 
+        try {
+            audioPlayer.init();
+        } catch (LineUnavailableException e) {
+            System.err.println("Unable to instantiate AudioPlayer");
+        }
+
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
         videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
 
@@ -160,7 +166,6 @@ public class MediaCaptureManager implements CaptureManager {
         viewer.setRequireCompressed(reqCompression);
         imageSynchronizers.computeIfAbsent(ip, k -> new ImageSynchronizer(videoComponent.getVideoCodec()));
         audioSynchronizers.computeIfAbsent(ip, k -> new AudioSynchronizer(this.audioPlayer));
-        rpc.call(Utils.SUBSCRIBE_AS_VIEWER, ip.getBytes());
     }
 
     private void removeViewer(final String ip) {
