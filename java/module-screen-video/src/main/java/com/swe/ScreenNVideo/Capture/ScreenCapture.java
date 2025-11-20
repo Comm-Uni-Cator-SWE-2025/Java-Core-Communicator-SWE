@@ -57,36 +57,38 @@ public class ScreenCapture extends ICapture {
     @Override
     public BufferedImage capture() throws AWTException {
 
+        if (robot == null) {
+            reInit();
+        }
+
         // Capture with timeout protection
         return executeWithTimeout(
-            () -> robot.createScreenCapture(screenRect),
-            "Screen capture"
+            () -> robot.createScreenCapture(screenRect)
         );
     }
 
     /**
      * Executes a task with timeout protection.
      *
+     * @param <T>  The return type of the task
      * @param task The task to execute
-     * @param operationName Name of the operation for error messages
-     * @param <T> The return type of the task
      * @return The result of the task
      * @throws AWTException if the operation times out, is interrupted, or fails
      */
-    private <T> T executeWithTimeout(Callable<T> task, String operationName) throws AWTException {
+    private <T> T executeWithTimeout(Callable<T> task) throws AWTException {
         try {
             Future<T> future = timeoutExecutor.submit(task);
             return future.get(CAPTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
-            String message = operationName + " timed out after " + CAPTURE_TIMEOUT_SECONDS + " seconds";
+            String message = "Screen capture" + " timed out after " + CAPTURE_TIMEOUT_SECONDS + " seconds";
             System.err.println(message);
             reInit();
             throw new AWTException(message);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new AWTException(operationName + " was interrupted: " + e.getMessage());
+            throw new AWTException("Screen capture" + " was interrupted: " + e.getMessage());
         } catch (Exception e) {
-            throw new AWTException(operationName + " failed: " + e.getMessage());
+            throw new AWTException("Screen capture" + " failed: " + e.getMessage());
         }
     }
 
@@ -101,5 +103,10 @@ public class ScreenCapture extends ICapture {
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void stop() {
+        robot = null;
     }
 }

@@ -176,6 +176,7 @@ public class VideoCapture extends ICapture {
         openWebcam();
     }
 
+
     /**
      * Set capture area and location.
      * NOTE: Due to constraints, calling this will NOT update the webcam
@@ -207,9 +208,11 @@ public class VideoCapture extends ICapture {
      * Closes the webcam to release the resource.
      * This is an important new method to call when you are done.
      */
-    public void close() {
+    @Override
+    public void stop() {
         if (webcam != null && webcam.isOpen()) {
             webcam.close();
+            webcam = null;
             System.out.println("Webcam closed.");
         }
     }

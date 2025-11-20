@@ -3,7 +3,6 @@ package com.swe.networking;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.swing.text.AttributeSet;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.Map;
@@ -161,6 +160,77 @@ public class CoalesceSendTest {
        coalesceSend.checkTimeout();
 
        assertEquals(1, coalescedPacketMap.size());
+    }
+
+    @Test
+    public void testMultiplePacketsInQueueWhenSending() throws Exception {
+        Map<String, CoalescedPacket> coalescedPacketMap = getInternalMap();
+
+        byte[] data = new byte[(maxSize / 3) - 5];
+        coalesceSend.handlePacket(data, destA, portA, (byte) 0x01);
+        coalesceSend.handlePacket(data, destA, portA, (byte) 0x02);
+        coalesceSend.handlePacket(data, destA, portA, (byte) 0x03);
+
+        assertEquals(1, coalescedPacketMap.size());
+
+        coalesceSend.handlePacket(new byte[10], destA, portA, (byte) 0x04);
+
+        assertEquals(0, coalescedPacketMap.size());
+    }
+
+    @Test
+    public void testMultiplePacketsInQueueOnTimeout() throws Exception {
+        Map<String, CoalescedPacket> coalescedPacketMap = getInternalMap();
+
+        coalesceSend.handlePacket(new byte[10], destA, portA, (byte) 0x01);
+        coalesceSend.handlePacket(new byte[20], destA, portA, (byte) 0x02);
+        coalesceSend.handlePacket(new byte[30], destA, portA, (byte) 0x03);
+
+        assertEquals(1, coalescedPacketMap.size());
+
+        Thread.sleep(maxTime + 10);
+
+        coalesceSend.checkTimeout();
+
+        assertEquals(0, coalescedPacketMap.size());
+    }
+
+    @Test
+    public void testReusingExistingCoalescedPacket() throws Exception {
+        Map<String, CoalescedPacket> coalescedPacketMap = getInternalMap();
+
+        coalesceSend.handlePacket(new byte[10], destA, portA, (byte) 0x01);
+        CoalescedPacket firstPacket = coalescedPacketMap.get(destinationA);
+
+        coalesceSend.handlePacket(new byte[20], destA, portA, (byte) 0x02);
+        CoalescedPacket secondPacket = coalescedPacketMap.get(destinationA);
+
+        assertEquals(1, coalescedPacketMap.size());
+        assertSame(firstPacket, secondPacket);
+        assertEquals(40, secondPacket.getTotalSize()); // 15 + 25 = 40
+    }
+
+    @Test
+    public void testUnknownHostExceptionInSendCoalescedPacket() throws Exception {
+        coalesceSend.handlePacket(new byte[10], destA, portA, (byte) 0x01);
+        
+        // Use reflection to call sendCoalescedPacket directly with an invalid destination
+        // that will cause UnknownHostException
+        java.lang.reflect.Method sendMethod = CoalesceSend.class.getDeclaredMethod(
+            "sendCoalescedPacket", String.class, CoalescedPacket.class);
+        sendMethod.setAccessible(true);
+        
+        Map<String, CoalescedPacket> coalescedPacketMap = getInternalMap();
+        CoalescedPacket packet = coalescedPacketMap.get(destinationA);
+        String invalidDestination = "invalid.host.name.that.does.not.exist:80";
+        
+        assertThrows(RuntimeException.class, () -> {
+            try {
+                sendMethod.invoke(coalesceSend, invalidDestination, packet);
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                throw e.getCause();
+            }
+        });
     }
 
 }

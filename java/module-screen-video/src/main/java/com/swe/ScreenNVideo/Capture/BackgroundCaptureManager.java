@@ -72,6 +72,8 @@ public final class BackgroundCaptureManager {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 if (!capCom.isScreenCaptureOn() && !capCom.isVideoCaptureOn()) {
+                    videoCapture.stop();
+                    screenCapture.stop();
                     Thread.sleep(Utils.SEC_IN_MS);
                     continue;
                 }
@@ -89,6 +91,7 @@ public final class BackgroundCaptureManager {
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }
                 } else {
+                    screenCapture.stop();
                     capCom.setLatestScreenFrame(null);
                 }
 
@@ -101,6 +104,7 @@ public final class BackgroundCaptureManager {
                         capCom.setLatestVideoFrame(null); // Clear frame on error
                     }
                 } else {
+                    videoCapture.stop();
                     capCom.setLatestVideoFrame(null);
                 }
             } catch (InterruptedException e) {

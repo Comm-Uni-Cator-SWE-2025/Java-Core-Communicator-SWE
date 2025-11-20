@@ -4,6 +4,7 @@
 
 package com.swe.ScreenNVideo;
 
+import com.google.gson.stream.JsonToken;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
@@ -16,10 +17,13 @@ import com.swe.ScreenNVideo.Model.CPackets;
 import com.swe.ScreenNVideo.Model.Feed;
 import com.swe.ScreenNVideo.Model.FeedPatch;
 import com.swe.ScreenNVideo.Model.RImage;
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -88,9 +92,14 @@ public class VideoComponents {
     private final CaptureComponents captureComponents;
 
     /**
-     * Backgound Thread that manages capturing task.
+     * Background Thread that manages capturing task.
      */
     private final BackgroundCaptureManager bgCapManager;
+
+    /**
+     *
+     */
+    private final int port;
 
     public boolean isVideoCaptureOn() {
         return captureComponents.isVideoCaptureOn();
@@ -101,9 +110,10 @@ public class VideoComponents {
     }
 
 
-    VideoComponents(final int fps, final AbstractRPC rpcArg, final CaptureComponents captureComponentsArgs,
+    VideoComponents(final int fps, final int portArgs, final CaptureComponents captureComponentsArgs,
                     final BackgroundCaptureManager bgCapManagerArgs) {
-        this.rpc = rpcArg;
+        this.rpc = Context.getInstance().rpc;
+        this.port = portArgs;
         this.captureComponents = captureComponentsArgs;
         this.bgCapManager = bgCapManagerArgs;
         final IHasher hasher = new Hasher(Utils.HASH_STRIDE);
@@ -151,6 +161,7 @@ public class VideoComponents {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
+
 
                     final RImage rImage = new RImage(frame, localIp);
                     final byte[] serializedImage = rImage.serialize();
@@ -218,7 +229,7 @@ public class VideoComponents {
             return null;
         }
         final byte[] feed = audioEncoder.encode(audioFeed);
-        final APackets audioPacket = new APackets(audioFeedNumber, feed);
+        final APackets audioPacket = new APackets(audioFeedNumber, feed, localIp, audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
         byte[] encodedPacket = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;

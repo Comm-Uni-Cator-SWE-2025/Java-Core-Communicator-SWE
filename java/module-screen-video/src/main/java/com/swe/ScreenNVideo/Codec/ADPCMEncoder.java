@@ -225,4 +225,8 @@ public class ADPCMEncoder {
     private int clamp(final int value, final int min, final int max) {
         return Math.max(min, Math.min(max, value));
     }
+
+    public int getPredictor() { return this.predictor; }
+
+    public int getIndex() { return this.index; }
 }

@@ -158,4 +158,10 @@ public class ADPCMDecoder {
         predictor = 0;
         index = 0;
     }
+
+    public void setState(int predictor, int index) {
+        this.predictor = predictor;
+        this.index = index;
+    }
+
 }
