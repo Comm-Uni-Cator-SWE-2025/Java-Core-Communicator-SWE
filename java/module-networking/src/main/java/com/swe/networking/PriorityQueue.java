@@ -30,7 +30,7 @@ public class PriorityQueue {
     /**
      * Time for each epoch (budget reset).
      */
-    private static final int EPOCH_MS = 10;
+    private static final int EPOCH_MS = 400;
     /**
      * Total number of packets to be sent in one epoch.
      */
@@ -231,8 +231,10 @@ public class PriorityQueue {
      * @return The packet data, or null.
      */
     private byte[] processHighestPriority() {
+        NetworkLogger.printInfo(MODULENAME, "started accessing highest priority function");
         if (!highestPriorityQueue.isEmpty()
                 && currentBudget.get(PacketPriority.ZERO) > 0) {
+            NetworkLogger.printInfo(MODULENAME, "Highest priority loop started...");
             currentBudget.put(PacketPriority.ZERO,
                     currentBudget.get(PacketPriority.ZERO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent");
@@ -322,21 +324,26 @@ public class PriorityQueue {
     private byte[] trySendNext() {
         // 1. Reset budgets every epoch
         if (getTotalRemainingBudget() <= 0) {
+            NetworkLogger.printInfo(MODULENAME, "Reset from try next due to budget");
             resetBudgets();
         }
 
         final long now = System.currentTimeMillis();
 
         if (now - lastEpochReset >= EPOCH_MS) {
+            NetworkLogger.printInfo(MODULENAME, "Reset from try next due to time");
             resetBudgets();
         }
 
         // 2. Rotate MLFQ queues
         rotateQueues();
+        NetworkLogger.printInfo(MODULENAME, "Rotation done");
 
         // 3. Process priorities in order: P1 > P2 > P3
         // Highest Priority (P1/ZERO)
+        NetworkLogger.printInfo(MODULENAME, "Before processing highest Priority");
         byte[] packet = processHighestPriority();
+        NetworkLogger.printInfo(MODULENAME, "after processing highest Priority");
         if (packet != null) {
             return packet;
         }
@@ -361,8 +368,8 @@ public class PriorityQueue {
      * @return the next packet's data, or null if none available
      */
     public synchronized byte[] nextPacket() {
+        NetworkLogger.printInfo(MODULENAME, "Next packet called");
         byte[] packet;
-        final int maxRetryCount = 10;
         int retryCount = 0;
 
         while (true) {
@@ -372,7 +379,10 @@ public class PriorityQueue {
             }
 
             // Gets the Packet from tryNextSend.
+            NetworkLogger.printInfo(MODULENAME, "Before trySendNext");
             packet = trySendNext();
+            NetworkLogger.printInfo(MODULENAME, "After getting the packet");
+            NetworkLogger.printInfo(MODULENAME, "Number of retries " + retryCount);
             if (packet != null) {
                 numPacketsSent++;
                 return packet;
@@ -386,11 +396,7 @@ public class PriorityQueue {
             }
 
             retryCount++;
-            // optional safety escape
-            if (retryCount > maxRetryCount) {
-                NetworkLogger.printInfo(MODULENAME, "Max number of retires has been reached, Returning null.");
-                return null;
-            }
+
         }
 
     }
