@@ -218,7 +218,7 @@ public class VideoComponents {
             return null;
         }
         final byte[] feed = audioEncoder.encode(audioFeed);
-        final APackets audioPacket = new APackets(audioFeedNumber, feed);
+        final APackets audioPacket = new APackets(audioFeedNumber, feed, localIp, audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
         byte[] encodedPacket = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;

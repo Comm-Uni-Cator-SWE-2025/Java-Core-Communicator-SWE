@@ -61,6 +61,14 @@ public class AudioPlayer {
 
     public void play(final byte[] pcmBytes) {
         if (line != null) {
+            int free = line.available();   // number of bytes currently free in internal buffer
+
+            // If not enough space, drop audio
+            if (free < pcmBytes.length) {
+                // drop the chunk
+                return;
+            }
+
             line.write(pcmBytes, 0, pcmBytes.length);
         }
     }
