@@ -20,11 +20,11 @@ public final class Topology implements AbstractTopology {
      * The List of all cluster clients.
      *
      */
-    private final List<List<ClientNode>> clusters;
+    private List<List<ClientNode>> clusters;
     /**
      * The List of all servers of all clusters.
      */
-    private final List<ClientNode> clusterServers;
+    private List<ClientNode> clusterServers;
     /**
      * The total number of clusters.
      *
@@ -150,6 +150,8 @@ public final class Topology implements AbstractTopology {
      */
     public void closeTopology() {
         user.close();
+        clusters = new ArrayList<>();
+        clusterServers = new ArrayList<>();
         NetworkLogger.printInfo(MODULENAME, "Closing topology...");
     }
 

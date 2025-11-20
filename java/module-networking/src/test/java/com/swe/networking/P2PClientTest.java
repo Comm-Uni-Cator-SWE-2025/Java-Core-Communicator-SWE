@@ -1,10 +1,6 @@
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;

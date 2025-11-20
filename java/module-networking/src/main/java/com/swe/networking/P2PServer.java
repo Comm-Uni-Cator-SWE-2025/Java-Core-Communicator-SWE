@@ -101,7 +101,7 @@ public class P2PServer implements P2PUser {
 //        sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
-        sendThread.start();
+//        sendThread.start();
         receiveThread.start();
 
         System.out.println("P2PServer");
@@ -405,6 +405,7 @@ public class P2PServer implements P2PUser {
      */
     @Override
     public void close() {
+        SplitPackets.getSplitPackets().emptyBuffer();
         communicator.close();
         receiveThread.interrupt();
         sendThread.interrupt();

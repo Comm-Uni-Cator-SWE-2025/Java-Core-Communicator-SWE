@@ -82,7 +82,7 @@ public class ChunkManager {
         final String msgId = String.valueOf(info.getMessageId()) + ":" + info.getIpAddress().toString();
         final int maxNumChunks = info.getChunkLength();
         final int chunkId = info.getChunkNum();
-        System.out.println("Chunk id / total chunks " + chunkId + " / " + maxNumChunks + " " + msgId);
+        System.out.println("Chunk id / total chunks " + chunkId + " / " + maxNumChunks);
         if (chunkListMap.containsKey(msgId)) {
             chunkListMap.get(msgId).add(chunk);
         } else {
@@ -92,7 +92,6 @@ public class ChunkManager {
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
             // TOD use appropriate function once the message is ready
-            System.out.println("message length: " + messageChunk.length);
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
             return messageChunk;

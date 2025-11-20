@@ -89,7 +89,7 @@ public class MainServer implements P2PUser {
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
-       timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         NetworkLogger.printInfo("MainServer", "Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -385,7 +385,7 @@ public class MainServer implements P2PUser {
         // send add packet to all cluster clients of this cluster
         final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
         for (ClientNode client : clients) {
-            if (client.equals(mainserver)) {
+            if (client.equals(mainserver) || client.equals(dest)) {
                 continue;
             }
             sendAddPktResponse(dest, client, clusterIdx);
@@ -410,6 +410,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+        SplitPackets.getSplitPackets().emptyBuffer();
 //        timer.close();
     }
 
