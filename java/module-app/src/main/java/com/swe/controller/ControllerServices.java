@@ -1,21 +1,17 @@
 package com.swe.controller;
 
 import functionlibrary.CloudFunctionLibrary;
-import com.swe.core.Meeting.UserProfile;
-import com.swe.core.Meeting.MeetingSession;
-import com.swe.core.RPC;
+import com.swe.core.Context;
 
 public class ControllerServices {
     private static ControllerServices instance;
 
-    public RPC rpc;
     public NetworkingInterface networking;
-    public UserProfile self;
-    public MeetingSession meetingSession;
     public CloudFunctionLibrary cloud;
+    public Context context;
 
     private ControllerServices() {
-
+        context = Context.getInstance();
     }
 
     public static ControllerServices getInstance() {

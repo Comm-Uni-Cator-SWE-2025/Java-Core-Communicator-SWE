@@ -46,7 +46,7 @@ public class MainController {
         final RPC rpc = new RPC();
 
         final MediaCaptureManager screenNVideo =
-            new MediaCaptureManager(networking, rpc, SERVERPORT);
+            new MediaCaptureManager(networking, SERVERPORT);
         System.out.println("Connection RPC..");
 
 

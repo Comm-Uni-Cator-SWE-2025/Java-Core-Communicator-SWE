@@ -1,8 +1,7 @@
 package com.swe.networking;
 
-import java.nio.channels.SocketChannel;
-
 import com.swe.core.ClientNode;
+import java.nio.channels.SocketChannel;
 
 /**
  * Common interface to send data using various protocols.

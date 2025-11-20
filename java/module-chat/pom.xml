@@ -19,7 +19,7 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.swe</groupId>
+      <groupId>com.swe.networking</groupId>
       <artifactId>module-networking</artifactId>
       <version>${project.version}</version>
     </dependency>

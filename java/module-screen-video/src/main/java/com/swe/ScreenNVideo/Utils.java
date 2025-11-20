@@ -4,6 +4,10 @@
 
 package com.swe.ScreenNVideo;
 
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
+import com.swe.core.Meeting.MeetingSession;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
@@ -11,6 +15,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Map;
 
 /**
  * Utility class for ScreenN Video.
@@ -229,6 +234,22 @@ public class Utils {
         for (int i = 0; i < height; i++) {
             System.arraycopy(srcMatrix[i], 0, dstMatrix[i], 0, width);
         }
+    }
+
+    public static String getEmailFromIp(ClientNode ipNode) {
+        final MeetingSession meetingSession = Context.getInstance().meetingSession;
+        if (meetingSession == null) {
+            return null;
+        }
+        final Map<ClientNode, String> ipToEmail = meetingSession.getNodeToEmailMap();
+        if (ipToEmail == null) {
+            return null;
+        }
+        System.out.println(ipNode.port());
+        ipToEmail.forEach((p,v) -> {
+            System.out.println(p.hostName() + " " + v);
+        });
+        return ipToEmail.get(ipNode);
     }
 
 }

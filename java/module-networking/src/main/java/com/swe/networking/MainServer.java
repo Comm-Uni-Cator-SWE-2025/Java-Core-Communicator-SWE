@@ -89,7 +89,7 @@ public class MainServer implements P2PUser {
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
-       timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
+        timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
         NetworkLogger.printInfo("MainServer", "Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
@@ -148,31 +148,39 @@ public class MainServer implements P2PUser {
      */
     private void parsePacket(final byte[] packet) {
         try {
-            final int connectionType = parser.parsePacket(packet).getConnectionType();
-            final int type = parser.parsePacket(packet).getType();
-            final InetAddress destInet = parser.parsePacket(packet).getIpAddress();
+            final PacketInfo packetInfo = parser.parsePacket(packet);
+            final int connectionType = packetInfo.getConnectionType();
+            final int type = packetInfo.getType();
+            final InetAddress destInet = packetInfo.getIpAddress();
             final String destinationIp = destInet.getHostAddress();
-            final int destinationPort = parser.parsePacket(packet).getPortNum();
+            final int destinationPort = packetInfo.getPortNum();
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
             NetworkLogger.printInfo("MainServer", "Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
             // check for broadcast packet
-            if (parser.parsePacket(packet).getBroadcast() == 1) {
-                for (ClientNode c : topology.getAllClusterServers()) {
-                    if (!c.equals(mainserver) && !c.equals(dest)) {
-                        send(packet, c);
-                    }
-                }
+            if (packetInfo.getBroadcast() == 1) {
+                handleBroadcast(packetInfo);
+                packetInfo.setBroadcast(0);
+                packetInfo.setType(NetworkType.USE.ordinal());
             }
             if (type == NetworkType.USE.ordinal()) {
                 handleUsePacket(packet, dest, connectionType);
-            } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
-                // might new to change the type to SAMECLUSTER
-                final ClientNode newDest = topology.getServer(dest);
-                send(packet, newDest);
             } else if (type == NetworkType.SAMECLUSTER.ordinal()) {
-                send(packet, dest);
+                final PacketInfo pktInfo = parser.parsePacket(packet);
+                pktInfo.setType(NetworkType.USE.ordinal());
+                final byte[] newPacket = parser.createPkt(pktInfo);
+                send(newPacket, dest);
+            } else if (type == NetworkType.OTHERCLUSTER.ordinal()) {
+                final ClientNode clusterServer = topology.getServer(dest);
+                if (clusterServer.equals(dest)) {
+                    packetInfo.setType(NetworkType.USE.ordinal());
+                } else {
+                    packetInfo.setType(NetworkType.SAMECLUSTER.ordinal());
+                }
+                send(packet, clusterServer);
+            } else {
+                System.out.println("Unknown packet type received.");
             }
         } catch (UnknownHostException ex) {
         }
@@ -200,13 +208,49 @@ public class MainServer implements P2PUser {
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
                 if (data != null) {
-                    networking.callSubscriber(module, data);
+                    networking.callSubscriber(module, parser.parsePacket(data).getPayload());
                 }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                 NetworkLogger.printInfo("MainServer", "Closing the Main Server");
             }
         } catch (UnknownHostException ex) {
         }
+    }
+
+    /**
+     * Function to handle broadcasting a packet.
+     *
+     * @param packetInfo function to handle packet.
+     */
+    private void handleBroadcast(final PacketInfo packetInfo) {
+        if (packetInfo.getType() == NetworkType.USE.ordinal()) {
+            // send to other servers
+            final List<ClientNode> servers = topology.getAllClusterServers();
+            for (ClientNode server : servers) {
+                if (server.equals(mainserver)) {
+                    continue;
+                }
+                packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
+                final byte[] newPacket = parser.createPkt(packetInfo);
+                send(newPacket, server);
+            }
+        } else if (packetInfo.getType() == NetworkType.OTHERCLUSTER.ordinal()) {
+            // to just send to clients in the cluster
+            final List<ClientNode> dests = topology.getClients(topology.getClusterIndex(mainserver));
+            for (ClientNode dest : dests) {
+                if (dest.equals(mainserver)) {
+                    continue;
+                }
+                packetInfo.setType(NetworkType.USE.ordinal());
+                packetInfo.setBroadcast(0);
+                final byte[] newPacket = parser.createPkt(packetInfo);
+                send(newPacket, dest);
+            }
+        } else {
+            System.out.println("Broadcast packet of unknown type received at P2PServer.");
+            return;
+        }
+
     }
 
     /**
@@ -341,7 +385,7 @@ public class MainServer implements P2PUser {
         // send add packet to all cluster clients of this cluster
         final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
         for (ClientNode client : clients) {
-            if (client.equals(mainserver)) {
+            if (client.equals(mainserver) || client.equals(dest)) {
                 continue;
             }
             sendAddPktResponse(dest, client, clusterIdx);
@@ -366,6 +410,7 @@ public class MainServer implements P2PUser {
     public void close() {
         receiveThread.interrupt();
         communicator.close();
+        SplitPackets.getSplitPackets().emptyBuffer();
 //        timer.close();
     }
 

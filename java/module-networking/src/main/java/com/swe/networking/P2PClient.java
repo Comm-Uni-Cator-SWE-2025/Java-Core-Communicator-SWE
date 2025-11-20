@@ -4,9 +4,7 @@ import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The Client belonging to a certain cluster.
@@ -50,7 +48,7 @@ public class P2PClient implements P2PUser {
     /**
      * alive thread manager.
      */
-    private final ScheduledExecutorService aliveScheduler;
+    private final ScheduledExecutorService aliveScheduler = null;
 
     /**
      * time interval gap to send alive packet.
@@ -89,7 +87,7 @@ public class P2PClient implements P2PUser {
         this.receiveThread.start();
 
         // start a scheduled ALIVE packets to the cluster server
-        this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
+        // this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
         // this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
         //         ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
@@ -178,13 +176,6 @@ public class P2PClient implements P2PUser {
         System.out.println("p2pclient received packet from: " + deviceAddress.hostName());
         try {
             final PacketInfo info = parser.parsePacket(packet);
-            if (info.getBroadcast() == 1) {
-                info.setIpAddress(InetAddress.getByName(deviceAddress.hostName()));
-                info.setPortNum(deviceAddress.port());
-                final byte[] modifiedPacket = parser.createPkt(info);
-                communicator.sendData(modifiedPacket, clusterServerAddress);
-                return;
-            }
             final int typeInt = info.getType();
             final NetworkType type = NetworkType.getType(typeInt);
 
@@ -311,7 +302,7 @@ public class P2PClient implements P2PUser {
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
-
+        SplitPackets.getSplitPackets().emptyBuffer();
         System.out.println("p2pclient closed");
     }
 }

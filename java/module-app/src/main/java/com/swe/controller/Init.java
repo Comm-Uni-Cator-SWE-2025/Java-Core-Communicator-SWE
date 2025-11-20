@@ -31,29 +31,28 @@ public class Init {
         CloudFunctionLibrary cloud = new CloudFunctionLibrary();
 
         ControllerServices controllerServices = ControllerServices.getInstance();
-        controllerServices.rpc = rpc;
+        controllerServices.context.rpc = rpc;
         controllerServices.cloud = cloud;
 
         // Provide RPC somehow here
-        // NetworkingInterface networking = new SimpleNetworkingAdapter(SimpleNetworking.getSimpleNetwork());
         NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
         networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork(), rpc);
+        new ChatManager(Networking.getNetwork());
 
-        MediaCaptureManager
-            mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), rpc, portNumber);
-        Thread mediaCaptureManagerThread = new Thread(() -> {
-            try {
-                mediaCaptureManager.startCapture();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        mediaCaptureManagerThread.start();
+        // MediaCaptureManager
+        //     mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
+        // Thread mediaCaptureManagerThread = new Thread(() -> {
+        //     try {
+        //         mediaCaptureManager.startCapture();
+        //     } catch (ExecutionException | InterruptedException e) {
+        //         throw new RuntimeException(e);
+        //     }
+        // });
+        // mediaCaptureManagerThread.start();
 
         addRPCSubscriptions(rpc);
 
@@ -61,7 +60,7 @@ public class Init {
         Thread rpcThread = rpc.connect(portNumber);
 
         rpcThread.join();
-        mediaCaptureManagerThread.join();
+        // mediaCaptureManagerThread.join();
     }
 
     private static void addRPCSubscriptions(RPC rpc) {
@@ -79,7 +78,7 @@ public class Init {
                 return new byte[0];
             }
 
-            controllerServices.self = RegisteredUser;
+            controllerServices.context.self = RegisteredUser;
             
             try {
                 return DataSerializer.serialize(RegisteredUser);
@@ -90,9 +89,8 @@ public class Init {
 
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
             System.out.println("[CONTROLLER] Creating meeting");
-            final MeetingSession meetingSession =
-                MeetingServices.createMeeting(controllerServices.self, SessionMode.CLASS);
-            controllerServices.meetingSession = meetingSession;
+            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.context.self, SessionMode.CLASS);
+            controllerServices.context.meetingSession = meetingSession;
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
@@ -140,6 +138,20 @@ public class Init {
             }
 
             return meetId;
+        });
+
+        rpc.subscribe("core/logout", (byte[] userData) -> {
+            System.out.println("Logging out user");
+            try {
+                AuthService.logout();
+                System.out.println("User logged out successfully");
+                // Clear the current user profile from context
+                controllerServices.context.self = null;
+                return "Logged out successfully".getBytes(StandardCharsets.UTF_8);
+            } catch (GeneralSecurityException | IOException e) {
+                System.out.println("Error logging out user: " + e.getMessage());
+                return ("Error logging out: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
         });
     }
 }

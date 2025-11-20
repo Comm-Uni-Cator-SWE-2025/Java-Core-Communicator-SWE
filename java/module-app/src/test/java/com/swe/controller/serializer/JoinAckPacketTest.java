@@ -16,24 +16,34 @@ public class JoinAckPacketTest {
 
     @org.junit.jupiter.api.Test
     public void testBasicRoundTrip() {
-        final Map<ClientNode, String> map = new HashMap<>();
-        map.put(new ClientNode("192.168.1.1", 8080), "user1@example.com");
-        map.put(new ClientNode("192.168.1.2", 8081), "user2@example.com");
+        final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+        nodeToEmailMap.put(new ClientNode("192.168.1.1", 8080), "user1@example.com");
+        nodeToEmailMap.put(new ClientNode("192.168.1.2", 8081), "user2@example.com");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        emailToDisplayNameMap.put("user1@example.com", "John Doe");
+        emailToDisplayNameMap.put("user2@example.com", "Jane Smith");
+
+        final JoinAckPacket original = new JoinAckPacket(nodeToEmailMap, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
-        final Map<ClientNode, String> deserializedMap = deserialized.getNodeToEmailMap();
-        assertEquals(2, deserializedMap.size());
-        assertEquals("user1@example.com", deserializedMap.get(new ClientNode("192.168.1.1", 8080)));
-        assertEquals("user2@example.com", deserializedMap.get(new ClientNode("192.168.1.2", 8081)));
+        final Map<ClientNode, String> deserializedNodeMap = deserialized.getNodeToEmailMap();
+        assertEquals(2, deserializedNodeMap.size());
+        assertEquals("user1@example.com", deserializedNodeMap.get(new ClientNode("192.168.1.1", 8080)));
+        assertEquals("user2@example.com", deserializedNodeMap.get(new ClientNode("192.168.1.2", 8081)));
+
+        final Map<String, String> deserializedDisplayNameMap = deserialized.getEmailToDisplayNameMap();
+        assertEquals(2, deserializedDisplayNameMap.size());
+        assertEquals("John Doe", deserializedDisplayNameMap.get("user1@example.com"));
+        assertEquals("Jane Smith", deserializedDisplayNameMap.get("user2@example.com"));
     }
 
     @org.junit.jupiter.api.Test
     public void testEmptyMap() {
         final Map<ClientNode, String> map = new HashMap<>();
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -45,7 +55,8 @@ public class JoinAckPacketTest {
         final Map<ClientNode, String> map = new HashMap<>();
         map.put(new ClientNode("127.0.0.1", 6942), "single@test.com");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -61,7 +72,8 @@ public class JoinAckPacketTest {
             map.put(new ClientNode("192.168.1." + (i + 1), 8000 + i), "user" + i + "@example.com");
         }
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -79,7 +91,8 @@ public class JoinAckPacketTest {
         map.put(new ClientNode("192.168.1.1", 8080), "");
         map.put(new ClientNode("192.168.1.2", 8081), "");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -95,7 +108,8 @@ public class JoinAckPacketTest {
         final String longEmail = "a".repeat(500) + "@example.com";
         map.put(new ClientNode("192.168.1.1", 8080), longEmail);
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -109,7 +123,8 @@ public class JoinAckPacketTest {
         map.put(new ClientNode("192.168.1.1", 8080), "tëst@exämple.com");
         map.put(new ClientNode("192.168.1.2", 8081), "用户@例子.中国");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -125,7 +140,8 @@ public class JoinAckPacketTest {
         map.put(new ClientNode("192.168.1.1", 65535), "user2@test.com");
         map.put(new ClientNode("192.168.1.1", 8080), "user3@test.com");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -145,7 +161,8 @@ public class JoinAckPacketTest {
         map.put(new ClientNode("172.16.0.1", 8080), "user4@test.com");
         map.put(new ClientNode("192.168.1.1", 8080), "user5@test.com");
 
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
         final JoinAckPacket deserialized = JoinAckPacket.deserialize(serialized);
 
@@ -156,9 +173,18 @@ public class JoinAckPacketTest {
     }
 
     @org.junit.jupiter.api.Test
-    public void testNullMap() {
+    public void testNullNodeToEmailMap() {
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
         assertThrows(IllegalArgumentException.class, () -> {
-            new JoinAckPacket(null);
+            new JoinAckPacket(null, emailToDisplayNameMap);
+        });
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testNullEmailToDisplayNameMap() {
+        final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+        assertThrows(IllegalArgumentException.class, () -> {
+            new JoinAckPacket(nodeToEmailMap, null);
         });
     }
 
@@ -181,7 +207,8 @@ public class JoinAckPacketTest {
     public void testDeserializeWrongPacketType() {
         final Map<ClientNode, String> map = new HashMap<>();
         map.put(new ClientNode("192.168.1.1", 8080), "user@example.com");
-        final JoinAckPacket original = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket original = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = original.serialize();
 
         // Corrupt the packet type byte
@@ -271,22 +298,26 @@ public class JoinAckPacketTest {
     @org.junit.jupiter.api.Test
     public void testMinimumSizeEmptyMap() {
         final Map<ClientNode, String> map = new HashMap<>();
-        final JoinAckPacket packet = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        final JoinAckPacket packet = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = packet.serialize();
 
-        // Minimum: 1 (type) + 4 (entry count = 0) = 5 bytes
-        assertEquals(5, serialized.length);
+        // Minimum: 1 (type) + 4 (nodeToEmailMap count = 0) + 4 (emailToDisplayNameMap count = 0) = 9 bytes
+        assertEquals(9, serialized.length);
     }
 
     @org.junit.jupiter.api.Test
     public void testSizeSingleEntry() {
         final Map<ClientNode, String> map = new HashMap<>();
         map.put(new ClientNode("192.168.1.1", 8080), "");
-        final JoinAckPacket packet = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        emailToDisplayNameMap.put("", "");
+        final JoinAckPacket packet = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = packet.serialize();
 
-        // 1 (type) + 4 (count) + 4 (IP) + 2 (port) + 0 (email, no length prefix for last) = 11 bytes
-        assertEquals(11, serialized.length);
+        // 1 (type) + 4 (nodeToEmailMap count) + 4 (IP) + 2 (port) + 4 (email len) + 0 (email) + 
+        // 4 (emailToDisplayNameMap count) + 4 (email len) + 0 (email) + 4 (displayName len) + 0 (displayName) = 27 bytes
+        assertEquals(27, serialized.length);
     }
 
     @org.junit.jupiter.api.Test
@@ -294,13 +325,19 @@ public class JoinAckPacketTest {
         final Map<ClientNode, String> map = new HashMap<>();
         map.put(new ClientNode("192.168.1.1", 8080), "user1@test.com");
         map.put(new ClientNode("192.168.1.2", 8081), "user2@test.com");
-        final JoinAckPacket packet = new JoinAckPacket(map);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        emailToDisplayNameMap.put("user1@test.com", "User1");
+        emailToDisplayNameMap.put("user2@test.com", "User2");
+        final JoinAckPacket packet = new JoinAckPacket(map, emailToDisplayNameMap);
         final byte[] serialized = packet.serialize();
 
-        // 1 (type) + 4 (count) + 
+        // 1 (type) + 4 (nodeToEmailMap count) + 
         // Entry 1: 4 (IP) + 2 (port) + 4 (email len) + 13 (email) +
-        // Entry 2: 4 (IP) + 2 (port) + 13 (email, no length prefix)
-        final int expectedSize = 1 + 4 + (4 + 2 + 4 + 13) + (4 + 2 + 13);
+        // Entry 2: 4 (IP) + 2 (port) + 4 (email len) + 13 (email) +
+        // 4 (emailToDisplayNameMap count) +
+        // Entry 1: 4 (email len) + 13 (email) + 4 (displayName len) + 5 (displayName) +
+        // Entry 2: 4 (email len) + 13 (email) + 4 (displayName len) + 5 (displayName)
+        final int expectedSize = 1 + 4 + (4 + 2 + 4 + 13) + (4 + 2 + 4 + 13) + 4 + (4 + 13 + 4 + 5) + (4 + 13 + 4 + 5);
         assertEquals(expectedSize, serialized.length);
     }
 
@@ -310,8 +347,12 @@ public class JoinAckPacketTest {
         map.put(new ClientNode("192.168.1.1", 8080), "user1@example.com");
         map.put(new ClientNode("192.168.1.2", 8081), "user2@example.com");
         map.put(new ClientNode("192.168.1.3", 8082), "user3@example.com");
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        emailToDisplayNameMap.put("user1@example.com", "User1");
+        emailToDisplayNameMap.put("user2@example.com", "User2");
+        emailToDisplayNameMap.put("user3@example.com", "User3");
 
-        JoinAckPacket packet = new JoinAckPacket(map);
+        JoinAckPacket packet = new JoinAckPacket(map, emailToDisplayNameMap);
 
         // Perform 5 round-trips
         for (int i = 0; i < 5; i++) {
@@ -324,13 +365,21 @@ public class JoinAckPacketTest {
         assertEquals("user1@example.com", finalMap.get(new ClientNode("192.168.1.1", 8080)));
         assertEquals("user2@example.com", finalMap.get(new ClientNode("192.168.1.2", 8081)));
         assertEquals("user3@example.com", finalMap.get(new ClientNode("192.168.1.3", 8082)));
+
+        final Map<String, String> finalDisplayNameMap = packet.getEmailToDisplayNameMap();
+        assertEquals(3, finalDisplayNameMap.size());
+        assertEquals("User1", finalDisplayNameMap.get("user1@example.com"));
+        assertEquals("User2", finalDisplayNameMap.get("user2@example.com"));
+        assertEquals("User3", finalDisplayNameMap.get("user3@example.com"));
     }
 
     @org.junit.jupiter.api.Test
     public void testGetNodeToEmailMapReturnsCopy() {
         final Map<ClientNode, String> originalMap = new HashMap<>();
         originalMap.put(new ClientNode("192.168.1.1", 8080), "user@example.com");
-        final JoinAckPacket packet = new JoinAckPacket(originalMap);
+        final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+        emailToDisplayNameMap.put("user@example.com", "User");
+        final JoinAckPacket packet = new JoinAckPacket(originalMap, emailToDisplayNameMap);
 
         final Map<ClientNode, String> map1 = packet.getNodeToEmailMap();
         final Map<ClientNode, String> map2 = packet.getNodeToEmailMap();
@@ -345,15 +394,22 @@ public class JoinAckPacketTest {
     public void testConstructorDefensiveCopy() {
         final Map<ClientNode, String> originalMap = new HashMap<>();
         originalMap.put(new ClientNode("192.168.1.1", 8080), "user@example.com");
-        final JoinAckPacket packet = new JoinAckPacket(originalMap);
+        final Map<String, String> originalDisplayNameMap = new HashMap<>();
+        originalDisplayNameMap.put("user@example.com", "User");
+        final JoinAckPacket packet = new JoinAckPacket(originalMap, originalDisplayNameMap);
 
-        // Modify original map
+        // Modify original maps
         originalMap.put(new ClientNode("192.168.1.2", 8081), "user2@example.com");
+        originalDisplayNameMap.put("user2@example.com", "User2");
 
         // Packet should not be affected
         final Map<ClientNode, String> packetMap = packet.getNodeToEmailMap();
         assertEquals(1, packetMap.size());
         assertEquals(2, originalMap.size());
+        
+        final Map<String, String> packetDisplayNameMap = packet.getEmailToDisplayNameMap();
+        assertEquals(1, packetDisplayNameMap.size());
+        assertEquals(2, originalDisplayNameMap.size());
     }
 }
 
