@@ -109,13 +109,7 @@ public class MediaCaptureManager implements CaptureManager {
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
         videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
 
-        captureComponents.startAudioLoop();
         backgroundCaptureManager.start();
-        try {
-            audioPlayer.init();
-        } catch (LineUnavailableException e) {
-            System.err.println("Unable to connect to Line");
-        }
 
         imageSynchronizers = new HashMap<>();
         audioSynchronizers = new HashMap<>();
@@ -211,11 +205,6 @@ public class MediaCaptureManager implements CaptureManager {
             networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
 //            sendDataToViewers(encodedAudio, viewer -> true);
         }
-    }
-
-    @Override
-    public void updateIpToEmail(HashMap<String, String> ipMap) {
-
     }
 
     /**
@@ -377,13 +366,7 @@ public class MediaCaptureManager implements CaptureManager {
                         return;
                     }
 
-                    final ClientNode ipNode = new ClientNode(networkPackets.ip(), port);
-                    final String email = Utils.getEmailFromIp(ipNode);
-                    if (email == null) {
-                        return;
-                    }
-
-                    final RImage rImage = new RImage(image, email);
+                    final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     System.out.println("Sending to UI" + ("; Expected : "
                         + imageSynchronizer.getExpectedFeedNumber()));

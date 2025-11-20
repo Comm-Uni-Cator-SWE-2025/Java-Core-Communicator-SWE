@@ -161,15 +161,9 @@ public class VideoComponents {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
-                    final ClientNode ipNode = new ClientNode(localIp, port);
-                    final String email = Utils.getEmailFromIp(ipNode);
-                    System.out.println("IP " + localIp + " " + email);
-                    if (email == null) {
-                        continue;
-                    }
 
 
-                    final RImage rImage = new RImage(frame, email);
+                    final RImage rImage = new RImage(frame, localIp);
                     final byte[] serializedImage = rImage.serialize();
 
                     if (serializedImage == null) {

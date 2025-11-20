@@ -18,6 +18,8 @@ public abstract class ICapture {
 
     public abstract void reInit();
 
+    public abstract void stop();
+
     /** Number of color channels in RGB. */
     private static final int CHANNELS = 3;
 
