@@ -13,6 +13,10 @@ public enum NetworkPacketType {
      */
     LIST_CPACKETS,
     /**
+     * Depicts a request to send full audio data.
+     */
+    ASK_FOR_AUDIO,
+    /**
      * Depicts a request to subscribe as a viewer.
      */
     SUBSCRIBE_AS_VIEWER,

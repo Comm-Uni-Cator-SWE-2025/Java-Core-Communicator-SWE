@@ -93,6 +93,9 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
 
     @Override
     public byte[] getChunk() {
+        if (running == false) {
+            init();
+        }
         return audioQueue.poll(); // returns null if empty (non-blocking)
     }
 
@@ -120,7 +123,6 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             if (captureThread != null) {
                 captureThread.join();
             }
-            System.out.println("Audio capture stopped.");
         } catch (Exception e) {
             e.printStackTrace();
         }

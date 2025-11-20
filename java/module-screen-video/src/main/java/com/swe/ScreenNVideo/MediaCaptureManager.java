@@ -16,6 +16,7 @@ import com.swe.ScreenNVideo.Model.RImage;
 import com.swe.ScreenNVideo.Model.Viewer;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.Playback.AudioPlayer;
+import com.swe.ScreenNVideo.Synchronizer.AudioSynchronizer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
 import com.swe.core.ClientNode;
@@ -53,6 +54,11 @@ public class MediaCaptureManager implements CaptureManager {
     private final HashMap<String, ImageSynchronizer> imageSynchronizers;
 
     /**
+     * Audio synchronizer object.
+     */
+    private final HashMap<String, AudioSynchronizer> audioSynchronizers;
+
+    /**
      * Networking object.
      */
     private final AbstractNetworking networking;
@@ -82,11 +88,6 @@ public class MediaCaptureManager implements CaptureManager {
     private final AudioPlayer audioPlayer;
 
     /**
-     * Audio Decoder object.
-     */
-    private final ADPCMDecoder audioDecoder;
-
-    /**
      * IP to email list for the participants
      */
     private HashMap<String, String> ipToEmail;
@@ -104,19 +105,20 @@ public class MediaCaptureManager implements CaptureManager {
         this.networking = argNetworking;
         final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port, (k,v) -> updateImage(k,v));
         audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
-        audioDecoder = new ADPCMDecoder();
-        final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
-        videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
 
-        captureComponents.startAudioLoop();
-        backgroundCaptureManager.start();
         try {
             audioPlayer.init();
         } catch (LineUnavailableException e) {
-            System.err.println("Unable to connect to Line");
+            System.err.println("Unable to instantiate AudioPlayer");
         }
 
+        final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
+        videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
+
+        backgroundCaptureManager.start();
+
         imageSynchronizers = new HashMap<>();
+        audioSynchronizers = new HashMap<>();
         viewers = new HashMap<>();
 
         // Cache local IP once to avoid repeated socket operations during capture
@@ -163,12 +165,13 @@ public class MediaCaptureManager implements CaptureManager {
         final Viewer viewer = viewers.computeIfAbsent(ip, k -> new Viewer(node, reqCompression));
         viewer.setRequireCompressed(reqCompression);
         imageSynchronizers.computeIfAbsent(ip, k -> new ImageSynchronizer(videoComponent.getVideoCodec()));
-        rpc.call(Utils.SUBSCRIBE_AS_VIEWER, ip.getBytes());
+        audioSynchronizers.computeIfAbsent(ip, k -> new AudioSynchronizer(this.audioPlayer));
     }
 
     private void removeViewer(final String ip) {
         viewers.remove(ip);
         imageSynchronizers.remove(ip);
+        audioSynchronizers.remove(ip);
     }
 
     /**
@@ -207,11 +210,6 @@ public class MediaCaptureManager implements CaptureManager {
             networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
 //            sendDataToViewers(encodedAudio, viewer -> true);
         }
-    }
-
-    @Override
-    public void updateIpToEmail(HashMap<String, String> ipMap) {
-
     }
 
     /**
@@ -373,13 +371,7 @@ public class MediaCaptureManager implements CaptureManager {
                         return;
                     }
 
-                    final ClientNode ipNode = new ClientNode(networkPackets.ip(), port);
-                    final String email = Utils.getEmailFromIp(ipNode);
-                    if (email == null) {
-                        return;
-                    }
-
-                    final RImage rImage = new RImage(image, email);
+                    final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
                     System.out.println("Sending to UI" + ("; Expected : "
                         + imageSynchronizer.getExpectedFeedNumber()));
@@ -408,10 +400,17 @@ public class MediaCaptureManager implements CaptureManager {
                     rpc.call(Utils.STOP_SHARE, viewerIP.getBytes());
                 }
                 case APACKETS -> {
-                    final APackets audioPackets = APackets.deserialize(data);
-                     System.out.println("Audio" + audioPackets.packetNumber());
-                    final byte[] audioBytes = audioDecoder.decode(audioPackets.data());
-                    audioPlayer.play(audioBytes);
+                    final APackets networkPackets = APackets.deserialize(data);
+                    System.out.println("Audio" + networkPackets.packetNumber());
+                    AudioSynchronizer audioSynchronizer = audioSynchronizers.get(networkPackets.ip());
+                    if (audioSynchronizer == null) {
+                        // add new participant if not already present, with true by default
+                        addParticipant(networkPackets.ip(), true);
+                        audioSynchronizer = audioSynchronizers.get(networkPackets.ip());
+                    }
+
+                    audioSynchronizer.synchronize(networkPackets);
+
                 }
                 case UNSUBSCRIBE_AS_VIEWER -> {
                     final IPPacket viewerIP = IPPacket.deserialize(data);

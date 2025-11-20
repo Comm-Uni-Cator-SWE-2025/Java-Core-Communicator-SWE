@@ -65,10 +65,6 @@ public class CaptureComponents {
         return isScreenCaptureOn;
     }
 
-    public boolean isAudioCaptureOn() {
-        return isAudioCaptureOn;
-    }
-
 
     /**
      * Flag for video capture.
@@ -129,10 +125,6 @@ public class CaptureComponents {
         imageStitcher = new ImageStitcher();
         audioCapture = new AudioCapture();
         initializeHandlers(rpc, port);
-    }
-
-    public void startAudioLoop() {
-        audioCapture.init();
     }
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
@@ -202,6 +194,8 @@ public class CaptureComponents {
     public byte[] getAudioFeed() {
         if (isAudioCaptureOn) {
             return audioCapture.getChunk();
+        } else {
+            audioCapture.stop();
         }
         return null;
     }

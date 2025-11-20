@@ -161,15 +161,9 @@ public class VideoComponents {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
-                    final ClientNode ipNode = new ClientNode(localIp, port);
-                    final String email = Utils.getEmailFromIp(ipNode);
-                    System.out.println("IP " + localIp + " " + email);
-                    if (email == null) {
-                        continue;
-                    }
 
 
-                    final RImage rImage = new RImage(frame, email);
+                    final RImage rImage = new RImage(frame, localIp);
                     final byte[] serializedImage = rImage.serialize();
 
                     if (serializedImage == null) {
@@ -235,7 +229,7 @@ public class VideoComponents {
             return null;
         }
         final byte[] feed = audioEncoder.encode(audioFeed);
-        final APackets audioPacket = new APackets(audioFeedNumber, feed);
+        final APackets audioPacket = new APackets(audioFeedNumber, feed, localIp, audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
         byte[] encodedPacket = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
