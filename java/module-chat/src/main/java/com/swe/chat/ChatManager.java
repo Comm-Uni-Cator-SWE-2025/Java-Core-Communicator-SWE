@@ -166,8 +166,8 @@ public class ChatManager implements IChatService {
             byte[] contentModeBytes = FileMessageSerializer.serialize(contentModeMsg);
             byte[] networkPacket = addProtocolFlag(contentModeBytes, FLAG_FILE_MESSAGE);
 
-            ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
-            this.network.sendData(networkPacket, dests, ModuleType.CHAT.ordinal(), 0);
+            // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
 
             System.out.println("[Core] Sent file to network");
 

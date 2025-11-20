@@ -43,16 +43,16 @@ public class Init {
 
         new ChatManager(Networking.getNetwork());
 
-        MediaCaptureManager
-            mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
-        Thread mediaCaptureManagerThread = new Thread(() -> {
-            try {
-                mediaCaptureManager.startCapture();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        mediaCaptureManagerThread.start();
+        // MediaCaptureManager
+        //     mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
+        // Thread mediaCaptureManagerThread = new Thread(() -> {
+        //     try {
+        //         mediaCaptureManager.startCapture();
+        //     } catch (ExecutionException | InterruptedException e) {
+        //         throw new RuntimeException(e);
+        //     }
+        // });
+        // mediaCaptureManagerThread.start();
 
         addRPCSubscriptions(rpc);
 
@@ -60,7 +60,7 @@ public class Init {
         Thread rpcThread = rpc.connect(portNumber);
 
         rpcThread.join();
-        mediaCaptureManagerThread.join();
+        // mediaCaptureManagerThread.join();
     }
 
     private static void addRPCSubscriptions(RPC rpc) {

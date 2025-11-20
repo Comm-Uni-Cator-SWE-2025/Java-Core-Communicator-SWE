@@ -116,6 +116,10 @@ public final class MeetingNetworkingCoordinator {
 
         if (isServer) {
             // Server receives IAM as a join request
+            if (meeting.getNodeToEmailMap().containsKey(packet.getClientNode())) {
+                System.out.println(TAG + " User already in meeting");
+                return;
+            }
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
             System.out.println(TAG + " Received IAM (join request) from " + packet.getEmail() + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
 

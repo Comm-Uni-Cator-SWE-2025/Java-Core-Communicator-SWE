@@ -208,7 +208,7 @@ public class MainServer implements P2PUser {
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
                 if (data != null) {
-                    networking.callSubscriber(module, data);
+                    networking.callSubscriber(module, parser.parsePacket(data).getPayload());
                 }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
                 NetworkLogger.printInfo("MainServer", "Closing the Main Server");
