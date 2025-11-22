@@ -178,7 +178,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         System.out.println("Starting capture");
         int[][] feed = null;
-        double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_NS;
+        double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
         long prevSendAt= 0;
         while (true) {
             long diff = System.currentTimeMillis() - prevSendAt;
@@ -186,7 +186,6 @@ public class MediaCaptureManager implements CaptureManager {
                 continue;
             }
             prevSendAt = System.currentTimeMillis();
-            System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))) + " FPS");
             final Feed encodedFeed = videoComponent.captureScreenNVideo();
             final int[][] newFeed = videoComponent.getFeed();
             if (encodedFeed == null) {
@@ -204,6 +203,7 @@ public class MediaCaptureManager implements CaptureManager {
                 // send unCompressedFeed
 //                System.out.println("Sending to uncompress");
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
+                System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff )) + " FPS");
             }
             // get audio Feed
             final byte[] encodedAudio = videoComponent.captureAudio();
@@ -296,6 +296,10 @@ public class MediaCaptureManager implements CaptureManager {
                         imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     }
 
+                    long diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
+                    long dataPerSec = (long) (data.length * (1.0 / diff));
+
+                    imageSynchronizer.setPrevSend();
 
 //                     System.out.println("Recieved " + networkPackets.packetNumber() + "; Expected : " +
 //                        imageSynchronizer.getExpectedFeedNumber() + " " + imageSynchronizer.getHeap().size() + " " + imageSynchronizer.waitingForFullImage);
@@ -374,7 +378,7 @@ public class MediaCaptureManager implements CaptureManager {
                         return;
                     }
 
-                    final RImage rImage = new RImage(image, networkPackets.ip());
+                    final RImage rImage = new RImage(image, networkPackets.ip(), dataPerSec);
                     final byte[] serializedImage = rImage.serialize();
                     System.out.println("Sending to UI" + ("; Expected : "
                         + imageSynchronizer.getExpectedFeedNumber()));

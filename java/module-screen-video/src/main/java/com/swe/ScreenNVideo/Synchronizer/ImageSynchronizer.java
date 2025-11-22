@@ -31,6 +31,25 @@ public class ImageSynchronizer {
     private final ImageStitcher imageStitcher;
 
     /**
+     * Time in ms when previous packets were sent.
+     */
+    private long prevSend = 0;
+
+    /**
+     * getter for prevSend.
+     */
+    public long getPrevSend() {
+        return prevSend;
+    }
+
+    /**
+     * Setter for prevSend.
+     */
+    public void setPrevSend() {
+        prevSend = System.currentTimeMillis();
+    }
+
+    /**
      * The next feed number we expect to recieve in correct order.
      * Used to ensure patches are applied sequentially.
      */
