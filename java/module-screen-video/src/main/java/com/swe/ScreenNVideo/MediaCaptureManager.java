@@ -296,10 +296,14 @@ public class MediaCaptureManager implements CaptureManager {
                         imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     }
 
-                    long diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
-                    long dataPerSec = (long) (data.length * (1.0 / diff));
-
-                    imageSynchronizer.setPrevSend();
+                    imageSynchronizer.setDataReceived(imageSynchronizer.getDataReceived() + data.length);
+                    double diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
+                    long dataPerSec = -1;
+                    if (diff > Utils.SEC_IN_MS) {
+                        dataPerSec = (long) ((imageSynchronizer.getDataReceived() / diff) * Utils.SEC_IN_MS);
+                        imageSynchronizer.setDataReceived(0);
+                        imageSynchronizer.setPrevSend();
+                    }
 
 //                     System.out.println("Recieved " + networkPackets.packetNumber() + "; Expected : " +
 //                        imageSynchronizer.getExpectedFeedNumber() + " " + imageSynchronizer.getHeap().size() + " " + imageSynchronizer.waitingForFullImage);

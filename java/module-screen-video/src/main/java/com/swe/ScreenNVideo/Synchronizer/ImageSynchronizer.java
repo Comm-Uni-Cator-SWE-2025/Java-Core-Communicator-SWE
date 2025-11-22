@@ -43,6 +43,19 @@ public class ImageSynchronizer {
     }
 
     /**
+     * Data recieved from prevSend.
+     */
+    private long dataReceived = 0;
+
+    public long getDataReceived() {
+        return dataReceived;
+    }
+
+    public void setDataReceived(long dataReceived) {
+        this.dataReceived = dataReceived;
+    }
+
+    /**
      * Setter for prevSend.
      */
     public void setPrevSend() {
