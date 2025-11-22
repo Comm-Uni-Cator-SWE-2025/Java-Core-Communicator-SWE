@@ -47,7 +47,7 @@ public class Init {
              mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
          Thread mediaCaptureManagerThread = new Thread(() -> {
              try {
-                 mediaCaptureManager.startCapture();
+                 mediaCaptureManager.startCapture(24);
              } catch (ExecutionException | InterruptedException e) {
                  throw new RuntimeException(e);
              }

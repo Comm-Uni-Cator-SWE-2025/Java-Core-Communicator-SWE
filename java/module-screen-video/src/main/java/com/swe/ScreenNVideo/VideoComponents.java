@@ -163,7 +163,7 @@ public class VideoComponents {
                 try {
 
 
-                    final RImage rImage = new RImage(frame, localIp);
+                    final RImage rImage = new RImage(frame, localIp, 0);
                     final byte[] serializedImage = rImage.serialize();
 
                     if (serializedImage == null) {
