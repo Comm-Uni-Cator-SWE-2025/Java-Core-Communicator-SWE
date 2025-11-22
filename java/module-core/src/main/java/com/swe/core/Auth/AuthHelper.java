@@ -47,8 +47,8 @@ public class AuthHelper {
 
         final String email = (String) userInfo.get("email");
         final String name = (String) userInfo.get("name");
-        final String logoUrl = (String) userInfo.get("picture");
+        // final String logoUrl = (String) userInfo.get("picture");
 
-        return new UserProfile(email, name, logoUrl, ParticipantRole.GUEST);
+        return new UserProfile(email, name, ParticipantRole.GUEST);
     }
 }

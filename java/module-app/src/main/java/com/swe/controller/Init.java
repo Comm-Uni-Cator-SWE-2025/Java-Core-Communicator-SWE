@@ -153,6 +153,20 @@ public class Init {
                 return ("Error logging out: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
         });
+
+        rpc.subscribe("core/endMeeting", (byte[] data) -> {
+            System.out.println("Ending meeting");
+            try {
+                Networking.getNetwork().closeNetworking();
+                System.out.println("Meeting ended successfully");
+                // Clear the meeting session from context
+                controllerServices.context.meetingSession = null;
+                return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                System.out.println("Error ending meeting: " + e.getMessage());
+                return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
+        });
     }
 }
 
