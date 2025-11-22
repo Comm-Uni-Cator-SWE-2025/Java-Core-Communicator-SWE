@@ -4,6 +4,8 @@
 
 package com.swe.ScreenNVideo.Capture;
 
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
+
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
@@ -45,7 +47,6 @@ public class ScreenCapture extends ICapture {
     private static final int CAPTURE_TIMEOUT_SECONDS = 5;
 
     public ScreenCapture() {
-        reInit();
     }
 
     /**
@@ -56,7 +57,7 @@ public class ScreenCapture extends ICapture {
      */
     @Override
     public BufferedImage capture() throws AWTException {
-
+        Telemetry.getTelemetry().setWithScreen(true);
         if (robot == null) {
             reInit();
         }
