@@ -18,6 +18,9 @@ import java.util.concurrent.ExecutionException;
 import static com.swe.ScreenNVideo.Utils.getSelfIP;
 
 /**
+ * Deprecated. Use main app
+
+ * Test to check the functionality in a UI
  * Entry point for the screen and video integration test.
  * <p>
  * The {@code MainController} sets up dummy networking and RPC components,
@@ -67,7 +70,7 @@ public class MainController {
 
         final Thread screenNVideoThread = new Thread(() -> {
             try {
-                screenNVideo.startCapture();
+                screenNVideo.startCapture(24);
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }

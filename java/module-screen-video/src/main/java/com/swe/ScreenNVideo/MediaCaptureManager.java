@@ -88,11 +88,6 @@ public class MediaCaptureManager implements CaptureManager {
     private final AudioPlayer audioPlayer;
 
     /**
-     * IP to email list for the participants
-     */
-    private HashMap<String, String> ipToEmail;
-
-    /**
      * Constructor for the MediaCaptureManager.
      *
      * @param argNetworking Networking object
@@ -176,13 +171,20 @@ public class MediaCaptureManager implements CaptureManager {
 
     /**
      * Server-side of the ScreenNVideo.
+     * @param sendFPS Send FPS. Max rate at which data is sent to the viewers.
      */
     @Override
-    public void startCapture() throws ExecutionException, InterruptedException {
+    public void startCapture(final int sendFPS) throws ExecutionException, InterruptedException {
 
         System.out.println("Starting capture");
         int[][] feed = null;
+        double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_NS;
+        long prevSendAt= 0;
         while (true) {
+            long diff = System.currentTimeMillis() - prevSendAt;
+            if (diff < timePerFrame) {
+                continue;
+            }
             final Feed encodedFeed = videoComponent.captureScreenNVideo();
             final int[][] newFeed = videoComponent.getFeed();
             if (encodedFeed == null) {
@@ -208,13 +210,14 @@ public class MediaCaptureManager implements CaptureManager {
             }
 
             networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
-//            sendDataToViewers(encodedAudio, viewer -> true);
+            System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))) + " FPS");
+            prevSendAt = System.currentTimeMillis();
         }
     }
 
     /**
      * Applies filter and send data to those viewers.
-     *
+     * Send to viewer at send FPS for data bandwidth.
      * @param feed         the data to send
      * @param viewerFilter predicate to filter which viewers should receive the data
      */
