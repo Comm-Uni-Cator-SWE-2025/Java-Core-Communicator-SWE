@@ -137,24 +137,51 @@ public class ChatManager implements IChatService {
             e.printStackTrace();
         }
     }
-
     /**
      * ⭐ AI FEATURE: JSON Generator
+     * Generates JSON with correct 'from' and 'to' usernames.
      */
     private String generateChatHistoryJson(List<ChatMessage> messages) {
         StringBuilder json = new StringBuilder();
         json.append("{\n  \"messages\": [\n");
 
+        // 1. Create a quick lookup map to find Reply Targets
+        // Map<MessageID, SenderName>
+        Map<String, String> messageIdToSender = new HashMap<>();
+        // We might need to look in full history for replies, not just the new batch
+        synchronized (fullMessageHistory) {
+            for (ChatMessage m : fullMessageHistory) {
+                messageIdToSender.put(m.getMessageId(), m.getSenderDisplayName());
+            }
+        }
+
         Iterator<ChatMessage> it = messages.iterator();
         while (it.hasNext()) {
             ChatMessage msg = it.next();
 
-            String toUser = (msg.getReplyToMessageId() == null) ? "ALL" : "ReplyTarget";
+            // A. Resolve "FROM"
+            // Backend stores raw names (e.g. "Alice"), so this is safe. No "You" here.
+            String fromUser = escapeJson(msg.getSenderDisplayName());
+
+            // B. Resolve "TO"
+            String toUser = "ALL"; // Default broadcast
+            String replyId = msg.getReplyToMessageId();
+
+            if (replyId != null && !replyId.isEmpty()) {
+                // Look up the name of the person who sent the original message
+                String originalSender = messageIdToSender.get(replyId);
+                if (originalSender != null) {
+                    toUser = escapeJson(originalSender);
+                }
+            }
+
+            // C. Format Timestamp (ISO 8601 preferred by AI)
+            String time = msg.getTimestamp().toString(); // e.g., 2025-11-07T10:00:00
 
             json.append("    {\n");
-            json.append("      \"from\": \"").append(escapeJson(msg.getSenderDisplayName())).append("\",\n");
+            json.append("      \"from\": \"").append(fromUser).append("\",\n");
             json.append("      \"to\": \"").append(toUser).append("\",\n");
-            json.append("      \"timestamp\": \"").append(msg.getTimestamp().toString()).append("\",\n");
+            json.append("      \"timestamp\": \"").append(time).append("\",\n");
             json.append("      \"message\": \"").append(escapeJson(msg.getContent())).append("\"\n");
             json.append("    }");
 
