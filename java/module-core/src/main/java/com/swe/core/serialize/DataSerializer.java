@@ -11,6 +11,7 @@ public class DataSerializer {
 
     public static byte[] serialize(Object participant) throws JsonProcessingException {
         System.out.println("serializing");
+        objectMapper.registerModule(new ClientNodeModule());
         String data = objectMapper.writeValueAsString(participant);
 
         return data.getBytes(StandardCharsets.UTF_8);
