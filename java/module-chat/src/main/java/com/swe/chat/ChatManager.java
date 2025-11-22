@@ -31,7 +31,16 @@ import java.util.zip.Deflater;
  */
 public class ChatManager implements IChatService {
 
+    // --- 1. NEW: Restore the Helper Class ---
+    private static class FileCacheEntry {
+        public final String fileName;
+        public final byte[] compressedData;
 
+        public FileCacheEntry(String fileName, byte[] compressedData) {
+            this.fileName = fileName;
+            this.compressedData = compressedData;
+        }
+    }
 
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
@@ -45,7 +54,7 @@ public class ChatManager implements IChatService {
      * Key: messageId
      * Value: compressed file bytes
      */
-    private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
+    private final Map<String, FileCacheEntry> fileCache = new ConcurrentHashMap<>();
 
     public ChatManager(Networking network) {
         Context context = Context.getInstance();
@@ -147,10 +156,11 @@ public class ChatManager implements IChatService {
             byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
             this.rpc.call("chat:file-metadata-received", metadataBytes);
 
+
             System.out.println("[Core] Sent metadata to frontend");
 
             // ===== STEP 2: Cache the compressed file =====
-            fileCache.put(pathModeMsg.getMessageId(), compressedData);
+            fileCache.put(pathModeMsg.getMessageId(), new FileCacheEntry(pathModeMsg.getFileName(), compressedData));
             System.out.println("[Core] Cached compressed file: " + pathModeMsg.getMessageId());
 
             // ===== STEP 3: Send to remote peers (with compressed data) =====
@@ -193,31 +203,57 @@ public class ChatManager implements IChatService {
 
         try {
             // Retrieve compressed file from cache
-            byte[] compressedData = fileCache.get(messageId);
-            if (compressedData == null) {
+            FileCacheEntry cacheEntry = fileCache.get(messageId);
+            if (cacheEntry == null) {
                 throw new Exception("File not found in cache: " + messageId);
             }
 
-            System.out.println("[Core] Retrieved compressed file (" + compressedData.length + " bytes)");
+            System.out.println("[Core] Retrieved compressed file (" + cacheEntry.compressedData.length + " bytes)");
 
-            // Decompress
-            byte[] decompressedData = Utilities.Decompress(compressedData);
+            byte[] decompressedData = Utilities.Decompress(cacheEntry.compressedData);
             if (decompressedData == null) {
                 throw new Exception("Failed to decompress file");
             }
 
-            System.out.println("[Core] Decompressed: " + compressedData.length + " → " +
-                    decompressedData.length + " bytes");
 
             // Save to Downloads folder
-            String downloadsPath = System.getProperty("user.home") + "/Downloads";
-            String filePath = downloadsPath + "/" + messageId + "_file";
+            // 1. Get User's Home Directory
+            String homeDir = System.getProperty("user.home");
 
-            Files.write(Paths.get(filePath), decompressedData);
-            System.out.println("[Core] Saved to: " + filePath);
+            // 2. Construct path using Paths.get (OS-agnostic)
+            java.nio.file.Path downloadsDir = Paths.get(homeDir, "Downloads");
+
+            if (!Files.exists(downloadsDir)) {
+                Files.createDirectories(downloadsDir);
+            }
+
+            // 3. Use the ORIGINAL filename from the cache entry
+            // Do NOT append "_file". Use the original name (e.g., "fees.pdf")
+            // If you must add an ID to avoid conflicts, put it BEFORE the extension.
+            String originalName = cacheEntry.fileName;
+            String finalName = originalName;
+            java.nio.file.Path savePath = downloadsDir.resolve(finalName);
+            int counter = 1;
+            while (Files.exists(savePath)) {
+                // Split name and extension
+                String namePart = originalName;
+                String extPart = "";
+                int dotIndex = originalName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    namePart = originalName.substring(0, dotIndex);
+                    extPart = originalName.substring(dotIndex); // includes dot
+                }
+                finalName = namePart + " (" + counter + ")" + extPart;
+                savePath = downloadsDir.resolve(finalName);
+                counter++;
+            }
+
+            // 4. Save file
+            Files.write(savePath, decompressedData);
+            System.out.println("[Core] Saved to: " + savePath.toString());
 
             // Notify frontend of success
-            String successMsg = "File saved to: " + filePath;
+            String successMsg = "File saved to: " + savePath;
             this.rpc.call("chat:file-saved-success", successMsg.getBytes(StandardCharsets.UTF_8));
 
             return successMsg.getBytes(StandardCharsets.UTF_8);
@@ -275,7 +311,7 @@ public class ChatManager implements IChatService {
                     FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
 
                     // Cache the received compressed file
-                    fileCache.put(fileMsg.getMessageId(), fileMsg.getFileContent());
+                    fileCache.put(fileMsg.getMessageId(), new FileCacheEntry(fileMsg.getFileName(), fileMsg.getFileContent()));
 
                     // Send ONLY metadata to frontend
                     FileMessage metadataMsg = new FileMessage(
