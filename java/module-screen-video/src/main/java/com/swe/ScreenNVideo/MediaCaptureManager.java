@@ -182,6 +182,13 @@ public class MediaCaptureManager implements CaptureManager {
         long prevSendAt= 0;
         while (true) {
             long diff = System.currentTimeMillis() - prevSendAt;
+            // get audio Feed
+            final byte[] encodedAudio = videoComponent.captureAudio();
+            if (encodedAudio == null) {
+                continue;
+            }
+            networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
+
             if (diff < timePerFrame) {
                 continue;
             }
@@ -205,13 +212,7 @@ public class MediaCaptureManager implements CaptureManager {
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
                 System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff )) + " FPS");
             }
-            // get audio Feed
-            final byte[] encodedAudio = videoComponent.captureAudio();
-            if (encodedAudio == null) {
-                continue;
-            }
 
-            networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
         }
     }
 
