@@ -1,6 +1,5 @@
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,6 +11,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swe.core.ClientNode;
 
 /**
  * Test class for MainServer.

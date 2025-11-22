@@ -6,12 +6,14 @@ import com.swe.controller.serializer.MeetingPacketType;
 import com.swe.core.ClientNode;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
+import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -95,11 +97,11 @@ public final class MeetingNetworkingCoordinator {
 
         final ControllerServices services = ControllerServices.getInstance();
         try {
-            services.context.rpc.call("core/setIpToMailMap", DataSerializer.serialize(services.context.meetingSession.getNodeToEmailMap())).get();
+            services.context.rpc.call("core/updateParticipants", DataSerializer.serialize(services.context.meetingSession.getParticipants())).get();
         } catch (Exception e) {
-            System.out.println("Error calling setIpToMailMap: " + e.getMessage());
+            System.out.println("Error calling core/updateParticipants: " + e.getMessage());
         }
-        System.out.println("Total participants: " + services.context.meetingSession.getNodeToEmailMap());
+        System.out.println("Total participants: " + services.context.meetingSession.getParticipants());
     }
 
     private static void handleIamPacket(final byte[] data) {
@@ -116,14 +118,27 @@ public final class MeetingNetworkingCoordinator {
 
         if (isServer) {
             // Server receives IAM as a join request
-            if (meeting.getNodeToEmailMap().containsKey(packet.getClientNode())) {
+            if (meeting.getParticipants().containsKey(packet.getClientNode())) {
                 System.out.println(TAG + " User already in meeting");
                 return;
             }
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
             System.out.println(TAG + " Received IAM (join request) from " + packet.getEmail() + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
 
-            final JoinAckPacket ackPacket = new JoinAckPacket(meeting.getNodeToEmailMap(), meeting.getEmailToDisplayNameMap());
+            // Convert participants map to the two separate maps for JoinAckPacket
+            final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+            final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+            for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
+                final UserProfile profile = entry.getValue();
+                if (profile.getEmail() != null) {
+                    nodeToEmailMap.put(entry.getKey(), profile.getEmail());
+                    if (profile.getDisplayName() != null) {
+                        emailToDisplayNameMap.put(profile.getEmail(), profile.getDisplayName());
+                    }
+                }
+            }
+            
+            final JoinAckPacket ackPacket = new JoinAckPacket(nodeToEmailMap, emailToDisplayNameMap);
             sendBytes(ackPacket.serialize(), new ClientNode[]{packet.getClientNode()});
         } else {
             // Peer receives IAM as an announcement
@@ -140,6 +155,7 @@ public final class MeetingNetworkingCoordinator {
         final Map<ClientNode, String> nodeToEmailMap = joinAckPacket.getNodeToEmailMap();
         final Map<String, String> emailToDisplayNameMap = joinAckPacket.getEmailToDisplayNameMap();
         
+        // Convert the two maps to participants map
         for (Map.Entry<ClientNode, String> entry : nodeToEmailMap.entrySet()) {
             final String email = entry.getValue();
             final String displayName = emailToDisplayNameMap.getOrDefault(email, "");
