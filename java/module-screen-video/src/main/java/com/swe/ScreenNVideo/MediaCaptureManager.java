@@ -185,6 +185,8 @@ public class MediaCaptureManager implements CaptureManager {
             if (diff < timePerFrame) {
                 continue;
             }
+            prevSendAt = System.currentTimeMillis();
+            System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))) + " FPS");
             final Feed encodedFeed = videoComponent.captureScreenNVideo();
             final int[][] newFeed = videoComponent.getFeed();
             if (encodedFeed == null) {
@@ -210,8 +212,6 @@ public class MediaCaptureManager implements CaptureManager {
             }
 
             networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
-            System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))) + " FPS");
-            prevSendAt = System.currentTimeMillis();
         }
     }
 
