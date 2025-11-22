@@ -63,7 +63,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Variable to store the thread to start the send packets.
      */
-    // private final Thread sendThread;
+     private final Thread sendThread;
     /**
      * Private constructor for Netwroking class.
      */
@@ -72,8 +72,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = PriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        // sendThread = new Thread(this::start);
-        // sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
+         sendThread = new Thread(this::start);
+         sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -119,8 +119,8 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-                topology.sendPacket(chunk, newdest);
-                // priorityQueue.addPacket(chunk);
+//                topology.sendPacket(chunk, newdest);
+                 priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -187,7 +187,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      * @param priority the priority of the packet
      */
     @Override
-    public void broadcast(final byte[] data, final int module, final int priority) {
+    public void broadcast(final byte[] data, final int module, final int priority){
         // Get all the destinations to send the broadcast
         final List<ClientNode> dest = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
 
@@ -201,7 +201,13 @@ public class Networking implements AbstractNetworking, AbstractController {
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
-                topology.sendPacket(chunk, client);
+//                topology.sendPacket(chunk, client);
+                try {
+                    priorityQueue.addPacket(chunk);
+                }
+                catch (UnknownHostException ex) {
+                    System.out.println("Failed to add packet to destination");
+                }
             }
         }
     }
@@ -251,7 +257,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        if (function != null) {
+        if(function == null){
+            System.out.println("No function found for module: " + module);
+        }else {
             function.receiveData(data);
         }
     }
@@ -293,7 +301,7 @@ public class Networking implements AbstractNetworking, AbstractController {
 
     @Override
     public boolean isClientAlive(final ClientNode client) {
-        return false;
+        return topology.checkClientPresent(client);
     }
 
     /**
