@@ -31,6 +31,8 @@ import java.util.zip.Deflater;
  */
 public class ChatManager implements IChatService {
 
+
+
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
     private static final byte FLAG_FILE_METADATA = (byte) 0x03;

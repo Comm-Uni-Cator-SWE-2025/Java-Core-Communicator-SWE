@@ -1,3 +1,0 @@
-1. vonage video calling - https://symbl.ai/developers/blog/live-symbl-insights-with-video-vonage-calling/
-2. https://tokbox.com/developer/sdks/js/
-3. https://github.com/nexmo-se/symblAI-demo/tree/main/src/components/MuteVideoButton
