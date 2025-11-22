@@ -5,7 +5,8 @@ import com.swe.core.ClientNode;
 import com.swe.core.Context;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
-
+import com.swe.aiinsights.aiinstance.AiInstance;
+import com.swe.aiinsights.apiendpoints.AiClientService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,6 +14,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.*; // Fixes List, ArrayList, Collections, Iterator
+import java.util.concurrent.*;
 import java.util.zip.Deflater;
 
 /**
@@ -42,6 +45,8 @@ public class ChatManager implements IChatService {
         }
     }
 
+
+
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
     private static final byte FLAG_FILE_METADATA = (byte) 0x03;
@@ -50,6 +55,9 @@ public class ChatManager implements IChatService {
     private final AbstractRPC rpc;
     private final Networking network;
 
+    private final AiClientService aiService;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
     /**
      * FILE CACHE - Stores compressed files temporarily
      * Key: messageId
@@ -57,10 +65,19 @@ public class ChatManager implements IChatService {
      */
     private final Map<String, FileCacheEntry> fileCache = new ConcurrentHashMap<>();
 
+    private final List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
+    private int lastSummarizedIndex = 0;
+
     public ChatManager(Networking network) {
         Context context = Context.getInstance();
         this.rpc = context.rpc;
         this.network = network;
+
+        // 1. Initialize AI Service
+        this.aiService = AiInstance.getInstance();
+
+        // 2. Start Periodic Summarization (Every 20 seconds)
+        startAiSummarizer();
 
         // Subscribe to frontend RPC calls
         this.rpc.subscribe("chat:send-text", this::handleFrontendTextMessage);
@@ -75,6 +92,85 @@ public class ChatManager implements IChatService {
     }
 
     /**
+     * ⭐ AI FEATURE: Periodic Summarization
+     * Runs every 10 minutes.
+     */
+    private void startAiSummarizer() {
+        scheduler.scheduleAtFixedRate(() -> {
+            processIncrementalSummary();
+        }, 10, 10, TimeUnit.MINUTES); // 10 Minutes delay, 10 Minutes period
+    }
+
+    /**
+     * Helper to process only NEW messages since last run.
+     */
+    private void processIncrementalSummary() {
+        List<ChatMessage> newMessages = new ArrayList<>();
+
+        synchronized (fullMessageHistory) {
+            if (lastSummarizedIndex >= fullMessageHistory.size()) {
+                return; // No new messages
+            }
+            // Sublist from last index to current end
+            newMessages.addAll(fullMessageHistory.subList(lastSummarizedIndex, fullMessageHistory.size()));
+            // Update index so we don't summarize these again next time
+            lastSummarizedIndex = fullMessageHistory.size();
+        }
+
+        if (newMessages.isEmpty()) return;
+
+        try {
+            String historyJson = generateChatHistoryJson(newMessages);
+
+            System.out.println("[AI-Backend] Sending " + newMessages.size() + " new messages for summarization...");
+
+            aiService.summariseText(historyJson)
+                    .thenAccept(summary -> {
+                        System.out.println("[AI-Backend] Incremental Summary: " + summary);
+                    })
+                    .exceptionally(e -> {
+                        System.err.println("[AI-Backend] Summarization failed: " + e.getMessage());
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * ⭐ AI FEATURE: JSON Generator
+     */
+    private String generateChatHistoryJson(List<ChatMessage> messages) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n  \"messages\": [\n");
+
+        Iterator<ChatMessage> it = messages.iterator();
+        while (it.hasNext()) {
+            ChatMessage msg = it.next();
+
+            String toUser = (msg.getReplyToMessageId() == null) ? "ALL" : "ReplyTarget";
+
+            json.append("    {\n");
+            json.append("      \"from\": \"").append(escapeJson(msg.getSenderDisplayName())).append("\",\n");
+            json.append("      \"to\": \"").append(toUser).append("\",\n");
+            json.append("      \"timestamp\": \"").append(msg.getTimestamp().toString()).append("\",\n");
+            json.append("      \"message\": \"").append(escapeJson(msg.getContent())).append("\"\n");
+            json.append("    }");
+
+            if (it.hasNext()) json.append(",\n");
+        }
+
+        json.append("\n  ]\n}");
+        return json.toString();
+    }
+
+    private String escapeJson(String input) {
+        if (input == null) return "";
+        return input.replace("\"", "\\\"").replace("\n", " ");
+    }
+
+    /**
      * ============================================================================
      * HANDLER 1: Text Message from Frontend
      * ============================================================================
@@ -83,14 +179,71 @@ public class ChatManager implements IChatService {
         System.out.println("[Core] Received text message from frontend");
 
         try {
+            // 1. Deserialize to inspect content
+            ChatMessage message = ChatMessageSerializer.deserialize(messageBytes);
+
+            System.out.println("[Core] Received text: " + message.getContent());
+
+            // 2. Add to Backend History (for summarization)
+            fullMessageHistory.add(message);
+
             byte[] networkPacket = addProtocolFlag(messageBytes, FLAG_TEXT_MESSAGE);
             // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
             this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+
+            // 3. Check for @AI
+            String content = message.getContent().trim();
+            if (content.startsWith("@AI")) {
+                // Force an update of context BEFORE asking the question
+                // This ensures the AI knows about the messages leading up to this question
+                processIncrementalSummary();
+
+                handleAiQuestion(content);
+            }
 
             return new byte[0];  // Empty array with brackets
         } catch (Exception e) {
             System.err.println("[Core] Error sending text message: " + e.getMessage());
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Handles the AI Question logic.
+     */
+    private void handleAiQuestion(String fullText) {
+        String question = fullText.substring(3).trim(); // Remove "@AI"
+        if (question.isEmpty()) return;
+
+        System.out.println("[Core] Processing AI Question: " + question);
+
+        aiService.answerQuestion(question)
+                .thenAccept(answer -> {
+                    broadcastAiResponse(answer);
+                })
+                .exceptionally(e -> {
+                    broadcastAiResponse("I'm sorry, I couldn't process that request.");
+                    return null;
+                });
+    }
+
+    private void broadcastAiResponse(String answer) {
+        try {
+            String aiMsgId = UUID.randomUUID().toString();
+            ChatMessage aiMsg = new ChatMessage(
+                    aiMsgId, "AI-SYSTEM-ID", "AI_Bot", answer, null
+            );
+
+            // Add AI response to history too
+            fullMessageHistory.add(aiMsg);
+
+            byte[] aiBytes = ChatMessageSerializer.serialize(aiMsg);
+            byte[] networkPacket = addProtocolFlag(aiBytes, FLAG_TEXT_MESSAGE);
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+            this.rpc.call("chat:new-message", aiBytes); // Update local UI
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -316,6 +469,8 @@ public class ChatManager implements IChatService {
             switch (flag) {
                 case FLAG_TEXT_MESSAGE:
                     System.out.println("[Core] Received text from network");
+                    ChatMessage msg = ChatMessageSerializer.deserialize(messageBytes);
+                    fullMessageHistory.add(msg);
                     this.rpc.call("chat:new-message", messageBytes);
                     break;
 
