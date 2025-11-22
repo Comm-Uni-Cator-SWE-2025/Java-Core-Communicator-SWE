@@ -45,6 +45,7 @@ public class ChatManager implements IChatService {
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
     private static final byte FLAG_FILE_METADATA = (byte) 0x03;
+    private static final byte FLAG_DELETE_MESSAGE = (byte) 0x04;
 
     private final AbstractRPC rpc;
     private final Networking network;
@@ -275,17 +276,29 @@ public class ChatManager implements IChatService {
      * ============================================================================
      */
     private byte[] handleDeleteMessage(byte[] messageIdBytes) {
-        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        // 1. Sanitize ID (Crucial for the newline issue we discussed)
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8).trim();
+
         System.out.println("[Core] Deleting message: " + messageId);
 
-        // Remove from cache if exists
+        // 2. Remove from local file cache if exists
         fileCache.remove(messageId);
 
-        // Broadcast deletion
-        this.rpc.call("chat:message-deleted", messageIdBytes);
+        // 3. BROADCAST TO NETWORK (This was missing!)
+        // We wrap the ID bytes with the DELETE flag and send it to peers.
+        try {
+            // Ensure we send the clean, trimmed bytes
+            byte[] cleanIdBytes = messageId.getBytes(StandardCharsets.UTF_8);
 
-        return new byte[0];  // Empty array with brackets
+            byte[] networkPacket = addProtocolFlag(cleanIdBytes, FLAG_DELETE_MESSAGE);
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
 
+            System.out.println("[Core] Broadcasted delete signal to network");
+        } catch (Exception e) {
+            System.err.println("[Core] Failed to broadcast delete: " + e.getMessage());
+        }
+
+        return new byte[0];
     }
 
     /**
@@ -325,6 +338,20 @@ public class ChatManager implements IChatService {
                     );
                     byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
                     this.rpc.call("chat:file-metadata-received", metadataBytes);
+                    break;
+
+                case FLAG_DELETE_MESSAGE:
+                    System.out.println("[Core] Received DELETE signal from network");
+
+                    // 1. Clean the ID
+                    String remoteId = new String(messageBytes, StandardCharsets.UTF_8).trim();
+
+                    // 2. Remove from our cache just in case
+                    fileCache.remove(remoteId);
+
+                    // 3. Tell the Frontend to update the UI
+                    // This triggers 'handleBackendDelete' in ChatViewModel
+                    this.rpc.call("chat:message-deleted", remoteId.getBytes(StandardCharsets.UTF_8));
                     break;
 
                 default:
