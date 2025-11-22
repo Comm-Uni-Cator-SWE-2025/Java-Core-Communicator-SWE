@@ -1,0 +1,6 @@
+datastructures\Entity.class
+functionlibrary\CloudFunctionLibrary.class
+interfaces\ICrashHandler.class
+datastructures\TimeRange.class
+datastructures\Response.class
+interfaces\IdbConnector.class

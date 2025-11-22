@@ -7,6 +7,11 @@
  * It ensures fallback behaviour when the AI response is incomplete or invalid.
  * </p>
  *
+ * * <p>
+ *  * References:
+ *  *     1. Internal Regularisation Specification (AI → Canvas)
+ *  *     2. JSON Validation/Recovery Patterns — Jackson Databind
+ *  * </p>
  * @author Abhirami R Iyer
  */
 

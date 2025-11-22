@@ -10,6 +10,7 @@
  * @version 1.0.0
  * @since 1.0.0
  */
+
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,19 +40,20 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
      * to identify action items.
      * @param chatData will be a json object with the chat messages
      */
+
     public AiActionItemsRequest(final JsonNode chatData) throws IOException {
         // Initialises the metaData with prompt and data.
         metaData = new HashMap<>();
         metaData.put("InputChatData", chatData);
         metaData.put("RequestPrompt", """
-        From the following chat transcript, 
-        identify only the most important and concrete action items.
-        Rewrite each as a short, clear statement in the third person,
-        using as few words as possible while keeping full meaning.
-        Exclude general discussions, suggestions, or decisions —
-        include only actions that someone explicitly commits to doing.
-        Return the output strictly as a JSON list of strings — nothing else.
-        """);
+            From the following chat transcript, 
+            identify only the most important and concrete action items.
+            Rewrite each as a short, clear statement in the third person,
+            using as few words as possible while keeping full meaning.
+            Exclude general discussions, suggestions, or decisions —
+            include only actions that someone explicitly commits to doing.
+            Return the output strictly as a JSON list of strings — nothing else.
+            """);
         type = "ACTION";
     }
 

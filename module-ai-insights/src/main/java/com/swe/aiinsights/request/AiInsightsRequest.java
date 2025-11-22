@@ -20,6 +20,7 @@
  * @version 1.0.0
  * @since 1.0.0
  */
+
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,31 +50,32 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
      * to generate sentiment value.
      * @param chatData will be a json object with the chat messages
      */
+
     public AiInsightsRequest(final JsonNode chatData) throws IOException {
         // Initialises the metaDataInsight with prompt and data.
         metaDataInsight = new HashMap<>();
         metaDataInsight.put("InputChatData", chatData);
         metaDataInsight.put("RequestPrompt", """
-        You are performing sentiment analysis on a
-        chronological chat conversation.
-
-        For each message in the chat:
-        - Determine the sentiment on a scale from -10.0 to +10.0
-          where -1.0 = very negative, 0 = neutral, and +1.0 = very positive.
-        - Use only the "message" field to determine sentiment.
-        - Preserve the precise timestamp associated with each message.
-
-        Return the output as a JSON array of objects in the exact format below,
-        without any additional commentary or explanation:
-
-        [
-          {
-            "time": "<timestamp>",
-            "sentiment": <float>
-          },
-          ...
-        ]
-        """);
+            You are performing sentiment analysis on a
+            chronological chat conversation.
+    
+            For each message in the chat:
+            - Determine the sentiment on a scale from -10.0 to +10.0
+              where -1.0 = very negative, 0 = neutral, and +1.0 = very positive.
+            - Use only the "message" field to determine sentiment.
+            - Preserve the precise timestamp associated with each message.
+    
+            Return the output as a JSON array of objects in the exact format below,
+            without any additional commentary or explanation:
+    
+            [
+              {
+                "time": "<timestamp>",
+                "sentiment": <float>
+              },
+              ...
+            ]
+            """);
         type = "INS";
     }
 
