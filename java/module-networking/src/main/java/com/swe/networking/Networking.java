@@ -62,7 +62,6 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Variable to store the thread to start the send packets.
      */
     // private final Thread sendThread;
-
     /**
      * Private constructor for Netwroking class.
      */
@@ -288,5 +287,10 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public AbstractRPC getRPC() {
         return moduleRPC;
+    }
+
+    @Override
+    public boolean isClientAlive(final ClientNode client) {
+        return false;
     }
 }

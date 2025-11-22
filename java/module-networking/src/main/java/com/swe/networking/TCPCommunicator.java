@@ -249,6 +249,6 @@ public final class TCPCommunicator implements ProtocolBase {
     }
 
     private void printIpAddr(final String ipAddr, final Integer port) {
-        NetworkLogger.printInfo(MODULENAME, "Client: " + ipAddr + ":" + port);
+        NetworkLogger.printInfo(MODULENAME, "Sent message succesfully to Client: " + ipAddr + ":" + port);
     }
 }

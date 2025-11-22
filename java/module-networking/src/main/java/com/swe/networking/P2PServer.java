@@ -313,6 +313,7 @@ public class P2PServer implements P2PUser {
         final PacketInfo packetInfo = parser.parsePacket(packet);
         final ClientNetworkRecord remClient = serializer.deserializeClientNetworkRecord(packetInfo.getPayload());
         topology.removeClient(remClient);
+        chunkManager.cleanChunk(remClient.client());
         if (remClient.clusterIndex() == topology.getClusterIndex(deviceNode)) {
             timer.removeClient(dest);
         }
@@ -405,10 +406,35 @@ public class P2PServer implements P2PUser {
     @Override
     public void close() {
         SplitPackets.getSplitPackets().emptyBuffer();
+        final byte[] removePkt = createRemovePacket(deviceNode);
+        Networking.getNetwork().broadcast(removePkt, 0, 0);
         communicator.close();
         receiveThread.interrupt();
         sendThread.interrupt();
         timer.close();
+    }
+
+    /**
+     * Function to create a remove packet.
+     *
+     * @param client the client to remove
+     * @return the packet
+     */
+    public byte[] createRemovePacket(final ClientNode client) {
+        try {
+            final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(packetHeaderSize);
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+            packetInfo.setPayload(client.toString().getBytes());
+            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+            packetInfo.setPortNum(client.port());
+            packetInfo.setBroadcast(1);
+            final byte[] removePacket = parser.createPkt(packetInfo);
+            return removePacket;
+        } catch (UnknownHostException ex) {
+            return null;
+        }
     }
 
 }

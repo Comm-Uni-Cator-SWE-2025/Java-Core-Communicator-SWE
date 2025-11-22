@@ -212,7 +212,6 @@ public final class Topology implements AbstractTopology {
             clusters.remove(idx);
             clusterServers.remove(removeClient);
             System.out.println("Removed " + removeClient + "from the server list...");
-            // numClusters -= 1;
         }
     }
 
