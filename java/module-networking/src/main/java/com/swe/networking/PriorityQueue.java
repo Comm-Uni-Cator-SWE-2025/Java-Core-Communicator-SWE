@@ -30,7 +30,7 @@ public class PriorityQueue {
     /**
      * Time for each epoch (budget reset).
      */
-    private static final int EPOCH_MS = 100;
+    private static final int EPOCH_MS = 50;
     /**
      * Total number of packets to be sent in one epoch.
      */
@@ -183,6 +183,15 @@ public class PriorityQueue {
     }
 
     /**
+     * This function returns whether the MLFQ is empty or not.
+     * @return True if there are no packets in MLFQ otherwise False
+     */
+    private boolean isMlfqEmpty() {
+        return mlfq.stream().allMatch(Deque::isEmpty);
+    }
+
+
+    /**
      * This function gives the approx throughput of the Priority Queue. This
      * assumes that there are enough number of packets.
      *
@@ -231,11 +240,25 @@ public class PriorityQueue {
      * @return The packet data, or null.
      */
     private byte[] processHighestPriority() {
-        if (!highestPriorityQueue.isEmpty()
-                && currentBudget.get(PacketPriority.ZERO) > 0) {
+        if(highestPriorityQueue.isEmpty()){
+            return null;
+        }
+        if (currentBudget.get(PacketPriority.ZERO) > 0) {
             currentBudget.put(PacketPriority.ZERO,
                     currentBudget.get(PacketPriority.ZERO) - 1);
-            NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent");
+            NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from High Priority Budget");
+            return highestPriorityQueue.pollFirst();
+        }
+        else if(midPriorityQueue.isEmpty() && currentBudget.get(PacketPriority.ONE) > 0){
+            currentBudget.put(PacketPriority.ONE,
+                    currentBudget.get(PacketPriority.ONE) - 1);
+            NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Mid Priority Budget");
+            return highestPriorityQueue.pollFirst();
+        }
+        else if(midPriorityQueue.size() < highestPriorityQueue.size() && isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0){
+            currentBudget.put(PacketPriority.TWO,
+                    currentBudget.get(PacketPriority.TWO) - 1);
+            NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Low Priority Budget");
             return highestPriorityQueue.pollFirst();
         }
         return null;
@@ -248,22 +271,30 @@ public class PriorityQueue {
      * @return The packet data, or null.
      */
     private byte[] processMidPriority() {
+        if(midPriorityQueue.isEmpty()){
+            return null;
+        }
         final int p2Current = currentBudget.get(PacketPriority.ONE);
         final int p1Current = currentBudget.get(PacketPriority.ZERO);
         final int totalP2Budget = p2Current + p1Current;
 
-        if (!midPriorityQueue.isEmpty() && totalP2Budget > 0) {
+        if (totalP2Budget > 0) {
             // Check current tokens again
 
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from p2 budget");
+                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from Mid-Priority budget");
             } else if (p1Current > 0) {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
-                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from p1 budget");
+                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from High Priority budget");
             }
+            return midPriorityQueue.pollFirst();
+        }
+        else if(isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0){
+            currentBudget.put(PacketPriority.TWO, currentBudget.get(PacketPriority.TWO) - 1);
+            NetworkLogger.printInfo(MODULENAME, "Mid-prioity sent from Low Priority budget");
             return midPriorityQueue.pollFirst();
         }
         return null;
@@ -289,14 +320,14 @@ public class PriorityQueue {
                     // Decrement the budget in order: P3 -> P2 -> P1
                     if (p3Current > 0) {
                         currentBudget.put(PacketPriority.TWO, p3Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p3 budget");
+                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from Low Priority budget");
                     } else if (p2Current > 0) {
                         currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p2 budget");
+                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from Mid-Priority budget");
                     } else if (p1Current > 0) { // Use P1's budget
                         currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p1 budget");
+                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from High priority budget");
                     } else {
                         // This case should be covered by
                         // the totalP3Budget > 0 check,
@@ -362,8 +393,6 @@ public class PriorityQueue {
      */
     public synchronized byte[] nextPacket() {
         byte[] packet;
-        // final int maxRetryCount = 10;
-        int retryCount = 0;
 
         while (true) {
             // If the queue is empty it return null.
@@ -384,13 +413,6 @@ public class PriorityQueue {
                 Thread.sleep(1);
             } catch (InterruptedException ignored) {
             }
-
-            retryCount++;
-            // optional safety escape
-            // if (retryCount > maxRetryCount) {
-            //     NetworkLogger.printInfo(MODULENAME, "Max number of retires has been reached, Returning null.");
-            //     return null;
-            // }
         }
 
     }

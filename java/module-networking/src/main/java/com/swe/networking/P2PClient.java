@@ -1,10 +1,13 @@
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import com.swe.core.ClientNode;
 
 /**
  * The Client belonging to a certain cluster.
@@ -48,7 +51,7 @@ public class P2PClient implements P2PUser {
     /**
      * alive thread manager.
      */
-    private final ScheduledExecutorService aliveScheduler = null;
+    private ScheduledExecutorService aliveScheduler = null;
 
     /**
      * time interval gap to send alive packet.
@@ -60,10 +63,14 @@ public class P2PClient implements P2PUser {
      */
     private final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
 
-    /** Variable to store header size. */
+    /**
+     * Variable to store header size.
+     */
     private final int packetHeaderSize = 22;
 
-    /** Variable to store chunk manager. */
+    /**
+     * Variable to store chunk manager.
+     */
     private final ChunkManager chunkManager;
 
     /**
@@ -87,9 +94,9 @@ public class P2PClient implements P2PUser {
         this.receiveThread.start();
 
         // start a scheduled ALIVE packets to the cluster server
-        // this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-        // this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
-        //         ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
+         this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
+                 ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override
@@ -226,10 +233,10 @@ public class P2PClient implements P2PUser {
                 break;
             case REMOVE: // 011 : update the current network
 
-                System.out.println("p2pclient received ADD or REMOVE packet");
+                System.out.println("p2pclient received REMOVE packet");
                 final ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.removeClient(oldClient);
-
+                chunkManager.cleanChunk(oldClient.client());
                 updateClusterServer();
                 break;
 
@@ -265,10 +272,9 @@ public class P2PClient implements P2PUser {
     }
 
     /**
-     * this is helper function to update cluster server address.
-     * may be changed after changing network structure (add, remove, replace)
+     * this is helper function to update cluster server address. may be changed
+     * after changing network structure (add, remove, replace)
      */
-
     void updateClusterServer() {
         System.out.println("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
@@ -297,12 +303,35 @@ public class P2PClient implements P2PUser {
             communicator.close();
         }
 
-
         // Stop the receive thread
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
+        final byte[] removePkt = createRemovePacket(deviceAddress);
         SplitPackets.getSplitPackets().emptyBuffer();
         System.out.println("p2pclient closed");
+    }
+
+    /**
+     * Function to create a remove packet.
+     *
+     * @param client the client to remove
+     * @return the packet
+     */
+    public byte[] createRemovePacket(final ClientNode client) {
+        try {
+            final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(packetHeaderSize);
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+            packetInfo.setPayload(client.toString().getBytes());
+            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+            packetInfo.setPortNum(client.port());
+            packetInfo.setBroadcast(0);
+            final byte[] removePacket = parser.createPkt(packetInfo);
+            return removePacket;
+        } catch (UnknownHostException ex) {
+            return null;
+        }
     }
 }
