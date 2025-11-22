@@ -1,0 +1,7 @@
+com\swe\chat\FileMessageSerializer.class
+com\swe\chat\ChatManager.class
+com\swe\chat\FileMessage.class
+com\swe\chat\Utilities.class
+com\swe\chat\ChatMessageSerializer.class
+com\swe\chat\IChatService.class
+com\swe\chat\ChatMessage.class
