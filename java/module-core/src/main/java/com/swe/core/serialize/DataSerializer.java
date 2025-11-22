@@ -19,6 +19,7 @@ public class DataSerializer {
 
     public static <T> T deserialize(byte[] data, Class<T> datatype) throws JsonProcessingException {
         System.out.println("deserializing 1");
+        objectMapper.registerModule(new ClientNodeModule());
         String json = new String(data, StandardCharsets.UTF_8);
         System.out.println("deserializing 2");
 
