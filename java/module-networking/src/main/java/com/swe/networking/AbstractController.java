@@ -38,4 +38,14 @@ public interface AbstractController {
      * @return if the client is present or not
      */
     boolean isClientAlive(ClientNode client);
+
+    /**
+     * Function to check if the main server is live by attempting to connect
+     * to a high availability public DNS server (Google or Cloudflare).
+     * This serves as a network connectivity check to determine if the
+     * main server could potentially be reachable.
+     *
+     * @return true if connection fails (network appears down), false if connection succeeds
+     */
+    boolean isMainServerLive();
 }

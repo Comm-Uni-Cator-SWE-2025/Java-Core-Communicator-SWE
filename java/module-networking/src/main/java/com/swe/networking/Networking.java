@@ -1,6 +1,8 @@
 package com.swe.networking;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -292,5 +294,44 @@ public class Networking implements AbstractNetworking, AbstractController {
     @Override
     public boolean isClientAlive(final ClientNode client) {
         return false;
+    }
+
+    /**
+     * Function to check if the main server is live by attempting to connect
+     * to a high availability public DNS server (Google or Cloudflare).
+     * This serves as a network connectivity check to determine if the
+     * main server could potentially be reachable.
+     *
+     * @return true if connection fails (network appears down), false if connection succeeds
+     */
+    @Override
+    public boolean isMainServerLive() {
+        final int timeout = 2000; // 2 second timeout
+        final String[] dnsServers = {
+            "8.8.8.8",      // Google DNS
+            "8.8.4.4",      // Google DNS secondary
+            "1.1.1.1",      // Cloudflare DNS
+            "1.0.0.1"       // Cloudflare DNS secondary
+        };
+        final int[] ports = {53, 80}; // DNS port and HTTP port
+
+        // Try to connect to each DNS server on each port
+        for (String dnsServer : dnsServers) {
+            for (int port : ports) {
+                try (Socket socket = new Socket()) {
+                    socket.connect(new InetSocketAddress(dnsServer, port), timeout);
+                    // Connection succeeded
+                    System.out.println("Successfully connected to " + dnsServer + ":" + port);
+                    return false; // Connection succeeded, return false
+                } catch (Exception e) {
+                    // Connection failed, continue to next server/port
+                    System.out.println("Failed to connect to " + dnsServer + ":" + port + " - " + e.getMessage());
+                }
+            }
+        }
+
+        // All connection attempts failed
+        System.out.println("All connection attempts to public DNS servers failed");
+        return true; // All connections failed, return true
     }
 }
