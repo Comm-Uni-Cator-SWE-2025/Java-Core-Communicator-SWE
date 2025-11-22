@@ -264,13 +264,13 @@ public class JpegCodec implements Codec {
 
 
         // YMatrix;
-        compressor.compressLumin(yMatrix, (short) height, (short) width, resCompressedRLEBuffer);
+        compressor.compressLumin(yMatrix, (short) height, (short) width);
 
         // CbMatrix;
-        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth, resCompressedRLEBuffer);
+        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth);
 
         // CyMatrix
-        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth, resCompressedRLEBuffer);
+        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth);
 
         // add the compressed patches
         enDeRLE.zigZagRLE(yMatrix, resCompressedRLEBuffer);
