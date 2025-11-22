@@ -184,10 +184,9 @@ public class MediaCaptureManager implements CaptureManager {
             long diff = System.currentTimeMillis() - prevSendAt;
             // get audio Feed
             final byte[] encodedAudio = videoComponent.captureAudio();
-            if (encodedAudio == null) {
-                continue;
+            if (encodedAudio != null) {
+                networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
             }
-            networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
 
             if (diff < timePerFrame) {
                 continue;
