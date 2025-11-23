@@ -145,33 +145,27 @@ public class NewPriorityQueue {
     public byte[] getPacket() {
         // System.out.println(Arrays.toString(limits));
         byte[] packet = null;
-        if (!zeroPriorityQueue.isEmpty()) {
-            if (limits[zeroPriority] > 0) {
-                packet = zeroPriorityQueue.pop();
-                limits[zeroPriority] -= 1;
-                System.out.println("Dequeued from zero priority...");
-            }
-        } else if (!firstPriorityQueue.isEmpty()) {
-            if (limits[firstPriority] > 0) {
-                packet = firstPriorityQueue.pop();
-                limits[firstPriority] -= 1;
-                System.out.println("Dequeued from first priority...");
-            }
-        } else if (!secondPriorityQueue.isEmpty()) {
-            if (limits[secondPriority] > 0) {
-                packet = secondPriorityQueue.pop();
-                limits[secondPriority] -= 1;
-                System.out.println("Dequeued from second priority...");
-            }
-        } else if (!thirdPriorityQueue.isEmpty()) {
-            if (limits[thirdPriority] > 0) {
-                packet = thirdPriorityQueue.pop();
-                limits[thirdPriority] -= 1;
-                System.out.println("Dequeued from third priority...");
-            }
+        if (!zeroPriorityQueue.isEmpty() && limits[zeroPriority] > 0) {
+            packet = zeroPriorityQueue.pop();
+            limits[zeroPriority] -= 1;
+            System.out.println("Dequeued from zero priority...");
+        } else if (!firstPriorityQueue.isEmpty() && limits[firstPriority] > 0) {
+            packet = firstPriorityQueue.pop();
+            limits[firstPriority] -= 1;
+            System.out.println("Dequeued from first priority...");
+        } else if (!secondPriorityQueue.isEmpty() && limits[secondPriority] > 0) {
+            packet = secondPriorityQueue.pop();
+            limits[secondPriority] -= 1;
+            System.out.println("Dequeued from second priority...");
+        } else if (!thirdPriorityQueue.isEmpty() && limits[thirdPriority] > 0) {
+            packet = thirdPriorityQueue.pop();
+            limits[thirdPriority] -= 1;
+            System.out.println("Dequeued from third priority...");
+        }
+        if (packet != null) {
+            totalPackets--;
         }
         resetLimits();
-        totalPackets -= 1;
         return packet;
     }
 
@@ -181,7 +175,7 @@ public class NewPriorityQueue {
      * @return the boolean state
      */
     public boolean isEmpty() {
-        return totalPackets != 0;
+        return totalPackets == 0;
     }
 
     void resetLimits() {
