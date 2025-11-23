@@ -105,7 +105,7 @@ public class Coil {
                 throw e;
             }
             link = nodeLinks.get(node);
-            System.out.println("Link found for node " + node + " " + link);
+            // System.out.println("Link found for node " + node + " " + link);
             if (link == null) {
                 throw new IOException("Failed to establish link to node " + node + " after connection");
             }

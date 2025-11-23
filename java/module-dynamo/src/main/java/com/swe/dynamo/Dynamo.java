@@ -160,6 +160,7 @@ public class Dynamo {
                         failures = 0;
                         previousFailedReciever = null;
                     } catch (IOException e) {
+                        e.printStackTrace();
                         queue.add(packet);
                         // TODO handle retry
                         // get frame of this chunk. send invalid packet
@@ -220,7 +221,7 @@ public class Dynamo {
 
         shuffleNodes(destNodes);
 
-        System.out.println("Sending data to " + destNodes);
+        // System.out.println("Sending data to " + destNodes);
 
         Node[] forwardingNodes = new Node[destNodes.length - 1];
         System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
@@ -259,7 +260,7 @@ public class Dynamo {
     }
 
     private void handleChunk(Chunk chunk) {
-        System.out.println("Recieved chunk: " + chunk.getChunkNumber() + " " + chunk.getMessageID());
+        // System.out.println("Recieved chunk: " + chunk.getChunkNumber() + " " + chunk.getMessageID());
         Frame frame = null;
         if (chunk.getChunkNumber() == 0) {
             // first chunk
@@ -285,7 +286,7 @@ public class Dynamo {
         }
 
         if (frame.getForwardingLength() > 0) {
-            System.out.println("Forwarding length: " + frame.getForwardingLength());
+            // System.out.println("Forwarding length: " + frame.getForwardingLength());
             byte priority = (byte) frame.getPriority();
             for (int i = 0; i < Math.min(frame.getForwardingLength(), peerCount - 1); i++) {
                 Node reciever = frame.getForwardingNodes()[i];
@@ -309,7 +310,7 @@ public class Dynamo {
             // THIS IS THE PACKET WITH THE FRAME
 
             Frame frame = Frame.deserialize(chunk.getPayload());
-            System.out.println("Putting frame into outgoing message map: " + chunk.getMessageID());
+            // System.out.println("Putting frame into outgoing message map: " + chunk.getMessageID());
             outgoingMessageMap.put(chunk.getMessageID(), frame);
 
             if (frame.getForwardingLength() > 0) {
@@ -361,14 +362,14 @@ public class Dynamo {
      * @param client
      */
     private void sendNodeList(Node client) {
-        System.out.println("Sending node list to " + client);
+        // System.out.println("Sending node list to " + client);
         Node[] nodeList = coil.getNodeList();
         byte[] nodeListData = new byte[nodeList.length * 6];
         for (int i = 0; i < nodeList.length; i++) {
             System.arraycopy(nodeList[i].serialize(), 0, nodeListData, i * 6, 6);
         }
         sendData(nodeListData, new Node[] { client }, 0, 0);
-        System.out.println("Sent node list to " + client);
+        // System.out.println("Sent node list to " + client);
     }
 
     private void handleFrame(Frame frame) {

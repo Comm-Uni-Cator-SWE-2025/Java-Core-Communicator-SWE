@@ -22,7 +22,7 @@ public class Utils {
         try (DatagramSocket socket = new DatagramSocket()) {
             final int pingPort = 10002;
             socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
-            return new ClientNode(socket.getLocalAddress().getHostAddress(), 6943);
+            return new ClientNode(socket.getLocalAddress().getHostAddress(), 1212);
         } catch (SocketException | UnknownHostException e) {
             throw new RuntimeException(e);
         }

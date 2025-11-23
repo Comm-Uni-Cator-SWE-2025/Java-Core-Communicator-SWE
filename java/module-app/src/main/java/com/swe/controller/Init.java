@@ -45,7 +45,7 @@ public class Init {
         new ChatManager(DynamoNetworking.getDynamoNetworking());
 
          MediaCaptureManager
-             mediaCaptureManager = new MediaCaptureManager(DynamoNetworking.getDynamoNetworking(), 6943);
+             mediaCaptureManager = new MediaCaptureManager(DynamoNetworking.getDynamoNetworking(), 1212);
          Thread mediaCaptureManagerThread = new Thread(() -> {
              try {
                  mediaCaptureManager.startCapture(24);
@@ -98,7 +98,7 @@ public class Init {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
                 Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.cloud);
                 controllerServices.networking.addUser(localClientNode, localClientNode);
-
+                System.out.println("Added user to networking");
                 MeetingNetworkingCoordinator.handleMeetingCreated(meetingSession);
             } catch (Exception e) {
                 System.out.println("Error initializing networking for meeting host: " + e.getMessage());

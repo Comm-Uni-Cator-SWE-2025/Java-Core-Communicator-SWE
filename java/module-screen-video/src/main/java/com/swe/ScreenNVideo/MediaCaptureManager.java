@@ -119,7 +119,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
-        addParticipant("10.128.5.156", false);
+        // addParticipant("10.128.5.156", false);
 
         clientHandler = new MediaCaptureManager.ClientHandler();
 
