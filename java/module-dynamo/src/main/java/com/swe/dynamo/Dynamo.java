@@ -2,6 +2,7 @@ package com.swe.dynamo;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Function;
@@ -10,6 +11,10 @@ import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.dynamo.Parsers.Chunk;
 import com.swe.dynamo.Parsers.Frame;
+
+record PendingPacket(Chunk chunk, Node reciever) {
+
+}
 
 public class Dynamo {
     // Singleton instance
@@ -21,6 +26,12 @@ public class Dynamo {
     private Dynamo() {
         try {
             socketry = new Coil();
+            packetQueues = new ConcurrentLinkedQueue[5];
+            for (int i = 0; i < 5; i++) {
+                packetQueues[i] = new ConcurrentLinkedQueue<>();
+            }
+            subscriptions = new ConcurrentHashMap<>();
+            messageMap = new ConcurrentHashMap<>();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -31,8 +42,13 @@ public class Dynamo {
         return INSTANCE;
     }
 
+    private ConcurrentHashMap<Integer, Frame> messageMap;
 
-    private ConcurrentHashMap<Integer, byte[]> messageMap;
+    private ConcurrentLinkedQueue<PendingPacket>[] packetQueues;
+
+    private ConcurrentHashMap<Integer, Function<byte[], Void>> subscriptions;
+
+    private final int peerCount = 4;
 
     public void addUser(ClientNode self, ClientNode mainServer) {
         if (self.equals(mainServer)) {
@@ -70,25 +86,92 @@ public class Dynamo {
         // remove the subscription
     }
 
-
     private void handleChunk(Chunk chunk) {
+        Frame frame = null;
         if (chunk.getChunkNumber() == 0) {
             // first chunk
-            Frame frame = Frame.deserialize(chunk.getPayload());
-            messageMap.put(chunk.getMessageID(), chunk.getPayload());
+            frame = Frame.deserialize(chunk.getPayload());
+            messageMap.put(chunk.getMessageID(), frame);
         } else {
             // subsequent chunk
-            byte[] payload = messageMap.get(chunk.getMessageID());
-            if (payload != null) {
-                payload = Arrays.copyOf(payload, payload.length + chunk.getPayload().length);
-                System.arraycopy(chunk.getPayload(), 0, payload, payload.length - chunk.getPayload().length, chunk.getPayload().length);
-                messageMap.put(chunk.getMessageID(), payload);
+            frame = messageMap.get(chunk.getMessageID());
+            if (frame != null) {
+                if (frame.appendPayload(chunk.getPayload())) {
+                    messageMap.remove(chunk.getMessageID());
+                    handleFrame(frame);
+                } else {
+                    // continue
+                }
             } else {
                 System.err.println("Empty payload for message ID: " + chunk.getMessageID());
             }
         }
+
+        if (frame.getForwardingLength() > 0) {
+            byte priority = (byte) frame.getPriority();
+            for (int i = 0; i < Math.min(frame.getForwardingLength(), peerCount - 1); i++) {
+                Node reciever = frame.getForwardingNodes()[i];
+                ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[priority];
+                queue.add(new PendingPacket(modifyForwarding(chunk, false), reciever));
+            }
+
+            Node reciever = frame.getForwardingNodes()[peerCount - 1];
+            ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[priority];
+            queue.add(
+                    new PendingPacket(modifyForwarding(chunk, frame.getForwardingLength() > peerCount), reciever));
+        }
     }
 
+    private Chunk modifyForwarding(Chunk chunk, boolean isForwarding) {
+        if (chunk.getChunkNumber() == 0) {
+            // THIS IS THE PACKET WITH THE FRAME
+
+            Frame frame = Frame.deserialize(chunk.getPayload());
+
+            if (frame.getForwardingLength() > 0) {
+                // THIS IS A PACKET WITH FORWARDING NODES
+                if (frame.getForwardingLength() < peerCount) {
+                    // THIS IS A PACKET WITH FORWARDING NODES BUT LESS THAN THE PEER COUNT
+
+                    Frame newFrame = new Frame(frame.getLength(), frame.getType(), frame.getPriority(), (byte) 0,
+                            new Node[0], frame.getPayload());
+                    return new Chunk(chunk.getMessageID(), chunk.getChunkNumber(), newFrame.serialize());
+
+                } else if (isForwarding) {
+                    // THIS IS A PACKET WITH FORWARDING NODES BUT GREATER THAN THE PEER COUNT
+
+                    Node[] newForwardingNodes = new Node[frame.getForwardingLength() - peerCount];
+                    System.arraycopy(frame.getForwardingNodes(), peerCount, newForwardingNodes, 0,
+                            frame.getForwardingLength() - peerCount);
+
+                    Frame newFrame = new Frame(frame.getLength(), frame.getType(), frame.getPriority(),
+                            (byte) (frame.getForwardingLength() - peerCount), newForwardingNodes, frame.getPayload());
+
+                    return new Chunk(chunk.getMessageID(), chunk.getChunkNumber(), newFrame.serialize());
+                } else {
+                    // THIS IS A PACKET WITH FORWARDING NODES BUT GREATER THAN THE PEER COUNT BUT
+                    // SENT TO NON FORWARDING NODE
+                    Frame newFrame = new Frame(frame.getLength(), frame.getType(), frame.getPriority(), (byte) 0,
+                            frame.getForwardingNodes(), frame.getPayload());
+                    return new Chunk(chunk.getMessageID(), chunk.getChunkNumber(), newFrame.serialize());
+                }
+            } else {
+                return chunk;
+            }
+        } else {
+            return chunk;
+        }
+    }
+
+    private void handleFrame(Frame frame) {
+        Function<byte[], Void> subscription = subscriptions.get((int) frame.getType());
+
+        if (subscription != null) {
+            subscription.apply(frame.getPayload());
+        } else {
+            System.err.println("No subscription found for type: " + frame.getType());
+        }
+    }
 
     private void startListening() throws IOException {
         while (true) {

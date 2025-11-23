@@ -78,4 +78,19 @@ public class Frame {
     public int getLength() {
         return length;
     }
+
+    /**
+     * Appends the given payload to the current payload.
+     * @param payload the payload to append
+     * @return true if the payload completes the frame, false otherwise
+     */
+    public boolean appendPayload(byte[] payload) {
+        if (this.payload == null) {
+            this.payload = payload;
+        } else {
+            this.payload = Arrays.copyOf(this.payload, this.payload.length + payload.length);
+            System.arraycopy(payload, 0, this.payload, this.payload.length - payload.length, payload.length);
+        }
+        return this.payload.length == this.length;
+    }
 }
