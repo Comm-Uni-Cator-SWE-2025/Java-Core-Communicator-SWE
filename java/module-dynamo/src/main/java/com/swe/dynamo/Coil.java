@@ -1,22 +1,23 @@
 package com.swe.dynamo;
 
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.socketry.socket.SocketTCP;
 import com.swe.dynamo.Parsers.Chunk;
+import com.swe.dynamo.socket.ISocket;
+import com.swe.dynamo.socket.SocketTCP;
 
 public class Coil {
-
 
     final Selector selector;
 
@@ -24,10 +25,67 @@ public class Coil {
         selector = Selector.open();
     }
 
-    final ArrayList<Link> links = new ArrayList<>();
+    private HashMap<Node, Link> nodeLinks = new HashMap<>();
+
+    public void connectToNode(Node node) throws IOException {
+        SocketChannel socketChannel = SocketChannel.open();
+        socketChannel.configureBlocking(false);
+
+        // Start the connection (returns immediately in non-blocking mode)
+        socketChannel.connect(new InetSocketAddress(node.IPToString(), (int) node.getPort()));
+
+        // Create a temporary selector for connection timeout
+        Selector connectSelector = Selector.open();
+        socketChannel.register(connectSelector, SelectionKey.OP_CONNECT);
+
+        // Wait for connection with 1 second timeout
+        int ready = connectSelector.select(1000); // 1000 ms = 1 second
+
+        if (ready == 0) {
+            // Timeout occurred
+            socketChannel.close();
+            connectSelector.close();
+            throw new IOException("Connection timeout after 1 second to " + node.IPToString() + ":" + node.getPort());
+        }
+
+        // Complete the connection
+        if (socketChannel.finishConnect()) {
+            connectSelector.close();
+            ISocket socket = new SocketTCP(socketChannel);
+            registerLink(new Link(socket));
+        } else {
+            socketChannel.close();
+            connectSelector.close();
+            throw new IOException("Failed to complete connection to " + node.IPToString() + ":" + node.getPort());
+        }
+    }
+
+    /** 
+     * send data to the given node
+     * @param node the node to send the data to
+     * @param chunk the chunk to send
+     * @throws IOException if the data cannot be sent
+     */
+    public void sendData(Node node, Chunk chunk) throws IOException {
+        Link link = nodeLinks.get(node);
+        if (link == null) {
+            try {
+                connectToNode(node);
+            } catch (IOException e) {
+                // close and remove the link
+                throw e;
+            }
+            link = nodeLinks.get(node);
+        }
+        if (!link.sendPacket(chunk)) {
+            unregisterLink(link);
+            throw new IOException("Failed to send data to node " + node);
+        }
+    }
 
     /**
      * Starts a server on the given port
+     * 
      * @param port the port to start the server on
      * @throws IOException if the server cannot be started
      */
@@ -36,16 +94,28 @@ public class Coil {
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.bind(new InetSocketAddress(port));
-        
+
         // Register the server socket with the selector for ACCEPT operations
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        
+
         System.out.println("Server started on port " + port);
     }
 
     private void registerLink(Link link) throws ClosedChannelException {
         link.register(selector);
-        links.add(link);
+        Node remoteAddress = link.getRemoteAddress();
+        nodeLinks.put(remoteAddress, link);
+    }
+
+    /**
+     * Unregisters the link and closes the socket
+     * @param link the link to unregister
+     */
+    public void unregisterLink(Link link) {
+        link.close();
+        link.unregister(selector);
+        Node remoteAddress = link.getRemoteAddress();
+        nodeLinks.remove(remoteAddress);
     }
 
     public ArrayList<Chunk> listen() {
@@ -58,7 +128,7 @@ public class Coil {
                 return new ArrayList<>();
             }
 
-//            System.out.println("readyChannels : " + readyChannels);
+            // System.out.println("readyChannels : " + readyChannels);
 
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
@@ -84,7 +154,7 @@ public class Coil {
             System.err.println("Error in selector loop: " + e.getMessage());
             e.printStackTrace();
         }
-//        System.out.println("packets : " + packets);
+        // System.out.println("packets : " + packets);
 
         return packets;
     }

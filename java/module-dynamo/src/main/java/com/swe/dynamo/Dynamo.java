@@ -67,6 +67,8 @@ public class Dynamo {
 
     private ConcurrentLinkedQueue<PendingPacket>[] packetQueues;
 
+    private boolean gotALlClients = false;
+
     private ConcurrentHashMap<Integer, Function<byte[], Void>> subscriptions;
 
     private final int peerCount = 4;
@@ -89,6 +91,42 @@ public class Dynamo {
         }
     }
 
+    public void startPriorityThread() {
+        int [] packetCounts = {1,2,2,3,3};
+        int failures = 0;
+        Node previousFailedReciever = null;
+        while (true) {
+            if (!gotALlClients) {
+                continue;
+            }
+            for (int i = 4; i >= 0; i--) {
+                ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[i];
+                int count = packetCounts[i];
+                while (!queue.isEmpty() && count-- > 0) {
+                    PendingPacket packet = queue.poll();
+                    try {
+                        coil.sendData(packet.reciever(), packet.chunk());
+                        failures = 0;
+                        previousFailedReciever = null;
+                    } catch (IOException e) {
+                        if (previousFailedReciever != null && previousFailedReciever.equals(packet.reciever())) {
+                            continue;
+                        }
+                        failures++;
+                        previousFailedReciever = packet.reciever();
+                        System.err.println("Error sending data to node " + packet.reciever() + ": " + e.getMessage());
+                        e.printStackTrace();
+                        if (failures > 5) {
+                            gotALlClients = false;
+                            // TODO: send a message to the main server to inform that the clients are not reachable
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void closeDynamo() {
         // close the dynamo
         coilThread.interrupt();
@@ -108,8 +146,13 @@ public class Dynamo {
     }
 
     public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
-        // TODO handle clientnode to node conversion
-        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) 0, new Node[0], data);
+        Node[] destNodes = new Node[destIp.length];
+        for (int i = 0; i < destIp.length; i++) {
+            destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
+        }
+        Node[] forwardingNodes = new Node[destNodes.length - 1];
+        System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
+        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length, forwardingNodes, data);
         int messageId = UUID.randomUUID().hashCode();
 
         Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
@@ -118,8 +161,7 @@ public class Dynamo {
             chunks[i] = new Chunk(messageId, i, Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
         }
         for (Chunk chunk : chunks) {
-            // TODO add packet queue handling
-            packetQueues[priority].add(new PendingPacket(chunk, new Node(2, (short)3)));
+            packetQueues[priority].add(new PendingPacket(chunk, destNodes[0]));
         }
     }
 

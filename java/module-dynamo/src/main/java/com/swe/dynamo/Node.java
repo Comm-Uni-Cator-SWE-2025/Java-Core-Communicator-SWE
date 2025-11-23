@@ -1,5 +1,7 @@
 package com.swe.dynamo;
 
+import java.util.Arrays;
+
 public class Node {
     private int IP;
     private short port;
@@ -9,12 +11,41 @@ public class Node {
         this.port = port;
     }
 
+    public Node(String IP, short port) {
+        this.IP = ipToInt(IP);
+        this.port = port;
+    }
+
     public int getIP() {
         return IP;
     }
     
     public short getPort() {
         return port;
+    }
+
+    @Override
+    public int hashCode() {
+        return (IP + ":" + port).hashCode();
+    }
+
+    public String IPToString() {
+        return ((IP >> 24) & 0xFF) + "." + ((IP >> 16) & 0xFF) + "." + ((IP >> 8) & 0xFF) + "." + (IP & 0xFF);
+    }
+
+    /**
+     * Converts the given IP address to an integer.
+     * Considers that int is 32 bits signed integer.
+     * @param ip the IP address to convert
+     * @return the integer representation of the IP address
+     */
+    public static int ipToInt(String ip) {
+        int result = 0;
+        final int[] ipInts = Arrays.stream(ip.split("\\.")).mapToInt(Integer::parseInt).toArray();
+        for (int i = 0; i < ipInts.length; i++) {
+            result = result << 8 | ipInts[i] & 0xFF;
+        }
+        return result;
     }
 
     public byte[] serialize() {
