@@ -7,10 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.BeforeEach;
+
 /**
  * Test class for splitting the packets.
  */
 public class SplitPacketTest {
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        SplitPackets.getSplitPackets().emptyBuffer();
+    }
+
     @org.junit.jupiter.api.Test
     void testSingleCompletePacket() {
         final SplitPackets splitter = SplitPackets.getSplitPackets();
@@ -69,5 +76,28 @@ public class SplitPacketTest {
         final byte[] empty = new byte[0];
         final List<byte[]> result = splitter.split(empty);
         assertTrue(result.isEmpty());
+    }
+
+    @org.junit.jupiter.api.Test
+    void testEmptyBuffer() {
+        final SplitPackets splitter = SplitPackets.getSplitPackets();
+        // Note: @BeforeEach's setUp method ensures the buffer is initially empty.
+
+        // 1. Send a fragmented packet. This will populate the incompleteBuffer.
+        final byte[] part1 = new byte[] { 0x08, 0x00, 1, 2, 3, 4, 5 }; // An 8-byte packet, we send 7 bytes.
+        List<byte[]> result1 = splitter.split(part1);
+        assertTrue(result1.isEmpty(), "No complete packet should be found, and the buffer should be populated.");
+
+        // 2. Call emptyBuffer() to clear the state.
+        splitter.emptyBuffer();
+
+        // 3. Send the final byte of the original packet.
+        final byte[] part2 = new byte[] { 6 };
+        List<byte[]> result2 = splitter.split(part2);
+
+        // 4. Assert that no packet is created.
+        // If emptyBuffer() worked, part1 is gone, and part2 is just junk, so no packet should be produced.
+        // If emptyBuffer() did NOT work, the splitter would combine part1 and part2 and create a packet, failing the test.
+        assertTrue(result2.isEmpty(), "The buffer should have been cleared, so no packet should be formed.");
     }
 }
