@@ -1,12 +1,15 @@
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
+import org.mockito.Mockito;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.SelectionKey;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,10 +32,10 @@ public class TCPCommunicatorTest {
             recieveThread2.start();
             final Integer sleepTime = 500;
             Thread.sleep(sleepTime);
-            final String localAddress = "10.32.0.41";
+            final String localAddress = "127.0.0.1";
             final ProtocolBase tcp = new TCPCommunicator(8000);
             final String data = "Welcome to the new world!!!";
-            final ClientNode dest = new ClientNode("10.128.12.13", port1);
+            final ClientNode dest = new ClientNode("127.0.0.1", port1);
             // TODO: Write test cases to cause connection errors
             final ClientNode dest1 = new ClientNode("127.0.0.1", port2);
             tcp.sendData(data.getBytes(), dest);
@@ -111,7 +114,7 @@ public class TCPCommunicatorTest {
         final Socket destSocket = new Socket();
         try {
             final Integer timeout = 5000;
-            final String localAddress = "10.32.0.41";
+            final String localAddress = "127.0.0.1";
             destSocket.connect(new InetSocketAddress(localAddress, serverPort), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
@@ -131,9 +134,16 @@ public class TCPCommunicatorTest {
     @org.junit.jupiter.api.Test
     public void testErrorCloseSocket() {
         final ProtocolBase tcp = new TCPCommunicator(8011);
-        final String localAddress = "10.32.0.41";
+        final String localAddress = "127.0.0.1";
         final ClientNode client = new ClientNode(localAddress, 9000);
         tcp.closeSocket(client);
+        tcp.close();
+    }
+
+    @org.junit.jupiter.api.Test
+    public void testPrintKeys() {
+        final ProtocolBase tcp = new TCPCommunicator(8011);
+        tcp.printKeys();
         tcp.close();
     }
 }

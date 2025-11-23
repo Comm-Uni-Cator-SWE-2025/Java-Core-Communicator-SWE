@@ -195,7 +195,11 @@ public class Networking implements AbstractNetworking, AbstractController {
     @Override
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
-        final List<ClientNode> dest = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+        List<ClientNode> dest = new ArrayList<>();
+        List<ClientNode> clientDests = topology.getClients(topology.getClusterIndex(user));
+        if(clientDests!=null){
+            dest = clientDests;
+        }
 
         if (user == topology.getServer(user)) {
             final List<ClientNode> servers = new ArrayList<>(topology.getAllClusterServers());

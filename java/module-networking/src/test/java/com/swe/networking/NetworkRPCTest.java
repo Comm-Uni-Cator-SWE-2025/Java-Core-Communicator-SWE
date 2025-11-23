@@ -3,6 +3,7 @@ package com.swe.networking;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.swe.core.ClientNode;
 import org.junit.jupiter.api.Test;
 
 public class NetworkRPCTest {
@@ -44,6 +45,7 @@ public class NetworkRPCTest {
         final ByteBuffer args = ByteBuffer.allocate(4);
         args.putInt(2);
         rpc.networkRPCSubscribe(args.array());
+//        Networking.getNetwork().callSubscriber(2, new byte[0]);
     }
 
     @Test
@@ -69,7 +71,8 @@ public class NetworkRPCTest {
         args.put(payload);
         args.putInt(module);
         args.putInt(priority);
-
+        ClientNode user = new ClientNode("127.0.0.1", 8888);
+        Networking.getNetwork().addUser(user, user);
         rpc.networkRPCBroadcast(args.array());
     }
 
@@ -104,4 +107,6 @@ public class NetworkRPCTest {
 
         rpc.networkRPCSendData(buf.array());
     }
+
+
 }
