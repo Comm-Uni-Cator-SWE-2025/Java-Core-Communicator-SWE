@@ -92,7 +92,6 @@ public class NewPriorityQueue {
         firstPriorityQueue = new ArrayDeque<>();
         secondPriorityQueue = new ArrayDeque<>();
         thirdPriorityQueue = new ArrayDeque<>();
-
     }
 
     /**
@@ -114,6 +113,7 @@ public class NewPriorityQueue {
      */
     public void addPacket(final byte[] data) {
         try {
+            System.out.println("Added a packet to the priority queue...");
             totalPackets++;
             final PacketParser parser = PacketParser.getPacketParser();
             final PacketInfo info = parser.parsePacket(data);
@@ -143,26 +143,31 @@ public class NewPriorityQueue {
      * @return the packet
      */
     public byte[] getPacket() {
+        // System.out.println(Arrays.toString(limits));
         byte[] packet = null;
         if (!zeroPriorityQueue.isEmpty()) {
             if (limits[zeroPriority] > 0) {
                 packet = zeroPriorityQueue.pop();
                 limits[zeroPriority] -= 1;
+                System.out.println("Dequeued from zero priority...");
             }
         } else if (!firstPriorityQueue.isEmpty()) {
             if (limits[firstPriority] > 0) {
                 packet = firstPriorityQueue.pop();
                 limits[firstPriority] -= 1;
+                System.out.println("Dequeued from first priority...");
             }
         } else if (!secondPriorityQueue.isEmpty()) {
             if (limits[secondPriority] > 0) {
                 packet = secondPriorityQueue.pop();
                 limits[secondPriority] -= 1;
+                System.out.println("Dequeued from second priority...");
             }
         } else if (!thirdPriorityQueue.isEmpty()) {
             if (limits[thirdPriority] > 0) {
                 packet = thirdPriorityQueue.pop();
                 limits[thirdPriority] -= 1;
+                System.out.println("Dequeued from third priority...");
             }
         }
         resetLimits();
@@ -176,10 +181,7 @@ public class NewPriorityQueue {
      * @return the boolean state
      */
     public boolean isEmpty() {
-        if (totalPackets == 0) {
-            return true;
-        }
-        return false;
+        return totalPackets != 0;
     }
 
     void resetLimits() {
