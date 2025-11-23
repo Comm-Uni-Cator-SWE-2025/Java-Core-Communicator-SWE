@@ -91,6 +91,7 @@ public class Frame {
             this.payload = Arrays.copyOf(this.payload, this.payload.length + payload.length);
             System.arraycopy(payload, 0, this.payload, this.payload.length - payload.length, payload.length);
         }
+        System.out.println("Appended payload to frame: " + this.payload.length + " " + this.length);
         return this.payload.length == this.length;
     }
 }

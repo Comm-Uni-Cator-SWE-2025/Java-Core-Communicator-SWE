@@ -33,6 +33,8 @@ public class Dynamo {
                 System.err.println("Peer list already instantiated, recieved peer list again");
                 return null;
             }
+            System.out.println("Recieved peer list");
+
             HashSet<Node> peerList = new HashSet<>();
             Node[] nodes = new Node[data.length / 6];
 
@@ -53,6 +55,7 @@ public class Dynamo {
             }
 
             instantiatedPeerList = true;
+            System.out.println("Peer list instantiated");
 
             return null;
         });
@@ -247,11 +250,16 @@ public class Dynamo {
     }
 
     private void handleChunk(Chunk chunk) {
+        System.out.println("Recieved chunk: " + chunk.getChunkNumber() + " " + chunk.getMessageID());
         Frame frame = null;
         if (chunk.getChunkNumber() == 0) {
             // first chunk
             frame = Frame.deserialize(chunk.getPayload());
-            incomingMessageMap.put(chunk.getMessageID(), frame);
+            if (frame.getLength() < 1024) {
+                handleFrame(frame);
+            } else {
+                incomingMessageMap.put(chunk.getMessageID(), frame);
+            }
         } else {
             // subsequent chunk
             frame = incomingMessageMap.get(chunk.getMessageID());
