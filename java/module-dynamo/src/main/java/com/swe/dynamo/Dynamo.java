@@ -76,7 +76,7 @@ public class Dynamo {
 
     private ConcurrentLinkedQueue<PendingPacket>[] packetQueues;
 
-    private boolean instantiatedPeerList = false;
+    private volatile boolean instantiatedPeerList = false;
 
     private ConcurrentHashMap<Integer, Function<byte[], Void>> subscriptions;
 
@@ -132,6 +132,7 @@ public class Dynamo {
         int failures = 0;
         Node previousFailedReciever = null;
         while (true) {
+            // System.out.println("Priority thread running...");
             if (!instantiatedPeerList) {
                 continue;
             }
@@ -143,6 +144,10 @@ public class Dynamo {
                     PendingPacket packet = queue.poll();
                     Chunk chunk = packet.chunk();
                     Frame frame = outgoingMessageMap.get(chunk.getMessageID());
+                    if (frame == null) {
+                        System.err.println("Frame not found for message ID: " + chunk.getMessageID());
+                        continue;
+                    }
                     try {
                         System.out.println("Sending data to " + packet.reciever());
                         coil.sendData(packet.reciever(), packet.chunk());
@@ -285,7 +290,7 @@ public class Dynamo {
                 queue.add(new PendingPacket(modifyForwarding(chunk, false), reciever));
             }
 
-            Node reciever = frame.getForwardingNodes()[peerCount - 1];
+            Node reciever = frame.getForwardingNodes()[Math.min(peerCount - 1, frame.getForwardingLength() - 1)];
             ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[priority];
             queue.add(
                     new PendingPacket(modifyForwarding(chunk, frame.getForwardingLength() > peerCount), reciever));
@@ -297,6 +302,8 @@ public class Dynamo {
             // THIS IS THE PACKET WITH THE FRAME
 
             Frame frame = Frame.deserialize(chunk.getPayload());
+
+            outgoingMessageMap.put(chunk.getMessageID(), frame);
 
             if (frame.getForwardingLength() > 0) {
                 // THIS IS A PACKET WITH FORWARDING NODES
