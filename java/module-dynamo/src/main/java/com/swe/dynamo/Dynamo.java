@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.function.Function;
 
 import com.swe.core.ClientNode;
@@ -22,39 +21,42 @@ public class Dynamo {
     // Singleton instance
     private static final Dynamo INSTANCE = new Dynamo();
 
-    private HashSet<Node> peerList = new HashSet<>();
-    private Node self;
-
-    private Coil coil;
-
     // Private constructor to prevent instantiation
     private Dynamo() {
-        // try {
-            packetQueues = new ConcurrentLinkedQueue[5];
-            for (int i = 0; i < 5; i++) {
-                packetQueues[i] = new ConcurrentLinkedQueue<>();
+        packetQueues = new ConcurrentLinkedQueue[5];
+        for (int i = 0; i < 5; i++) {
+            packetQueues[i] = new ConcurrentLinkedQueue<>();
+        }
+        subscriptions = new ConcurrentHashMap<>();
+        subscriptions.put(0, (byte[] data) -> {
+            if (instantiatedPeerList) {
+                System.err.println("Peer list already instantiated, recieved peer list again");
+                return null;
             }
-            subscriptions = new ConcurrentHashMap<>();
-            // subscriptions.put(0, (byte[] data) -> {
-            //     // extract all the nodes from the data
-            //     HashSet<Node> newPeerList = new HashSet<>();
-            //     Node[] nodes = new Node[data.length / 6];
-            //     for (int i = 0; i < nodes.length; i++) {
-            //         nodes[i] = Node.deserialize(Arrays.copyOfRange(data, i * 6, i * 6 + 6));
-            //         if (!newPeerList.contains(nodes[i])) {
-            //             newPeerList.add(nodes[i]);
-            //             peerList.add(nodes[i]);
-            //         }
-            //     }
-            //     for (Node node : peerList) {
-            //         sendData(self.serialize(), node, 0, 4);
-            //     }
-            //     return null;
-            // });
-            incomingMessageMap = new ConcurrentHashMap<>();
-        // } catch (IOException e) {
-        //     e.printStackTrace();
-        // }
+            HashSet<Node> peerList = new HashSet<>();
+            Node[] nodes = new Node[data.length / 6];
+
+            for (int i = 0; i < nodes.length; i++) {
+                nodes[i] = Node.deserialize(Arrays.copyOfRange(data, i * 6, i * 6 + 6));
+                peerList.add(nodes[i]);
+            }
+
+            for (Node node : peerList) {
+                try {
+                    if (node.equals(self)) {
+                        continue;
+                    }
+                    coil.connectToNode(node);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            instantiatedPeerList = true;
+
+            return null;
+        });
+        incomingMessageMap = new ConcurrentHashMap<>();
     }
 
     // Public accessor for singleton instance
@@ -62,33 +64,43 @@ public class Dynamo {
         return INSTANCE;
     }
 
+    private Coil coil;
+
     private ConcurrentHashMap<Integer, Frame> incomingMessageMap;
-    private ConcurrentHashMap<Integer, Frame> outGoingMessageMap;
+    private ConcurrentHashMap<Integer, Frame> outgoingMessageMap;
 
     private ConcurrentLinkedQueue<PendingPacket>[] packetQueues;
 
-    private boolean gotALlClients = false;
+    private boolean instantiatedPeerList = false;
 
     private ConcurrentHashMap<Integer, Function<byte[], Void>> subscriptions;
 
     private final int peerCount = 4;
 
     private Thread coilThread;
-
     private Thread priorityThread;
+
+    private Node self;
+    private Node mainServerNode;
+
+    private Runnable disconnectHandler;
+
+    public void registerDisconnectHandler(Runnable handler) {
+        disconnectHandler = handler;
+    }
 
     public void addUser(ClientNode self, ClientNode mainServer) throws Exception {
         // start Server on given port to accept connections
+        this.self = new Node(self.hostName(), (short) self.port());
+        mainServerNode = new Node(mainServer.hostName(), (short) mainServer.port());
         coil = new Coil(self.equals(mainServer));
         try {
             coil.startServer(self.port());
-
 
             coilThread = new Thread(() -> coil.listenLoop((chunk) -> {
                 handleChunk(chunk);
                 return null;
             }));
-
 
             priorityThread = new Thread(this::startPriorityThread);
             priorityThread.setDaemon(true);
@@ -102,11 +114,11 @@ public class Dynamo {
     }
 
     public void startPriorityThread() {
-        int [] packetCounts = {1,2,2,3,3};
+        int[] packetCounts = { 1, 2, 2, 3, 3 };
         int failures = 0;
         Node previousFailedReciever = null;
         while (true) {
-            if (!gotALlClients) {
+            if (!instantiatedPeerList) {
                 continue;
             }
             for (int i = 4; i >= 0; i--) {
@@ -116,20 +128,20 @@ public class Dynamo {
                     PendingPacket packet = queue.poll();
                     try {
                         Chunk chunk = packet.chunk();
-                        Frame frame = outGoingMessageMap.get(chunk.getMessageID());
+                        Frame frame = outgoingMessageMap.get(chunk.getMessageID());
 
                         coil.sendData(packet.reciever(), packet.chunk());
-                        
+
                         if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
-                            outGoingMessageMap.remove(chunk.getMessageID());
+                            outgoingMessageMap.remove(chunk.getMessageID());
                         }
-                        
+
                         failures = 0;
                         previousFailedReciever = null;
                     } catch (IOException e) {
                         // TODO handle retry
                         // get frame of this chunk. send invalid packet
-                        
+
                         // TODO decide what to do when a single node fails
                         if (previousFailedReciever != null && previousFailedReciever.equals(packet.reciever())) {
                             continue;
@@ -139,8 +151,14 @@ public class Dynamo {
                         System.err.println("Error sending data to node " + packet.reciever() + ": " + e.getMessage());
                         e.printStackTrace();
                         if (failures > 5) {
-                            gotALlClients = false;
-                            // TODO: handle potential disconnection
+                            instantiatedPeerList = false;
+                            System.err.println("We seem disconnected from the network.");
+                            disconnectHandler.run();
+                            // try {
+                            // coil.sendData(mainServerNode, new Chunk(0, 0, new byte[0]));
+                            // } catch (IOException e2) {
+                            // e2.printStackTrace();
+                            // }
                             break;
                         }
                     }
@@ -152,6 +170,7 @@ public class Dynamo {
     public void closeDynamo() {
         // close the dynamo
         coilThread.interrupt();
+        priorityThread.interrupt();
     }
 
     public void consumeRPC(AbstractRPC rpc) {
@@ -173,18 +192,20 @@ public class Dynamo {
             destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
         }
         shuffleNodes(destNodes);
-        
+
         Node[] forwardingNodes = new Node[destNodes.length - 1];
         System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
-        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length, forwardingNodes, data);
+        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length,
+                forwardingNodes, data);
         int messageId = UUID.randomUUID().hashCode();
 
-        outGoingMessageMap.put(messageId, frame);
+        outgoingMessageMap.put(messageId, frame);
 
         Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
         byte[] payload = frame.serialize();
         for (int i = 0; i < chunks.length; i++) {
-            chunks[i] = new Chunk(messageId, i, Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
+            chunks[i] = new Chunk(messageId, i,
+                    Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
         }
         for (Chunk chunk : chunks) {
             packetQueues[priority].add(new PendingPacket(chunk, destNodes[0]));
@@ -192,15 +213,20 @@ public class Dynamo {
     }
 
     public void broadcast(byte[] data, int module, int priority) {
-        // broadcast the data to all clients
+        Node[] nodes = coil.getNodeList();
+        ClientNode[] clientNodes = new ClientNode[nodes.length];
+        for (int i = 0; i < nodes.length; i++) {
+            clientNodes[i] = new ClientNode(nodes[i].IPToString(), (short) nodes[i].getPort());
+        }
+        sendData(data, clientNodes, module, priority);
     }
 
     public void subscribe(int name, Function<byte[], Void> function) {
-        // subscribe to the name
+        subscriptions.put(name, function);
     }
 
     public void removeSubscription(int name) {
-        // remove the subscription
+        subscriptions.remove(name);
     }
 
     private void handleChunk(Chunk chunk) {
