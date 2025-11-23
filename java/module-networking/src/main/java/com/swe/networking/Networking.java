@@ -12,7 +12,6 @@ import java.util.Vector;
 
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.networking.SimpleNetworking.Client;
 
 /**
  * The main class of the networking module.
