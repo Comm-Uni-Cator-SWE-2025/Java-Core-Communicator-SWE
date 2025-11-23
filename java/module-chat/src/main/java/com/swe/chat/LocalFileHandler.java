@@ -1,5 +1,3 @@
-// module-chat/src/main/java/com/swe/chat/LocalFileHandler.java
-
 package com.swe.chat;
 
 import java.io.IOException;
@@ -14,7 +12,7 @@ public class LocalFileHandler implements IChatFileHandler {
 
     @Override
     public FileResult processFileForSending(String filePath) throws Exception {
-        // Path Sanitization and Validation (Migrated from ChatManager)
+        // Path Sanitization and Validation
         if (filePath == null || filePath.isEmpty()) {
             throw new IllegalArgumentException("File path is null or empty");
         }
@@ -42,7 +40,7 @@ public class LocalFileHandler implements IChatFileHandler {
 
     @Override
     public void decompressAndSaveFile(String messageId, String fileName, byte[] compressedData) throws Exception {
-        // Decompression (Migrated from ChatManager, uses Utilities)
+        // Decompression (Uses existing Utilities class)
         byte[] decompressedData = Utilities.Decompress(compressedData);
         if (decompressedData == null) {
             throw new Exception("Failed to decompress file");
@@ -56,7 +54,7 @@ public class LocalFileHandler implements IChatFileHandler {
             Files.createDirectories(downloadsDir);
         }
 
-        // Conflict resolution logic (Migrated from ChatManager)
+        // Conflict resolution logic
         String originalName = fileName;
         String finalName = originalName;
         java.nio.file.Path savePath = downloadsDir.resolve(finalName);

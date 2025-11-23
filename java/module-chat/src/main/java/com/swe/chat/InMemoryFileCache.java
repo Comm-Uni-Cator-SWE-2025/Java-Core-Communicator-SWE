@@ -1,5 +1,3 @@
-// module-chat/src/main/java/com/swe/chat/InMemoryFileCache.java
-
 package com.swe.chat;
 
 import java.util.Map;

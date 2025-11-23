@@ -1,5 +1,3 @@
-// module-chat/src/main/java/com/swe/chat/IChatProcessor.java
-
 package com.swe.chat;
 
 /**

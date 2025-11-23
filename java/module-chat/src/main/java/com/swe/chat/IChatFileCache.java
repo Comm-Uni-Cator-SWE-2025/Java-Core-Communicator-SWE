@@ -1,5 +1,3 @@
-// module-chat/src/main/java/com/swe/chat/IChatFileCache.java
-
 package com.swe.chat;
 
 import java.util.Optional;
