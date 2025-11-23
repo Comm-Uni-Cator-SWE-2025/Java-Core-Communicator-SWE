@@ -220,6 +220,8 @@ public class Dynamo {
 
         shuffleNodes(destNodes);
 
+        System.out.println("Sending data to " + destNodes);
+
         Node[] forwardingNodes = new Node[destNodes.length - 1];
         System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
         Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length,
@@ -340,7 +342,7 @@ public class Dynamo {
         }
     }
 
-    void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
+    public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
         Node[] destNodes = new Node[destIp.length];
         for (int i = 0; i < destIp.length; i++) {
             destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
