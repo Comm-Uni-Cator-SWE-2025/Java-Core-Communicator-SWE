@@ -283,6 +283,7 @@ public class Dynamo {
         }
 
         if (frame.getForwardingLength() > 0) {
+            System.out.println("Forwarding length: " + frame.getForwardingLength());
             byte priority = (byte) frame.getPriority();
             for (int i = 0; i < Math.min(frame.getForwardingLength(), peerCount - 1); i++) {
                 Node reciever = frame.getForwardingNodes()[i];
@@ -290,7 +291,11 @@ public class Dynamo {
                 queue.add(new PendingPacket(modifyForwarding(chunk, false), reciever));
             }
 
-            Node reciever = frame.getForwardingNodes()[Math.min(peerCount - 1, frame.getForwardingLength() - 1)];
+            if (frame.getForwardingLength() < peerCount) {
+                return;
+            }
+
+            Node reciever = frame.getForwardingNodes()[peerCount - 1];
             ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[priority];
             queue.add(
                     new PendingPacket(modifyForwarding(chunk, frame.getForwardingLength() > peerCount), reciever));
@@ -302,7 +307,7 @@ public class Dynamo {
             // THIS IS THE PACKET WITH THE FRAME
 
             Frame frame = Frame.deserialize(chunk.getPayload());
-
+            System.out.println("Putting frame into outgoing message map: " + chunk.getMessageID());
             outgoingMessageMap.put(chunk.getMessageID(), frame);
 
             if (frame.getForwardingLength() > 0) {
