@@ -44,6 +44,12 @@ public class Dynamo {
             // add self to the client
             // add self to the dynamo
         }
+        // start Server on given port to accept connections
+        try {
+            socketry.startServer(self.port());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void closeDynamo() {
@@ -74,7 +80,7 @@ public class Dynamo {
     private void handleChunk(Chunk chunk) {
         if (chunk.getChunkNumber() == 0) {
             // first chunk
-            Frame frame = Frame.deserialize(chunk.getPayload());
+            final Frame frame = Frame.deserialize(chunk.getPayload());
             messageMap.put(chunk.getMessageID(), chunk.getPayload());
         } else {
             // subsequent chunk
@@ -94,9 +100,9 @@ public class Dynamo {
         while (true) {
             // since each are configured in non-blocking mode
             // they just returns back almost instantly
-            ArrayList<Packet> unhandledPackets = socketry.listen();
+            ArrayList<Chunk> unhandledPackets = socketry.listen();
             unhandledPackets.forEach(packet -> {
-                handlePacket(packet, tunnel);
+                handleChunk(packet);
             });
         }
     }

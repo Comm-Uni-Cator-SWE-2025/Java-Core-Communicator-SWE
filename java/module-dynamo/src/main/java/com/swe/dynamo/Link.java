@@ -12,6 +12,7 @@ import java.util.Queue;
 
 import com.socketry.socket.ISocket;
 import com.socketry.socket.SocketTCP;
+import com.swe.dynamo.Parsers.Chunk;
 
 
 public class Link {
@@ -20,7 +21,7 @@ public class Link {
 
     private SocketPacket currentSocketPacket;
 
-    private final Queue<Packet> packets;
+    private final Queue<Chunk> chunks;
 
     ByteBuffer readBuffer;
 
@@ -36,7 +37,7 @@ public class Link {
         clientChannel.configureBlocking(true); // block till connection is established
         clientChannel.connect(new InetSocketAddress(_port));
         clientChannel.configureBlocking(false);
-        packets = new java.util.concurrent.ConcurrentLinkedQueue<>();
+        chunks = new java.util.concurrent.ConcurrentLinkedQueue<>();
     }
 
     public Link(ISocket _connectedChannel) throws IOException {
@@ -44,7 +45,7 @@ public class Link {
         int bufferLength = 1024*10000;
         readBuffer = ByteBuffer.allocate(bufferLength);
         clientChannel.configureBlocking(false);
-        packets = new java.util.concurrent.ConcurrentLinkedQueue<>();
+        chunks = new java.util.concurrent.ConcurrentLinkedQueue<>();
     }
 
     public void configureBlocking(boolean to_block) throws IOException {
@@ -90,13 +91,13 @@ public class Link {
     }
 
     /**
-     * reads and returns packets received
+     * reads and returns chunks received
      * Does not reentrant over the length of the array return
      * It could also be 0
      *
      * @return
      */
-    public ArrayList<Packet> getPackets() {
+    public ArrayList<Chunk> getPackets() {
         try {
             readAndParseAllPackets();
         } catch (IOException e) {
@@ -104,8 +105,8 @@ public class Link {
             e.printStackTrace();
             return new ArrayList<>();
         }
-        ArrayList<Packet> packetsToReturn = new ArrayList<>(packets);
-        packets.clear();
+        ArrayList<Chunk> packetsToReturn = new ArrayList<>(chunks);
+        chunks.clear();
         return packetsToReturn;
     }
 
@@ -142,15 +143,12 @@ public class Link {
         byte[] data = new byte[buffer.remaining()];
         buffer.get(data);
 
-//        System.out.println("Read " + data.length + " bytes");
-
         int currDatapos = 0;
         int len = data.length;
         while (currDatapos < len) {
             if (currentSocketPacket == null) {
                 // expecting a `Packet`
                 int left = len - currDatapos;
-                // System.out.println("LEFT OVER : " + left);
                 if (left < 4) {
                     // got a leftover data store it for next parse.
                     leftOverBuffer = ByteBuffer.allocate(left);
@@ -159,30 +157,24 @@ public class Link {
                     break;
                 }
                 int contentLength = readInt(data, currDatapos);
-                // System.out.println("Content length : " + contentLength);
                 currentSocketPacket = new SocketPacket(contentLength, new ByteArrayOutputStream());
                 currDatapos += 4;
             }
             // check how much data is still to be read
             // and how much can be read
             int to_read = Math.min(currentSocketPacket.bytesLeft, data.length - currDatapos);
-            // System.out.println("to_read : " + to_read + " currDatapos : " + currDatapos +
-            // " bytesLeft : "
-            // + currentSocketPacket.bytesLeft);
             currentSocketPacket.content.write(data, currDatapos, to_read);
             currentSocketPacket.bytesLeft -= to_read;
             currDatapos += to_read;
-            // System.out.println("Bytes left : " + currentSocketPacket.bytesLeft + "
-            // currDatapos : " + currDatapos);
             if (currentSocketPacket.bytesLeft == 0) {
-                packets.add(Packet.parse(currentSocketPacket.content.toByteArray()));
+                chunks.add(Chunk.deserialize(currentSocketPacket.content.toByteArray()));
                 currentSocketPacket = null;
             }
         }
         return data.length;
     }
 
-    public Packet getPacket() {
+    public Chunk getPacket() {
         try {
             readAndParseAllPackets();
         } catch (IOException e) {
@@ -190,17 +182,17 @@ public class Link {
             e.printStackTrace();
             return null;
         }
-        return packets.poll();
+        return chunks.poll();
     }
 
-    public boolean sendPacket(Packet packet) {
-        byte[] packetData = Packet.serialize(packet).array();
+    public boolean sendPacket(Chunk chunk) {
+        byte[] chunkData = chunk.serialize();
 
-        ByteBuffer socketData = ByteBuffer.allocate(packetData.length + 4);
-        socketData.putInt(packetData.length);
-        socketData.put(packetData);
+        ByteBuffer socketData = ByteBuffer.allocate(chunkData.length + 4);
+        socketData.putInt(chunkData.length);
+        socketData.put(chunkData);
         socketData.flip();
-//        System.out.println("Sending " + packetData.length + " bytes");
+//        System.out.println("Sending " + chunkData.length + " bytes");
 //        System.out.println("clientChannel : " + clientChannel);
 
         if (clientChannel != null) {
@@ -213,7 +205,7 @@ public class Link {
                 }
                 clientChannel.configureBlocking(initialState);
                 System.out.println("Sending in : " + (System.nanoTime() - curr) / ((double) 1e6));
-//                System.out.println("Sent " + packetData.length + " Kb");
+//                System.out.println("Sent " + chunkData.length + " Kb");
                 return true;
             } catch (IOException e) {
                 System.out.println("Error while writing" + e.getMessage());
