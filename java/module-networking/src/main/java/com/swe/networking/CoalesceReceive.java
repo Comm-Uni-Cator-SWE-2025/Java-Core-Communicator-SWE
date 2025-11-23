@@ -1,6 +1,6 @@
 /*
  * -----------------------------------------------------------------------------
- *  File: ColaseceReceive.java
+ *  File: CoalesceReceive.java
  *  Owner: Vishal
  *  Roll Number : 112201049
  *  Module : Metworking
