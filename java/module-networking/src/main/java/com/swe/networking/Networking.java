@@ -164,10 +164,10 @@ public class Networking implements AbstractNetworking, AbstractController {
         pkt.setModule(module);
         pkt.setPriority(priority);
         pkt.setBroadcast(broadcast);
-        pkt.setPayload(data);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
+                pkt.setPayload(data);
                 final int type = topology.getNetworkType(user, client);
                 pkt.setType(type);
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
