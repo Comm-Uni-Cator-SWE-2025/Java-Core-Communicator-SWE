@@ -93,7 +93,10 @@ public class Dynamo {
         // start Server on given port to accept connections
         this.self = new Node(self.hostName(), (short) self.port());
         mainServerNode = new Node(mainServer.hostName(), (short) mainServer.port());
-        coil = new Coil(self.equals(mainServer));
+        coil = new Coil(self.equals(mainServer), (node) -> {
+            sendNodeList(node);
+            return null;
+        });
         try {
             coil.startServer(self.port());
 
@@ -126,10 +129,9 @@ public class Dynamo {
                 int count = packetCounts[i];
                 while (!queue.isEmpty() && count-- > 0) {
                     PendingPacket packet = queue.poll();
+                    Chunk chunk = packet.chunk();
+                    Frame frame = outgoingMessageMap.get(chunk.getMessageID());
                     try {
-                        Chunk chunk = packet.chunk();
-                        Frame frame = outgoingMessageMap.get(chunk.getMessageID());
-
                         coil.sendData(packet.reciever(), packet.chunk());
 
                         if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
@@ -141,6 +143,14 @@ public class Dynamo {
                     } catch (IOException e) {
                         // TODO handle retry
                         // get frame of this chunk. send invalid packet
+                        if (frame != null) {
+                            if (frame.getForwardingLength() > 0) {
+                                // send invalid packet to the forwarding nodes
+                                // send the whole frame again from the first chunk
+                                // TODO: implement this
+                                System.err.println("Sending invalid packet to forwarding nodes");
+                            }
+                        }
 
                         // TODO decide what to do when a single node fails
                         if (previousFailedReciever != null && previousFailedReciever.equals(packet.reciever())) {
@@ -186,11 +196,8 @@ public class Dynamo {
         }
     }
 
-    public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
-        Node[] destNodes = new Node[destIp.length];
-        for (int i = 0; i < destIp.length; i++) {
-            destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
-        }
+    private void sendData(byte[] data, Node[] destNodes, int module, int priority) {
+
         shuffleNodes(destNodes);
 
         Node[] forwardingNodes = new Node[destNodes.length - 1];
@@ -304,6 +311,28 @@ public class Dynamo {
         } else {
             return chunk;
         }
+    }
+
+    void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
+        Node[] destNodes = new Node[destIp.length];
+        for (int i = 0; i < destIp.length; i++) {
+            destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
+        }
+        sendData(data, destNodes, module, priority);
+    }
+
+    /**
+     * Called only on main server.
+     * 
+     * @param client
+     */
+    private void sendNodeList(Node client) {
+        Node[] nodeList = coil.getNodeList();
+        byte[] nodeListData = new byte[nodeList.length * 6];
+        for (int i = 0; i < nodeList.length; i++) {
+            System.arraycopy(nodeList[i].serialize(), 0, nodeListData, i * 6, 6);
+        }
+        sendData(nodeListData, new Node[] { client }, 0, 0);
     }
 
     private void handleFrame(Frame frame) {
