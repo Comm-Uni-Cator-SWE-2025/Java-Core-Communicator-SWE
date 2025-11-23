@@ -27,7 +27,7 @@
     <module>module-core</module>
     <module>module-app</module>
     <module>module-integration-tests</module>
-    <module>module-chat2</module>
+    <module>module-chat</module>
   </modules>
 
   <!-- ===================================================== -->

@@ -1,23 +1,13 @@
 package com.swe.chat;
 
-import java.io.*;
-import java.util.zip.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 public class Utilities {
-
-    /**
-     * Compresses bytes using GZIP with a default (balanced) compression level.
-     *
-     * @param uncompressedData The raw data to compress.
-     * @return The compressed data.
-     */
-    public static byte[] Compress(byte[] uncompressedData) {
-        // Calls the new, more advanced method with the "default" level.
-        // GZIP is just Deflate with a specific header/footer,
-        // so we use Deflater.DEFAULT_COMPRESSION.
-        return Compress(uncompressedData, Deflater.DEFAULT_COMPRESSION);
-    }
-
     /**
      * Compresses bytes using the Deflate algorithm with a specified level.
      * This gives you control over speed vs. size.
