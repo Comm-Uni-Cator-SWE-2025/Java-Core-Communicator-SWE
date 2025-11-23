@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Jyoti.
+ */
+
 package com.swe.core.Meeting;
 
 import com.fasterxml.jackson.annotation.JsonCreator;

@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Shreya.
+ */
+
 package com.swe.core.serialize;
 
 import com.swe.core.Meeting.UserProfile;
