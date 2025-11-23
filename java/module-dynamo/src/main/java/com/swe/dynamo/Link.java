@@ -3,6 +3,7 @@ package com.swe.dynamo;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -10,9 +11,9 @@ import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.Queue;
 
-import com.socketry.socket.ISocket;
-import com.socketry.socket.SocketTCP;
 import com.swe.dynamo.Parsers.Chunk;
+import com.swe.dynamo.socket.ISocket;
+import com.swe.dynamo.socket.SocketTCP;
 
 
 public class Link {
@@ -24,6 +25,20 @@ public class Link {
     private final Queue<Chunk> chunks;
 
     ByteBuffer readBuffer;
+
+    public Node getRemoteAddress() {
+        try {
+            SocketAddress remoteAddress = clientChannel.getSocketChannel().getRemoteAddress();
+            if (remoteAddress instanceof InetSocketAddress) {
+                InetSocketAddress inetAddress = (InetSocketAddress) remoteAddress;
+                return new Node((inetAddress.getHostString()), (short) inetAddress.getPort());
+            }
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     /**
      * Blocks to connect to the given port
@@ -58,6 +73,21 @@ public class Link {
         }
     }
 
+    public void unregister(Selector selector) {
+        if (clientChannel != null) {
+            clientChannel.unregister(selector);
+        }
+    }
+
+    public void close() {
+        if (clientChannel != null) {
+            try {
+                clientChannel.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     /**
      * reads from the channel into the buffer
      * Puts the leftOverBuffer first then the data is read from the pipe
@@ -210,6 +240,7 @@ public class Link {
             } catch (IOException e) {
                 System.out.println("Error while writing" + e.getMessage());
                 e.printStackTrace();
+                return false;
             }
         }
         return false;
