@@ -1,8 +1,8 @@
 package com.swe.networking;
 
 import java.net.UnknownHostException;
-import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Class for the new priorityQueue.
@@ -48,17 +48,17 @@ public class NewPriorityQueue {
     /**
      * Maximum number of packets allowed in the priority-1 queue.
      */
-    private final int firstLimit = 4;
+    private final int firstLimit = 0;
 
     /**
      * Maximum number of packets allowed in the priority-2 queue.
      */
-    private final int secondLimit = 2;
+    private final int secondLimit = 0;
 
     /**
      * Maximum number of packets allowed in the priority-3 queue.
      */
-    private final int thirdLimit = 2;
+    private final int thirdLimit = 0;
 
     /**
      * Array holding the per-priority queue limits in order: index 0 →
@@ -88,11 +88,10 @@ public class NewPriorityQueue {
     private Deque<byte[]> thirdPriorityQueue;
 
     private NewPriorityQueue() {
-        zeroPriorityQueue = new ArrayDeque<>();
-        firstPriorityQueue = new ArrayDeque<>();
-        secondPriorityQueue = new ArrayDeque<>();
-        thirdPriorityQueue = new ArrayDeque<>();
-
+        zeroPriorityQueue = new ConcurrentLinkedDeque<>();
+        firstPriorityQueue = new ConcurrentLinkedDeque<>();
+        secondPriorityQueue = new ConcurrentLinkedDeque<>();
+        thirdPriorityQueue = new ConcurrentLinkedDeque<>();
     }
 
     /**
@@ -112,8 +111,9 @@ public class NewPriorityQueue {
      *
      * @param data the data to add
      */
-    public void addPacket(final byte[] data) {
+    public synchronized void addPacket(final byte[] data) {
         try {
+            System.out.println("Added a packet to the priority queue...");
             totalPackets++;
             final PacketParser parser = PacketParser.getPacketParser();
             final PacketInfo info = parser.parsePacket(data);
@@ -142,31 +142,30 @@ public class NewPriorityQueue {
      *
      * @return the packet
      */
-    public byte[] getPacket() {
+    public synchronized  byte[] getPacket() {
+        // System.out.println(Arrays.toString(limits));
         byte[] packet = null;
-        if (!zeroPriorityQueue.isEmpty()) {
-            if (limits[zeroPriority] > 0) {
-                packet = zeroPriorityQueue.pop();
-                limits[zeroPriority] -= 1;
-            }
-        } else if (!firstPriorityQueue.isEmpty()) {
-            if (limits[firstPriority] > 0) {
-                packet = firstPriorityQueue.pop();
-                limits[firstPriority] -= 1;
-            }
-        } else if (!secondPriorityQueue.isEmpty()) {
-            if (limits[secondPriority] > 0) {
-                packet = secondPriorityQueue.pop();
-                limits[secondPriority] -= 1;
-            }
-        } else if (!thirdPriorityQueue.isEmpty()) {
-            if (limits[thirdPriority] > 0) {
-                packet = thirdPriorityQueue.pop();
-                limits[thirdPriority] -= 1;
-            }
+        if (!zeroPriorityQueue.isEmpty() && limits[zeroPriority] > 0) {
+            packet = zeroPriorityQueue.pop();
+            limits[zeroPriority] -= 1;
+            System.out.println("Dequeued from zero priority...");
+        } else if (!firstPriorityQueue.isEmpty() && limits[firstPriority] > 0) {
+            packet = firstPriorityQueue.pop();
+            limits[firstPriority] -= 1;
+            System.out.println("Dequeued from first priority...");
+        } else if (!secondPriorityQueue.isEmpty() && limits[secondPriority] > 0) {
+            packet = secondPriorityQueue.pop();
+            limits[secondPriority] -= 1;
+            System.out.println("Dequeued from second priority...");
+        } else if (!thirdPriorityQueue.isEmpty() && limits[thirdPriority] > 0) {
+            packet = thirdPriorityQueue.pop();
+            limits[thirdPriority] -= 1;
+            System.out.println("Dequeued from third priority...");
+        }
+        if (packet != null) {
+            totalPackets--;
         }
         resetLimits();
-        totalPackets -= 1;
         return packet;
     }
 
@@ -176,10 +175,7 @@ public class NewPriorityQueue {
      * @return the boolean state
      */
     public boolean isEmpty() {
-        if (totalPackets == 0) {
-            return true;
-        }
-        return false;
+        return totalPackets == 0;
     }
 
     void resetLimits() {

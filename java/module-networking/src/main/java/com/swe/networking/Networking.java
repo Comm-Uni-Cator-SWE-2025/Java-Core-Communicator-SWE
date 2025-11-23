@@ -132,18 +132,22 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void start() {
         while (true) {
-            if (!priorityQueue.isEmpty()) {
-                final byte[] packet = priorityQueue.getPacket();
-                try {
-                    final PacketInfo pktInfo = parser.parsePacket(packet);
-                    final InetAddress addr = pktInfo.getIpAddress();
-                    final int port = pktInfo.getPortNum();
-                    final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
-                    topology.sendPacket(packet, dest);
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                }
+            // System.out.println(priorityQueue.isEmpty());
+            // if (priorityQueue.isEmpty()) {
+            final byte[] packet = priorityQueue.getPacket();
+            if (packet == null) {
+                continue;
             }
+            try {
+                final PacketInfo pktInfo = parser.parsePacket(packet);
+                final InetAddress addr = pktInfo.getIpAddress();
+                final int port = pktInfo.getPortNum();
+                final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                topology.sendPacket(packet, dest);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            // }
         }
     }
 
