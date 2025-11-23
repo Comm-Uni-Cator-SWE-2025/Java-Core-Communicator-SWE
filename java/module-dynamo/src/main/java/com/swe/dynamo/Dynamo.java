@@ -45,9 +45,10 @@ public class Dynamo {
 
             for (Node node : peerList) {
                 try {
-                    if (node.equals(self)) {
+                    if (node.equals(self) || node.equals(mainServerNode)) {
                         continue;
                     }
+                    System.out.println("Connecting to node " + node);
                     coil.connectToNode(node);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -134,6 +135,7 @@ public class Dynamo {
             if (!instantiatedPeerList) {
                 continue;
             }
+            // System.out.println("Sending data from priority thread...");
             for (int i = 4; i >= 0; i--) {
                 ConcurrentLinkedQueue<PendingPacket> queue = packetQueues[i];
                 int count = packetCounts[i];
@@ -142,13 +144,13 @@ public class Dynamo {
                     Chunk chunk = packet.chunk();
                     Frame frame = outgoingMessageMap.get(chunk.getMessageID());
                     try {
-                        // System.out.println("Sending data to " + packet.reciever());
+                        System.out.println("Sending data to " + packet.reciever());
                         coil.sendData(packet.reciever(), packet.chunk());
 
                         if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
                             outgoingMessageMap.remove(chunk.getMessageID());
                         }
-                        // System.out.println("Sent data to " + packet.reciever());
+                        System.out.println("Sent data to " + packet.reciever());
 
                         failures = 0;
                         previousFailedReciever = null;
