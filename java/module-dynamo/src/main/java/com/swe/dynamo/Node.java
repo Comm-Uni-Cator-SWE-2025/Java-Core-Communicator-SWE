@@ -33,6 +33,18 @@ public class Node {
         return (IP + ":" + port).hashCode();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Node node = (Node) obj;
+        return IP == node.IP && port == node.port;
+    }
+
     public String IPToString() {
         return ((IP >> 24) & 0xFF) + "." + ((IP >> 16) & 0xFF) + "." + ((IP >> 8) & 0xFF) + "." + (IP & 0xFF);
     }

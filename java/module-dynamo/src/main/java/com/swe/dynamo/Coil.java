@@ -57,16 +57,20 @@ public class Coil {
             throw new IOException("Connection timeout after 1 second to " + node.IPToString() + ":" + node.getPort());
         }
 
+        System.out.println("Connection established to " + node.IPToString() + ":" + node.getPort() + " but not finished" + socketChannel.isConnected() + " " + socketChannel.finishConnect());
         // Complete the connection
         if (socketChannel.finishConnect()) {
             connectSelector.close();
             ISocket socket = new SocketTCP(socketChannel);
+            System.out.println("Connection established to " + node.IPToString() + ":" + node.getPort());
             registerLink(new Link(socket));
         } else {
             socketChannel.close();
             connectSelector.close();
             throw new IOException("Failed to complete connection to " + node.IPToString() + ":" + node.getPort());
         }
+
+        // nodeLinks.put(node, new Link(new SocketTCP(socketChannel)));
     }
 
     /** 
@@ -85,6 +89,10 @@ public class Coil {
                 throw e;
             }
             link = nodeLinks.get(node);
+            System.out.println("Link found for node " + node + " " + link);
+            if (link == null) {
+                throw new IOException("Failed to establish link to node " + node + " after connection");
+            }
         }
         if (!link.sendPacket(chunk)) {
             unregisterLink(link);
@@ -113,7 +121,9 @@ public class Coil {
     private void registerLink(Link link) throws ClosedChannelException {
         link.register(selector);
         Node remoteAddress = link.getRemoteAddress();
+        System.out.println("Registering link to " + remoteAddress);
         nodeLinks.put(remoteAddress, link);
+        System.out.println("Node links: " + nodeLinks.keySet() + " " + nodeLinks.values());
     }
 
     /**

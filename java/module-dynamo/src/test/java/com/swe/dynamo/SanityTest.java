@@ -10,7 +10,7 @@ public class SanityTest {
         dynamo.registerDisconnectHandler(() -> {
             System.err.println("We seem disconnected from the network.");
         });
-        dynamo.addUser(new ClientNode("10.128.5.156", 1212), new ClientNode("10.128.5.156", 1212));
+        dynamo.addUser(new ClientNode("10.128.5.145", 1212), new ClientNode("10.128.5.145", 1212));
         System.out.println("Connected to the network.");
 
 
