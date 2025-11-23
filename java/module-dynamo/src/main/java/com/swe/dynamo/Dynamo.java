@@ -1,6 +1,7 @@
 package com.swe.dynamo;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -21,6 +22,9 @@ public class Dynamo {
     // Singleton instance
     private static final Dynamo INSTANCE = new Dynamo();
 
+    private HashSet<Node> peerList = new HashSet<>();
+    private Node self;
+
     private Coil coil;
 
     // Private constructor to prevent instantiation
@@ -32,6 +36,22 @@ public class Dynamo {
                 packetQueues[i] = new ConcurrentLinkedQueue<>();
             }
             subscriptions = new ConcurrentHashMap<>();
+            // subscriptions.put(0, (byte[] data) -> {
+            //     // extract all the nodes from the data
+            //     HashSet<Node> newPeerList = new HashSet<>();
+            //     Node[] nodes = new Node[data.length / 6];
+            //     for (int i = 0; i < nodes.length; i++) {
+            //         nodes[i] = Node.deserialize(Arrays.copyOfRange(data, i * 6, i * 6 + 6));
+            //         if (!newPeerList.contains(nodes[i])) {
+            //             newPeerList.add(nodes[i]);
+            //             peerList.add(nodes[i]);
+            //         }
+            //     }
+            //     for (Node node : peerList) {
+            //         sendData(self.serialize(), node, 0, 4);
+            //     }
+            //     return null;
+            // });
             messageMap = new ConcurrentHashMap<>();
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,16 +73,7 @@ public class Dynamo {
 
     private Thread coilThread;
 
-    public void addUser(ClientNode self, ClientNode mainServer) {
-        if (self.equals(mainServer)) {
-            // self is the main server
-            // add self to the main server
-            // add self to the dynamo
-        } else {
-            // self is a client
-            // add self to the client
-            // add self to the dynamo
-        }
+    public void addUser(ClientNode self, ClientNode mainServer) throws Exception {
         // start Server on given port to accept connections
         try {
             coil.startServer(self.port());
@@ -71,6 +82,10 @@ public class Dynamo {
             coilThread.start();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        if (self.equals(mainServer)) {
+        } else {
+            
         }
     }
 
@@ -81,6 +96,15 @@ public class Dynamo {
 
     public void consumeRPC(AbstractRPC rpc) {
         // consume the rpc
+    }
+
+    private void shuffleNodes(Node[] nodes) {
+        for (int i = 0; i < nodes.length; i++) {
+            int j = (int) (Math.random() * nodes.length);
+            Node temp = nodes[i];
+            nodes[i] = nodes[j];
+            nodes[j] = temp;
+        }
     }
 
     public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
