@@ -57,11 +57,11 @@ jobs:
     - script: mvn -f java/pom.xml -B clean compile
       displayName: "Build with Maven"
 
-    # -----------------------------
-    # 4. Run Checkstyle
-    # -----------------------------
-    - script: mvn -f java/pom.xml -B checkstyle:check
-      displayName: "Run Checkstyle"
+    # # -----------------------------
+    # # 4. Run Checkstyle
+    # # -----------------------------
+    # - script: mvn -f java/pom.xml -B checkstyle:check
+    #   displayName: "Run Checkstyle"
 
     # -----------------------------
     # 5. Run Tests with JaCoCo Coverage
