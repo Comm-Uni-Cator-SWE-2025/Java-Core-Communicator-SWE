@@ -63,10 +63,10 @@ jobs:
     # - script: mvn -f java/pom.xml -B checkstyle:check
     #   displayName: "Run Checkstyle"
 
+# -----------------------------
+    # 5. Run Tests with JaCoCo Coverage (Parallel)
     # -----------------------------
-    # 5. Run Tests with JaCoCo Coverage
-    # -----------------------------
-    - script: mvn -f java/pom.xml -B test jacoco:report
+    - script: mvn -f java/pom.xml -B test jacoco:report -Dparallel=classes -DthreadCount=6
       displayName: "Run Tests with Coverage"
 
     # -----------------------------
