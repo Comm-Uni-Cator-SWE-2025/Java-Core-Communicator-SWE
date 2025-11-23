@@ -64,8 +64,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Variable to store the thread to start the send packets.
      */
-    private final Thread sendThread;
-
+    // private final Thread sendThread;
     /**
      * Private constructor for Netwroking class.
      */
@@ -74,8 +73,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = NewPriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        sendThread = new Thread(this::start);
-        sendThread.start();
+        // sendThread = new Thread(this::start);
+        // sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -121,8 +120,8 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-//                topology.sendPacket(chunk, newdest);
-                priorityQueue.addPacket(chunk);
+                topology.sendPacket(chunk, newdest);
+                // priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -132,21 +131,18 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Function to continuously send data.
      */
     public void start() {
-        while (true) {
-            // System.out.println(priorityQueue.isEmpty());
-            // if (priorityQueue.isEmpty()) {
-            final byte[] packet = priorityQueue.getPacket();
-            if (packet == null) {
-                continue;
-            }
-            try {
-                final PacketInfo pktInfo = parser.parsePacket(packet);
-                final InetAddress addr = pktInfo.getIpAddress();
-                final int port = pktInfo.getPortNum();
-                final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
-                topology.sendPacket(packet, dest);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
+        while (!Thread.currentThread().isInterrupted()) {
+            if (!priorityQueue.isEmpty()) {
+                final byte[] packet = priorityQueue.nextPacket();
+                try {
+                    final PacketInfo pktInfo = parser.parsePacket(packet);
+                    final InetAddress addr = pktInfo.getIpAddress();
+                    final int port = pktInfo.getPortNum();
+                    final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                    topology.sendPacket(packet, dest);
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
             }
             // }
         }
@@ -177,7 +173,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());
-                chunks = chunkManager.chunk(pkt);
+                chunks.addAll(chunkManager.chunk(pkt));
             } catch (UnknownHostException ex) {
             }
         }
@@ -196,25 +192,27 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
         List<ClientNode> dest = new ArrayList<>();
-        List<ClientNode> clientDests = topology.getClients(topology.getClusterIndex(user));
-        if(clientDests!=null){
+        final List<ClientNode> clientDests = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+        System.out.println("Clientdest " + clientDests);
+        if (clientDests != null) {
             dest = clientDests;
         }
+        dest.remove(user);
 
         if (user == topology.getServer(user)) {
             final List<ClientNode> servers = new ArrayList<>(topology.getAllClusterServers());
             dest.addAll(servers);
             dest.remove(user);
+            System.out.println("Servers " + servers);
         }
-        dest.remove(user);
-        // dest.add(new ClientNode("127.0.0.1", 6943));
-        final ClientNode[] destArray = dest.toArray(new ClientNode[0]);
-        System.out.println("broadcasting to destinations " + Arrays.toString(destArray) + " ...");
+        // dest.add(new ClientNode("10.128.2.244", 6943));
+        final ClientNode[] destArray = dest.toArray(ClientNode[]::new);
+        System.out.println("Broadcasting clients " + Arrays.toString(destArray));
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
-                // topology.sendPacket(chunk, client);
-                priorityQueue.addPacket(chunk);
+                topology.sendPacket(chunk, client);
+                // priorityQueue.addPacket(chunk);
             }
         }
     }
@@ -278,7 +276,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
-        sendThread.interrupt();
+        // sendThread.interrupt();
     }
 
     /**
@@ -318,12 +316,11 @@ public class Networking implements AbstractNetworking, AbstractController {
      * as a network connectivity check to determine if the main server could
      * potentially be reachable.
      *
-     * @return true if connection fails (network appears down), false if
-     * connection succeeds
+     * @return true if connection fails (network appears down), false otherwise
      */
     @Override
     public boolean isMainServerLive() {
-        final int timeout = 2000; // 2 second timeout
+        final int timeout = 2000;
         final String[] dnsServers = {
             "8.8.8.8", // Google DNS
             "8.8.4.4", // Google DNS secondary

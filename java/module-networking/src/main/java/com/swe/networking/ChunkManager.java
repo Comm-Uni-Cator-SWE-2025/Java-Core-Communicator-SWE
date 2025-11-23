@@ -1,5 +1,7 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
+
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
