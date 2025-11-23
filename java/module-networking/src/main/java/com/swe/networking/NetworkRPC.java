@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;

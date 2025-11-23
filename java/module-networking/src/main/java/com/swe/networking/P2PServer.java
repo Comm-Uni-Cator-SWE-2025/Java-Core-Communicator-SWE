@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import com.swe.core.ClientNode;
+
 /**
  * The server of a particular P2P Cluster.
  */
@@ -97,10 +99,10 @@ public class P2PServer implements P2PUser {
         this.mainServer = mainServerAddress;
 
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
-        sendThread = new Thread(this::sendAliveToMainServer);
+        // sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
-        sendThread.start();
+        // sendThread.start();
         receiveThread.start();
 
         System.out.println("P2PServer");
@@ -410,7 +412,7 @@ public class P2PServer implements P2PUser {
         Networking.getNetwork().broadcast(removePkt, 0, 0);
         communicator.close();
         receiveThread.interrupt();
-        sendThread.interrupt();
+        // sendThread.interrupt();
         timer.close();
     }
 

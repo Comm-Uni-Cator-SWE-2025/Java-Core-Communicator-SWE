@@ -1,24 +1,44 @@
+/**
+ * Contributed by @chirag9528
+ */
+
 package com.swe.ScreenNVideo;
 
 
+import com.swe.ScreenNVideo.Model.NetworkPacketType;
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.ScreenNVideo.Capture.AudioCapture;
 import com.swe.ScreenNVideo.Codec.BilinearScaler;
 import com.swe.ScreenNVideo.Codec.ImageScaler;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
-import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
-import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
-import com.swe.networking.ClientNode;
+import com.swe.ScreenNVideo.Model.IPPacket;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.networking.AbstractNetworking;
 
 import java.awt.image.BufferedImage;
+import java.util.function.BiFunction;
 
 /**
  * Class conatining Components to capture feed.
  */
 public class CaptureComponents {
 
+
+    private boolean compareMatrices(final int[][] prev, final int[][] curr) {
+        if (prev == null || curr == null) {
+            return false;
+        }
+        for (int i = 0; i < prev.length; i++) {
+            for (int j = 0; j < prev[0].length; j++) {
+                if (prev[i][j] != curr[i][j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {
         this.latestScreenFrame = latestScreenFrameArgs;
@@ -45,6 +65,7 @@ public class CaptureComponents {
         return isScreenCaptureOn;
     }
 
+
     /**
      * Flag for video capture.
      */
@@ -54,10 +75,21 @@ public class CaptureComponents {
      * Flag for screen capture.
      */
     private boolean isScreenCaptureOn;
+
+    /**
+     * Flag for audio capture.
+     */
+    private boolean isAudioCaptureOn;
+
     /**
      * Image scaler object.
      */
     private final ImageScaler scalar;
+
+    /**
+     * AudioCapture object.
+     */
+    private final AudioCapture audioCapture;
 
 
     /**
@@ -75,19 +107,23 @@ public class CaptureComponents {
      */
     private final String localIp = Utils.getSelfIP();
 
+    private final BiFunction<String, Boolean, Void> addSynchron;
+
     /**
      * Constructor for CaptureComponents.
      * @param argNetworking Networking object
      * @param rpc RPC object
      * @param port Port number
      */
-
-    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port) {
+    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port, BiFunction<String, Boolean, Void> function) {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
+        isAudioCaptureOn = false;
         this.networking = argNetworking;
+        addSynchron = function;
         scalar = new BilinearScaler();
         imageStitcher = new ImageStitcher();
+        audioCapture = new AudioCapture();
         initializeHandlers(rpc, port);
     }
 
@@ -155,6 +191,15 @@ public class CaptureComponents {
         return feed;
     }
 
+    public byte[] getAudioFeed() {
+        if (isAudioCaptureOn) {
+            return audioCapture.getChunk();
+        } else {
+            audioCapture.stop();
+        }
+        return null;
+    }
+
     private void initializeHandlers(final AbstractRPC rpc, final int port) {
         rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
             isVideoCaptureOn = true;
@@ -184,18 +229,60 @@ public class CaptureComponents {
             return res;
         });
 
-        rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
-            // Get the destination user IP
-            final String destIP = NetworkSerializer.deserializeIP(args);
-
-            final ClientNode destNode = new ClientNode(destIP, port);
-
-            // Get IP address as string
-            final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING, 2);
-
+        rpc.subscribe(Utils.START_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = true;
             final byte[] res = new byte[1];
             res[0] = 1;
+            return res;
+        });
+
+        rpc.subscribe(Utils.STOP_AUDIO_CAPTURE, (final byte[] args) -> {
+            isAudioCaptureOn = false;
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            return res;
+        });
+
+        rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
+            final byte[] res = new byte[1];
+            res[0] = 1;
+            // Get the destination user IP
+            final IPPacket dest = IPPacket.deserialize(args);
+
+            if (dest.ip().equals(localIp)) {
+                System.out.println("------Not ----" + localIp);
+                return res;
+            }
+
+            final ClientNode destNode = new ClientNode(dest.ip(), port);
+
+            final IPPacket subsPacket = new IPPacket(localIp, dest.reqCompression());
+
+            addSynchron.apply(dest.ip(), dest.reqCompression());
+            final byte[] subscribeData = subsPacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
+
+            return res;
+        });
+
+        rpc.subscribe(Utils.UNSUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
+            final byte[] res = new byte[1];
+            res[0] = 1;
+
+            // Get the destination user IP
+            final IPPacket dest = IPPacket.deserialize(args);
+
+            if (dest.ip().equals(localIp)) {
+                return res;
+            }
+
+            final ClientNode destNode = new ClientNode(dest.ip(), port);
+
+            final IPPacket subsPacket = new IPPacket(localIp, false);
+
+            final byte[] unSubscribeData = subsPacket.serialize(NetworkPacketType.UNSUBSCRIBE_AS_VIEWER);
+            networking.sendData(unSubscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
+
             return res;
         });
 

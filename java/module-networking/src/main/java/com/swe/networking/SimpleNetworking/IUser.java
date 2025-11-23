@@ -2,7 +2,7 @@ package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
 
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 
 /**

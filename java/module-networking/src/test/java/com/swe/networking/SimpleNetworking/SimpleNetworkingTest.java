@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
@@ -173,10 +173,10 @@ public class SimpleNetworkingTest {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
             final ClientNode cdevice = new ClientNode("10.32.0.41", 8005);
-            // final byte[] message = new byte[5 * 1024 * 1024];
-            final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
-            final byte[] message;
-            message = Files.readAllBytes(path);
+             final byte[] message = new byte[5 * 1024 * 1024];
+//            final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
+//            final byte[] message;
+//            message = Files.readAllBytes(path);
             final Client client = new Client(cdevice);
             final Thread clientThread = new Thread(() -> {
                 try {
@@ -193,13 +193,13 @@ public class SimpleNetworkingTest {
             final ClientNode mainServer = new ClientNode("10.32.0.41", 8100);
             network.addUser(device, mainServer);
             final MessageListener func = (byte[] data) -> {
-                final Path newpath = Paths.get("/home/logan/Downloads/");
-                final byte[] newmessage;
-                try {
-                    newmessage = Files.readAllBytes(path);
-                    System.out.println(Arrays.equals(data, newmessage));
-                } catch (IOException e) {
-                }
+//                final Path newpath = Paths.get("/home/logan/Downloads/");
+//                final byte[] newmessage;
+//                try {
+//                    newmessage = Files.readAllBytes(path);
+//                    System.out.println(Arrays.equals(data, newmessage));
+//                } catch (IOException e) {
+//                }
                 System.out.println("Received data length : " + data.length / (1024 * 1024) + " MB");
             };
             network.subscribe(ModuleType.CHAT, func);

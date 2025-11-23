@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Vector;
 
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.NetworkConnectionType;
 import com.swe.networking.PacketInfo;

@@ -1,3 +1,7 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.socketry.SocketryServer;
@@ -23,7 +27,7 @@ public class DummyRPC implements AbstractRPC {
     private SocketryServer server;
 
     /** Default port number used by the {@link SocketryServer} for testing. */
-    private static final int TEST_SERVER_PORT = 60000;
+    private static final int TEST_SERVER_PORT = 50000;
 
     public DummyRPC() {
         procedures = new HashMap<>();

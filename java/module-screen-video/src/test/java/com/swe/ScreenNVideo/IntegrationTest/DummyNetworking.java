@@ -1,10 +1,15 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.ScreenNVideo.Utils;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.MessageListener;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,6 +20,9 @@ import java.net.Socket;
 import java.security.spec.RSAOtherPrimeInfo;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.swe.ScreenNVideo.IntegrationTest.MainController.SERVERPORT;
+import static com.swe.ScreenNVideo.Utils.getSelfIP;
 
 /**
  * Simple dummy networking implementation using TCP sockets.
@@ -51,11 +59,13 @@ public class DummyNetworking implements AbstractNetworking {
         }
     }
 
+    SimpleNetworking networking;
+
     /**
      * Constructor with default port 9999.
      */
     public DummyNetworking() {
-        this(9999);
+        this(SERVERPORT);
     }
 
     public String getSelfIP() {
@@ -85,45 +95,19 @@ public class DummyNetworking implements AbstractNetworking {
         for (int i = 0; i < dest.length && i < port.length; i++) {
             try (Socket socket = new Socket(dest[i], port[i]);
                  DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
-                
+
                 // Send length first, then data
                 out.writeInt(data.length);
                 out.write(data);
                 out.flush();
-                
+
             } catch (IOException e) {
                 System.err.println("Failed to send data to " + dest[i] + ":" + port[i] + " - " + e.getMessage());
             }
         }
     }
 
-    public void sendData(byte[] data, ClientNode[] dest, ModuleType module) {
-        if (data == null || dest == null) {
-            return;
-        }
-        
-        String[] ips = new String[dest.length];
-        int[] ports = new int[dest.length];
-        
-        for (int i = 0; i < dest.length; i++) {
-            ips[i] = dest[i].hostName();
-            ports[i] = listenPort; // Use same port for all destinations
-        }
-        
-        sendData(data, ips, ports);
-    }
 
-    @Override
-    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
-        sendData(data, destIp, module);
-    }
-
-    @Override
-    public void subscribe(ModuleType name, MessageListener function) {
-        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
-    }
-
-    @Override
     public void removeSubscription(ModuleType name) {
         subscriptions.remove(Utils.MODULE_REMOTE_KEY);
     }
@@ -136,11 +120,10 @@ public class DummyNetworking implements AbstractNetworking {
             try {
                 // Accept incoming connection
                 Socket clientSocket = serverSocket.accept();
-                
+
                 // Handle each connection in a separate thread
-                Thread handlerThread = new Thread(() -> handleConnection(clientSocket));
-                handlerThread.start();
-                
+                handleConnection(clientSocket);
+
             } catch (IOException e) {
                 if (running) {
                     System.err.println("Error accepting connection: " + e.getMessage());
@@ -154,20 +137,20 @@ public class DummyNetworking implements AbstractNetworking {
      */
     private void handleConnection(Socket socket) {
         try (DataInputStream in = new DataInputStream(socket.getInputStream())) {
-            
+
             // Read length
             int length = in.readInt();
-            
+
             // Read complete data
             byte[] data = new byte[length];
             in.readFully(data);
-            
+
             // Notify subscribers
             MessageListener listener = subscriptions.get(Utils.MODULE_REMOTE_KEY);
             if (listener != null) {
                 listener.receiveData(data);
             }
-            
+
         } catch (IOException e) {
             System.err.println("Error reading data: " + e.getMessage());
         } finally {
@@ -192,5 +175,41 @@ public class DummyNetworking implements AbstractNetworking {
             System.err.println("Error closing server socket: " + e.getMessage());
         }
     }
-}
 
+    @Override
+    public void sendData(byte[] data, ClientNode[] dest, int module, int priority) {
+//        if (networking == null) {
+//            networking = SimpleNetworking.getSimpleNetwork();
+//        }
+        if (data == null || dest == null) {
+            return;
+        }
+
+//        networking.sendData(data, dest, ModuleType.SCREENSHARING, priority);
+
+        String[] ips = new String[dest.length];
+        int[] ports = new int[dest.length];
+
+        for (int i = 0; i < dest.length; i++) {
+            ips[i] = dest[i].hostName();
+            ports[i] = dest[i].port(); // Use same port for all destinations
+        }
+
+        sendData(data, ips, ports);
+    }
+
+    @Override
+    public void broadcast(byte[] data, int module, int priority) {
+        sendData(data, new ClientNode[]{new ClientNode("10.32.1.250", 40000)},module,priority);
+    }
+
+    @Override
+    public void subscribe(int name, MessageListener function) {
+        subscriptions.put(Utils.MODULE_REMOTE_KEY, function);
+    }
+
+    @Override
+    public void removeSubscription(int name) {
+
+    }
+}

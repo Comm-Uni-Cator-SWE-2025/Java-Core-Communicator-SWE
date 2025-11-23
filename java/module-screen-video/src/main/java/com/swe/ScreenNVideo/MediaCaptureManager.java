@@ -1,24 +1,37 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo;
 
 
-import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
+import com.swe.ScreenNVideo.Codec.ADPCMDecoder;
+import com.swe.ScreenNVideo.Model.APackets;
+import com.swe.ScreenNVideo.Model.CPackets;
+import com.swe.ScreenNVideo.Model.Feed;
+import com.swe.ScreenNVideo.Model.IPPacket;
+import com.swe.ScreenNVideo.Model.NetworkPacketType;
+import com.swe.ScreenNVideo.Model.RImage;
+import com.swe.ScreenNVideo.Model.Viewer;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
-import com.swe.ScreenNVideo.Serializer.CPackets;
-import com.swe.ScreenNVideo.Serializer.NetworkPacketType;
-import com.swe.ScreenNVideo.Serializer.NetworkSerializer;
-import com.swe.ScreenNVideo.Serializer.RImage;
+import com.swe.ScreenNVideo.Playback.AudioPlayer;
+import com.swe.ScreenNVideo.Synchronizer.AudioSynchronizer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
+import com.swe.core.Meeting.MeetingSession;
+import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.networking.AbstractNetworking;
+import com.swe.networking.MessageListener;
 import com.swe.networking.ModuleType;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
-import com.swe.networking.SimpleNetworking.MessageListener;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -41,6 +54,11 @@ public class MediaCaptureManager implements CaptureManager {
     private final HashMap<String, ImageSynchronizer> imageSynchronizers;
 
     /**
+     * Audio synchronizer object.
+     */
+    private final HashMap<String, AudioSynchronizer> audioSynchronizers;
+
+    /**
      * Networking object.
      */
     private final AbstractNetworking networking;
@@ -57,7 +75,7 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * List of viewers to send the video Feed.
      */
-    private final HashSet<ClientNode> viewers;
+    private final HashMap<String, Viewer> viewers;
 
     /**
      * Client handler for incoming messages.
@@ -65,64 +83,95 @@ public class MediaCaptureManager implements CaptureManager {
     private final ClientHandler clientHandler;
 
     /**
+     * Audio Player object.
+     */
+    private final AudioPlayer audioPlayer;
+
+    /**
+     * IP to email list for the participants
+     */
+    private HashMap<String, String> ipToEmail;
+
+    /**
      * Constructor for the MediaCaptureManager.
      *
      * @param argNetworking Networking object
-     * @param argRpc        RPC object
      * @param portArgs      Port for the server
      */
-    public MediaCaptureManager(final AbstractNetworking argNetworking, final AbstractRPC argRpc, final int portArgs) {
-        this.rpc = argRpc;
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs) {
+        Context context = Context.getInstance();
+        this.rpc = context.rpc;
         this.port = portArgs;
         this.networking = argNetworking;
-        final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port);
-        videoComponent = new VideoComponents(Utils.FPS, rpc, captureComponents);
+        final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port, (k,v) -> updateImage(k,v));
+        audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
+
+        try {
+            audioPlayer.init();
+        } catch (LineUnavailableException e) {
+            System.err.println("Unable to instantiate AudioPlayer");
+        }
+
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
+        videoComponent = new VideoComponents(Utils.FPS, port, captureComponents, backgroundCaptureManager);
+
         backgroundCaptureManager.start();
 
         imageSynchronizers = new HashMap<>();
-        viewers = new HashSet<>();
+        audioSynchronizers = new HashMap<>();
+        viewers = new HashMap<>();
 
         // Cache local IP once to avoid repeated socket operations during capture
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
+//        addParticipant(localIp, false);
+
         clientHandler = new MediaCaptureManager.ClientHandler();
 
-        networking.subscribe(ModuleType.SCREENSHARING, clientHandler);
+        networking.subscribe(ModuleType.SCREENSHARING.ordinal(), clientHandler);
+    }
+
+    public Void updateImage(String ip, boolean val) {
+        ImageSynchronizer imageSynchronizer = imageSynchronizers.get(ip);
+        if (imageSynchronizer == null) {
+            return null;
+        }
+        imageSynchronizer.reqCompression = val;
+        imageSynchronizer.waitingForFullImage = true;
+        return null;
     }
 
     /**
      * Broadcast join meeting to available IPs.
      * Only till broadcast is supported, multicast not supported yet.
-     *
-     * @param availableIPs list of available IPs
      */
-    public void broadcastJoinMeeting(final List<String> availableIPs) {
-        final ClientNode[] clientNodes = availableIPs.stream().map(ip -> new ClientNode(ip, port))
-            .toArray(ClientNode[]::new);
+    public void broadcastJoinMeeting() {
+        final IPPacket subscriberPacket = new IPPacket(localIp, true);
 
-        System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
-        final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-        networking.sendData(subscribeData, clientNodes, ModuleType.SCREENSHARING, 2);
+        // System.out.println("Broadcasting join meeting to : " + Arrays.toString(clientNodes));
+        final byte[] subscribeData = subscriberPacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
+        networking.broadcast(subscribeData, ModuleType.SCREENSHARING.ordinal(), 2);
     }
 
-    @Override
-    public void newParticipantJoined(final String ip) {
-        clientHandler.addUserNFullImageRequest(ip);
-    }
-
-    private void addParticipant(final String ip) {
+    private void addParticipant(final String ip, final boolean reqCompression) {
         if (ip == null) {
             return;
         }
-        if (localIp != null && ip == localIp) {
+        if (ip.equals(localIp)) {
             return;
         }
         final ClientNode node = new ClientNode(ip, port);
-        viewers.add(node);
-        imageSynchronizers.put(ip, new ImageSynchronizer(videoComponent.getVideoCodec()));
-        rpc.call(Utils.SUBSCRIBE_AS_VIEWER, ip.getBytes());
+        final Viewer viewer = viewers.computeIfAbsent(ip, k -> new Viewer(node, reqCompression));
+        viewer.setRequireCompressed(reqCompression);
+        imageSynchronizers.computeIfAbsent(ip, k -> new ImageSynchronizer(videoComponent.getVideoCodec()));
+        audioSynchronizers.computeIfAbsent(ip, k -> new AudioSynchronizer(this.audioPlayer));
+    }
+
+    private void removeViewer(final String ip) {
+        viewers.remove(ip);
+        imageSynchronizers.remove(ip);
+        audioSynchronizers.remove(ip);
     }
 
     /**
@@ -134,32 +183,70 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Starting capture");
         int[][] feed = null;
         while (true) {
-            final byte[] encodedPatches = videoComponent.captureScreenNVideo();
+            final Feed encodedFeed = videoComponent.captureScreenNVideo();
             final int[][] newFeed = videoComponent.getFeed();
-            if (encodedPatches == null) {
+            if (encodedFeed == null) {
                 if (feed != null && newFeed == null) {
-                    final byte[] subscribeData = NetworkSerializer.serializeIP(NetworkPacketType.STOP_SHARE, localIp);
-                    sendDataToViewers(subscribeData);
-                    feed = newFeed;
+                    final IPPacket subscriberPacket = new IPPacket(localIp, false);
+                    final byte[] subscribeData = subscriberPacket.serialize(NetworkPacketType.STOP_SHARE);
+                    sendDataToViewers(subscribeData, k -> true);
+                    feed = null;
                 }
+            } else {
+                feed = newFeed;
+                // send compressedFeed
+//                System.out.println("Sending to Compress");
+                sendDataToViewers(encodedFeed.compressedFeed(), Viewer::isRequireCompressed);
+                // send unCompressedFeed
+//                System.out.println("Sending to uncompress");
+                sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
+            }
+            // get audio Feed
+            final byte[] encodedAudio = videoComponent.captureAudio();
+            if (encodedAudio == null) {
                 continue;
             }
-            feed = newFeed;
-            sendDataToViewers(encodedPatches);
+
+            networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
+//            sendDataToViewers(encodedAudio, viewer -> true);
         }
     }
 
-    private void sendDataToViewers(final byte[] feed) {
+    /**
+     * Applies filter and send data to those viewers.
+     *
+     * @param feed         the data to send
+     * @param viewerFilter predicate to filter which viewers should receive the data
+     */
+    private void sendDataToViewers(final byte[] feed, final java.util.function.Predicate<Viewer> viewerFilter) {
+        if (feed == null) {
+            return;
+        }
+
+        final ClientNode[] clientNodes = viewers.values().stream()
+            .filter(viewerFilter)
+            .map(Viewer::getNode)
+            .toArray(ClientNode[]::new);
+
+        if (clientNodes.length == 0) {
+            return;
+        }
+
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
-        networking.sendData(feed, viewers.toArray(new ClientNode[0]), ModuleType.SCREENSHARING, 2);
-//        SimpleNetworking.getSimpleNetwork().closeNetworking();
-        System.out.println("Sent to viewers " + viewers.size());
-        viewers.forEach(v -> System.out.println("Viewer IP : " + v.hostName()));
+        networking.sendData(feed, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
+
+        System.out.println("Sent to viewers " + clientNodes.length );
+        for (ClientNode c : clientNodes) {
+            System.out.println(c.hostName());
+        }
+//        CompletableFuture.runAsync(() -> {
 //        try {
-//            Thread.sleep(30000);
+//            Thread.sleep(5000);
 //        } catch (InterruptedException e) {
+//            System.err.println("Error in timer");
 //            throw new RuntimeException(e);
 //        }
+//        });
     }
 
 
@@ -176,11 +263,11 @@ public class MediaCaptureManager implements CaptureManager {
         @Override
         public void receiveData(final byte[] data) {
 
-            System.out.println("Recieved");
+//            System.out.println("Received");
             if (data.length == 0) {
                 return;
             }
-
+//            // System.out.println("first 40 bytes:" + (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
@@ -191,110 +278,180 @@ public class MediaCaptureManager implements CaptureManager {
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
-//                    System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
+//                    // System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
                     System.out.println(
                         "Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
-                    System.out.println("Height: " + networkPackets.height() + " Width: " + networkPackets.width());
+                    System.out.println(
+                        "Height: " + networkPackets.height() + " Width: " + networkPackets.width() + " from "
+                            + networkPackets.ip() + " " + networkPackets.compress());
 
                     ImageSynchronizer imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     if (imageSynchronizer == null) {
-                        // add new participant if not already present
-                        addParticipant(networkPackets.ip());
+                        // add new participant if not already present, with true by default
+                        addParticipant(networkPackets.ip(), true);
                         imageSynchronizer = imageSynchronizers.get(networkPackets.ip());
                     }
 
-                    final List<CompressedPatch> patches;
-                    final int newHeight;
-                    final int newWidth;
+
+//                     System.out.println("Recieved " + networkPackets.packetNumber() + "; Expected : " +
+//                        imageSynchronizer.getExpectedFeedNumber() + " " + imageSynchronizer.getHeap().size() + " " + imageSynchronizer.waitingForFullImage);
 
                     if (networkPackets.isFullImage()) {
+                        System.out.println("Full Image");
                         // reset expected feed number
-                        imageSynchronizer.expectedfeedNumber = networkPackets.packetNumber();
+                        imageSynchronizer.setExpectedFeedNumber(networkPackets.packetNumber());
 
-                        // drop all entries older than this full image
-                        while (!imageSynchronizer.getHeap().isEmpty()
-                            && imageSynchronizer.getHeap().peek().getFeedNumber()
-                            < imageSynchronizer.expectedfeedNumber) {
-                            imageSynchronizer.getHeap().poll();
-                        }
+                        imageSynchronizer.waitingForFullImage = false;
 
-                        patches = networkPackets.packets();
-                        newHeight = networkPackets.height();
-                        newWidth = networkPackets.width();
-                    } else {
+                    }
 
-                        // if heap is growing too large, request a full frame to resync
-                        if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
-                            final byte[] subscribeData = NetworkSerializer.serializeIP(
-                                NetworkPacketType.SUBSCRIBE_AS_VIEWER, localIp);
-                            final ClientNode destNode = new ClientNode(networkPackets.ip(), port);
-                            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING,
-                                2);
+                    imageSynchronizer.getHeap().add(new FeedData(networkPackets.packetNumber(), networkPackets));
 
-                            imageSynchronizer.getHeap().clear();
-                            return;
-                        }
+                    // if heap is growing too large, request a full frame to resync
+                    if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
+                        System.out.println("Too Large");
+                        askForFullImage(networkPackets.ip(), imageSynchronizer.reqCompression);
+                        imageSynchronizer.waitingForFullImage = true;
+                        imageSynchronizer.getHeap().clear();
+                        return;
+                    }
 
-                        imageSynchronizer.getHeap().add(new FeedData(networkPackets.packetNumber(), networkPackets));
+
+                    // drop all entries older than this full image
+                    while (!imageSynchronizer.getHeap().isEmpty()
+                        && imageSynchronizer.getHeap().peek().getFeedNumber()
+                        < imageSynchronizer.getExpectedFeedNumber()) {
+//                        System.out.println("Removing " + imageSynchronizer.getHeap().peek().getFeedNumber());
+                        imageSynchronizer.getHeap().poll();
+                    }
+
+
+                    int[][] image = null;
+                    while (true) {
 
                         // If the next expected patch hasn't arrived yet, wait
                         final FeedData feedData = imageSynchronizer.getHeap().peek();
-                        if (feedData == null || !(feedData.getFeedNumber()
-                            == imageSynchronizer.expectedfeedNumber)) {
-                            return;
+                        if (feedData == null || feedData.getFeedNumber() != imageSynchronizer.getExpectedFeedNumber()) {
+//                            if (feedData != null) {
+//                                System.out.println("Expected " + imageSynchronizer.getExpectedFeedNumber()
+//                                + " GOT : " + feedData.getFeedNumber() + " Len " + imageSynchronizer.getHeap().size());
+//                            }
+                            break;
                         }
 
                         final FeedData minFeedNumPacket = imageSynchronizer.getHeap().poll();
 
                         if (minFeedNumPacket == null) {
-                            return;
+                            break;
                         }
 
                         final CPackets minFeedCPacket = minFeedNumPacket.getFeedPackets();
-                        patches = minFeedCPacket.packets();
-                        newHeight = minFeedCPacket.height();
-                        newWidth = minFeedCPacket.width();
+                        System.out.println("Min Feed Packet " + minFeedCPacket.packetNumber());
+                        final List<CompressedPatch> patches = minFeedCPacket.packets();
+                        final int newHeight = minFeedCPacket.height();
+                        final int newWidth = minFeedCPacket.width();
+
+                        imageSynchronizer.setExpectedFeedNumber(imageSynchronizer.getExpectedFeedNumber() + 1);
+
+                        try {
+                            image = imageSynchronizer.synchronize(newHeight, newWidth, patches,
+                                networkPackets.compress());
+                        } catch (Exception e) {
+                            System.out.println(
+                                "-----------------------------=------------------------Exception " + e.getMessage());
+                            e.printStackTrace();
+                            askForFullImage(networkPackets.ip(), imageSynchronizer.reqCompression);
+                            imageSynchronizer.getHeap().clear();
+                            return;
+                        }
                     }
 
-                    imageSynchronizer.expectedfeedNumber++;
+                    if (image == null) {
+                        return;
+                    }
 
-                    final int[][] image = imageSynchronizer.synchronize(newHeight, newWidth, patches);
                     final RImage rImage = new RImage(image, networkPackets.ip());
                     final byte[] serializedImage = rImage.serialize();
-                    // Do not wait for result
+                    System.out.println("Sending to UI" + ("; Expected : "
+                        + imageSynchronizer.getExpectedFeedNumber()));
                     try {
-                        byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
-                        boolean success = res[0] == 1 ? true : false;
-                        if (!success) {
-                            addParticipant(networkPackets.ip());
+                        final byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
+                        if (res.length == 0) {
+                            return;
                         }
+                        final boolean success = res[0] == 1;
+                        if (!success) {
+                            addParticipant(networkPackets.ip(), imageSynchronizer.reqCompression);
+                        }
+                        System.out.println("Done");
                     } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
+                        e.printStackTrace(System.out);
                     }
 
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
-                    final String viewerIP = NetworkSerializer.deserializeIP(data);
+                    final IPPacket viewerIP = IPPacket.deserialize(data);
                     System.out.println("Viewer joined" + viewerIP);
-                    addUserNFullImageRequest(viewerIP);
-                    System.out.println("Handled packet type: " + type);
+                    addUserNFullImageRequest(viewerIP.ip(), viewerIP.reqCompression());
+                }
+                case STOP_SHARE -> {
+                    final String viewerIP = IPPacket.deserialize(data).ip();
+                    rpc.call(Utils.STOP_SHARE, viewerIP.getBytes());
+                }
+                case APACKETS -> {
+                    final APackets networkPackets = APackets.deserialize(data);
+                    System.out.println("Audio" + networkPackets.packetNumber());
+                    AudioSynchronizer audioSynchronizer = audioSynchronizers.get(networkPackets.ip());
+                    if (audioSynchronizer == null) {
+                        // add new participant if not already present, with true by default
+                        addParticipant(networkPackets.ip(), true);
+                        audioSynchronizer = audioSynchronizers.get(networkPackets.ip());
+                    }
+
+                    audioSynchronizer.synchronize(networkPackets);
+
+                }
+                case UNSUBSCRIBE_AS_VIEWER -> {
+                    final IPPacket viewerIP = IPPacket.deserialize(data);
+                    System.out.println("Viewer requested to be removed" + viewerIP);
+                    removeViewer(viewerIP.ip());
                 }
                 default -> {
                 }
             }
         }
 
-        public void addUserNFullImageRequest(final String ip) {
-            addParticipant(ip);
-            final byte[] fullImageEncoded = videoComponent.captureFullImage();
+        private void askForFullImage(final String ip, final boolean reqCompress) {
+            System.out.println("Asking for data...");
+            final IPPacket subscribePacket = new IPPacket(localIp, reqCompress);
+            final byte[] subscribeData = subscribePacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
+            final ClientNode destNode = new ClientNode(ip, port);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
+        }
+
+        public void addUserNFullImageRequest(final String ip, final boolean reqCompression) {
+            addParticipant(ip, reqCompression);
+            final Feed fullFeed = videoComponent.captureFullImage();
+            if (fullFeed == null) {
+                return;
+            }
+            // get the required type(Compress/UnCompress) from viewer list
+            // use Compress if not video and asked for it
+            final boolean isOnlyVideoOn = videoComponent.isVideoCaptureOn() && !videoComponent.isScreenCaptureOn();
+            final boolean useCompress = isOnlyVideoOn || reqCompression;
+            byte[] fullImageEncoded = null;
+            if (useCompress) {
+                fullImageEncoded = fullFeed.compressedFeed();
+            } else {
+                fullImageEncoded = fullFeed.unCompressedFeed();
+            }
             if (fullImageEncoded == null) {
                 return;
             }
-            networking.sendData(fullImageEncoded,
-                new ClientNode[] {new ClientNode(ip, port)},
-                ModuleType.SCREENSHARING,
-                2);
+            System.out.println("Sending Full Image");
+            networking.sendData(fullImageEncoded, new ClientNode[] {new ClientNode(ip, port)},
+                ModuleType.SCREENSHARING.ordinal(), 2);
         }
     }
 }

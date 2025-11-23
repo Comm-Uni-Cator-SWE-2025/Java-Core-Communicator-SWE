@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 /**

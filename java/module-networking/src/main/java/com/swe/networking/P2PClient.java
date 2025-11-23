@@ -3,9 +3,9 @@ package com.swe.networking;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+
+import com.swe.core.ClientNode;
 
 /**
  * The Client belonging to a certain cluster.
@@ -92,9 +92,9 @@ public class P2PClient implements P2PUser {
         this.receiveThread.start();
 
         // start a scheduled ALIVE packets to the cluster server
-         this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-         this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
-                 ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        //  this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
+        //  this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
+        //          ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override

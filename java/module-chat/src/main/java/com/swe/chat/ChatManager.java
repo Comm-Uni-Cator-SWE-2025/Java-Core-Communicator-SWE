@@ -1,0 +1,328 @@
+package com.swe.chat;
+
+import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
+import com.swe.networking.ModuleType;
+import com.swe.networking.Networking;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.Deflater;
+
+/**
+ * ============================================================================
+ * BACKEND - ChatManager
+ * ============================================================================
+ *
+ * Responsibilities:
+ *   1. Receive PATH-mode file messages from frontend
+ *   2. Read and compress files from disk
+ *   3. Cache compressed data in memory
+ *   4. Send to remote peers via network
+ *   5. Decompress and save files when user clicks "Save"
+ *
+ * The frontend NEVER sees compressed file data.
+ */
+public class ChatManager implements IChatService {
+
+    private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
+    private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
+    private static final byte FLAG_FILE_METADATA = (byte) 0x03;
+
+    private final AbstractRPC rpc;
+    private final Networking network;
+
+    /**
+     * FILE CACHE - Stores compressed files temporarily
+     * Key: messageId
+     * Value: compressed file bytes
+     */
+    private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
+
+    public ChatManager(Networking network) {
+        Context context = Context.getInstance();
+        this.rpc = context.rpc;
+        this.network = network;
+
+        // Subscribe to frontend RPC calls
+        this.rpc.subscribe("chat:send-text", this::handleFrontendTextMessage);
+        this.rpc.subscribe("chat:send-file", this::handleFrontendFileMessage);
+        this.rpc.subscribe("chat:delete-message", this::handleDeleteMessage);
+
+        // ⭐ NEW: Handle save-to-disk requests from frontend
+        this.rpc.subscribe("chat:save-file-to-disk", this::handleSaveFileToDisk);
+
+        // Subscribe to network messages
+        this.network.subscribe(ModuleType.CHAT.ordinal(), this::handleNetworkMessage);
+    }
+
+    /**
+     * ============================================================================
+     * HANDLER 1: Text Message from Frontend
+     * ============================================================================
+     */
+    private byte[] handleFrontendTextMessage(byte[] messageBytes) {
+        System.out.println("[Core] Received text message from frontend");
+
+        try {
+            byte[] networkPacket = addProtocolFlag(messageBytes, FLAG_TEXT_MESSAGE);
+            // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+
+            return new byte[0];  // Empty array with brackets
+        } catch (Exception e) {
+            System.err.println("[Core] Error sending text message: " + e.getMessage());
+            return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * ============================================================================
+     * HANDLER 2: File Message from Frontend (PATH MODE)
+     * ============================================================================
+     *
+     * Frontend sends FileMessage with PATH (no file bytes)
+     * Backend will:
+     *   1. Read file from disk
+     *   2. Compress it
+     *   3. Cache compressed data
+     *   4. Send metadata to frontend
+     *   5. Send compressed data to network
+     */
+    private byte[] handleFrontendFileMessage(byte[] messageBytes) {
+        System.out.println("[Core] Received file message from frontend (PATH mode)");
+
+        try {
+            // 1. Deserialize PATH mode message
+            FileMessage pathModeMsg = FileMessageSerializer.deserialize(messageBytes);
+            String filePath = pathModeMsg.getFilePath();
+
+            if (filePath == null || filePath.isEmpty()) {
+                throw new IllegalArgumentException("File path is null or empty");
+            }
+
+            // Sanitize path
+            filePath = filePath.trim();
+            if (filePath.startsWith("*")) {
+                filePath = filePath.substring(1).trim();
+            }
+
+            System.out.println("[Core] Reading file: " + filePath);
+
+            // Check if file exists
+            if (!Files.exists(Paths.get(filePath))) {
+                throw new IllegalArgumentException("File does not exist: " + filePath);
+            }
+
+            // 2. Read and compress
+            byte[] uncompressedData = Files.readAllBytes(Paths.get(filePath));
+            System.out.println("[Core] File size: " + uncompressedData.length + " bytes");
+
+            byte[] compressedData = Utilities.Compress(uncompressedData, Deflater.BEST_SPEED);
+            if (compressedData == null) {
+                throw new IOException("Failed to compress file");
+            }
+
+            System.out.println("[Core] Compressed: " + uncompressedData.length + " → " +
+                    compressedData.length + " bytes");
+
+            // ===== STEP 1: Send METADATA-ONLY to frontend =====
+            FileMessage metadataMsg = new FileMessage(
+                    pathModeMsg.getMessageId(),
+                    pathModeMsg.getUserId(),
+                    pathModeMsg.getSenderDisplayName(),
+                    pathModeMsg.getCaption(),
+                    pathModeMsg.getFileName(),
+                    null,  // NO file path
+                    pathModeMsg.getReplyToMessageId()
+            );
+            byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
+            this.rpc.call("chat:file-metadata-received", metadataBytes);
+
+            System.out.println("[Core] Sent metadata to frontend");
+
+            // ===== STEP 2: Cache the compressed file =====
+            fileCache.put(pathModeMsg.getMessageId(), compressedData);
+            System.out.println("[Core] Cached compressed file: " + pathModeMsg.getMessageId());
+
+            // ===== STEP 3: Send to remote peers (with compressed data) =====
+            FileMessage contentModeMsg = new FileMessage(
+                    pathModeMsg.getMessageId(),
+                    pathModeMsg.getUserId(),
+                    pathModeMsg.getSenderDisplayName(),
+                    pathModeMsg.getCaption(),
+                    pathModeMsg.getFileName(),
+                    compressedData,  // ⭐ Compressed bytes for network
+                    System.currentTimeMillis() / 1000,
+                    pathModeMsg.getReplyToMessageId()
+            );
+
+            byte[] contentModeBytes = FileMessageSerializer.serialize(contentModeMsg);
+            byte[] networkPacket = addProtocolFlag(contentModeBytes, FLAG_FILE_MESSAGE);
+
+            // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+
+            System.out.println("[Core] Sent file to network");
+
+            return new byte[0];
+
+        } catch (Exception e) {
+            System.err.println("[Core] Error processing file: " + e.getMessage());
+            e.printStackTrace();
+            return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * ============================================================================
+     * HANDLER 3: Save File to Disk Request from Frontend
+     * ============================================================================
+     */
+    private byte[] handleSaveFileToDisk(byte[] messageIdBytes) {
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        System.out.println("[Core] User requested save for: " + messageId);
+
+        try {
+            // Retrieve compressed file from cache
+            byte[] compressedData = fileCache.get(messageId);
+            if (compressedData == null) {
+                throw new Exception("File not found in cache: " + messageId);
+            }
+
+            System.out.println("[Core] Retrieved compressed file (" + compressedData.length + " bytes)");
+
+            // Decompress
+            byte[] decompressedData = Utilities.Decompress(compressedData);
+            if (decompressedData == null) {
+                throw new Exception("Failed to decompress file");
+            }
+
+            System.out.println("[Core] Decompressed: " + compressedData.length + " → " +
+                    decompressedData.length + " bytes");
+
+            // Save to Downloads folder
+            String downloadsPath = System.getProperty("user.home") + "/Downloads";
+            String filePath = downloadsPath + "/" + messageId + "_file";
+
+            Files.write(Paths.get(filePath), decompressedData);
+            System.out.println("[Core] Saved to: " + filePath);
+
+            // Notify frontend of success
+            String successMsg = "File saved to: " + filePath;
+            this.rpc.call("chat:file-saved-success", successMsg.getBytes(StandardCharsets.UTF_8));
+
+            return successMsg.getBytes(StandardCharsets.UTF_8);
+
+        } catch (Exception e) {
+            System.err.println("[Core] Error saving file: " + e.getMessage());
+            e.printStackTrace();
+
+            String errorMsg = "Failed to save file: " + e.getMessage();
+            this.rpc.call("chat:file-saved-error", errorMsg.getBytes(StandardCharsets.UTF_8));
+
+            return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * ============================================================================
+     * HANDLER 4: Delete Message
+     * ============================================================================
+     */
+    private byte[] handleDeleteMessage(byte[] messageIdBytes) {
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        System.out.println("[Core] Deleting message: " + messageId);
+
+        // Remove from cache if exists
+        fileCache.remove(messageId);
+
+        // Broadcast deletion
+        this.rpc.call("chat:message-deleted", messageIdBytes);
+
+        return new byte[0];  // Empty array with brackets
+
+    }
+
+    /**
+     * ============================================================================
+     * HANDLER 5: Network Message (from Remote Peer)
+     * ============================================================================
+     */
+    private void handleNetworkMessage(byte[] networkPacket) {
+        if (networkPacket == null || networkPacket.length == 0) return;
+
+        byte flag = networkPacket[0];
+        byte[] messageBytes = Arrays.copyOfRange(networkPacket, 1, networkPacket.length);
+
+        try {
+            switch (flag) {
+                case FLAG_TEXT_MESSAGE:
+                    System.out.println("[Core] Received text from network");
+                    this.rpc.call("chat:new-message", messageBytes);
+                    break;
+
+                case FLAG_FILE_MESSAGE:
+                    System.out.println("[Core] Received file from network");
+                    FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
+
+                    // Cache the received compressed file
+                    fileCache.put(fileMsg.getMessageId(), fileMsg.getFileContent());
+
+                    // Send ONLY metadata to frontend
+                    FileMessage metadataMsg = new FileMessage(
+                            fileMsg.getMessageId(),
+                            fileMsg.getUserId(),
+                            fileMsg.getSenderDisplayName(),
+                            fileMsg.getCaption(),
+                            fileMsg.getFileName(),
+                            null,  // NO file data
+                            fileMsg.getReplyToMessageId()
+                    );
+                    byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
+                    this.rpc.call("chat:file-metadata-received", metadataBytes);
+                    break;
+
+                default:
+                    System.err.println("[Core] Unknown message type: " + flag);
+            }
+        } catch (Exception e) {
+            System.err.println("[Core] Error handling network message: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * ============================================================================
+     * UTILITY METHODS
+     * ============================================================================
+     */
+    private byte[] addProtocolFlag(byte[] data, byte flag) {
+        byte[] flaggedPacket = new byte[data.length + 1];
+        flaggedPacket[0] = flag;
+        System.arraycopy(data, 0, flaggedPacket, 1, data.length);
+        return flaggedPacket;
+    }
+
+    @Override
+    public void sendMessage(ChatMessage message) {
+        // Implemented via RPC
+    }
+
+    @Override
+    public void receiveMessage(String json) {
+        // Implemented via RPC
+    }
+
+    @Override
+    public void deleteMessage(String messageId) {
+        byte[] messageIdBytes = messageId.getBytes(StandardCharsets.UTF_8);
+        this.rpc.call("chat:message-deleted", messageIdBytes);
+    }
+}

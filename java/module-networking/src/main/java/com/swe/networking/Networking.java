@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 /**
@@ -39,7 +40,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * The variable to store singleton priority queue.
      */
-    private PriorityQueue priorityQueue;
+    private NewPriorityQueue priorityQueue;
     /**
      * The variable to store singleton priority queue.
      */
@@ -63,17 +64,18 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Variable to store the thread to start the send packets.
      */
-     private final Thread sendThread;
+    private final Thread sendThread;
+
     /**
      * Private constructor for Netwroking class.
      */
     private Networking() {
         chunkManager = ChunkManager.getChunkManager(payloadSize);
-        priorityQueue = PriorityQueue.getPriorityQueue();
+        priorityQueue = NewPriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-         sendThread = new Thread(this::start);
-         sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
+        sendThread = new Thread(this::start);
+        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -120,7 +122,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
 //                topology.sendPacket(chunk, newdest);
-                 priorityQueue.addPacket(chunk);
+                priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -132,7 +134,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void start() {
         while (true) {
             if (!priorityQueue.isEmpty()) {
-                final byte[] packet = priorityQueue.nextPacket();
+                final byte[] packet = priorityQueue.getPacket();
                 try {
                     final PacketInfo pktInfo = parser.parsePacket(packet);
                     final InetAddress addr = pktInfo.getIpAddress();
@@ -187,9 +189,13 @@ public class Networking implements AbstractNetworking, AbstractController {
      * @param priority the priority of the packet
      */
     @Override
-    public void broadcast(final byte[] data, final int module, final int priority){
+    public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
-        final List<ClientNode> dest = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+        List<ClientNode> dest = new ArrayList<>();
+        final List<ClientNode> clientDests = topology.getClients(topology.getClusterIndex(user));
+        if (clientDests != null) {
+            dest = clientDests;
+        }
 
         if (user == topology.getServer(user)) {
             final List<ClientNode> servers = new ArrayList<>(topology.getAllClusterServers());
@@ -201,13 +207,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
-//                topology.sendPacket(chunk, client);
-                try {
-                    priorityQueue.addPacket(chunk);
-                }
-                catch (UnknownHostException ex) {
-                    System.out.println("Failed to add packet to destination");
-                }
+                // topology.sendPacket(chunk, client);
+                priorityQueue.addPacket(chunk);
             }
         }
     }
@@ -257,9 +258,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        if(function == null){
+        if (function == null) {
             System.out.println("No function found for module: " + module);
-        }else {
+        } else {
             function.receiveData(data);
         }
     }
@@ -271,6 +272,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
+        sendThread.interrupt();
     }
 
     /**
@@ -305,21 +307,21 @@ public class Networking implements AbstractNetworking, AbstractController {
     }
 
     /**
-     * Function to check if the main server is live by attempting to connect
-     * to a high availability public DNS server (Google or Cloudflare).
-     * This serves as a network connectivity check to determine if the
-     * main server could potentially be reachable.
+     * Function to check if the main server is live by attempting to connect to
+     * a high availability public DNS server (Google or Cloudflare). This serves
+     * as a network connectivity check to determine if the main server could
+     * potentially be reachable.
      *
-     * @return true if connection fails (network appears down), false if connection succeeds
+     * @return true if connection fails (network appears down), false otherwise
      */
     @Override
     public boolean isMainServerLive() {
         final int timeout = 2000; // 2 second timeout
         final String[] dnsServers = {
-            "8.8.8.8",      // Google DNS
-            "8.8.4.4",      // Google DNS secondary
-            "1.1.1.1",      // Cloudflare DNS
-            "1.0.0.1"       // Cloudflare DNS secondary
+            "8.8.8.8", // Google DNS
+            "8.8.4.4", // Google DNS secondary
+            "1.1.1.1", // Cloudflare DNS
+            "1.0.0.1", // Cloudflare DNS secondary
         };
         final int[] ports = {53, 80}; // DNS port and HTTP port
 

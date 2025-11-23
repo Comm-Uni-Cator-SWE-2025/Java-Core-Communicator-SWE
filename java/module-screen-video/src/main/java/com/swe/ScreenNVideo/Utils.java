@@ -1,4 +1,13 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo;
+
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
+import com.swe.core.Meeting.MeetingSession;
+import com.swe.core.Meeting.UserProfile;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -7,6 +16,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Map;
 
 /**
  * Utility class for ScreenN Video.
@@ -33,9 +43,21 @@ public class Utils {
      */
     public static final String STOP_SCREEN_CAPTURE = "stopScreenCapture";
     /**
+     * Key constant for start_audio_capture.
+     */
+    public static final String START_AUDIO_CAPTURE = "startAudioCapture";
+    /**
+     * Key constant for stop_audio_capture.
+     */
+    public static final String STOP_AUDIO_CAPTURE = "stopAudioCapture";
+    /**
      * Key constant for subscribe_as_viewer.
      */
     public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
+    /**
+     * Key constant for unSubscribe_as_viewer.
+     */
+    public static final String UNSUBSCRIBE_AS_VIEWER = "unSubscribeAsViewer";
     /**
      * Key constant for Updating UI.
      */
@@ -52,6 +74,11 @@ public class Utils {
      * Key constant for unsubscribe_as_viewer.
      */
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
+
+    public static final float DEFAULT_SAMPLE_RATE = 48000f;
+    public static final int DEFAULT_CHANNELS = 1;
+    public static final int DEFAULT_SAMPLE_SIZE = 16;
+
     /**
      * Scale factor for X axis.
      */
@@ -208,6 +235,23 @@ public class Utils {
         for (int i = 0; i < height; i++) {
             System.arraycopy(srcMatrix[i], 0, dstMatrix[i], 0, width);
         }
+    }
+
+    public static String getEmailFromIp(ClientNode ipNode) {
+        final MeetingSession meetingSession = Context.getInstance().meetingSession;
+        if (meetingSession == null) {
+            return null;
+        }
+        final Map<ClientNode, UserProfile> participants = meetingSession.getParticipants();
+        if (participants == null) {
+            return null;
+        }
+        System.out.println(ipNode.port());
+        participants.forEach((p,v) -> {
+            System.out.println(p.hostName() + " " + v.getEmail());
+        });
+        final UserProfile profile = participants.get(ipNode);
+        return profile != null ? profile.getEmail() : null;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -62,7 +63,6 @@ public final class TCPCommunicator implements ProtocolBase {
             deviceServerPort = serverPort;
             setServerPort();
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Unable to initialize TCP comunicator...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
@@ -96,7 +96,6 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             return null;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error while using the selector...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             return null;
         }
@@ -124,7 +123,6 @@ public final class TCPCommunicator implements ProtocolBase {
             final SocketChannel socket = SocketChannel.open();
             return socket;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occurred while opening socket...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
         return null;
@@ -143,7 +141,6 @@ public final class TCPCommunicator implements ProtocolBase {
                     NetworkLogger.printInfo(MODULENAME, "Closing socket for client " + client + " ...");
                 }
             } catch (IOException ex) {
-                NetworkLogger.printError(MODULENAME, "Error occurred while closing socket...");
                 NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             }
         }
@@ -177,7 +174,6 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             printIpAddr(destIp, destPort);
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error while sending data...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
@@ -201,7 +197,6 @@ public final class TCPCommunicator implements ProtocolBase {
             NetworkLogger.printInfo(MODULENAME, "New connection esthablished...");
             NetworkLogger.printInfo(MODULENAME, "Client " + client + " ...");
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while accepting connection...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }
@@ -226,7 +221,6 @@ public final class TCPCommunicator implements ProtocolBase {
             buffer.get(data);
             return data;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while reading data...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
             return null;
         }
@@ -245,7 +239,6 @@ public final class TCPCommunicator implements ProtocolBase {
                 socket.close();
             }
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while closing socket...");
             NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
         }
     }

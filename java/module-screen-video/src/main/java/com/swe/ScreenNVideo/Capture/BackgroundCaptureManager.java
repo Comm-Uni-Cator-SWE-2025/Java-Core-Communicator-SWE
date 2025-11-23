@@ -1,3 +1,7 @@
+/**
+ * Contributed by @Sandeep-Kumar
+ */
+
 package com.swe.ScreenNVideo.Capture;
 
 import com.swe.ScreenNVideo.CaptureComponents;
@@ -18,11 +22,12 @@ public final class BackgroundCaptureManager {
     /**
      * Instance for capturing the entire screen.
      */
-    private final ICapture screenCapture;
+    private ICapture screenCapture;
     /**
      * Instance for capturing a specific video region.
      */
     private final ICapture videoCapture;
+
     /**
      * CaptureComponents Object.
      */
@@ -45,11 +50,18 @@ public final class BackgroundCaptureManager {
         if (captureThread != null && captureThread.isAlive()) {
             return; // Already running
         }
-
         captureThread = new Thread(this::captureLoop, "Background-Capture-Thread");
         captureThread.setDaemon(true); // Ensure thread doesn't block JVM shutdown
         captureThread.start();
         System.out.println("Background Capture Thread started.");
+    }
+
+    public void reInitVideo() {
+        videoCapture.reInit();
+    }
+
+    public void reInitScreen() {
+        screenCapture = new ScreenCapture();
     }
 
 
@@ -60,6 +72,8 @@ public final class BackgroundCaptureManager {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 if (!capCom.isScreenCaptureOn() && !capCom.isVideoCaptureOn()) {
+                    videoCapture.stop();
+                    screenCapture.stop();
                     Thread.sleep(Utils.SEC_IN_MS);
                     continue;
                 }
@@ -67,12 +81,17 @@ public final class BackgroundCaptureManager {
                 if (capCom.isScreenCaptureOn()) {
                     try {
                         // Overwrite the volatile variable with the latest frame
+//                        System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
+//                        System.out.println("Done Capturedd..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
+                        Thread.sleep(500);
+                        screenCapture = new ScreenCapture();
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }
                 } else {
+                    screenCapture.stop();
                     capCom.setLatestScreenFrame(null);
                 }
 
@@ -85,6 +104,7 @@ public final class BackgroundCaptureManager {
                         capCom.setLatestVideoFrame(null); // Clear frame on error
                     }
                 } else {
+                    videoCapture.stop();
                     capCom.setLatestVideoFrame(null);
                 }
             } catch (InterruptedException e) {

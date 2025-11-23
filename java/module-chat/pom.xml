@@ -12,4 +12,16 @@
   <artifactId>module-chat</artifactId>
   <name>Module - chat</name>
   <packaging>jar</packaging>
+  <dependencies>
+    <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.swe.networking</groupId>
+      <artifactId>module-networking</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 </project>

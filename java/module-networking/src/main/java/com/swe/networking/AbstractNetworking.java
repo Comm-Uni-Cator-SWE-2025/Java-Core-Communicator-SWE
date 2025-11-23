@@ -1,5 +1,7 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
+
 /**
  * Interface used between other modules and networking to send data.
  * Every module subscribes to this interface and then sends data

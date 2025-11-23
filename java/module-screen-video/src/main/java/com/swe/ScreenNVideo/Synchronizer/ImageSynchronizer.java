@@ -1,3 +1,7 @@
+/**
+ * Contributed by @chirag9528
+ */
+
 package com.swe.ScreenNVideo.Synchronizer;
 
 import com.swe.ScreenNVideo.Codec.Codec;
@@ -30,7 +34,23 @@ public class ImageSynchronizer {
      * The next feed number we expect to recieve in correct order.
      * Used to ensure patches are applied sequentially.
      */
-    public int expectedfeedNumber;
+    private int expectedFeedNumber;
+
+    public boolean waitingForFullImage = false;
+
+    public int getExpectedFeedNumber() {
+        return expectedFeedNumber;
+    }
+
+    public boolean reqCompression = false;
+
+    /**
+     * Sets the expected feedNumber.
+     * @param expectedFeedNumberArgs the number to update
+     */
+    public void setExpectedFeedNumber(final int expectedFeedNumberArgs) {
+        this.expectedFeedNumber = expectedFeedNumberArgs;
+    }
 
     /**
      * Min-heap storing out-of-order feed packets.
@@ -52,16 +72,20 @@ public class ImageSynchronizer {
         this.videoCodec = codec;
         this.imageStitcher = new ImageStitcher();
         previousImage = null;
-        this.expectedfeedNumber = 0;
+        this.expectedFeedNumber = 0;
         this.heap = new PriorityQueue<>((a, b) -> Integer.compare(a.getFeedNumber(), b.getFeedNumber()));
     }
 
     /**
      * Synchronize the image from the patches.
      * @param compressedPatches the patches to synchronize the image.
+     * @param newHeight height of incoming packet
+     * @param newWidth width of incoming packet
+     * @param toDeCompress to compress the packets ot not
      * @return the image.
      */
-    public int[][] synchronize(final int newHeight, final int newWidth, final List<CompressedPatch> compressedPatches) {
+    public int[][] synchronize(final int newHeight, final int newWidth, final List<CompressedPatch> compressedPatches,
+                               final boolean toDeCompress) {
         if (previousImage != null) {
             imageStitcher.setCanvas(previousImage);
         } else {
@@ -71,12 +95,15 @@ public class ImageSynchronizer {
         imageStitcher.setCanvasDimensions(newHeight, newWidth);
 
         for (CompressedPatch compressedPatch : compressedPatches) {
-            final int[][] decodedImage = videoCodec.decode(compressedPatch.data());
+            final int[][] decodedImage = videoCodec.decode(compressedPatch.data(), toDeCompress);
             final Patch patch = new Patch(decodedImage, compressedPatch.x(), compressedPatch.y());
             imageStitcher.stitch(patch);
 //            break;
         }
         previousImage = imageStitcher.getCanvas();
+        if (previousImage == null) {
+            System.out.println("------------------GOT-NULL-------------");
+        }
         return previousImage;
     }
 

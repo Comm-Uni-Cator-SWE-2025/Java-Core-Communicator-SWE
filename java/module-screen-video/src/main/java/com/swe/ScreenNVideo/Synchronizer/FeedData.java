@@ -1,6 +1,10 @@
+/**
+ * Contributed by @chirag9528
+ */
+
 package com.swe.ScreenNVideo.Synchronizer;
 
-import com.swe.ScreenNVideo.Serializer.CPackets;
+import com.swe.ScreenNVideo.Model.CPackets;
 
 
 /**

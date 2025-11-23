@@ -1,13 +1,18 @@
+/**
+ * Contributed by @alonot
+ */
+
 package com.swe.ScreenNVideo.IntegrationTest;
 
-import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.ScreenNVideo.MediaCaptureManager;
-import com.swe.networking.ClientNode;
-import com.swe.networking.SimpleNetworking.AbstractNetworking;
+import com.swe.core.RPC;
+import com.swe.networking.AbstractController;
+import com.swe.networking.AbstractNetworking;
+import com.swe.core.ClientNode;
+import com.swe.networking.Networking;
+import com.swe.networking.SimpleNetworking.SimpleNetworking;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static com.swe.ScreenNVideo.Utils.getSelfIP;
@@ -15,47 +20,50 @@ import static com.swe.ScreenNVideo.Utils.getSelfIP;
 /**
  * Entry point for the screen and video integration test.
  * <p>
- *     The {@code MainController} sets up dummy networking and RPC components,
- *     initializes a {@link MediaCaptureManager}, and starts the screen capture process
- *     in a separate thread for testing purposes.
+ * The {@code MainController} sets up dummy networking and RPC components,
+ * initializes a {@link MediaCaptureManager}, and starts the screen capture process
+ * in a separate thread for testing purposes.
  * </p>
  */
 public class MainController {
     /**
      * Server port for ScreenNVideo.
      */
-    static final int SERVERPORT = 40000 ;
+    static final int SERVERPORT = 40000;
 
 
     static void main(final String[] args) throws InterruptedException {
-        final AbstractNetworking networking = new DummyNetworking(SERVERPORT);
-
-        List<String> allNetworks = new ArrayList<>();
-        allNetworks.add("10.128.10.248");
-        allNetworks.add("10.128.15.115");
+//        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
+//        final AbstractNetworking networking = Networking.getNetwork();
+//        final AbstractNetworking networking = new DummyNetworking();
+        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
         final ClientNode deviceNode = new ClientNode(ipAddress, SERVERPORT);
-        final ClientNode serverNode = new ClientNode("10.128.5.70", SERVERPORT);
+        final ClientNode serverNode = new ClientNode("10.32.1.250", SERVERPORT);
 
-        final AbstractRPC rpc = new DummyRPC();
+        final RPC rpc = new RPC();
 
-        final MediaCaptureManager screenNVideo = new MediaCaptureManager(networking, rpc, SERVERPORT);
-
-        // networking.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
-//        System.out.println(allNetworks);
-
-        screenNVideo.broadcastJoinMeeting(allNetworks);
+        final MediaCaptureManager screenNVideo =
+            new MediaCaptureManager(networking, SERVERPORT);
         System.out.println("Connection RPC..");
 
 
         Thread handler = null;
         try {
-            handler = rpc.connect(SERVERPORT);
+            handler = rpc.connect(6942);
         } catch (IOException | ExecutionException e) {
             throw new RuntimeException(e);
         }
+
+//        SimpleNetworking.getSimpleNetwork().addUser(deviceNode, serverNode);
+
+//        AbstractController networkingCom = Networking.getNetwork();
+//        networkingCom.addUser(deviceNode, serverNode); // DummyNetworking doesn't need this
+
+        screenNVideo.broadcastJoinMeeting();
+        System.out.println("COnnected");
 
         final Thread screenNVideoThread = new Thread(() -> {
             try {
@@ -75,10 +83,10 @@ public class MainController {
 //        uiThread.join();
         screenNVideoThread.join();
         handler.join();
-        
+
         // Cleanup
-        if (networking instanceof DummyNetworking) {
-            ((DummyNetworking) networking).shutdown();
-        }
+//        if (networking instanceof DummyNetworking) {
+//            ((DummyNetworking) networking).shutdown();
+//        }
     }
 }
