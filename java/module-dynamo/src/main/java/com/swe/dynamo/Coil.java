@@ -9,6 +9,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
@@ -31,7 +32,22 @@ public class Coil {
     private HashMap<Node, Link> nodeLinks = new HashMap<>();
 
     public Node[] getNodeList() {
-        return nodeLinks.keySet().toArray(new Node[0]);
+
+        // get all ip addresses of the nodes
+        HashSet<String> ipAddresses = new HashSet<>();
+        for (Node node : nodeLinks.keySet()) {
+            ipAddresses.add(node.IPToString());
+        }
+
+        // get all nodes from the ip addresses
+        Node[] nodes = new Node[ipAddresses.size()];
+        int i = 0;
+        for (String ipAddress : ipAddresses) {
+            nodes[i++] = new Node(ipAddress, (short) 1212);
+        }
+
+        return nodes;
+
     }
 
     public void connectToNode(Node node) throws IOException {
