@@ -8,11 +8,19 @@ import com.swe.networking.AbstractNetworking;
 import com.swe.networking.MessageListener;
 
 public class DynamoNetworking implements AbstractController, AbstractNetworking {
-
+    // this is a singleton class
+    private static DynamoNetworking dynamoNetworking;
     private final Dynamo dynamo;
 
-    public DynamoNetworking() {
+    private DynamoNetworking() {
         this.dynamo = Dynamo.getInstance();
+    }
+
+    public static DynamoNetworking getDynamoNetworking() {
+        if (dynamoNetworking == null) {
+            dynamoNetworking = new DynamoNetworking();
+        }
+        return dynamoNetworking;
     }
 
     @Override

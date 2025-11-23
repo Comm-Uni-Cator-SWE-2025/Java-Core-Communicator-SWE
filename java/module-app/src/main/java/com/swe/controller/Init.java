@@ -10,7 +10,8 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.RPC;
 import com.swe.core.serialize.DataSerializer;
-import com.swe.networking.Networking;
+import com.swe.networking.Dynamo.DynamoNetworking;
+
 import functionlibrary.CloudFunctionLibrary;
 
 import java.io.IOException;
@@ -35,16 +36,16 @@ public class Init {
         controllerServices.cloud = cloud;
 
         // Provide RPC somehow here
-        NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
+        NetworkingInterface networking = new DynamoNetworkingAdapter(DynamoNetworking.getDynamoNetworking());
         networking.consumeRPC(rpc);
 
         controllerServices.networking = networking;
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork());
+        new ChatManager(DynamoNetworking.getDynamoNetworking());
 
          MediaCaptureManager
-             mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
+             mediaCaptureManager = new MediaCaptureManager(DynamoNetworking.getDynamoNetworking(), 6943);
          Thread mediaCaptureManagerThread = new Thread(() -> {
              try {
                  mediaCaptureManager.startCapture(24);
@@ -158,7 +159,7 @@ public class Init {
         rpc.subscribe("core/endMeeting", (byte[] data) -> {
             System.out.println("Ending meeting");
             try {
-                Networking.getNetwork().closeNetworking();
+                controllerServices.networking.closeNetworking();
                 System.out.println("Meeting ended successfully");
                 // Clear the meeting session from context
                 controllerServices.context.meetingSession = null;

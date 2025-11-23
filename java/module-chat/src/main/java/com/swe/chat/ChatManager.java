@@ -3,6 +3,7 @@ package com.swe.chat;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.core.ClientNode;
 import com.swe.core.Context;
+import com.swe.networking.AbstractNetworking;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
 
@@ -36,7 +37,7 @@ public class ChatManager implements IChatService {
     private static final byte FLAG_FILE_METADATA = (byte) 0x03;
 
     private final AbstractRPC rpc;
-    private final Networking network;
+    private final AbstractNetworking network;
 
     /**
      * FILE CACHE - Stores compressed files temporarily
@@ -45,7 +46,7 @@ public class ChatManager implements IChatService {
      */
     private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
 
-    public ChatManager(Networking network) {
+    public ChatManager(AbstractNetworking network) {
         Context context = Context.getInstance();
         this.rpc = context.rpc;
         this.network = network;
