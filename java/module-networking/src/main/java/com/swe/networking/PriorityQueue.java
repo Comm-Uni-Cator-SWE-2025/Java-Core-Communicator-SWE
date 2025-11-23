@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 // File owned by Vishwaa.
-
 /**
  * Priority Queue with simple Multi-Level Feedback Queue (MLFQ).
  */
@@ -184,12 +183,12 @@ public class PriorityQueue {
 
     /**
      * This function returns whether the MLFQ is empty or not.
+     *
      * @return True if there are no packets in MLFQ otherwise False
      */
     private boolean isMlfqEmpty() {
         return mlfq.stream().allMatch(Deque::isEmpty);
     }
-
 
     /**
      * This function gives the approx throughput of the Priority Queue. This
@@ -240,7 +239,7 @@ public class PriorityQueue {
      * @return The packet data, or null.
      */
     private byte[] processHighestPriority() {
-        if(highestPriorityQueue.isEmpty()){
+        if (highestPriorityQueue.isEmpty()) {
             return null;
         }
         if (currentBudget.get(PacketPriority.ZERO) > 0) {
@@ -248,14 +247,13 @@ public class PriorityQueue {
                     currentBudget.get(PacketPriority.ZERO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from High Priority Budget");
             return highestPriorityQueue.pollFirst();
-        }
-        else if(midPriorityQueue.isEmpty() && currentBudget.get(PacketPriority.ONE) > 0){
+        } else if (midPriorityQueue.isEmpty() && currentBudget.get(PacketPriority.ONE) > 0) {
             currentBudget.put(PacketPriority.ONE,
                     currentBudget.get(PacketPriority.ONE) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Mid Priority Budget");
             return highestPriorityQueue.pollFirst();
-        }
-        else if(midPriorityQueue.size() < highestPriorityQueue.size() && isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0){
+        } else if (midPriorityQueue.size() < highestPriorityQueue.size()
+                && isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0) {
             currentBudget.put(PacketPriority.TWO,
                     currentBudget.get(PacketPriority.TWO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Low Priority Budget");
@@ -271,7 +269,7 @@ public class PriorityQueue {
      * @return The packet data, or null.
      */
     private byte[] processMidPriority() {
-        if(midPriorityQueue.isEmpty()){
+        if (midPriorityQueue.isEmpty()) {
             return null;
         }
         final int p2Current = currentBudget.get(PacketPriority.ONE);
@@ -291,8 +289,7 @@ public class PriorityQueue {
                 NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from High Priority budget");
             }
             return midPriorityQueue.pollFirst();
-        }
-        else if(isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0){
+        } else if (isMlfqEmpty() && currentBudget.get(PacketPriority.TWO) > 0) {
             currentBudget.put(PacketPriority.TWO, currentBudget.get(PacketPriority.TWO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Mid-prioity sent from Low Priority budget");
             return midPriorityQueue.pollFirst();

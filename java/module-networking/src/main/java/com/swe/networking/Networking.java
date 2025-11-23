@@ -192,8 +192,8 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
         List<ClientNode> dest = new ArrayList<>();
-        List<ClientNode> clientDests = topology.getClients(topology.getClusterIndex(user));
-        if(clientDests!=null){
+        final List<ClientNode> clientDests = topology.getClients(topology.getClusterIndex(user));
+        if (clientDests != null) {
             dest = clientDests;
         }
 
@@ -312,8 +312,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      * as a network connectivity check to determine if the main server could
      * potentially be reachable.
      *
-     * @return true if connection fails (network appears down), false if
-     * connection succeeds
+     * @return true if connection fails (network appears down), false otherwise
      */
     @Override
     public boolean isMainServerLive() {
