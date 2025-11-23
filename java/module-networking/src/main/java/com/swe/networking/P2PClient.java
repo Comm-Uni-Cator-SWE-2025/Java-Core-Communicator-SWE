@@ -2,6 +2,7 @@ package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -252,6 +253,7 @@ public class P2PClient implements P2PUser {
                 final int module = parser.parsePacket(packet).getModule();
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
+                System.out.println("Data received: " + Arrays.toString(data));
                 if (data != null) {
                     final PacketInfo destpktInfo = parser.parsePacket(data);
                     networking.callSubscriber(module, destpktInfo.getPayload());

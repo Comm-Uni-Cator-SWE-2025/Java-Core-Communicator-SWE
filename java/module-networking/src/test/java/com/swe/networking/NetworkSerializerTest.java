@@ -1,11 +1,14 @@
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
+import org.junit.jupiter.api.Assertions;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 /** Test class for serializers. */
 public class NetworkSerializerTest {
@@ -70,5 +73,42 @@ public class NetworkSerializerTest {
         final NetworkStructure data1 = serializer.deserializeNetworkStructure(data);
         System.out.println(data1);
         assertEquals(network, data1);
+    }
+
+    @org.junit.jupiter.api.Test
+    public void clientNetworkRecordIllegalTest() {
+        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+        final byte[] data = new byte[8];
+        System.out.println(Arrays.toString(data));
+        IllegalArgumentException exception1 = assertThrows(
+                IllegalArgumentException.class,
+                () -> serializer.deserializeClientNetworkRecord(data)
+        );
+        Assertions.assertTrue(exception1.getMessage().contains("Data too short"));
+        final ClientNode client = new ClientNode("127.0.0.1", 1234);
+        final ClientNetworkRecord record = new ClientNetworkRecord(client, 1);
+        final byte[] data1 = serializer.serializeClientNetworkRecord(record);
+        final byte[] halfdata = Arrays.copyOfRange(data1, 0, data1.length - 2);
+        IllegalArgumentException exception2 = assertThrows(
+                IllegalArgumentException.class,
+                () -> serializer.deserializeClientNetworkRecord(halfdata)
+        );
+        Assertions.assertTrue(exception2.getMessage().contains("Not enough bytes to read"));
+    }
+
+    @org.junit.jupiter.api.Test
+    public void deserializeClientNetworkRecord_NegativeHostLength_ThrowsException() {
+        final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
+
+        final byte[] dataWithNegativeLength = new byte[] {
+                (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+                0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00
+        };
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> serializer.deserializeClientNetworkRecord(dataWithNegativeLength)
+        );
+        Assertions.assertTrue(exception.getMessage().contains("Negative host length: -1"));
     }
 }

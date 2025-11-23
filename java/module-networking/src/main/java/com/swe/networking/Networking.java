@@ -131,21 +131,18 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Function to continuously send data.
      */
     public void start() {
-        while (true) {
-            // System.out.println(priorityQueue.isEmpty());
-            // if (priorityQueue.isEmpty()) {
-            final byte[] packet = priorityQueue.getPacket();
-            if (packet == null) {
-                continue;
-            }
-            try {
-                final PacketInfo pktInfo = parser.parsePacket(packet);
-                final InetAddress addr = pktInfo.getIpAddress();
-                final int port = pktInfo.getPortNum();
-                final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
-                topology.sendPacket(packet, dest);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
+        while (!Thread.currentThread().isInterrupted()) {
+            if (!priorityQueue.isEmpty()) {
+                final byte[] packet = priorityQueue.nextPacket();
+                try {
+                    final PacketInfo pktInfo = parser.parsePacket(packet);
+                    final InetAddress addr = pktInfo.getIpAddress();
+                    final int port = pktInfo.getPortNum();
+                    final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
+                    topology.sendPacket(packet, dest);
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
             }
             // }
         }
@@ -323,7 +320,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public boolean isMainServerLive() {
-        final int timeout = 2000; // 2 second timeout
+        final int timeout = 2000;
         final String[] dnsServers = {
             "8.8.8.8", // Google DNS
             "8.8.4.4", // Google DNS secondary

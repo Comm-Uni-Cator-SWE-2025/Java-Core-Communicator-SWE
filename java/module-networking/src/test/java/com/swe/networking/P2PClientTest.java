@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +34,7 @@ public class P2PClientTest {
     final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
     final Topology topology = Topology.getTopology();
 //    final TCPCommunicator mockCommunicator = new TCPCommunicator(deviceNode.port());
+    private final ClientNode DUMMY_CLEANUP_NODE = new ClientNode("127.0.0.1", 1);
 
     final Semaphore semt_t = new Semaphore(10);
 
@@ -98,10 +100,20 @@ public class P2PClientTest {
     }
 
     @Before
-    public void setUp() {
-
+    public void setUp() throws Exception {
+        resetStaticSingleton(ChunkManager.class, "chunkManager", null);
         topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
         testClient = null;
+        ChunkManager.getChunkManager(22);
+    }
+
+    /**
+     * Helper to reset a private static field (like a Singleton instance).
+     */
+    private static void resetStaticSingleton(final Class<?> targetClass, final String fieldName, final Object value) throws Exception {
+        final Field field = targetClass.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(null, value);
     }
 
     @After
@@ -111,7 +123,6 @@ public class P2PClientTest {
             testClient.close();
             testClient = null;
         }
-
         System.out.println("test finished");
     }
 
@@ -293,8 +304,14 @@ public class P2PClientTest {
         final ClientNode newNode = new ClientNode("127.0.0.1", 7000);
         final ClientNetworkRecord addRecord = new ClientNetworkRecord(newNode, 1); // Add to cluster 1
         final byte[] addPayload = serializer.serializeClientNetworkRecord(addRecord);
-        final byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
-        sendPacket(addPacket, deviceNode);
+        System.out.println("payload: "+ Arrays.toString(addPayload));
+//        final byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
+        final byte[] basePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
+        final PacketInfo info = packetParser.parsePacket(basePacket);
+        info.setChunkNum(0);
+        info.setChunkLength(1);
+        final byte[] modulePacket = packetParser.createPkt(info);
+        sendPacket(modulePacket, deviceNode);
         Thread.sleep(500);
 
     }
