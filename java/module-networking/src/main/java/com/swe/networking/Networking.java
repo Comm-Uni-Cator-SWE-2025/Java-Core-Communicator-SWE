@@ -1,7 +1,8 @@
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 /**
@@ -38,7 +40,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * The variable to store singleton priority queue.
      */
-    private PriorityQueue priorityQueue;
+    private NewPriorityQueue priorityQueue;
     /**
      * The variable to store singleton priority queue.
      */
@@ -69,7 +71,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     private Networking() {
         chunkManager = ChunkManager.getChunkManager(payloadSize);
-        priorityQueue = PriorityQueue.getPriorityQueue();
+        priorityQueue = NewPriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
         sendThread = new Thread(this::start);
@@ -119,7 +121,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-                // topology.sendPacket(chunk, newdest);
+//                topology.sendPacket(chunk, newdest);
                 priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
@@ -132,7 +134,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void start() {
         while (true) {
             if (!priorityQueue.isEmpty()) {
-                final byte[] packet = priorityQueue.nextPacket();
+                final byte[] packet = priorityQueue.getPacket();
                 try {
                     final PacketInfo pktInfo = parser.parsePacket(packet);
                     final InetAddress addr = pktInfo.getIpAddress();
@@ -202,11 +204,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
                 // topology.sendPacket(chunk, client);
-                try {
-                    priorityQueue.addPacket(chunk);
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                }
+                priorityQueue.addPacket(chunk);
             }
         }
     }
@@ -256,7 +254,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        if (function != null) {
+        if (function == null) {
+            System.out.println("No function found for module: " + module);
+        } else {
             function.receiveData(data);
         }
     }
@@ -295,5 +295,50 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public AbstractRPC getRPC() {
         return moduleRPC;
+    }
+
+    @Override
+    public boolean isClientAlive(final ClientNode client) {
+        return topology.checkClientPresent(client);
+    }
+
+    /**
+     * Function to check if the main server is live by attempting to connect to
+     * a high availability public DNS server (Google or Cloudflare). This serves
+     * as a network connectivity check to determine if the main server could
+     * potentially be reachable.
+     *
+     * @return true if connection fails (network appears down), false if
+     * connection succeeds
+     */
+    @Override
+    public boolean isMainServerLive() {
+        final int timeout = 2000; // 2 second timeout
+        final String[] dnsServers = {
+            "8.8.8.8", // Google DNS
+            "8.8.4.4", // Google DNS secondary
+            "1.1.1.1", // Cloudflare DNS
+            "1.0.0.1", // Cloudflare DNS secondary
+        };
+        final int[] ports = {53, 80}; // DNS port and HTTP port
+
+        // Try to connect to each DNS server on each port
+        for (String dnsServer : dnsServers) {
+            for (int port : ports) {
+                try (Socket socket = new Socket()) {
+                    socket.connect(new InetSocketAddress(dnsServer, port), timeout);
+                    // Connection succeeded
+                    System.out.println("Successfully connected to " + dnsServer + ":" + port);
+                    return false; // Connection succeeded, return false
+                } catch (Exception e) {
+                    // Connection failed, continue to next server/port
+                    System.out.println("Failed to connect to " + dnsServer + ":" + port + " - " + e.getMessage());
+                }
+            }
+        }
+
+        // All connection attempts failed
+        System.out.println("All connection attempts to public DNS servers failed");
+        return true; // All connections failed, return true
     }
 }

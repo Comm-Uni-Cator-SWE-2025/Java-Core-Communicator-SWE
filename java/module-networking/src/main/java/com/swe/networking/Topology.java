@@ -213,7 +213,6 @@ public final class Topology implements AbstractTopology {
             clusters.remove(idx);
             clusterServers.remove(removeClient);
             System.out.println("Removed " + removeClient + "from the server list...");
-            // numClusters -= 1;
         }
     }
 
@@ -338,5 +337,20 @@ public final class Topology implements AbstractTopology {
         } catch (Exception e) {
             NetworkLogger.printInfo(MODULENAME, "Exception occured: " + e.getMessage() + " Closing topology...");
         }
+    }
+
+    /**
+     * Function to check if a client is present in the topology (any cluster).
+     *
+     * @param client the input client to check
+     * @return true if client present, false otherwise
+     */
+    boolean checkClientPresent(final ClientNode client) {
+        for (List<ClientNode> cluster : clusters) {
+            if (cluster.contains(client)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

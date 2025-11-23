@@ -170,9 +170,11 @@ public final class TCPCommunicator implements ProtocolBase {
                 NetworkLogger.printInfo(MODULENAME, "New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
-            final ByteBuffer buffer = ByteBuffer.wrap(data);
-            while (buffer.hasRemaining()) {
-                destSocket.write(buffer);
+            synchronized (destSocket) {
+                final ByteBuffer buffer = ByteBuffer.wrap(data);
+                while (buffer.hasRemaining()) {
+                    destSocket.write(buffer);
+                }
             }
             printIpAddr(destIp, destPort);
         } catch (IOException ex) {
@@ -250,6 +252,6 @@ public final class TCPCommunicator implements ProtocolBase {
     }
 
     private void printIpAddr(final String ipAddr, final Integer port) {
-        NetworkLogger.printInfo(MODULENAME, "Client: " + ipAddr + ":" + port);
+        NetworkLogger.printInfo(MODULENAME, "Sent message succesfully to Client: " + ipAddr + ":" + port);
     }
 }
