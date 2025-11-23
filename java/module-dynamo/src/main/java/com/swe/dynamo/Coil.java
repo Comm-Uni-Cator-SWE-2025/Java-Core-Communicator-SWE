@@ -38,8 +38,10 @@ public class Coil {
         SocketChannel socketChannel = SocketChannel.open();
         socketChannel.configureBlocking(false);
 
+        int port = node.getPortInt();
+
         // Start the connection (returns immediately in non-blocking mode)
-        socketChannel.connect(new InetSocketAddress(node.IPToString(), (int) node.getPort()));
+        socketChannel.connect(new InetSocketAddress(node.IPToString(), port));
 
         // Create a temporary selector for connection timeout
         Selector connectSelector = Selector.open();
@@ -176,6 +178,7 @@ public class Coil {
     }
 
     private void acceptConnection(SelectionKey key) throws IOException {
+        System.out.println("Accepting connection");
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
         SocketChannel clientChannel = serverSocketChannel.accept();
         clientChannel.configureBlocking(false);

@@ -57,6 +57,7 @@ public class Dynamo {
             return null;
         });
         incomingMessageMap = new ConcurrentHashMap<>();
+        outgoingMessageMap = new ConcurrentHashMap<>();
     }
 
     // Public accessor for singleton instance
@@ -93,6 +94,9 @@ public class Dynamo {
         // start Server on given port to accept connections
         this.self = new Node(self.hostName(), (short) self.port());
         mainServerNode = new Node(mainServer.hostName(), (short) mainServer.port());
+        if (self.equals(mainServer)) {
+            instantiatedPeerList = true;
+        }
         coil = new Coil(self.equals(mainServer), (node) -> {
             sendNodeList(node);
             return null;
@@ -132,15 +136,18 @@ public class Dynamo {
                     Chunk chunk = packet.chunk();
                     Frame frame = outgoingMessageMap.get(chunk.getMessageID());
                     try {
+                        // System.out.println("Sending data to " + packet.reciever());
                         coil.sendData(packet.reciever(), packet.chunk());
 
                         if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
                             outgoingMessageMap.remove(chunk.getMessageID());
                         }
+                        // System.out.println("Sent data to " + packet.reciever());
 
                         failures = 0;
                         previousFailedReciever = null;
                     } catch (IOException e) {
+                        queue.add(packet);
                         // TODO handle retry
                         // get frame of this chunk. send invalid packet
                         if (frame != null) {
@@ -327,12 +334,14 @@ public class Dynamo {
      * @param client
      */
     private void sendNodeList(Node client) {
+        System.out.println("Sending node list to " + client);
         Node[] nodeList = coil.getNodeList();
         byte[] nodeListData = new byte[nodeList.length * 6];
         for (int i = 0; i < nodeList.length; i++) {
             System.arraycopy(nodeList[i].serialize(), 0, nodeListData, i * 6, 6);
         }
         sendData(nodeListData, new Node[] { client }, 0, 0);
+        System.out.println("Sent node list to " + client);
     }
 
     private void handleFrame(Frame frame) {

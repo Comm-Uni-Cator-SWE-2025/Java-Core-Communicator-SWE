@@ -31,6 +31,7 @@ public class Link {
             SocketAddress remoteAddress = clientChannel.getSocketChannel().getRemoteAddress();
             if (remoteAddress instanceof InetSocketAddress) {
                 InetSocketAddress inetAddress = (InetSocketAddress) remoteAddress;
+                System.out.println("Remote address: " + inetAddress.getHostString() + ":" + inetAddress.getPort());
                 return new Node((inetAddress.getHostString()), (short) inetAddress.getPort());
             }
             return null;
