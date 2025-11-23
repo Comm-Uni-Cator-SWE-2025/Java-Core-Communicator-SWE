@@ -3,16 +3,12 @@ package com.swe.canvas;
 import com.swe.core.Context;
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.networking.ModuleType;
-import com.swe.networking.AbstractNetworking;
+import com.swe.aiinsights.aiinstance.AiInstance;
+import com.swe.aiinsights.apiendpoints.AiClientService;
+import com.swe.networking.Networking;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-
-import com.swe.networking.Networking;
-import com.swe.aiinsights.aiinstance.AiInstance;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -35,14 +31,14 @@ public class CanvasManager {
     private final Networking network;
     private ClientNode hostClientNode;
 
-    private AiInstance aiInstance;
+    private AiClientService aiClientService;
 
     public CanvasManager(Networking network, ClientNode hostClientNode) {
         // Constructor implementation (if needed)
         Context context = Context.getInstance();
         this.rpc = context.rpc;
         this.network = network;
-        this.aiInstance = AiInstance.getInstance();
+        this.aiClientService = AiInstance.getInstance();
         this.hostClientNode = hostClientNode;
         
         this.rpc.subscribe("canvas:regularize", this::handleRegularize);
@@ -53,32 +49,15 @@ public class CanvasManager {
 
 
     private byte[] handleRegularize(byte[] data) {
-        // byte is the serialized action
-
-        String json = data.toString();
-        CompletableFuture<String> resp = aiInstance.regularize(json);
-        
-        byte[] result = new byte[0];
-
-        // what you want to do here
-        resp.thenAccept(response -> {
-            result = response.getBytes();
-        }).join();
-
-        return result;
+        final String json = new String(data, StandardCharsets.UTF_8);
+        final CompletableFuture<String> response = aiClientService.regularise(json);
+        return response.thenApply(result -> result.getBytes(StandardCharsets.UTF_8)).join();
     }
 
     private byte[] handleDescribe(byte[] data) {
-        String path = data.toString();
-        CompletableFuture<String> resp = aiInstance.describe(path);
-
-        byte[] result = new byte[0];
-        resp.thenAccept(response -> {
-            // func to send back to frontend
-            result = response.getBytes();
-        }).join();
-
-        return result;
+        final String path = new String(data, StandardCharsets.UTF_8);
+        final CompletableFuture<String> response = aiClientService.describe(path);
+        return response.thenApply(result -> result.getBytes(StandardCharsets.UTF_8)).join();
     }
 
 

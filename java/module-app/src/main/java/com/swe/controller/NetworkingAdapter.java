@@ -66,5 +66,9 @@ public class NetworkingAdapter implements NetworkingInterface {
         };
         networking.consumeRPC(adaptedRpc);
     }
-}
 
+    @Override
+    public void emitToSubscriber(ModuleType module, byte[] payload) {
+        networking.callSubscriber(module.ordinal(), payload);
+    }
+}

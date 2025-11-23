@@ -1,5 +1,7 @@
 package com.swe.controller;
 
+import com.swe.canvas.CanvasManager;
+import com.swe.controller.canvas.CanvasNetworkService;
 import com.swe.controller.serializer.IamPacket;
 import com.swe.controller.serializer.JoinAckPacket;
 import com.swe.controller.serializer.MeetingPacketType;
@@ -9,6 +11,7 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
+import com.swe.networking.Networking;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -52,6 +55,15 @@ public final class MeetingNetworkingCoordinator {
                                          localNode);
         }
         System.out.println(TAG + " Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
+
+        services.canvasManager = new CanvasManager(Networking.getNetwork(), localNode);
+        services.canvasNetworkService = new CanvasNetworkService(
+                services.context.rpc,
+                services.networking,
+                true,
+                localNode,
+                localNode,
+                () -> services.context.meetingSession);
     }
 
     /**
@@ -72,6 +84,14 @@ public final class MeetingNetworkingCoordinator {
         }
 
         sendIamPacket(serverNode, localNode);
+
+        services.canvasNetworkService = new CanvasNetworkService(
+                services.context.rpc,
+                services.networking,
+                false,
+                localNode,
+                serverNode,
+                () -> services.context.meetingSession);
     }
 
     private static void handleIncomingPacket(final byte[] data) {
@@ -239,4 +259,3 @@ public final class MeetingNetworkingCoordinator {
         }
     }
 }
-

@@ -46,5 +46,9 @@ public class SimpleNetworkingAdapter implements NetworkingInterface {
     public void consumeRPC(AbstractRPC rpc) {
         simpleNetworking.consumeRPC(rpc);
     }
-}
 
+    @Override
+    public void emitToSubscriber(ModuleType module, byte[] payload) {
+        simpleNetworking.callSubscriber(payload, module);
+    }
+}

@@ -10,10 +10,12 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.RPC;
 import com.swe.core.serialize.DataSerializer;
+import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
 import functionlibrary.CloudFunctionLibrary;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutionException;
@@ -166,6 +168,18 @@ public class Init {
                 System.out.println("Error ending meeting: " + e.getMessage());
                 return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
+        });
+
+        rpc.subscribe("networkFrontCallSubscriber", (byte[] data) -> {
+            final ByteBuffer buffer = ByteBuffer.wrap(data);
+            final int moduleOrdinal = buffer.getInt();
+            final byte[] payload = new byte[buffer.remaining()];
+            buffer.get(payload);
+            final ModuleType[] modules = ModuleType.values();
+            if (moduleOrdinal >= 0 && moduleOrdinal < modules.length) {
+                controllerServices.networking.emitToSubscriber(modules[moduleOrdinal], payload);
+            }
+            return new byte[0];
         });
     }
 }

@@ -1,7 +1,7 @@
 package com.swe.canvas;
 
 public interface ICanvasService {
-    void regularize();
-    void summarize();
-    void getHostIp();
+    byte[] submitAction(byte[] payload);
+
+    byte[] getCanvasState(byte[] ignored);
 }

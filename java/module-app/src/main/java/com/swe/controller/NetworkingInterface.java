@@ -17,8 +17,9 @@ public interface NetworkingInterface {
     void closeNetworking();
     
     void consumeRPC(AbstractRPC rpc);
-}
 
+    void emitToSubscriber(ModuleType module, byte[] payload);
+}
 
 
 
