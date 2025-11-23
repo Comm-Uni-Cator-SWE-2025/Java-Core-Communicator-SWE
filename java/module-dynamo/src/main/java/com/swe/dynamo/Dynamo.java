@@ -30,30 +30,30 @@ public class Dynamo {
     // Private constructor to prevent instantiation
     private Dynamo() {
         // try {
-            packetQueues = new ConcurrentLinkedQueue[5];
-            for (int i = 0; i < 5; i++) {
-                packetQueues[i] = new ConcurrentLinkedQueue<>();
-            }
-            subscriptions = new ConcurrentHashMap<>();
-            // subscriptions.put(0, (byte[] data) -> {
-            //     // extract all the nodes from the data
-            //     HashSet<Node> newPeerList = new HashSet<>();
-            //     Node[] nodes = new Node[data.length / 6];
-            //     for (int i = 0; i < nodes.length; i++) {
-            //         nodes[i] = Node.deserialize(Arrays.copyOfRange(data, i * 6, i * 6 + 6));
-            //         if (!newPeerList.contains(nodes[i])) {
-            //             newPeerList.add(nodes[i]);
-            //             peerList.add(nodes[i]);
-            //         }
-            //     }
-            //     for (Node node : peerList) {
-            //         sendData(self.serialize(), node, 0, 4);
-            //     }
-            //     return null;
-            // });
-            incomingMessageMap = new ConcurrentHashMap<>();
+        packetQueues = new ConcurrentLinkedQueue[5];
+        for (int i = 0; i < 5; i++) {
+            packetQueues[i] = new ConcurrentLinkedQueue<>();
+        }
+        subscriptions = new ConcurrentHashMap<>();
+        // subscriptions.put(0, (byte[] data) -> {
+        // // extract all the nodes from the data
+        // HashSet<Node> newPeerList = new HashSet<>();
+        // Node[] nodes = new Node[data.length / 6];
+        // for (int i = 0; i < nodes.length; i++) {
+        // nodes[i] = Node.deserialize(Arrays.copyOfRange(data, i * 6, i * 6 + 6));
+        // if (!newPeerList.contains(nodes[i])) {
+        // newPeerList.add(nodes[i]);
+        // peerList.add(nodes[i]);
+        // }
+        // }
+        // for (Node node : peerList) {
+        // sendData(self.serialize(), node, 0, 4);
+        // }
+        // return null;
+        // });
+        incomingMessageMap = new ConcurrentHashMap<>();
         // } catch (IOException e) {
-        //     e.printStackTrace();
+        // e.printStackTrace();
         // }
     }
 
@@ -79,16 +79,17 @@ public class Dynamo {
 
     public void addUser(ClientNode self, ClientNode mainServer) throws Exception {
         // start Server on given port to accept connections
-        coil = new Coil(self.equals(mainServer));
+        coil = new Coil(self.equals(mainServer), (node) -> {
+            sendNodeList(node);
+            return null;
+        });
         try {
             coil.startServer(self.port());
-
 
             coilThread = new Thread(() -> coil.listenLoop((chunk) -> {
                 handleChunk(chunk);
                 return null;
             }));
-
 
             priorityThread = new Thread(this::startPriorityThread);
             priorityThread.setDaemon(true);
@@ -102,7 +103,7 @@ public class Dynamo {
     }
 
     public void startPriorityThread() {
-        int [] packetCounts = {1,2,2,3,3};
+        int[] packetCounts = { 1, 2, 2, 3, 3 };
         int failures = 0;
         Node previousFailedReciever = null;
         while (true) {
@@ -114,22 +115,30 @@ public class Dynamo {
                 int count = packetCounts[i];
                 while (!queue.isEmpty() && count-- > 0) {
                     PendingPacket packet = queue.poll();
+                    Chunk chunk = packet.chunk();
+                    Frame frame = outGoingMessageMap.get(chunk.getMessageID());
                     try {
-                        Chunk chunk = packet.chunk();
-                        Frame frame = outGoingMessageMap.get(chunk.getMessageID());
 
                         coil.sendData(packet.reciever(), packet.chunk());
-                        
+
                         if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
                             outGoingMessageMap.remove(chunk.getMessageID());
                         }
-                        
+
                         failures = 0;
                         previousFailedReciever = null;
                     } catch (IOException e) {
                         // TODO handle retry
                         // get frame of this chunk. send invalid packet
-                        
+                        if (frame != null) {
+                            if (frame.getForwardingLength() > 0) {
+                                // send invalid packet to the forwarding nodes
+                                // send the whole frame again from the first chunk
+                                // TODO: implement this
+                                System.err.println("Sending invalid packet to forwarding nodes");
+                            }
+                        }
+
                         // TODO decide what to do when a single node fails
                         if (previousFailedReciever != null && previousFailedReciever.equals(packet.reciever())) {
                             continue;
@@ -167,16 +176,14 @@ public class Dynamo {
         }
     }
 
-    public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
-        Node[] destNodes = new Node[destIp.length];
-        for (int i = 0; i < destIp.length; i++) {
-            destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
-        }
+    private void sendData(byte[] data, Node[] destNodes, int module, int priority) {
+
         shuffleNodes(destNodes);
-        
+
         Node[] forwardingNodes = new Node[destNodes.length - 1];
         System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
-        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length, forwardingNodes, data);
+        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length,
+                forwardingNodes, data);
         int messageId = UUID.randomUUID().hashCode();
 
         outGoingMessageMap.put(messageId, frame);
@@ -184,7 +191,8 @@ public class Dynamo {
         Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
         byte[] payload = frame.serialize();
         for (int i = 0; i < chunks.length; i++) {
-            chunks[i] = new Chunk(messageId, i, Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
+            chunks[i] = new Chunk(messageId, i,
+                    Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
         }
         for (Chunk chunk : chunks) {
             packetQueues[priority].add(new PendingPacket(chunk, destNodes[0]));
@@ -278,6 +286,28 @@ public class Dynamo {
         } else {
             return chunk;
         }
+    }
+
+    void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
+        Node[] destNodes = new Node[destIp.length];
+        for (int i = 0; i < destIp.length; i++) {
+            destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
+        }
+        sendData(data, destNodes, module, priority);
+    }
+
+    /**
+     * Called only on main server.
+     * 
+     * @param client
+     */
+    private void sendNodeList(Node client) {
+        Node[] nodeList = coil.getNodeList();
+        byte[] nodeListData = new byte[nodeList.length * 6];
+        for (int i = 0; i < nodeList.length; i++) {
+            System.arraycopy(nodeList[i].serialize(), 0, nodeListData, i * 6, 6);
+        }
+        sendData(nodeListData, new Node[] { client }, 0, 0);
     }
 
     private void handleFrame(Frame frame) {

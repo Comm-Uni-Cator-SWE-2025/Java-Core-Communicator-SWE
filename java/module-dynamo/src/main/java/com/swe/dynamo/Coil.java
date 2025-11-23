@@ -2,7 +2,6 @@ package com.swe.dynamo;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -21,10 +20,12 @@ import com.swe.dynamo.socket.SocketTCP;
 public class Coil {
     final boolean isMainServer;
     final Selector selector;
+    final Function<Node, Void> sendNodeList;
 
-    public Coil(boolean isMainServer) throws IOException {
+    public Coil(boolean isMainServer, Function<Node, Void> sendNodeList) throws IOException {
         this.isMainServer = isMainServer;
         selector = Selector.open();
+        this.sendNodeList = sendNodeList;
     }
 
     private HashMap<Node, Link> nodeLinks = new HashMap<>();
@@ -161,7 +162,6 @@ public class Coil {
 
                 if (key.isAcceptable()) {
                     acceptConnection(key);
-                    // TODO
                 }
                 // System.out.println("packets : " + packets);
             }
@@ -184,5 +184,8 @@ public class Coil {
         SocketTCP socket = new SocketTCP(clientChannel);
         Link link = new Link(socket);
         registerLink(link);
+        if (isMainServer) {
+            sendNodeList.apply(link.getRemoteAddress());
+        }
     }
 }
