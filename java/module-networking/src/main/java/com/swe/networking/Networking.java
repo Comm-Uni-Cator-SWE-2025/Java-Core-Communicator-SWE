@@ -203,6 +203,7 @@ public class Networking implements AbstractNetworking, AbstractController {
             dest.remove(user);
         }
         dest.remove(user);
+        // dest.add(new ClientNode("127.0.0.1", 6943));
         final ClientNode[] destArray = dest.toArray(new ClientNode[0]);
         System.out.println("broadcasting to destinations " + Arrays.toString(destArray) + " ...");
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);

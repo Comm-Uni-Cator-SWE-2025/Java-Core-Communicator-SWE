@@ -1,8 +1,8 @@
 package com.swe.networking;
 
 import java.net.UnknownHostException;
-import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Class for the new priorityQueue.
@@ -48,17 +48,17 @@ public class NewPriorityQueue {
     /**
      * Maximum number of packets allowed in the priority-1 queue.
      */
-    private final int firstLimit = 4;
+    private final int firstLimit = 0;
 
     /**
      * Maximum number of packets allowed in the priority-2 queue.
      */
-    private final int secondLimit = 2;
+    private final int secondLimit = 0;
 
     /**
      * Maximum number of packets allowed in the priority-3 queue.
      */
-    private final int thirdLimit = 2;
+    private final int thirdLimit = 0;
 
     /**
      * Array holding the per-priority queue limits in order: index 0 →
@@ -88,10 +88,10 @@ public class NewPriorityQueue {
     private Deque<byte[]> thirdPriorityQueue;
 
     private NewPriorityQueue() {
-        zeroPriorityQueue = new ArrayDeque<>();
-        firstPriorityQueue = new ArrayDeque<>();
-        secondPriorityQueue = new ArrayDeque<>();
-        thirdPriorityQueue = new ArrayDeque<>();
+        zeroPriorityQueue = new ConcurrentLinkedDeque<>();
+        firstPriorityQueue = new ConcurrentLinkedDeque<>();
+        secondPriorityQueue = new ConcurrentLinkedDeque<>();
+        thirdPriorityQueue = new ConcurrentLinkedDeque<>();
     }
 
     /**
@@ -111,7 +111,7 @@ public class NewPriorityQueue {
      *
      * @param data the data to add
      */
-    public void addPacket(final byte[] data) {
+    public synchronized void addPacket(final byte[] data) {
         try {
             System.out.println("Added a packet to the priority queue...");
             totalPackets++;
@@ -142,7 +142,7 @@ public class NewPriorityQueue {
      *
      * @return the packet
      */
-    public byte[] getPacket() {
+    public synchronized  byte[] getPacket() {
         // System.out.println(Arrays.toString(limits));
         byte[] packet = null;
         if (!zeroPriorityQueue.isEmpty() && limits[zeroPriority] > 0) {
