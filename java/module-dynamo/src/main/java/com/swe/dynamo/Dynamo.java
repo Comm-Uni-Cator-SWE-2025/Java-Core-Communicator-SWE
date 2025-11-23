@@ -1,9 +1,13 @@
 package com.swe.dynamo;
 
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.dynamo.Parsers.Chunk;
+import com.swe.dynamo.Parsers.Frame;
 
 public class Dynamo {
     // Singleton instance
@@ -16,6 +20,9 @@ public class Dynamo {
     public static Dynamo getInstance() {
         return INSTANCE;
     }
+
+
+    private ConcurrentHashMap<Integer, byte[]> messageMap;
 
     public void addUser(ClientNode self, ClientNode mainServer) {
         if (self.equals(mainServer)) {
@@ -51,5 +58,24 @@ public class Dynamo {
 
     public void removeSubscription(int name) {
         // remove the subscription
+    }
+
+
+    private void handleChunk(Chunk chunk) {
+        if (chunk.getChunkNumber() == 0) {
+            // first chunk
+            Frame frame = Frame.deserialize(chunk.getPayload());
+            messageMap.put(chunk.getMessageID(), chunk.getPayload());
+        } else {
+            // subsequent chunk
+            byte[] payload = messageMap.get(chunk.getMessageID());
+            if (payload != null) {
+                payload = Arrays.copyOf(payload, payload.length + chunk.getPayload().length);
+                System.arraycopy(chunk.getPayload(), 0, payload, payload.length - chunk.getPayload().length, chunk.getPayload().length);
+                messageMap.put(chunk.getMessageID(), payload);
+            } else {
+                System.err.println("Empty payload for message ID: " + chunk.getMessageID());
+            }
+        }
     }
 }
