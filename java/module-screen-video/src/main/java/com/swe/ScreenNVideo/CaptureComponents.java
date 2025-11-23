@@ -21,24 +21,9 @@ import java.awt.image.BufferedImage;
 import java.util.function.BiFunction;
 
 /**
- * Class conatining Components to capture feed.
+ * Class containing Components to capture feed.
  */
 public class CaptureComponents {
-
-
-    private boolean compareMatrices(final int[][] prev, final int[][] curr) {
-        if (prev == null || curr == null) {
-            return false;
-        }
-        for (int i = 0; i < prev.length; i++) {
-            for (int j = 0; j < prev[0].length; j++) {
-                if (prev[i][j] != curr[i][j]) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {
         this.latestScreenFrame = latestScreenFrameArgs;

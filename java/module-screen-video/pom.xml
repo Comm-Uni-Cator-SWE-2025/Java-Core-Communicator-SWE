@@ -14,7 +14,7 @@
   </parent>
 
     <properties>
-        <mockito.version>5.0.0</mockito.version>
+        <mockito.version>5.14.2</mockito.version>
     </properties>
 
     <artifactId>module-screen-video</artifactId>

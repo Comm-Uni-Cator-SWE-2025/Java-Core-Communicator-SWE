@@ -2,9 +2,8 @@
  * Contributed by @anup
  */
 
-package com.swe.ScreenNVideo;
+package com.swe.ScreenNVideo.Codec;
 
-import com.swe.ScreenNVideo.Codec.DeCompressor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
