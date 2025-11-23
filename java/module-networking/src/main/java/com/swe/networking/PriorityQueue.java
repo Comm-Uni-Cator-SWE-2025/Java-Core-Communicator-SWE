@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: PriorityQueue.java
+ *  Owner: Vishwaa
+ *  Roll Number : 112201030
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
 import java.net.UnknownHostException;

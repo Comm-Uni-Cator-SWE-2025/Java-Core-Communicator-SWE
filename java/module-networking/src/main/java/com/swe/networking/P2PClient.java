@@ -1,10 +1,20 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: P2PClient.java
+ *  Owner: Shubham Yadav
+ *  Roll Number : 112201032
+ *  Module : Metworking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+
+import com.swe.core.ClientNode;
 
 /**
  * The Client belonging to a certain cluster.
@@ -60,10 +70,14 @@ public class P2PClient implements P2PUser {
      */
     private final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
 
-    /** Variable to store header size. */
+    /**
+     * Variable to store header size.
+     */
     private final int packetHeaderSize = 22;
 
-    /** Variable to store chunk manager. */
+    /**
+     * Variable to store chunk manager.
+     */
     private final ChunkManager chunkManager;
 
     /**
@@ -265,10 +279,9 @@ public class P2PClient implements P2PUser {
     }
 
     /**
-     * this is helper function to update cluster server address.
-     * may be changed after changing network structure (add, remove, replace)
+     * this is helper function to update cluster server address. may be changed
+     * after changing network structure (add, remove, replace)
      */
-
     void updateClusterServer() {
         System.out.println("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
@@ -296,7 +309,6 @@ public class P2PClient implements P2PUser {
         if (communicator != null) {
             communicator.close();
         }
-
 
         // Stop the receive thread
         if (receiveThread != null) {

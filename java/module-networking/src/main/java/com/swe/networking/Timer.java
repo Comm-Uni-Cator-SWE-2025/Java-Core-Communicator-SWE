@@ -1,10 +1,21 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: Timer.java
+ *  Owner: Asaduddin ahmed
+ *  Roll Number : 112201021
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.swe.core.ClientNode;
 
 /**
  * Timer class to monitor client timeouts.
