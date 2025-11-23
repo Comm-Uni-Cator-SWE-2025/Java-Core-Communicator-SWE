@@ -1,8 +1,13 @@
 package com.swe.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.aiinsights.aiinstance.AiInstance;
+import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.chat.ChatManager;
+import com.swe.chat.ChatMessage;
 import com.swe.core.Auth.AuthService;
 import com.swe.core.ClientNode;
 import com.swe.core.Meeting.MeetingSession;
@@ -16,10 +21,14 @@ import functionlibrary.CloudFunctionLibrary;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class Init {
+    static int indexAi = 0;
     public static void main(String[] args) throws Exception {
+
         int portNumber = 6942;
 
         if (args.length > 0) {
@@ -29,10 +38,12 @@ public class Init {
 
         RPC rpc = new RPC();
         CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+        AiClientService service = AiInstance.getInstance();
 
         ControllerServices controllerServices = ControllerServices.getInstance();
         controllerServices.context.rpc = rpc;
         controllerServices.cloud = cloud;
+        controllerServices.ai = service;
 
         // Provide RPC somehow here
         NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
@@ -165,6 +176,45 @@ public class Init {
             } catch (Exception e) {
                 System.out.println("Error ending meeting: " + e.getMessage());
                 return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
+        });
+
+        rpc.subscribe("core/AiSentiment", (byte[] data) -> {
+            try {
+                System.out.println("Performing Sentiment Analysis");
+                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
+                String cache = ChatManager.generateChatHistoryJson(messages.subList(indexAi, messages.size()));
+
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode cachNode = mapper.readTree(cache);
+                System.out.println("Chat History JSON for Sentiment: " + cachNode.toString());
+                String val = controllerServices.ai.sentiment(cachNode).get();
+
+                System.out.println("Sentiment Analysis Result: " + val);
+                indexAi = messages.size();
+                return DataSerializer.serialize(val);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new byte[0];
+            }
+        });
+
+        rpc.subscribe("core/AiAction", (byte[] data) -> {
+            try {
+                System.out.println("Generating Action Items");
+                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
+                String cache = ChatManager.generateChatHistoryJson(messages.subList(indexAi, messages.size()));
+
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode cachNode = mapper.readTree(cache);
+                System.out.println("Chat History JSON for Action: " + cachNode.toString());
+                String val = controllerServices.ai.action(cachNode).get();
+
+                System.out.println("Action Analysis Result: " + val);
+                return DataSerializer.serialize(val);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new byte[0];
             }
         });
     }

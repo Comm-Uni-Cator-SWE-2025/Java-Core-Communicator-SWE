@@ -65,7 +65,7 @@ public class ChatManager implements IChatService {
      */
     private final Map<String, FileCacheEntry> fileCache = new ConcurrentHashMap<>();
 
-    private final List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
+    public final static List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
     private int lastSummarizedIndex = 0;
 
     public ChatManager(Networking network) {
@@ -137,11 +137,15 @@ public class ChatManager implements IChatService {
             e.printStackTrace();
         }
     }
+
+    public static List<ChatMessage> getFullMessageHistory() {
+        return fullMessageHistory;
+    }
     /**
      * ⭐ AI FEATURE: JSON Generator
      * Generates JSON with correct 'from' and 'to' usernames.
      */
-    private String generateChatHistoryJson(List<ChatMessage> messages) {
+    public static String generateChatHistoryJson(List<ChatMessage> messages) {
         StringBuilder json = new StringBuilder();
         json.append("{\n  \"messages\": [\n");
 
@@ -192,7 +196,7 @@ public class ChatManager implements IChatService {
         return json.toString();
     }
 
-    private String escapeJson(String input) {
+    private static String escapeJson(String input) {
         if (input == null) return "";
         return input.replace("\"", "\\\"").replace("\n", " ");
     }

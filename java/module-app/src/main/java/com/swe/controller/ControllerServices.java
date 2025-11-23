@@ -1,6 +1,8 @@
 package com.swe.controller;
 
 import functionlibrary.CloudFunctionLibrary;
+
+import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.core.Context;
 
 public class ControllerServices {
@@ -8,6 +10,7 @@ public class ControllerServices {
 
     public NetworkingInterface networking;
     public CloudFunctionLibrary cloud;
+    public AiClientService ai;
     public Context context;
 
     private ControllerServices() {
