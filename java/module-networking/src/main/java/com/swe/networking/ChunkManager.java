@@ -192,4 +192,8 @@ public class ChunkManager {
             chunkListMap.remove(key);
         }
     }
+
+    public Vector<byte[]> getMessageList() {
+        return null;
+    }
 }

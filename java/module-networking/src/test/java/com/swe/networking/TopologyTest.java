@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Test class for the topology class.
@@ -240,7 +241,6 @@ class TopologyTest {
             sendHello(destSocket);
             sendAlive(destSocket);
             Thread.sleep(sleepTime);
-            topology.closeTopology();
         } catch (InterruptedException ex) {
             System.out.println("Error 1...");
         } catch (IOException e) {
@@ -301,7 +301,6 @@ class TopologyTest {
             sendHello(destSocket);
             sendOtherCluster(destSocket);
             Thread.sleep(sleepTime);
-            topology.closeTopology();
         } catch (InterruptedException ex) {
             System.out.println("Error 1...");
         } catch (IOException e) {
@@ -388,7 +387,6 @@ class TopologyTest {
             sendHello(destSocket);
             sendSameCluster(destSocket);
             Thread.sleep(sleepTime);
-            topology.closeTopology();
         } catch (InterruptedException ex) {
             System.out.println("Error 1...");
         } catch (IOException e) {
@@ -472,7 +470,6 @@ class TopologyTest {
             sendHello(destSocket);
             sendClose(destSocket);
             Thread.sleep(sleepTime);
-            topology.closeTopology();
         } catch (InterruptedException ex) {
             System.out.println("Error 1...");
         } catch (IOException e) {
@@ -573,7 +570,181 @@ class TopologyTest {
         assertEquals(2, network.clusters().size());
         assertEquals(6, network.clusters().get(0).size());
         assertEquals(1, network.clusters().get(1).size());
+    }
+
+    @org.junit.jupiter.api.Test
+    void testCloseTopology() {
+        final Topology topology = Topology.getTopology();
+
+        // Reset the topology
+        final java.util.List<java.util.List<ClientNode>> clusters = new java.util.ArrayList<>();
+        final java.util.List<ClientNode> servers = new java.util.ArrayList<>();
+        final NetworkStructure emptyNetwork = new NetworkStructure(clusters, servers);
+        topology.replaceNetwork(emptyNetwork);
+
+        final Networking networking = Networking.getNetwork();
+
+        final ClientNode server = new ClientNode("127.0.0.1", 9000); // Using a different port to avoid conflict
+        networking.addUser(server, server);
+
+        final ClientNode client = new ClientNode("127.0.0.1", 9001);
+        networking.addUser(client, server);
 
         topology.closeTopology();
+    }
+
+
+
+    @org.junit.jupiter.api.Test
+
+    void testUpdateNetworkRemoveClient() {
+
+        final Topology topology = Topology.getTopology();
+
+        // 1. Reset the topology to a clean state
+        final java.util.List<java.util.List<ClientNode>> clusters = new java.util.ArrayList<>();
+        final java.util.List<ClientNode> servers = new java.util.ArrayList<>();
+        final NetworkStructure emptyNetwork = new NetworkStructure(clusters, servers);
+        topology.replaceNetwork(emptyNetwork);
+
+        // 2. Setup initial network with one cluster
+        final ClientNode server = new ClientNode("127.0.0.1", 10000);
+        topology.addUser(server, server); // This creates cluster 0 with the server
+        final ClientNode client1 = new ClientNode("127.0.0.1", 10001);
+        final ClientNode client2 = new ClientNode("127.0.0.1", 10002);
+
+        topology.addClient(client1);
+        topology.addClient(client2);
+
+        NetworkStructure network = topology.getNetwork();
+        assertEquals(1, network.clusters().size());
+        assertEquals(3, network.clusters().get(0).size()); // server + client1 + client2
+        assertEquals(server, network.servers().get(0));
+
+        // 3. Test updateNetwork (add a new client)
+        final ClientNode client3 = new ClientNode("127.0.0.1", 10003);
+        final ClientNetworkRecord newClientRecord = new ClientNetworkRecord(client3, 0);
+        topology.updateNetwork(newClientRecord);
+
+        network = topology.getNetwork();
+        assertEquals(1, network.clusters().size());
+        assertEquals(4, network.clusters().get(0).size());
+        assertEquals(true, topology.checkClientPresent(client3));
+
+        // 4. Test removeClient (remove a non-server client)
+        final ClientNetworkRecord removeClient1Record = new ClientNetworkRecord(client1, 0);
+        topology.removeClient(removeClient1Record);
+
+        network = topology.getNetwork();
+        assertEquals(1, network.clusters().size());
+        assertEquals(3, network.clusters().get(0).size());
+        assertEquals(false, topology.checkClientPresent(client1));
+
+        // 5. Test removeClient (remove a server client and see promotion)
+        // First, add more clients to create a second cluster
+        for (int i = 0; i < 3; i++) { // Cluster 0 will be full (was 3, now 3+3=6)
+            topology.addClient(new ClientNode("127.0.0.1", 10004 + i));
+        }
+
+        final ClientNode newClusterServer = new ClientNode("127.0.0.1", 10007);
+        topology.addClient(newClusterServer); // This will be the server of cluster 1
+        final ClientNode newClusterClient = new ClientNode("127.0.0.1", 10008);
+        topology.addClient(newClusterClient); // Add another client to the new cluster
+
+        network = topology.getNetwork();
+        assertEquals(2, network.clusters().size());
+        assertEquals(6, network.clusters().get(0).size());
+        assertEquals(2, network.clusters().get(1).size());
+        assertEquals(newClusterServer, network.servers().get(1)); // Check server of new cluster
+
+        // Now, remove the server of the second cluster
+        int clusterIndexOfServer = topology.getClusterIndex(newClusterServer);
+        final ClientNetworkRecord removeServerRecord = new ClientNetworkRecord(newClusterServer, clusterIndexOfServer);
+        topology.removeClient(removeServerRecord);
+
+        network = topology.getNetwork();
+        assertEquals(2, network.clusters().size()); // Cluster should still exist
+        assertEquals(1, network.clusters().get(1).size()); // Should have one client left
+        assertEquals(false, topology.checkClientPresent(newClusterServer));
+
+        // The other client should have been promoted to server
+        assertEquals(newClusterClient, network.servers().get(1));
+
+        // 6. Test removing the last client from a cluster (which is also the server)
+        int clusterIndexOfLastClient = topology.getClusterIndex(newClusterClient);
+        final ClientNetworkRecord removeLastClientRecord = new ClientNetworkRecord(newClusterClient, clusterIndexOfLastClient);
+        topology.removeClient(removeLastClientRecord);
+
+        network = topology.getNetwork();
+        assertEquals(1, network.clusters().size()); // The second cluster should now be removed
+        assertEquals(1, network.servers().size());
+
+    }
+
+
+
+    @org.junit.jupiter.api.Test
+    void testMiscellaneous() {
+
+        final Topology topology = Topology.getTopology();
+
+        // 1. Reset the topology to a clean state
+        final java.util.List<java.util.List<ClientNode>> clusters = new java.util.ArrayList<>();
+        final java.util.List<ClientNode> servers = new java.util.ArrayList<>();
+        final NetworkStructure emptyNetwork = new NetworkStructure(clusters, servers);
+        topology.replaceNetwork(emptyNetwork);
+
+        // 2. Test getClusterIndex returns -1 for a client not in the topology
+        final ClientNode nonExistentClient = new ClientNode("127.0.0.1", 11000);
+        int clusterIndex = topology.getClusterIndex(nonExistentClient);
+        assertEquals(-1, clusterIndex);
+
+
+        // 3. Test getClients returns null for invalid indices
+        List<ClientNode> clients = topology.getClients(-1);
+        assertNull(clients);
+
+
+        clients = topology.getClients(0); // Topology is empty
+        assertNull(clients);
+
+        clients = topology.getClients(10); // Index out of bounds
+        assertNull(clients);
+    }
+
+
+    @org.junit.jupiter.api.Test
+    void testGetNetworkType() {
+
+        final Topology topology = Topology.getTopology();
+
+        // 1. Reset the topology and set up a multi-cluster network
+        final java.util.List<java.util.List<ClientNode>> clusters = new java.util.ArrayList<>();
+        final java.util.List<ClientNode> servers = new java.util.ArrayList<>();
+        final NetworkStructure emptyNetwork = new NetworkStructure(clusters, servers);
+        topology.replaceNetwork(emptyNetwork);
+
+        final ClientNode serverC0 = new ClientNode("127.0.0.1", 12000);
+        topology.addUser(serverC0, serverC0);
+        final ClientNode clientC0 = new ClientNode("127.0.0.1", 12001);
+        topology.addClient(clientC0);
+
+
+
+        // Fill up cluster 0 to force creation of a new one
+        for (int i = 0; i < 4; i++) {
+            topology.addClient(new ClientNode("127.0.0.1", 12002 + i));
+        }
+
+        final ClientNode serverC1 = new ClientNode("127.0.0.1", 12006);
+        topology.addClient(serverC1); // This client starts cluster 1
+
+        // 2. Test SAME CLUSTER case (USE)
+        int networkType = topology.getNetworkType(serverC0, clientC0);
+        assertEquals(NetworkType.USE.ordinal(), networkType);
+
+        // 3. Test OTHER CLUSTER case
+        networkType = topology.getNetworkType(serverC0, serverC1);
+        assertEquals(NetworkType.OTHERCLUSTER.ordinal(), networkType);
     }
 }
