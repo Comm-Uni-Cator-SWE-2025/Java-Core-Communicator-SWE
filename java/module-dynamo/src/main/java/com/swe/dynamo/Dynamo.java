@@ -57,6 +57,7 @@ public class Dynamo {
             return null;
         });
         incomingMessageMap = new ConcurrentHashMap<>();
+        outgoingMessageMap = new ConcurrentHashMap<>();
     }
 
     // Public accessor for singleton instance
@@ -97,6 +98,9 @@ public class Dynamo {
             sendNodeList(node);
             return null;
         });
+        if (!self.equals(mainServer)) {
+            coil.connectToNode(mainServerNode);
+        }
         try {
             coil.startServer(self.port());
 
