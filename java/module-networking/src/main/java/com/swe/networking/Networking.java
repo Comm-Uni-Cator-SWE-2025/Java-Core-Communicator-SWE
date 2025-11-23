@@ -176,7 +176,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());
-                chunks = chunkManager.chunk(pkt);
+                chunks.addAll(chunkManager.chunk(pkt));
             } catch (UnknownHostException ex) {
             }
         }
