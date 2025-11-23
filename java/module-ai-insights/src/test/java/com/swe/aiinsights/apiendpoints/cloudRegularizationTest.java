@@ -1,4 +1,4 @@
-package com.swe.aiinsights.apiendpoints;
+package apiendpoints;
 
 
 

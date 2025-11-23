@@ -4,6 +4,10 @@
  * <p>
  * References
  *      1. https://ai.google.dev/gemini-api/docs/rate-limits
+ *      2. https://medium.com/google-cloud/
+ *          generating-request-body-for-apis-using-gemini-43977961ca2a
+ *      3. https://github.com/tanaikech/
+ *          Generating-Request-Body-for-APIs-using-Gemini
  * </p>
  *
  * @author Abhirami R Iyer
@@ -25,12 +29,13 @@ import okhttp3.RequestBody;
 import com.swe.aiinsights.response.AiResponse;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.swe.aiinsights.customexceptions.RateLimitException;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 // import com.swe.cloud.datastructures.TimeRange;
 // import com.swe.cloud.datastructures.Entity;
@@ -42,6 +47,11 @@ import com.swe.aiinsights.customexceptions.RateLimitException;
  * Receives the AI response.
  */
 public final class GeminiService implements LlmService {
+
+
+    private static final Logger log = CommonLogger.getLogger(GeminiService.class);
+
+
     /**
      * Loads environment variables from the .env file.
      */
@@ -127,6 +137,7 @@ public final class GeminiService implements LlmService {
          key_from_cloud = response.data();
          });*/
 //        this.geminiApiKey = dotenv.get("GEMINI_API_KEY"); //change this in production
+        log.info("Initializing GeminiService");
         this.geminiApiKeyList = getKeyList();
         final int timeout = 200;
         final int readMul = 6;
@@ -136,6 +147,7 @@ public final class GeminiService implements LlmService {
                 .readTimeout(timeout * readMul, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
+        log.info("GeminiService initialized with timeout: {} seconds", timeout);
 
     }
 
@@ -151,11 +163,11 @@ public final class GeminiService implements LlmService {
         final String requestBody = adapter.buildRequest(aiRequest);
 
         final int maxRetries = geminiApiKeyList.size();
-        System.out.println(maxRetries);
+//        System.out.println(maxRetries);
         int attempt = 0;
         while (attempt < maxRetries) {
-            System.out.println("Attempt");
-            System.out.println(attempt);
+//            System.out.println("Attempt");
+//            System.out.println(attempt);
             final String currentKey = getCurrentKey();
             final String apiUrl = GEMINI_API_URL_TEMPLATE + currentKey;
 
@@ -172,17 +184,21 @@ public final class GeminiService implements LlmService {
                     final AiResponse returnResponse = aiRequest.getAiResponse();
                     final String textResponse = adapter.getResponse(response);
                     returnResponse.setResponse(textResponse);
+                    log.debug("Response received from adapter");
                     return returnResponse;
                 }
                 if (response.code() == keyLimitCode) {
-                    System.out.println("==========================================================key hit !!!!");
+                    log.debug("Key limit hit\n");
                     setKeyIndex(currentKey);
                     attempt++; // Increment attempt and loop again to try next key
-                    System.out.println(attempt);
+//                    System.out.println(attempt);
                     continue;  // Skip the rest and restart loop
                 }
             }
+            log.debug("Some other error but trying to switch model\n");
+            throw new RateLimitException("Some other error but trying to switch model");
         }
+        log.debug("Some other error but trying to switch model");
         throw new RateLimitException("All available API keys used");
     }
 }

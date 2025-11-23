@@ -17,13 +17,22 @@ import com.swe.aiinsights.request.AiSummarisationRequest;
 import com.swe.aiinsights.request.AiActionItemsRequest;
 import java.util.concurrent.CompletableFuture;
 import com.swe.aiinsights.request.AiQuestionAnswerRequest;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
+
+
+
+
 import java.io.IOException;
 
 /**
  * AI client service.
  * contains the api endpoints for all the services offered by the AI module.
  */
+
 public class AiClientService {
+    private static final Logger log = CommonLogger.getLogger(AiClientService.class);
+
 
     /**
      * Executor used to run async AI calls.
@@ -47,7 +56,6 @@ public class AiClientService {
      */
     private CompletableFuture<Void> lastQaUpdate =
             CompletableFuture.completedFuture(null);
-
 
 
     /**
@@ -150,8 +158,6 @@ public class AiClientService {
                 "Summary cleared successfully"
         );
     }
-
-
 
 
 

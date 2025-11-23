@@ -32,22 +32,37 @@ package com.swe.aiinsights.aiinstance;
 
 import com.swe.aiinsights.apiendpoints.AiClientService;
 
+/**
+ * THis class is used ot create a singleton instance of AI.
+ * Across requests, it will remain same in a client.
+ */
 public class AiInstance {
     /**
      * Creates a singleton instance of AI Service using getInstance method.
      */
 
     private static volatile AiClientService aiClientService = null;
-    //Volatile Keyword ensures that the aiClientService variable
-    //  is not cached and changes are visible across threads, 
-    // preventing partially initialized objects.
 
-    private AiInstance(){
+    /**
+     * Volatile Keyword ensures that the aiClientService variable
+     * is not cached and changes are visible across threads,
+     * preventing partially initialized objects.
+     */
+
+    /**
+     * The constructor is made private.
+     * We dont want to get AiInstance object,
+     * but AiClientService using getInstance
+     */
+    private AiInstance() {
         
     }
 
-    public static AiClientService getInstance()
-    {
+    /**
+     * Used to get the singleton ClientService.
+     * @return AiClientService common to all requests
+     */
+    public static AiClientService getInstance() {
         AiClientService localReference = aiClientService;
         if (localReference == null){ // 1st check: there is no locking here
             synchronized (AiInstance.class) { //AiClientInstance is static, 
