@@ -12,20 +12,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.swe.dynamo.Parsers.Chunk;
 import com.swe.dynamo.socket.ISocket;
 import com.swe.dynamo.socket.SocketTCP;
 
 public class Coil {
-
+    final boolean isMainServer;
     final Selector selector;
 
-    public Coil() throws IOException {
+    public Coil(boolean isMainServer) throws IOException {
+        this.isMainServer = isMainServer;
         selector = Selector.open();
     }
 
     private HashMap<Node, Link> nodeLinks = new HashMap<>();
+
+    public Node[] getNodeList() {
+        return nodeLinks.keySet().toArray(new Node[0]);
+    }
 
     public void connectToNode(Node node) throws IOException {
         SocketChannel socketChannel = SocketChannel.open();
@@ -118,7 +124,16 @@ public class Coil {
         nodeLinks.remove(remoteAddress);
     }
 
-    public ArrayList<Chunk> listen() {
+    public void listenLoop(Function<Chunk, Void> handleChunk) {
+        while (true) {
+            ArrayList<Chunk> packets = listen();
+            packets.forEach(packet -> {
+                handleChunk.apply(packet);
+            });
+        }
+    }
+
+    private ArrayList<Chunk> listen() {
         ArrayList<Chunk> packets = new ArrayList<>();
         try {
             // Block until at least one channel is ready with some data to read
@@ -146,6 +161,7 @@ public class Coil {
 
                 if (key.isAcceptable()) {
                     acceptConnection(key);
+                    // TODO
                 }
                 // System.out.println("packets : " + packets);
             }

@@ -29,8 +29,7 @@ public class Dynamo {
 
     // Private constructor to prevent instantiation
     private Dynamo() {
-        try {
-            coil = new Coil();
+        // try {
             packetQueues = new ConcurrentLinkedQueue[5];
             for (int i = 0; i < 5; i++) {
                 packetQueues[i] = new ConcurrentLinkedQueue<>();
@@ -52,10 +51,10 @@ public class Dynamo {
             //     }
             //     return null;
             // });
-            messageMap = new ConcurrentHashMap<>();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            incomingMessageMap = new ConcurrentHashMap<>();
+        // } catch (IOException e) {
+        //     e.printStackTrace();
+        // }
     }
 
     // Public accessor for singleton instance
@@ -63,7 +62,8 @@ public class Dynamo {
         return INSTANCE;
     }
 
-    private ConcurrentHashMap<Integer, Frame> messageMap;
+    private ConcurrentHashMap<Integer, Frame> incomingMessageMap;
+    private ConcurrentHashMap<Integer, Frame> outGoingMessageMap;
 
     private ConcurrentLinkedQueue<PendingPacket>[] packetQueues;
 
@@ -75,19 +75,29 @@ public class Dynamo {
 
     private Thread coilThread;
 
+    private Thread priorityThread;
+
     public void addUser(ClientNode self, ClientNode mainServer) throws Exception {
         // start Server on given port to accept connections
+        coil = new Coil(self.equals(mainServer));
         try {
             coil.startServer(self.port());
-            coilThread = new Thread(coil::listen);
+
+
+            coilThread = new Thread(() -> coil.listenLoop((chunk) -> {
+                handleChunk(chunk);
+                return null;
+            }));
+
+
+            priorityThread = new Thread(this::startPriorityThread);
+            priorityThread.setDaemon(true);
             coilThread.setDaemon(true);
+
+            priorityThread.start();
             coilThread.start();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        if (self.equals(mainServer)) {
-        } else {
-            
         }
     }
 
@@ -105,10 +115,22 @@ public class Dynamo {
                 while (!queue.isEmpty() && count-- > 0) {
                     PendingPacket packet = queue.poll();
                     try {
+                        Chunk chunk = packet.chunk();
+                        Frame frame = outGoingMessageMap.get(chunk.getMessageID());
+
                         coil.sendData(packet.reciever(), packet.chunk());
+                        
+                        if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
+                            outGoingMessageMap.remove(chunk.getMessageID());
+                        }
+                        
                         failures = 0;
                         previousFailedReciever = null;
                     } catch (IOException e) {
+                        // TODO handle retry
+                        // get frame of this chunk. send invalid packet
+                        
+                        // TODO decide what to do when a single node fails
                         if (previousFailedReciever != null && previousFailedReciever.equals(packet.reciever())) {
                             continue;
                         }
@@ -118,7 +140,7 @@ public class Dynamo {
                         e.printStackTrace();
                         if (failures > 5) {
                             gotALlClients = false;
-                            // TODO: send a message to the main server to inform that the clients are not reachable
+                            // TODO: handle potential disconnection
                             break;
                         }
                     }
@@ -150,10 +172,14 @@ public class Dynamo {
         for (int i = 0; i < destIp.length; i++) {
             destNodes[i] = new Node(destIp[i].hostName(), (short) destIp[i].port());
         }
+        shuffleNodes(destNodes);
+        
         Node[] forwardingNodes = new Node[destNodes.length - 1];
         System.arraycopy(destNodes, 1, forwardingNodes, 0, destNodes.length - 1);
         Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) forwardingNodes.length, forwardingNodes, data);
         int messageId = UUID.randomUUID().hashCode();
+
+        outGoingMessageMap.put(messageId, frame);
 
         Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
         byte[] payload = frame.serialize();
@@ -182,13 +208,13 @@ public class Dynamo {
         if (chunk.getChunkNumber() == 0) {
             // first chunk
             frame = Frame.deserialize(chunk.getPayload());
-            messageMap.put(chunk.getMessageID(), frame);
+            incomingMessageMap.put(chunk.getMessageID(), frame);
         } else {
             // subsequent chunk
-            frame = messageMap.get(chunk.getMessageID());
+            frame = incomingMessageMap.get(chunk.getMessageID());
             if (frame != null) {
                 if (frame.appendPayload(chunk.getPayload())) {
-                    messageMap.remove(chunk.getMessageID());
+                    incomingMessageMap.remove(chunk.getMessageID());
                     handleFrame(frame);
                 } else {
                     // continue
@@ -261,17 +287,6 @@ public class Dynamo {
             subscription.apply(frame.getPayload());
         } else {
             System.err.println("No subscription found for type: " + frame.getType());
-        }
-    }
-
-    private void startListening() throws IOException {
-        while (true) {
-            // since each are configured in non-blocking mode
-            // they just returns back almost instantly
-            ArrayList<Chunk> unhandledPackets = coil.listen();
-            unhandledPackets.forEach(packet -> {
-                handleChunk(packet);
-            });
         }
     }
 
