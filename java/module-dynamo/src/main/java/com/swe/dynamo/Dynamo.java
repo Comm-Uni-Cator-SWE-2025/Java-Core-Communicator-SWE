@@ -1,6 +1,7 @@
 package com.swe.dynamo;
 
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.IOException;
@@ -20,12 +21,12 @@ public class Dynamo {
     // Singleton instance
     private static final Dynamo INSTANCE = new Dynamo();
 
-    private Coil socketry;
+    private Coil coil;
 
     // Private constructor to prevent instantiation
     private Dynamo() {
         try {
-            socketry = new Coil();
+            coil = new Coil();
             packetQueues = new ConcurrentLinkedQueue[5];
             for (int i = 0; i < 5; i++) {
                 packetQueues[i] = new ConcurrentLinkedQueue<>();
@@ -50,6 +51,8 @@ public class Dynamo {
 
     private final int peerCount = 4;
 
+    private Thread coilThread;
+
     public void addUser(ClientNode self, ClientNode mainServer) {
         if (self.equals(mainServer)) {
             // self is the main server
@@ -62,7 +65,10 @@ public class Dynamo {
         }
         // start Server on given port to accept connections
         try {
-            socketry.startServer(self.port());
+            coil.startServer(self.port());
+            coilThread = new Thread(coil::listen);
+            coilThread.setDaemon(true);
+            coilThread.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -70,6 +76,7 @@ public class Dynamo {
 
     public void closeDynamo() {
         // close the dynamo
+        coilThread.interrupt();
     }
 
     public void consumeRPC(AbstractRPC rpc) {
@@ -77,7 +84,19 @@ public class Dynamo {
     }
 
     public void sendData(byte[] data, ClientNode[] destIp, int module, int priority) {
-        // send the data to the destination
+        // TODO handle clientnode to node conversion
+        Frame frame = new Frame(data.length, (byte) module, (byte) priority, (byte) 0, new Node[0], data);
+        int messageId = UUID.randomUUID().hashCode();
+
+        Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
+        byte[] payload = frame.serialize();
+        for (int i = 0; i < chunks.length; i++) {
+            chunks[i] = new Chunk(messageId, i, Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
+        }
+        for (Chunk chunk : chunks) {
+            // TODO add packet queue handling
+            packetQueues[priority].add(new PendingPacket(chunk, new Node(2, (short)3)));
+        }
     }
 
     public void broadcast(byte[] data, int module, int priority) {
@@ -183,7 +202,7 @@ public class Dynamo {
         while (true) {
             // since each are configured in non-blocking mode
             // they just returns back almost instantly
-            ArrayList<Chunk> unhandledPackets = socketry.listen();
+            ArrayList<Chunk> unhandledPackets = coil.listen();
             unhandledPackets.forEach(packet -> {
                 handleChunk(packet);
             });
