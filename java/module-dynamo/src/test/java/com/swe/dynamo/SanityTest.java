@@ -10,7 +10,7 @@ public class SanityTest {
         dynamo.registerDisconnectHandler(() -> {
             System.err.println("We seem disconnected from the network.");
         });
-        dynamo.addUser(new ClientNode("10.128.6.193", 1212), new ClientNode("10.128.5.156", 1212));
+        dynamo.addUser(new ClientNode("10.128.5.156", 1212), new ClientNode("10.128.5.156", 1212));
         System.out.println("Connected to the network.");
 
 
@@ -19,7 +19,7 @@ public class SanityTest {
             return null;
         });
 
-        dynamo.sendData("Hello, world!".getBytes(), new ClientNode[] { new ClientNode("10.128.5.156", 1212) }, 1, 0);
+        dynamo.sendData("Hello, world!".getBytes(), new ClientNode[] { new ClientNode("10.128.6.193", 1212) }, 1, 0);
         System.out.println("Sent data to the network.");
 
         Thread.sleep(10000);

@@ -24,6 +24,10 @@ public class Node {
         return port;
     }
 
+    public int getPortInt() {
+        return ((int) port) & 0xFFFF;
+    }
+
     @Override
     public int hashCode() {
         return (IP + ":" + port).hashCode();
@@ -46,6 +50,11 @@ public class Node {
             result = result << 8 | ipInts[i] & 0xFF;
         }
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return IPToString() + ":" + getPortInt();
     }
 
     public byte[] serialize() {
