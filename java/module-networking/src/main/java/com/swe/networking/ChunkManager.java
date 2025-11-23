@@ -1,5 +1,7 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
+
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -191,5 +193,9 @@ public class ChunkManager {
         for (String key : keysToRemove) {
             chunkListMap.remove(key);
         }
+    }
+
+    public Vector<byte[]> getMessageList() {
+        return null;
     }
 }

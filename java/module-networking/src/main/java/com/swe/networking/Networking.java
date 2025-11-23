@@ -132,7 +132,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Function to continuously send data.
      */
     public void start() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             if (!priorityQueue.isEmpty()) {
                 final byte[] packet = priorityQueue.nextPacket();
                 try {
@@ -316,7 +316,7 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     @Override
     public boolean isMainServerLive() {
-        final int timeout = 2000; // 2 second timeout
+        final int timeout = 2000;
         final String[] dnsServers = {
             "8.8.8.8",      // Google DNS
             "8.8.4.4",      // Google DNS secondary
