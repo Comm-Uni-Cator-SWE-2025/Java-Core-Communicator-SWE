@@ -49,13 +49,7 @@ class MeetingNetworkingCoordinatorTest {
         context.rpc = null;
         context.self = null;
         context.meetingSession = null;
-    }new MeetingSession(
-                id,
-                creatorEmail,
-                System.currentTimeMillis(),
-                SessionMode.CLASS,
-                null
-        )
+    }
 
     @Test
     void initializeRegistersControllerListener() {

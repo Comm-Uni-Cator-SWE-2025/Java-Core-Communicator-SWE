@@ -23,6 +23,11 @@ import com.swe.ScreenNVideo.Telemetry.Telemetry;
  */
 public class VideoCapture extends ICapture {
 
+    /**
+     * Wait for opening the webcam.
+     */
+    private static final int WAIT_COUNT = 100;
+
     /** Capture parameters. */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     private Dimension captureArea;
@@ -51,14 +56,16 @@ public class VideoCapture extends ICapture {
 
     /**
      * Set the frame capture listener.
-     * @param listener The listener to set
+     * 
+     * @param listenerArgs The listener to set
      */
-    public void setFrameCaptureListener(FrameCaptureListener listener) {
-        this.listener = listener;
+    public void setFrameCaptureListener(final FrameCaptureListener listenerArgs) {
+        this.listener = listenerArgs;
     }
 
     /**
      * Get the capture location.
+     * 
      * @return Current capture location
      */
     public Point getCaptureLocation() {
@@ -76,23 +83,24 @@ public class VideoCapture extends ICapture {
 
     /**
      * Constructor with custom capture area.
-     * @param x X coordinate of capture area
-     * @param y Y coordinate of capture area
-     * @param width Width of capture area
+     * 
+     * @param x      X coordinate of capture area
+     * @param y      Y coordinate of capture area
+     * @param width  Width of capture area
      * @param height Height of capture area
-     **/
-    /** public VideoCapture(final int x, final int y, final int width, final int height) {
+     */
+    public VideoCapture(final int x, final int y, final int width, final int height) {
         this();
         this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
-    } **/
+    }
 
     private void openWebcam() {
         try {
             this.webcam = Webcam.getDefault();
             if (this.webcam == null) {
                 throw new IllegalStateException("No webcam found. Check camera permissions"
-                    + (IS_MAC ? " in System Preferences > Security & Privacy > Camera" : ""));
+                        + (IS_MAC ? " in System Preferences > Security & Privacy > Camera" : ""));
             }
 
             // Use the captureArea set by the constructor
@@ -102,7 +110,7 @@ public class VideoCapture extends ICapture {
                 resolution = WebcamResolution.VGA.getSize();
             }
 
-            this.webcam.setCustomViewSizes(new Dimension[]{resolution});
+            this.webcam.setCustomViewSizes(new Dimension[] { resolution });
             this.webcam.setViewSize(resolution);
 
             // Mac-specific: Use async open with wait to avoid timeout issues
@@ -110,13 +118,13 @@ public class VideoCapture extends ICapture {
                 this.webcam.open(true); // async=true for Mac
                 // Wait for webcam to be ready (max 10 seconds)
                 int waitCount = 0;
-                while (!this.webcam.isOpen() && waitCount < 100) {
-                    Thread.sleep(100);
+                while (!this.webcam.isOpen() && waitCount < WAIT_COUNT) {
+                    Thread.sleep(WAIT_COUNT);
                     waitCount++;
                 }
                 if (!this.webcam.isOpen()) {
                     throw new IllegalStateException("Webcam open timeout. Check: camera permissions, "
-                        + "no other app using camera, IDE has camera access");
+                            + "no other app using camera, IDE has camera access");
                 }
             } else {
                 this.webcam.open();
@@ -136,6 +144,7 @@ public class VideoCapture extends ICapture {
 
     /**
      * Converts INT_RGB image to INT_ARGB image.
+     * 
      * @param src INT_ARGB image
      * @return INT_ARGB image
      */
@@ -151,23 +160,21 @@ public class VideoCapture extends ICapture {
         final BufferedImage converted = new BufferedImage(
                 src.getWidth(),
                 src.getHeight(),
-                BufferedImage.TYPE_INT_ARGB
-        );
+                BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g = converted.createGraphics();
         g.drawImage(src, 0, 0, null);
         g.dispose();
         return converted;
     }
 
-
     /**
      * Capture a single frame.
+     * 
      * @return BufferedImage of the captured frame
      */
     public BufferedImage capture() {
 
         Telemetry.getTelemetry().setWithCamera(true);
-
 
         // Lazy initialization: Initialize webcam on first capture attempt
         if (this.webcam == null) {
@@ -199,15 +206,14 @@ public class VideoCapture extends ICapture {
         openWebcam();
     }
 
-
     /**
      * Set capture area and location.
      * NOTE: Due to constraints, calling this will NOT update the webcam
      * resolution after the first capture.
      *
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @param width Width of capture area
+     * @param x      X coordinate
+     * @param y      Y coordinate
+     * @param width  Width of capture area
      * @param height Height of capture area
      */
     public void setCaptureArea(final int x, final int y, final int width, final int height) {
@@ -216,9 +222,9 @@ public class VideoCapture extends ICapture {
         LOG.info("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
     }
 
-
     /**
      * Get screen dimensions.
+     * 
      * @return Dimension of the screen.
      */
     public static Dimension getScreenDimensions() {
@@ -240,7 +246,6 @@ public class VideoCapture extends ICapture {
         }
     }
     // --- End of ADDED method ---
-
 
     // Added here so the file could be self-contained for testing.
 }

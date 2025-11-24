@@ -95,7 +95,7 @@ public class MediaCaptureManager implements CaptureManager {
      */
     public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs, final SweLogger logger) {
         this.logger = Objects.requireNonNull(logger, "logger");
-        Context context = Context.getInstance();
+        final Context context = Context.getInstance();
         this.rpc = context.getRpc();
         this.port = portArgs;
         this.networking = argNetworking;
@@ -127,8 +127,15 @@ public class MediaCaptureManager implements CaptureManager {
         networking.subscribe(ModuleType.SCREENSHARING.ordinal(), clientHandler);
     }
 
-    public Void updateImage(String ip, boolean val) {
-        ImageSynchronizer imageSynchronizer = imageSynchronizers.get(ip);
+    /**
+     * Updates image and start waiting for extra data.
+     * 
+     * @param ip  ip of sender
+     * @param val to compress or not
+     * @return void
+     */
+    public Void updateImage(final String ip, final boolean val) {
+        final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(ip);
         if (imageSynchronizer == null) {
             return null;
         }
@@ -180,10 +187,10 @@ public class MediaCaptureManager implements CaptureManager {
 
         logger.info("Starting capture");
         int[][] feed = null;
-        double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
+        final double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
         long prevSendAt = 0;
         while (true) {
-            long diff = System.currentTimeMillis() - prevSendAt;
+            final long diff = System.currentTimeMillis() - prevSendAt;
             // get audio Feed
             final byte[] encodedAudio = videoComponent.captureAudio();
             if (encodedAudio != null) {
@@ -211,7 +218,7 @@ public class MediaCaptureManager implements CaptureManager {
                 // send unCompressedFeed
                 // logger.info("Sending to uncompress");
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
-                final double sendingFPS = ((double) (Utils.SEC_IN_MS) / (diff));
+                final double sendingFPS = (double) (Utils.SEC_IN_MS) / diff;
                 logger.info("Sent Data at " + sendingFPS + " FPS");
                 Telemetry.getTelemetry().addFps(sendingFPS);
             }
@@ -270,12 +277,12 @@ public class MediaCaptureManager implements CaptureManager {
         @Override
         public void receiveData(final byte[] data) {
 
-             logger.info("Received " + data.length);
+            logger.info("Received " + data.length);
             if (data.length == 0) {
                 return;
             }
-              logger.info("first 40 bytes:" +
-             (Arrays.toString(Arrays.copyOf(data, 40))));
+            // logger.info("first 40 bytes:" +
+            // (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
@@ -302,7 +309,7 @@ public class MediaCaptureManager implements CaptureManager {
                     }
 
                     imageSynchronizer.setDataReceived(imageSynchronizer.getDataReceived() + data.length);
-                    double diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
+                    final double diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
                     long dataPerSec = -1;
                     if (diff > Utils.SEC_IN_MS) {
                         dataPerSec = (long) ((imageSynchronizer.getDataReceived() / diff) * Utils.SEC_IN_MS);

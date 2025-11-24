@@ -11,12 +11,17 @@ import java.util.stream.Collectors;
 
 /**
  * Subscribe Packet.
+ * @param ip The IP address.
+ * @param reqCompression The request compression.
  */
 public record IPPacket(String ip, boolean reqCompression) {
 
+    /** SIze of INT. */
+    private static final int INT_SIZE = 4;
 
     /**
      * Serializes the string for networking layer.
+     * @param networkPacketType The network packet type.
      * @return serialized byte array
      */
     public byte[] serialize(final NetworkPacketType networkPacketType) {
@@ -28,7 +33,11 @@ public record IPPacket(String ip, boolean reqCompression) {
         for (int i = 0; i < ipInts.length; i++) {
             buffer.putInt(ipInts[i]);
         }
-        buffer.put((byte) (reqCompression ? 1 : 0));
+        if (reqCompression) {
+            buffer.put((byte) 1);
+        } else {
+            buffer.put((byte) 0);
+        }
 
         return buffer.array();
     }
@@ -37,13 +46,13 @@ public record IPPacket(String ip, boolean reqCompression) {
      * Deserializes the string from the networking layer.
      *
      * @param data the byte array to be deserialized
-     * @return the string
+     * @return the IP packet
      */
     public static IPPacket deserialize(final byte[] data) {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
         final byte type = buffer.get();
-        final int[] ipInts = new int[4];
-        for (int i = 0; i < 4; i++) {
+        final int[] ipInts = new int[INT_SIZE];
+        for (int i = 0; i < INT_SIZE; i++) {
             ipInts[i] = buffer.getInt();
         }
         final String ip = Arrays.stream(ipInts).mapToObj(String::valueOf).collect(Collectors.joining("."));

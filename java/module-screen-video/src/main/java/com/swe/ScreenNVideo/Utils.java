@@ -4,10 +4,6 @@
 
 package com.swe.ScreenNVideo;
 
-import com.swe.core.ClientNode;
-import com.swe.core.Context;
-import com.swe.core.Meeting.MeetingSession;
-import com.swe.core.Meeting.UserProfile;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
@@ -18,7 +14,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Map;
 
 /**
  * Utility class for ScreenN Video.
@@ -78,8 +73,11 @@ public class Utils {
      */
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
 
+    /** Sample rate in Hz for audio capture (48 kHz). */
     public static final float DEFAULT_SAMPLE_RATE = 48000f;
+    /** Bit depth per audio sample (16-bit PCM). */
     public static final int DEFAULT_CHANNELS = 1;
+    /** Number of audio channels (1 for mono). */
     public static final int DEFAULT_SAMPLE_SIZE = 16;
 
     /**
@@ -207,15 +205,25 @@ public class Utils {
     }
 
     /**
-     * Fills dstMatrix with the srcMatrix
+     * Fills dstMatrix with the srcMatrix.
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
-    public static void copyMatrix(int[][] srcMatrix, int[][] dstMatrix) {
+    public static void copyMatrix(final int[][] srcMatrix, final int[][] dstMatrix) {
 
         final int height = Math.min(srcMatrix.length, dstMatrix.length);
-        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
-        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int srcWidth;
+        if ((srcMatrix.length) > 0) {
+            srcWidth = srcMatrix[0].length;
+        } else {
+            srcWidth = 0;
+        }
+        final int dstWidth;
+        if ((dstMatrix.length) > 0) {
+            dstWidth = dstMatrix[0].length;
+        } else {
+            dstWidth = 0;
+        }
         final int width = Math.min(srcWidth, dstWidth);
 
         for (int i = 0; i < height; i++) {
@@ -224,37 +232,30 @@ public class Utils {
     }
 
     /**
-     * Fills dstMatrix with the srcMatrix
+     * Fills dstMatrix with the srcMatrix.
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
-    public static void copyMatrix(long[][] srcMatrix, long[][] dstMatrix) {
+    public static void copyMatrix(final long[][] srcMatrix, final long[][] dstMatrix) {
 
         final int height = Math.min(srcMatrix.length, dstMatrix.length);
-        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
-        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int srcWidth;
+        if ((srcMatrix.length) > 0) {
+            srcWidth = srcMatrix[0].length;
+        } else {
+            srcWidth = 0;
+        }
+        final int dstWidth;
+        if ((dstMatrix.length) > 0) {
+            dstWidth = dstMatrix[0].length;
+        } else {
+            dstWidth = 0;
+        }
         final int width = Math.min(srcWidth, dstWidth);
 
         for (int i = 0; i < height; i++) {
             System.arraycopy(srcMatrix[i], 0, dstMatrix[i], 0, width);
         }
-    }
-
-    public static String getEmailFromIp(ClientNode ipNode) {
-        final MeetingSession meetingSession = Context.getInstance().getMeetingSession();
-        if (meetingSession == null) {
-            return null;
-        }
-        final Map<ClientNode, UserProfile> participants = meetingSession.getParticipants();
-        if (participants == null) {
-            return null;
-        }
-        LOG.info(String.valueOf(ipNode.port()));
-        participants.forEach((p,v) -> {
-            LOG.info(p.hostName() + " " + v.getEmail());
-        });
-        final UserProfile profile = participants.get(ipNode);
-        return profile != null ? profile.getEmail() : null;
     }
 
 }

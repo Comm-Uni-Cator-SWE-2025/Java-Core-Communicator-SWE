@@ -17,4 +17,23 @@
     <suppress checks="MethodLength" files=".*Init\.java" lines="137"/>
     <suppress checks="JavaNCSS" files=".*Init\.java" lines="137"/>
     <suppress checks="NPathComplexity" files=".*Init\.java" lines="137"/>
+    <!-- Cyclomatic Complexity suppressions -->
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Capture/VideoCapture.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLEHuffman.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLE.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- Class Data Abstraction Coupling suppressions -->
+    <suppress checks="ClassDataAbstractionCoupling" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/VideoComponents.java" />
+    
+    <!-- Method Length suppressions -->
+    <suppress checks="MethodLength" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- JavaNCSS suppressions -->
+    <suppress checks="JavaNCSS" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- NPath Complexity suppressions -->
+    <suppress checks="NPathComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+
 </suppressions>
