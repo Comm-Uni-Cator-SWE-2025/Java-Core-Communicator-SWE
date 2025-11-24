@@ -5,7 +5,8 @@ import com.swe.core.ClientNode;
 import com.swe.core.Context;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
-
+import com.swe.aiinsights.aiinstance.AiInstance;
+import com.swe.aiinsights.apiendpoints.AiClientService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,6 +14,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.*; // Fixes List, ArrayList, Collections, Iterator
+import java.util.concurrent.*;
 import java.util.zip.Deflater;
 
 /**
@@ -31,24 +34,50 @@ import java.util.zip.Deflater;
  */
 public class ChatManager implements IChatService {
 
+    // --- 1. NEW: Restore the Helper Class ---
+    private static class FileCacheEntry {
+        public final String fileName;
+        public final byte[] compressedData;
+
+        public FileCacheEntry(String fileName, byte[] compressedData) {
+            this.fileName = fileName;
+            this.compressedData = compressedData;
+        }
+    }
+
+
+
     private static final byte FLAG_TEXT_MESSAGE = (byte) 0x01;
     private static final byte FLAG_FILE_MESSAGE = (byte) 0x02;
     private static final byte FLAG_FILE_METADATA = (byte) 0x03;
+    private static final byte FLAG_DELETE_MESSAGE = (byte) 0x04;
 
     private final AbstractRPC rpc;
     private final Networking network;
+
+    private final AiClientService aiService;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * FILE CACHE - Stores compressed files temporarily
      * Key: messageId
      * Value: compressed file bytes
      */
-    private final Map<String, byte[]> fileCache = new ConcurrentHashMap<>();
+    private final Map<String, FileCacheEntry> fileCache = new ConcurrentHashMap<>();
+
+    public final static List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
+    private int lastSummarizedIndex = 0;
 
     public ChatManager(Networking network) {
         Context context = Context.getInstance();
         this.rpc = context.rpc;
         this.network = network;
+
+        // 1. Initialize AI Service
+        this.aiService = AiInstance.getInstance();
+
+        // 2. Start Periodic Summarization (Every 20 seconds)
+        startAiSummarizer();
 
         // Subscribe to frontend RPC calls
         this.rpc.subscribe("chat:send-text", this::handleFrontendTextMessage);
@@ -63,6 +92,116 @@ public class ChatManager implements IChatService {
     }
 
     /**
+     * ⭐ AI FEATURE: Periodic Summarization
+     * Runs every 10 minutes.
+     */
+    private void startAiSummarizer() {
+        scheduler.scheduleAtFixedRate(() -> {
+            processIncrementalSummary();
+        }, 10, 10, TimeUnit.MINUTES); // 10 Minutes delay, 10 Minutes period
+    }
+
+    /**
+     * Helper to process only NEW messages since last run.
+     */
+    private void processIncrementalSummary() {
+        List<ChatMessage> newMessages = new ArrayList<>();
+
+        synchronized (fullMessageHistory) {
+            if (lastSummarizedIndex >= fullMessageHistory.size()) {
+                return; // No new messages
+            }
+            // Sublist from last index to current end
+            newMessages.addAll(fullMessageHistory.subList(lastSummarizedIndex, fullMessageHistory.size()));
+            // Update index so we don't summarize these again next time
+            lastSummarizedIndex = fullMessageHistory.size();
+        }
+
+        if (newMessages.isEmpty()) return;
+
+        try {
+            String historyJson = generateChatHistoryJson(newMessages);
+
+            System.out.println("[AI-Backend] Sending " + newMessages.size() + " new messages for summarization...");
+
+            aiService.summariseText(historyJson)
+                    .thenAccept(summary -> {
+                        System.out.println("[AI-Backend] Incremental Summary: " + summary);
+                    })
+                    .exceptionally(e -> {
+                        System.err.println("[AI-Backend] Summarization failed: " + e.getMessage());
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static List<ChatMessage> getFullMessageHistory() {
+        return fullMessageHistory;
+    }
+    /**
+     * ⭐ AI FEATURE: JSON Generator
+     * Generates JSON with correct 'from' and 'to' usernames.
+     */
+    public static String generateChatHistoryJson(List<ChatMessage> messages) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n  \"messages\": [\n");
+
+        // 1. Create a quick lookup map to find Reply Targets
+        // Map<MessageID, SenderName>
+        Map<String, String> messageIdToSender = new HashMap<>();
+        // We might need to look in full history for replies, not just the new batch
+        synchronized (fullMessageHistory) {
+            for (ChatMessage m : fullMessageHistory) {
+                messageIdToSender.put(m.getMessageId(), m.getSenderDisplayName());
+            }
+        }
+
+        Iterator<ChatMessage> it = messages.iterator();
+        while (it.hasNext()) {
+            ChatMessage msg = it.next();
+
+            // A. Resolve "FROM"
+            // Backend stores raw names (e.g. "Alice"), so this is safe. No "You" here.
+            String fromUser = escapeJson(msg.getSenderDisplayName());
+
+            // B. Resolve "TO"
+            String toUser = "ALL"; // Default broadcast
+            String replyId = msg.getReplyToMessageId();
+
+            if (replyId != null && !replyId.isEmpty()) {
+                // Look up the name of the person who sent the original message
+                String originalSender = messageIdToSender.get(replyId);
+                if (originalSender != null) {
+                    toUser = escapeJson(originalSender);
+                }
+            }
+
+            // C. Format Timestamp (ISO 8601 preferred by AI)
+            String time = msg.getTimestamp().toString(); // e.g., 2025-11-07T10:00:00
+
+            json.append("    {\n");
+            json.append("      \"from\": \"").append(fromUser).append("\",\n");
+            json.append("      \"to\": \"").append(toUser).append("\",\n");
+            json.append("      \"timestamp\": \"").append(time).append("\",\n");
+            json.append("      \"message\": \"").append(escapeJson(msg.getContent())).append("\"\n");
+            json.append("    }");
+
+            if (it.hasNext()) json.append(",\n");
+        }
+
+        json.append("\n  ]\n}");
+        return json.toString();
+    }
+
+    private static String escapeJson(String input) {
+        if (input == null) return "";
+        return input.replace("\"", "\\\"").replace("\n", " ");
+    }
+
+    /**
      * ============================================================================
      * HANDLER 1: Text Message from Frontend
      * ============================================================================
@@ -71,14 +210,71 @@ public class ChatManager implements IChatService {
         System.out.println("[Core] Received text message from frontend");
 
         try {
+            // 1. Deserialize to inspect content
+            ChatMessage message = ChatMessageSerializer.deserialize(messageBytes);
+
+            System.out.println("[Core] Received text: " + message.getContent());
+
+            // 2. Add to Backend History (for summarization)
+            fullMessageHistory.add(message);
+
             byte[] networkPacket = addProtocolFlag(messageBytes, FLAG_TEXT_MESSAGE);
             // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
             this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+
+            // 3. Check for @AI
+            String content = message.getContent().trim();
+            if (content.startsWith("@AI")) {
+                // Force an update of context BEFORE asking the question
+                // This ensures the AI knows about the messages leading up to this question
+                processIncrementalSummary();
+
+                handleAiQuestion(content);
+            }
 
             return new byte[0];  // Empty array with brackets
         } catch (Exception e) {
             System.err.println("[Core] Error sending text message: " + e.getMessage());
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Handles the AI Question logic.
+     */
+    private void handleAiQuestion(String fullText) {
+        String question = fullText.substring(3).trim(); // Remove "@AI"
+        if (question.isEmpty()) return;
+
+        System.out.println("[Core] Processing AI Question: " + question);
+
+        aiService.answerQuestion(question)
+                .thenAccept(answer -> {
+                    broadcastAiResponse(answer);
+                })
+                .exceptionally(e -> {
+                    broadcastAiResponse("I'm sorry, I couldn't process that request.");
+                    return null;
+                });
+    }
+
+    private void broadcastAiResponse(String answer) {
+        try {
+            String aiMsgId = UUID.randomUUID().toString();
+            ChatMessage aiMsg = new ChatMessage(
+                    aiMsgId, "AI-SYSTEM-ID", "AI_Bot", answer, null
+            );
+
+            // Add AI response to history too
+            fullMessageHistory.add(aiMsg);
+
+            byte[] aiBytes = ChatMessageSerializer.serialize(aiMsg);
+            byte[] networkPacket = addProtocolFlag(aiBytes, FLAG_TEXT_MESSAGE);
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+            this.rpc.call("chat:new-message", aiBytes); // Update local UI
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -145,10 +341,11 @@ public class ChatManager implements IChatService {
             byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
             this.rpc.call("chat:file-metadata-received", metadataBytes);
 
+
             System.out.println("[Core] Sent metadata to frontend");
 
             // ===== STEP 2: Cache the compressed file =====
-            fileCache.put(pathModeMsg.getMessageId(), compressedData);
+            fileCache.put(pathModeMsg.getMessageId(), new FileCacheEntry(pathModeMsg.getFileName(), compressedData));
             System.out.println("[Core] Cached compressed file: " + pathModeMsg.getMessageId());
 
             // ===== STEP 3: Send to remote peers (with compressed data) =====
@@ -191,31 +388,57 @@ public class ChatManager implements IChatService {
 
         try {
             // Retrieve compressed file from cache
-            byte[] compressedData = fileCache.get(messageId);
-            if (compressedData == null) {
+            FileCacheEntry cacheEntry = fileCache.get(messageId);
+            if (cacheEntry == null) {
                 throw new Exception("File not found in cache: " + messageId);
             }
 
-            System.out.println("[Core] Retrieved compressed file (" + compressedData.length + " bytes)");
+            System.out.println("[Core] Retrieved compressed file (" + cacheEntry.compressedData.length + " bytes)");
 
-            // Decompress
-            byte[] decompressedData = Utilities.Decompress(compressedData);
+            byte[] decompressedData = Utilities.Decompress(cacheEntry.compressedData);
             if (decompressedData == null) {
                 throw new Exception("Failed to decompress file");
             }
 
-            System.out.println("[Core] Decompressed: " + compressedData.length + " → " +
-                    decompressedData.length + " bytes");
 
             // Save to Downloads folder
-            String downloadsPath = System.getProperty("user.home") + "/Downloads";
-            String filePath = downloadsPath + "/" + messageId + "_file";
+            // 1. Get User's Home Directory
+            String homeDir = System.getProperty("user.home");
 
-            Files.write(Paths.get(filePath), decompressedData);
-            System.out.println("[Core] Saved to: " + filePath);
+            // 2. Construct path using Paths.get (OS-agnostic)
+            java.nio.file.Path downloadsDir = Paths.get(homeDir, "Downloads");
+
+            if (!Files.exists(downloadsDir)) {
+                Files.createDirectories(downloadsDir);
+            }
+
+            // 3. Use the ORIGINAL filename from the cache entry
+            // Do NOT append "_file". Use the original name (e.g., "fees.pdf")
+            // If you must add an ID to avoid conflicts, put it BEFORE the extension.
+            String originalName = cacheEntry.fileName;
+            String finalName = originalName;
+            java.nio.file.Path savePath = downloadsDir.resolve(finalName);
+            int counter = 1;
+            while (Files.exists(savePath)) {
+                // Split name and extension
+                String namePart = originalName;
+                String extPart = "";
+                int dotIndex = originalName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    namePart = originalName.substring(0, dotIndex);
+                    extPart = originalName.substring(dotIndex); // includes dot
+                }
+                finalName = namePart + " (" + counter + ")" + extPart;
+                savePath = downloadsDir.resolve(finalName);
+                counter++;
+            }
+
+            // 4. Save file
+            Files.write(savePath, decompressedData);
+            System.out.println("[Core] Saved to: " + savePath.toString());
 
             // Notify frontend of success
-            String successMsg = "File saved to: " + filePath;
+            String successMsg = "File saved to: " + savePath;
             this.rpc.call("chat:file-saved-success", successMsg.getBytes(StandardCharsets.UTF_8));
 
             return successMsg.getBytes(StandardCharsets.UTF_8);
@@ -237,17 +460,29 @@ public class ChatManager implements IChatService {
      * ============================================================================
      */
     private byte[] handleDeleteMessage(byte[] messageIdBytes) {
-        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
+        // 1. Sanitize ID (Crucial for the newline issue we discussed)
+        String messageId = new String(messageIdBytes, StandardCharsets.UTF_8).trim();
+
         System.out.println("[Core] Deleting message: " + messageId);
 
-        // Remove from cache if exists
+        // 2. Remove from local file cache if exists
         fileCache.remove(messageId);
 
-        // Broadcast deletion
-        this.rpc.call("chat:message-deleted", messageIdBytes);
+        // 3. BROADCAST TO NETWORK (This was missing!)
+        // We wrap the ID bytes with the DELETE flag and send it to peers.
+        try {
+            // Ensure we send the clean, trimmed bytes
+            byte[] cleanIdBytes = messageId.getBytes(StandardCharsets.UTF_8);
 
-        return new byte[0];  // Empty array with brackets
+            byte[] networkPacket = addProtocolFlag(cleanIdBytes, FLAG_DELETE_MESSAGE);
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
 
+            System.out.println("[Core] Broadcasted delete signal to network");
+        } catch (Exception e) {
+            System.err.println("[Core] Failed to broadcast delete: " + e.getMessage());
+        }
+
+        return new byte[0];
     }
 
     /**
@@ -265,6 +500,8 @@ public class ChatManager implements IChatService {
             switch (flag) {
                 case FLAG_TEXT_MESSAGE:
                     System.out.println("[Core] Received text from network");
+                    ChatMessage msg = ChatMessageSerializer.deserialize(messageBytes);
+                    fullMessageHistory.add(msg);
                     this.rpc.call("chat:new-message", messageBytes);
                     break;
 
@@ -273,7 +510,7 @@ public class ChatManager implements IChatService {
                     FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
 
                     // Cache the received compressed file
-                    fileCache.put(fileMsg.getMessageId(), fileMsg.getFileContent());
+                    fileCache.put(fileMsg.getMessageId(), new FileCacheEntry(fileMsg.getFileName(), fileMsg.getFileContent()));
 
                     // Send ONLY metadata to frontend
                     FileMessage metadataMsg = new FileMessage(
@@ -287,6 +524,20 @@ public class ChatManager implements IChatService {
                     );
                     byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
                     this.rpc.call("chat:file-metadata-received", metadataBytes);
+                    break;
+
+                case FLAG_DELETE_MESSAGE:
+                    System.out.println("[Core] Received DELETE signal from network");
+
+                    // 1. Clean the ID
+                    String remoteId = new String(messageBytes, StandardCharsets.UTF_8).trim();
+
+                    // 2. Remove from our cache just in case
+                    fileCache.remove(remoteId);
+
+                    // 3. Tell the Frontend to update the UI
+                    // This triggers 'handleBackendDelete' in ChatViewModel
+                    this.rpc.call("chat:message-deleted", remoteId.getBytes(StandardCharsets.UTF_8));
                     break;
 
                 default:

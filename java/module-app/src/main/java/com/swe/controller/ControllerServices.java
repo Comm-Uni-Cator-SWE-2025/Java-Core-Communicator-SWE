@@ -1,14 +1,19 @@
 package com.swe.controller;
 
 import functionlibrary.CloudFunctionLibrary;
+
+import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.core.Context;
+import com.swe.canvas.CanvasManager;
 
 public class ControllerServices {
     private static ControllerServices instance;
 
     public NetworkingInterface networking;
     public CloudFunctionLibrary cloud;
+    public AiClientService ai;
     public Context context;
+    public CanvasManager canvasManager;
 
     private ControllerServices() {
         context = Context.getInstance();
@@ -20,7 +25,3 @@ public class ControllerServices {
         return instance;
     }
 }
-
-
-
-

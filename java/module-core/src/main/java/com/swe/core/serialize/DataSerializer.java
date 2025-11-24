@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Ram Charan.
+ */
+
 package com.swe.core.serialize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,6 +15,7 @@ public class DataSerializer {
 
     public static byte[] serialize(Object participant) throws JsonProcessingException {
         System.out.println("serializing");
+        objectMapper.registerModule(new ClientNodeModule());
         String data = objectMapper.writeValueAsString(participant);
 
         return data.getBytes(StandardCharsets.UTF_8);
@@ -18,6 +23,7 @@ public class DataSerializer {
 
     public static <T> T deserialize(byte[] data, Class<T> datatype) throws JsonProcessingException {
         System.out.println("deserializing 1");
+        objectMapper.registerModule(new ClientNodeModule());
         String json = new String(data, StandardCharsets.UTF_8);
         System.out.println("deserializing 2");
 

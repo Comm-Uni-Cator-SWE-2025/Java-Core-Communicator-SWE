@@ -23,5 +23,10 @@
       <artifactId>module-networking</artifactId>
       <version>${project.version}</version>
     </dependency>
+      <dependency>
+          <groupId>com.swe.aiinsights</groupId>
+          <artifactId>module-ai-insights</artifactId>
+          <version>1.0-SNAPSHOT</version>
+      </dependency>
   </dependencies>
 </project>

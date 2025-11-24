@@ -25,6 +25,7 @@
     <module>module-ai-insights</module>
     <module>module-cloud</module>
     <module>module-core</module>
+    <module>module-canvas</module>
     <module>module-app</module>
     <module>module-integration-tests</module>
   </modules>
@@ -51,7 +52,7 @@
       <dependency>
         <groupId>com.github.enchanteddev</groupId>
         <artifactId>socketry</artifactId>
-        <version>V3</version>
+        <version>V3.1</version>
       </dependency>
 
       <!-- JUnit 5 -->

@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiRequestable.java
+ *  Owner: Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Interface for storing types of request.
  *

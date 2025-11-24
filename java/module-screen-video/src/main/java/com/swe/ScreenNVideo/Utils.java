@@ -1,5 +1,5 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo;
@@ -7,6 +7,7 @@ package com.swe.ScreenNVideo;
 import com.swe.core.ClientNode;
 import com.swe.core.Context;
 import com.swe.core.Meeting.MeetingSession;
+import com.swe.core.Meeting.UserProfile;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -241,15 +242,16 @@ public class Utils {
         if (meetingSession == null) {
             return null;
         }
-        final Map<ClientNode, String> ipToEmail = meetingSession.getNodeToEmailMap();
-        if (ipToEmail == null) {
+        final Map<ClientNode, UserProfile> participants = meetingSession.getParticipants();
+        if (participants == null) {
             return null;
         }
         System.out.println(ipNode.port());
-        ipToEmail.forEach((p,v) -> {
-            System.out.println(p.hostName() + " " + v);
+        participants.forEach((p,v) -> {
+            System.out.println(p.hostName() + " " + v.getEmail());
         });
-        return ipToEmail.get(ipNode);
+        final UserProfile profile = participants.get(ipNode);
+        return profile != null ? profile.getEmail() : null;
     }
 
 }

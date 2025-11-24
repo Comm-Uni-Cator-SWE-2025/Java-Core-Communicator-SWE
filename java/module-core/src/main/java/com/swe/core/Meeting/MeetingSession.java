@@ -1,13 +1,14 @@
+/**
+ *  Contributed by Jyoti.
+ */
+
 package com.swe.core.Meeting;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.swe.core.ClientNode;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,19 +35,7 @@ public class MeetingSession {
     private final SessionMode sessionMode;
 
     @JsonProperty("participants")
-    private final Map<String, UserProfile> participants = new ConcurrentHashMap<>();
-
-    /**
-     * In-memory mapping of ClientNode to participant email.
-     */
-    @JsonIgnore
-    private final Map<ClientNode, String> ipToEmailMap = new ConcurrentHashMap<>();
-
-    /**
-     * In-memory mapping of email to participant display name.
-     */
-    @JsonIgnore
-    private final Map<String, String> emailToDisplayNameMap = new ConcurrentHashMap<>();
+    private final Map<ClientNode, UserProfile> participants = new ConcurrentHashMap<>();
 
     /**
      * Creates a new meeting with a unique ID.
@@ -66,7 +55,7 @@ public class MeetingSession {
             @JsonProperty("createdBy") String createdBy,
             @JsonProperty("createdAt") long createdAt,
             @JsonProperty("sessionMode") SessionMode sessionMode,
-            @JsonProperty("participants") Map<String, UserProfile> participants){
+            @JsonProperty("participants") Map<ClientNode, UserProfile> participants){
         this.meetingId = meetingId;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
@@ -92,19 +81,31 @@ public class MeetingSession {
         return this.sessionMode;
     }
 
-    public UserProfile getParticipant(String emailId) { return this.participants.get(emailId); }
+    public UserProfile getParticipant(String emailId) {
+        for (UserProfile profile : this.participants.values()) {
+            if (profile.getEmail() != null && profile.getEmail().equals(emailId)) {
+                return profile;
+            }
+        }
+        return null;
+    }
 
-    public Map<String, UserProfile> getParticipants() {
+    public UserProfile getParticipantByNode(ClientNode node) {
+        return this.participants.get(node);
+    }
+
+    public Map<ClientNode, UserProfile> getParticipants() {
         return this.participants;
     }
 
     /**
      * Adds a participant to this session's in-memory list.
      * @param p The participant to add.
+     * @param node The client node for this participant.
      */
-    public void addParticipant(UserProfile p) {
-        if (p != null && p.getEmail() != null) {
-            this.participants.put(p.getEmail(), p);
+    public void addParticipant(UserProfile p, ClientNode node) {
+        if (p != null && node != null) {
+            this.participants.put(node, p);
         }
     }
 
@@ -120,9 +121,16 @@ public class MeetingSession {
         if (email == null || node == null) {
             return;
         }
-        ipToEmailMap.put(node, email);
-        if (displayName != null) {
-            emailToDisplayNameMap.put(email, displayName);
+        
+        UserProfile profile = participants.get(node);
+        if (profile == null) {
+            profile = new UserProfile(email, displayName, ParticipantRole.STUDENT);
+            participants.put(node, profile);
+        } else {
+            profile.setEmail(email);
+            if (displayName != null) {
+                profile.setDisplayName(displayName);
+            }
         }
     }
 
@@ -138,27 +146,6 @@ public class MeetingSession {
     }
 
     /**
-     * Retrieve an immutable copy of ClientNode → email mappings.
-     *
-     * @return copy of the mapping (ClientNode → email)
-     */
-    @JsonIgnore
-    public Map<ClientNode, String> getNodeToEmailMap() {
-        System.out.println("CALLED getNodeToEmailMap");
-        return Collections.unmodifiableMap(new HashMap<>(ipToEmailMap));
-    }
-
-    /**
-     * Retrieve an immutable copy of email → displayName mappings.
-     *
-     * @return copy of the mapping (email → displayName)
-     */
-    @JsonIgnore
-    public Map<String, String> getEmailToDisplayNameMap() {
-        return Collections.unmodifiableMap(new HashMap<>(emailToDisplayNameMap));
-    }
-
-    /**
      * Remove a participant's mapping by ClientNode.
      *
      * @param node client node coordinates
@@ -167,7 +154,7 @@ public class MeetingSession {
         if (node == null) {
             return;
         }
-        ipToEmailMap.remove(node);
+        participants.remove(node);
     }
 
     /**
@@ -180,7 +167,7 @@ public class MeetingSession {
         if (email == null) {
             return;
         }
-        ipToEmailMap.entrySet().removeIf(entry -> email.equals(entry.getValue()));
-        emailToDisplayNameMap.remove(email);
+        participants.entrySet().removeIf(entry -> 
+            entry.getValue().getEmail() != null && email.equals(entry.getValue().getEmail()));
     }
 }

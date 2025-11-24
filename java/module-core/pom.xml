@@ -21,7 +21,7 @@
         <dependency>
             <groupId>com.github.enchanteddev</groupId>
             <artifactId>socketry</artifactId>
-            <version>V3</version>
+            <version>V3.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -55,4 +55,15 @@
         </dependency>
     </dependencies>
     <packaging>jar</packaging>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

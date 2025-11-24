@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiInstance.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.aiinstance
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Creates an Instance of AI Service.
  * <p>
@@ -31,34 +40,56 @@
 package com.swe.aiinsights.aiinstance;
 
 import com.swe.aiinsights.apiendpoints.AiClientService;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
+/**
+ * THis class is used ot create a singleton instance of AI.
+ * Across requests, it will remain same in a client.
+ */
 public class AiInstance {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG = CommonLogger.getLogger(AiInstance.class);
     /**
      * Creates a singleton instance of AI Service using getInstance method.
      */
-
     private static volatile AiClientService aiClientService = null;
-    //Volatile Keyword ensures that the aiClientService variable
-    //  is not cached and changes are visible across threads, 
-    // preventing partially initialized objects.
 
-    private AiInstance(){
+    /**
+     * Volatile Keyword ensures that the aiClientService variable
+     * is not cached and changes are visible across threads,
+     * preventing partially initialized objects.
+     */
+
+    /**
+     * The constructor is made private.
+     * We don't want to get AiInstance object,
+     * but AiClientService using getInstance
+     */
+    private AiInstance() {
         
     }
 
-    public static AiClientService getInstance()
-    {
+    /**
+     * Used to get the singleton ClientService.
+     * @return AiClientService common to all requests
+     */
+    public static AiClientService getInstance() {
+        LOG.debug("Fetching the AI instance");
         AiClientService localReference = aiClientService;
-        if (localReference == null){ // 1st check: there is no locking here
+        if (localReference == null) { // 1st check: there is no locking here
             synchronized (AiInstance.class) { //AiClientInstance is static, 
                 // therefore we should lock on sth common, which is the class object here.
                 if (localReference == null) { // 2nd check: with locking
                     try {
+                        LOG.debug("No AI instance found! Creating a new instance ..");
                         localReference = new AiClientService();
                         aiClientService = localReference;
                     } catch (Exception e) {
-                        System.out.println("Failure in initialising AI service\n");
-                        System.out.println("Error is " + e.getMessage());
+                        LOG.error("Failure in initialising AI service");
+                        LOG.error("Error is " + e.getMessage());
                         throw new RuntimeException("AI Service Initialization Failed", e);
                     }
                 }

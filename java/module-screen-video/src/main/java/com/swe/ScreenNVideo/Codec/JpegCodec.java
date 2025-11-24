@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -165,18 +165,29 @@ public class JpegCodec implements Codec {
     /**
      * Time taken for ZigZag operations.
      */
-    public long zigZagtime = 0;
+    private long zigZagtime = 0;
     /**
      * Time taken for DCT operations.
      */
-    public long dctTime = 0;
+    private long dctTime = 0;
     /**
      * Time taken for quantization operations.
      */
-    public long quantTime = 0;
+    private long quantTime = 0;
 
+    /**
+     * Compressor instance for performing DCT and quantization.
+     */
     private final Compressor compressor = new Compressor();
+
+    /**
+     * Decompressor instance for performing dequantization and inverse DCT.
+     */
     private final IDeCompressor decompressor = new DeCompressor();
+
+    /**
+     * RLE encoder/decoder instance for entropy coding.
+     */
     private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
 
     /**
@@ -193,13 +204,20 @@ public class JpegCodec implements Codec {
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        int maxLen = (int) ((1200 * 800 * 1.5 * 4) + (4 * 3) + 0.5);
+        final int hight = 1200;
+        final int width = 800;
+        final double ycbcrMatrixfactor = 1.5;
+        final int cbcrMatrixCount = 4;
+        final double makeRound = 0.5;
+        final int maxLen = (int) ((hight * width * ycbcrMatrixfactor * cbcrMatrixCount)
+                + (cbcrMatrixCount * NUM_MATRICES) + makeRound);
         resCompressedRLEBuffer = ByteBuffer.allocate(maxLen);
         resUnCompressedRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
     @Override
-    public List<byte[]> encode(final int[][] screenshot, final int topLeftX, final int topLeftY, final int height, final int width) {
+    public List<byte[]> encode(final int[][] screenshot, final int topLeftX, final int topLeftY,
+                               final int height, final int width) {
 
         if (height % BLOCK_SIDE == 1 || width % BLOCK_SIDE == 1) {
             throw new RuntimeException("Invalid Matrix for encoding");
@@ -254,6 +272,22 @@ public class JpegCodec implements Codec {
             }
         }
 
+        return encodePixel(yMatrix, cbMatrix, crMatrix);
+    }
+
+    /**
+     * Encoding the YCbCr sampled pixels from image.
+     * @param yMatrix Ymatrix
+     * @param cbMatrix cbMatrix
+     * @param crMatrix crMatrix
+     * @return byte array of compressed and uncompressed pixel.
+     */
+    public List<byte[]> encodePixel(final short[][] yMatrix, final short[][] cbMatrix, final short[][] crMatrix) {
+        final int height = yMatrix.length;
+        final int width  = yMatrix[0].length;
+        final int cbHeight = cbMatrix.length;
+        final int cbWidth = cbMatrix[0].length;
+
         resCompressedRLEBuffer.clear();
         resUnCompressedRLEBuffer.clear();
 
@@ -264,13 +298,13 @@ public class JpegCodec implements Codec {
 
 
         // YMatrix;
-        compressor.compressLumin(yMatrix, (short) height, (short) width, resCompressedRLEBuffer);
+        compressor.compressLumin(yMatrix, (short) height, (short) width);
 
         // CbMatrix;
-        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth, resCompressedRLEBuffer);
+        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth);
 
         // CyMatrix
-        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth, resCompressedRLEBuffer);
+        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth);
 
         // add the compressed patches
         enDeRLE.zigZagRLE(yMatrix, resCompressedRLEBuffer);
@@ -383,5 +417,28 @@ public class JpegCodec implements Codec {
         return rgb;
     }
 
+    /**
+     * Sets the time taken for ZigZag operations.
+     * @param zigZagTimeArgs the time in nanoseconds
+     */
+    public void setZigZagTime(final long zigZagTimeArgs) {
+        this.zigZagtime = zigZagTimeArgs;
+    }
+
+    /**
+     * Sets the time taken for DCT operations.
+     * @param dctTimeArgs the time in nanoseconds
+     */
+    public void setDctTime(final long dctTimeArgs) {
+        this.dctTime = dctTimeArgs;
+    }
+
+    /**
+     * Sets the time taken for quantization operations.
+     * @param quantTimeArgs the time in nanoseconds
+     */
+    public void setQuantTime(final long quantTimeArgs) {
+        this.quantTime = quantTimeArgs;
+    }
 
 }

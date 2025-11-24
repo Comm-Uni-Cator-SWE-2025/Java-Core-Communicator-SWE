@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: ModelAdapter.java
+ *  Owner: Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.modeladapter
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.aiinsights.modeladapter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

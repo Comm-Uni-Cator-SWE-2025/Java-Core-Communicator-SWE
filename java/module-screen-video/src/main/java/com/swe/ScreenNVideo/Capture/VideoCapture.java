@@ -1,5 +1,5 @@
 /**
- * Contributed by @Bhupati-Varun
+ * Contributed by @Bhupati-Varun.
  */
 
 package com.swe.ScreenNVideo.Capture;
@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamResolution;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 
 /**
  * VideoCapture class for capturing video frames from webcam.
@@ -40,9 +41,25 @@ public class VideoCapture extends ICapture {
     private static final int DEFAULT_X = 100;
     /** Default capture settings. */
     private static final int DEFAULT_Y = 100;
-    
+
     /** Check if running on macOS. */
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+
+    /**
+     * Set the frame capture listener.
+     * @param listener The listener to set
+     */
+    public void setFrameCaptureListener(FrameCaptureListener listener) {
+        this.listener = listener;
+    }
+
+    /**
+     * Get the capture location.
+     * @return Current capture location
+     */
+    public Point getCaptureLocation() {
+        return this.captureLocation;
+    }
 
     /**
      * Constructor - initializes with default screen capture area.
@@ -59,18 +76,18 @@ public class VideoCapture extends ICapture {
      * @param y Y coordinate of capture area
      * @param width Width of capture area
      * @param height Height of capture area
-     */
-    public VideoCapture(final int x, final int y, final int width, final int height) {
+     **/
+    /** public VideoCapture(final int x, final int y, final int width, final int height) {
         this();
         this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
-    }
+    } **/
 
     private void openWebcam() {
         try {
             this.webcam = Webcam.getDefault();
             if (this.webcam == null) {
-                throw new IllegalStateException("No webcam found. Check camera permissions" 
+                throw new IllegalStateException("No webcam found. Check camera permissions"
                     + (IS_MAC ? " in System Preferences > Security & Privacy > Camera" : ""));
             }
 
@@ -83,7 +100,7 @@ public class VideoCapture extends ICapture {
 
             this.webcam.setCustomViewSizes(new Dimension[]{resolution});
             this.webcam.setViewSize(resolution);
-            
+
             // Mac-specific: Use async open with wait to avoid timeout issues
             if (IS_MAC) {
                 this.webcam.open(true); // async=true for Mac
@@ -145,11 +162,13 @@ public class VideoCapture extends ICapture {
      */
     public BufferedImage capture() {
 
+        Telemetry.getTelemetry().setWithCamera(true);
+
 
         // Lazy initialization: Initialize webcam on first capture attempt
         if (this.webcam == null) {
             System.out.println("Initializing webcam for the first time...");
-            openWebcam();
+            reInit();
         }
 
         // --- Webcam capture logic ---
@@ -180,7 +199,7 @@ public class VideoCapture extends ICapture {
     /**
      * Set capture area and location.
      * NOTE: Due to constraints, calling this will NOT update the webcam
-     * resolution after the first capture.)
+     * resolution after the first capture.
      *
      * @param x X coordinate
      * @param y Y coordinate

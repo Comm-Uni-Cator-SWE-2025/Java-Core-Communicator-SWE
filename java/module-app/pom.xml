@@ -34,13 +34,29 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.swe</groupId>
+      <artifactId>module-canvas</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.3.1</version>
       <scope>test</scope>
     </dependency>
       <dependency>
           <groupId>com.swe</groupId>
           <artifactId>module-screen-video</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>com.swe</groupId>
+          <artifactId>module-canvas</artifactId>
           <version>${project.version}</version>
       </dependency>
   </dependencies>

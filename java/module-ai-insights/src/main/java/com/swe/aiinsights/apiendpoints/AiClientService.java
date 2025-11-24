@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiClientService.java
+ *  Owner: Abhirami R Iyer, Nandhana Sunil, Berelli Gouthami
+ *  Roll Number : 112201001, 112201008, 112201003
+ *  Module : com.swe.aiinsights.apiendpoints
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * API functions for various AI services.
  *
@@ -10,25 +19,38 @@ package com.swe.aiinsights.apiendpoints;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.swe.aiinsights.data.WhiteBoardData;
-import com.swe.aiinsights.request.AiDescriptionRequest;
-import com.swe.aiinsights.request.AiRegularisationRequest;
-import com.swe.aiinsights.request.AiInsightsRequest;
-import com.swe.aiinsights.request.AiSummarisationRequest;
-import com.swe.aiinsights.request.AiActionItemsRequest;
+import com.swe.aiinsights.request.AiRequestable;
+import com.swe.aiinsights.request.RequestFactory;
+
 import java.util.concurrent.CompletableFuture;
-import com.swe.aiinsights.request.AiQuestionAnswerRequest;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
+
+
+
+
 import java.io.IOException;
 
 /**
  * AI client service.
  * contains the api endpoints for all the services offered by the AI module.
  */
+
 public class AiClientService {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG = CommonLogger.getLogger(AiClientService.class);
+
 
     /**
      * Executor used to run async AI calls.
      */
     private static final AsyncAiExecutor ASYNC_AI_EXECUTOR = new AsyncAiExecutor();
+    /**
+     * Request factory for generating various kinds of request.
+     */
+    private final RequestFactory factory = new RequestFactory();
     /**
      * Accumulates all summaries.
      */
@@ -49,7 +71,6 @@ public class AiClientService {
             CompletableFuture.completedFuture(null);
 
 
-
     /**
      * Interprets an uploaded image and generates a textual description.
      *
@@ -57,11 +78,20 @@ public class AiClientService {
      * @return textual description of the image
      */
     public CompletableFuture<String> describe(final String file) {
+        LOG.info("Received image describe request for file: {}", file);
+
         try {
             // Pass file path to your existing data class
             final WhiteBoardData data = new WhiteBoardData(file);
-            return ASYNC_AI_EXECUTOR.execute(new AiDescriptionRequest(data));
+            LOG.debug("Created WhiteBoardData for file {}", file);
+
+            final AiRequestable interpreterRequest = factory.getRequest("DESC", data);
+            LOG.debug("Built AI request for image interpretation (DESC)");
+
+            LOG.info("Submitting image interpretation request to AI executor");
+            return ASYNC_AI_EXECUTOR.execute(interpreterRequest);
         } catch (IOException e) {
+            LOG.error("Failed to execute image describe() for file: {}", file, e);
             throw new RuntimeException(e);
         }
     }
@@ -73,9 +103,18 @@ public class AiClientService {
      * @return regularised point data as a response
      */
     public  CompletableFuture<String> regularise(final String points) {
+        LOG.info("Received regularisation request");
+
         try {
-            return ASYNC_AI_EXECUTOR.execute(new AiRegularisationRequest(points));
+            LOG.debug("Regularisation payload: received");
+
+            final AiRequestable regulariserRequest = factory.getRequest("REG", points);
+            LOG.debug("Built request for regularisation (REG)");
+
+            LOG.info("Submitting regularisation request to AI executor");
+            return ASYNC_AI_EXECUTOR.execute(regulariserRequest);
         } catch (Exception e) {
+            LOG.error("Regularisation failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -89,9 +128,20 @@ public class AiClientService {
      */
     public  CompletableFuture<String> sentiment(
             final JsonNode chatData) {
+        LOG.info("Received sentiment analysis request");
+
         try {
-            return ASYNC_AI_EXECUTOR.execute(new AiInsightsRequest(chatData));
+            LOG.debug("Chat data received for sentiment analysis");
+
+            AiRequestable sentimentRequest = null;
+
+            sentimentRequest = factory.getRequest("INS", chatData);
+            LOG.debug("Built AI request for sentiment analysis (INS)");
+
+            LOG.info("Submitting sentiment analysis request to AI executor");
+            return ASYNC_AI_EXECUTOR.execute(sentimentRequest);
         } catch (IOException e) {
+            LOG.error("Sentiment analysis failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -105,14 +155,16 @@ public class AiClientService {
      */
     public CompletableFuture<String> summariseText(
             final String jsonContent) {
+        LOG.info("Received request: summariseText()");
 
         try {
 
             lastSummaryUpdate =
                     lastSummaryUpdate.thenCompose(v -> {
+                        LOG.info("Preparing content for summarisation");
 
                         // Prepare content for summarization
-                        String contentToSummarise;
+                        final String contentToSummarise;
 
                         if (accumulatedSummary == null || accumulatedSummary.isEmpty()) {
                             contentToSummarise = jsonContent;
@@ -120,13 +172,20 @@ public class AiClientService {
                             contentToSummarise = "Previous Summary: " + accumulatedSummary
                                     + "\n\nNew Chat Data: " + jsonContent;
                         }
-
-                        CompletableFuture<String> future =
-                                ASYNC_AI_EXECUTOR.execute(
-                                        new AiSummarisationRequest(
-                                                contentToSummarise));
+                        AiRequestable requestSummarise = null;
+                        try {
+                            requestSummarise = factory.getRequest(
+                                    "SUM", contentToSummarise);
+                        } catch (IOException e) {
+                            LOG.error("Failed to build summarisation request", e);
+                            throw new RuntimeException(e);
+                        }
+                        LOG.info("Dispatching summarisation request");
+                        final CompletableFuture<String> future =
+                                ASYNC_AI_EXECUTOR.execute(requestSummarise);
 
                         return future.thenApply(response -> {
+                            LOG.info("Summary updated successfully");
                             accumulatedSummary = response;
                             return null;
                         });
@@ -136,22 +195,23 @@ public class AiClientService {
                     accumulatedSummary);
 
         } catch (Exception e) {
+            LOG.error("Unexpected error in summariseText()", e);
             throw new RuntimeException(e);
         }
     }
+
     /**
      * Clears accumulated summaries.
      *
      * @return success message
      */
     public CompletableFuture<String> clearSummary() {
+        LOG.info("Clearing accumulated summary");
         accumulatedSummary = "";
         return CompletableFuture.completedFuture(
                 "Summary cleared successfully"
         );
     }
-
-
 
 
 
@@ -163,21 +223,30 @@ public class AiClientService {
      */
     public CompletableFuture<String> answerQuestion(
             final String question) {
+        LOG.info("Received request: answerQuestion()");
+        LOG.info("Question received: {}", question);
 
         try {
-            CompletableFuture<String> qaFuture =
+
+            final CompletableFuture<String> qaFuture =
                     lastSummaryUpdate.thenCompose(v ->
                             lastQaUpdate.thenCompose(v2 -> {
+                                AiRequestable req = null;
+                                try {
+                                    final String accSum;
+                                    if (accumulatedSummary != null) {
+                                        accSum = accumulatedSummary;
+                                    } else {
+                                        accSum = null;
+                                    }
+                                    req = factory.getRequest("QNA",
+                                            question, accumulatedSummary);
+                                } catch (IOException e) {
+                                    LOG.error("Failed to build Q&A request", e);
+                                    throw new RuntimeException(e);
+                                }
 
-                                AiQuestionAnswerRequest req =
-                                        new AiQuestionAnswerRequest(
-                                                question,
-                                                accumulatedSummary
-                                                        != null
-                                                        ? accumulatedSummary
-                                                        : ""
-                                        );
-
+                                LOG.info("Dispatching Q&A request to executor");
                                 return ASYNC_AI_EXECUTOR.execute(
                                         req);
                             })
@@ -186,17 +255,31 @@ public class AiClientService {
             return qaFuture;
 
         } catch (Exception e) {
+            LOG.error("Unexpected error in answerQuestion()", e);
             throw new RuntimeException(
                     "Error processing Q&A request", e);
         }
     }
 
-
+    /**
+     * Creates action items.
+     * @param chatData user chatData
+     * @return AI response
+     */
     public CompletableFuture<String> action(
-        final JsonNode chatData) {
+            final JsonNode chatData) {
+        LOG.info("Received action-item generation request");
+
         try {
-            return ASYNC_AI_EXECUTOR.execute(new AiActionItemsRequest(chatData));
+            LOG.debug("Action raw chat input received");
+
+            final AiRequestable actionRequest = factory.getRequest("ACTION", chatData);
+            LOG.debug("Built AI request for ACTION");
+
+            LOG.info("Submitting ACTION request to AI executor");
+            return ASYNC_AI_EXECUTOR.execute(actionRequest);
         } catch (IOException e) {
+            LOG.error("Failed to generate action items", e);
             throw new RuntimeException(e);
         }
     }
