@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
  */
 public record APackets(int packetNumber, byte[] data, String ip, int predictedPCM, int indexPCM) {
 
+    /**
+     * IPV4_Octets.
+     */
     private static final int IPV4_OCTETS = 4;
 
     /**

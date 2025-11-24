@@ -17,6 +17,11 @@ import java.awt.AWTException;
 public final class BackgroundCaptureManager {
 
     /**
+     * Thread Sleep Time.
+     */
+    private static final int THREAD_SLEEP_TIME = 500;
+
+    /**
      * The dedicated background thread for performing captures.
      */
     private static Thread captureThread;
@@ -88,7 +93,7 @@ public final class BackgroundCaptureManager {
 //                        System.out.println("Done Captured..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
-                        Thread.sleep(500);
+                        Thread.sleep(THREAD_SLEEP_TIME);
                         screenCapture = new ScreenCapture();
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }
