@@ -1,6 +1,14 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: TCPCommunicator.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -10,6 +18,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import com.swe.core.ClientNode;
 
 //File owned by Loganath
 /**

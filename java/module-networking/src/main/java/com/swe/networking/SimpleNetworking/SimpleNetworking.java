@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: SimpleNetworking.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
@@ -6,8 +15,8 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Vector;
 
-import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.core.ClientNode;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ModuleType;
 import com.swe.networking.NetworkConnectionType;
 import com.swe.networking.PacketInfo;
@@ -58,7 +67,9 @@ public final class SimpleNetworking
      */
     private final int payloadSize = 15 * 1024;
 
-    /** The variable to store the RPC instance. */
+    /**
+     * The variable to store the RPC instance.
+     */
     private AbstractRPC rpc;
 
     private SimpleNetworking() {

@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: P2PUser.java
+ *  Owner: Shubham Yadav
+ *  Roll Number : 112201032
+ *  Module : Metworking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
@@ -6,18 +15,19 @@ import com.swe.core.ClientNode;
  * Common interface to be used by client and server.
  */
 public interface P2PUser {
+
     /**
      * Function to send data by the user.
-     * 
-     * @param data   the data to be sent
+     *
+     * @param data the data to be sent
      * @param destIp the destination to send the data
      */
     void send(byte[] data, ClientNode[] destIp);
 
     /**
      * Function to send data by the user.
-     * 
-     * @param data   the data to be sent
+     *
+     * @param data the data to be sent
      * @param destIp the one destination to send the data
      */
     void send(byte[] data, ClientNode destIp);

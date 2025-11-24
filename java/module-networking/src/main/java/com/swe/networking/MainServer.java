@@ -1,9 +1,20 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: MainServer.java
+ *  Owner: Hemanth
+ *  Roll Number : 112201024
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import com.swe.core.ClientNode;
 
 /**
  * The mainserver across all clusters.
