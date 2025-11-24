@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Ram Charan.
+ */
+
 package com.swe.core.serialize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Shreya.
+ */
+
 package com.swe.core.Auth;
 
 import com.google.api.client.auth.oauth2.Credential;
@@ -37,8 +41,7 @@ public class GoogleAuthServices {
     /** OAuth2 scopes required by the application. */
     private static final List<String> SCOPES = List.of(
             "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email"
-    );
+            "https://www.googleapis.com/auth/userinfo.email");
 
     /** Path to the client credentials JSON file. */
     private static final String CREDENTIALS_FILE_PATH = "/client_secret.json";
@@ -47,7 +50,8 @@ public class GoogleAuthServices {
      * Returns a Google OAuth Credential object.
      *
      * @return Credential object with access and refresh tokens
-     * @throws IOException              if credentials file is missing or cannot be read
+     * @throws IOException              if credentials file is missing or cannot be
+     *                                  read
      * @throws GeneralSecurityException if transport setup fails
      */
     public Credential getCredentials() throws IOException, GeneralSecurityException {
@@ -59,8 +63,7 @@ public class GoogleAuthServices {
 
         final GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
                 JSON_FACTORY,
-                new InputStreamReader(in)
-        );
+                new InputStreamReader(in));
 
         final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
@@ -68,8 +71,7 @@ public class GoogleAuthServices {
                 httpTransport,
                 JSON_FACTORY,
                 clientSecrets,
-                SCOPES
-        )
+                SCOPES)
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
@@ -96,8 +98,7 @@ public class GoogleAuthServices {
 
         final GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
                 JSON_FACTORY,
-                new InputStreamReader(in)
-        );
+                new InputStreamReader(in));
 
         final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
@@ -105,15 +106,14 @@ public class GoogleAuthServices {
                 httpTransport,
                 JSON_FACTORY,
                 clientSecrets,
-                SCOPES
-        )
+                SCOPES)
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
 
         // Clear the stored credential for the "user" ID
-        final DataStore<com.google.api.client.auth.oauth2.StoredCredential> credentialDataStore =
-                flow.getCredentialDataStore();
+        final DataStore<com.google.api.client.auth.oauth2.StoredCredential> credentialDataStore = flow
+                .getCredentialDataStore();
         if (credentialDataStore != null) {
             credentialDataStore.delete("user");
             System.out.println("Logged out: Stored credentials cleared");

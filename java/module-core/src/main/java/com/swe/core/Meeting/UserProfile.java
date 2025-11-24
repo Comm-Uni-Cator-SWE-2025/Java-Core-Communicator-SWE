@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Swadha.
+ */
+
 package com.swe.core.Meeting;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
