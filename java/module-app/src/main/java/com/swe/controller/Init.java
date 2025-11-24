@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.aiinsights.aiinstance.AiInstance;
 import com.swe.aiinsights.apiendpoints.AiClientService;
+import com.swe.canvas.CanvasManager;
 import com.swe.chat.ChatManager;
 import com.swe.chat.ChatMessage;
 import com.swe.core.Auth.AuthService;
@@ -54,6 +55,7 @@ public class Init {
         MeetingNetworkingCoordinator.initialize(networking);
 
         new ChatManager(Networking.getNetwork());
+        controllerServices.canvasManager = new CanvasManager(Networking.getNetwork());
 
         MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
         Thread mediaCaptureManagerThread = new Thread(() -> {
@@ -110,6 +112,10 @@ public class Init {
                 Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.cloud);
                 controllerServices.networking.addUser(localClientNode, localClientNode);
 
+                // Initialize Canvas Manager for Host
+                controllerServices.canvasManager.setIsHost(true);
+                controllerServices.canvasManager.setHostClientNode(localClientNode);
+
                 MeetingNetworkingCoordinator.handleMeetingCreated(meetingSession);
             } catch (Exception e) {
                 System.out.println("Error initializing networking for meeting host: " + e.getMessage());
@@ -144,6 +150,11 @@ public class Init {
                 System.out.println("Server client node: " + serverClientNode);
 
                 controllerServices.networking.addUser(localClientNode, serverClientNode);
+                
+                // Initialize Canvas Manager for Client
+                controllerServices.canvasManager.setIsHost(false);
+                controllerServices.canvasManager.setHostClientNode(serverClientNode);
+                
                 MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
                 System.out.println("Error getting server client node: " + e.getMessage());

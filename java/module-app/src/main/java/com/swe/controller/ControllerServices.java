@@ -4,6 +4,7 @@ import functionlibrary.CloudFunctionLibrary;
 
 import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.core.Context;
+import com.swe.canvas.CanvasManager;
 
 public class ControllerServices {
     private static ControllerServices instance;
@@ -12,6 +13,7 @@ public class ControllerServices {
     public CloudFunctionLibrary cloud;
     public AiClientService ai;
     public Context context;
+    public CanvasManager canvasManager;
 
     private ControllerServices() {
         context = Context.getInstance();
