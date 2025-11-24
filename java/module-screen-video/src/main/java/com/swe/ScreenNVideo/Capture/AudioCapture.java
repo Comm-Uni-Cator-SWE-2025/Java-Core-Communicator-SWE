@@ -48,7 +48,7 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             (int) (SAMPLE_RATE * FRAME_DURATION_MS / 1000 * (SAMPLE_SIZE / 8) * CHANNELS);
 
     /** Queue storing captured audio chunks for downstream consumers (e.g., encoder, sender). */
-    private final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>(50);
+    private final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>(500);
 
     /**
      * Constructs an AudioCapture instance with the default format.

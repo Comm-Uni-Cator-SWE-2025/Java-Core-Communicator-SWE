@@ -15,6 +15,6 @@ public interface CaptureManager {
      * Start Screen And Video Caputering service
      * Never returns.
      */
-    void startCapture() throws ExecutionException, InterruptedException;
+    void startCapture(final int sendFPS) throws ExecutionException, InterruptedException;
 
 }
