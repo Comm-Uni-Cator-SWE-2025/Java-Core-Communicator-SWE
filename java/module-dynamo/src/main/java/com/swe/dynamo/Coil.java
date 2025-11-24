@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.swe.core.Context;
 import com.swe.dynamo.Parsers.Chunk;
 import com.swe.dynamo.socket.ISocket;
 import com.swe.dynamo.socket.SocketTCP;
@@ -22,6 +23,7 @@ public class Coil {
     final boolean isMainServer;
     final Selector selector;
     final Function<Node, Void> sendNodeList;
+    final String myIP = Context.getInstance().selfIP.hostName();
 
     public Coil(boolean isMainServer, Function<Node, Void> sendNodeList) throws IOException {
         this.isMainServer = isMainServer;
@@ -53,6 +55,8 @@ public class Coil {
     public void connectToNode(Node node) throws IOException {
         SocketChannel socketChannel = SocketChannel.open();
         socketChannel.configureBlocking(false);
+
+        socketChannel.bind(new InetSocketAddress(this.myIP, 0));
 
         int port = node.getPortInt();
 
@@ -126,7 +130,7 @@ public class Coil {
         // Create and configure the server socket channel
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.bind(new InetSocketAddress(port));
+        serverSocketChannel.bind(new InetSocketAddress(myIP, port));
 
         // Register the server socket with the selector for ACCEPT operations
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);

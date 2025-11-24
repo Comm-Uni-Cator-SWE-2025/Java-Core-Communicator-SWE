@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.swe.core.ClientNode;
+import com.swe.core.Context;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -19,13 +20,14 @@ import java.net.UnknownHostException;
 
 public class Utils {
     public static ClientNode getLocalClientNode() throws UnknownHostException {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            final int pingPort = 10002;
-            socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
-            return new ClientNode(socket.getLocalAddress().getHostAddress(), 1212);
-        } catch (SocketException | UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
+        return Context.getInstance().selfIP;
+        // try (DatagramSocket socket = new DatagramSocket()) {
+        //     final int pingPort = 10002;
+        //     socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
+        //     return new ClientNode(socket.getLocalAddress().getHostAddress(), 1212);
+        // } catch (SocketException | UnknownHostException e) {
+        //     throw new RuntimeException(e);
+        // }
     }
 
     public static ClientNode getServerClientNode(String meetingId, CloudFunctionLibrary cloud) throws UnknownHostException {

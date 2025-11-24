@@ -22,10 +22,16 @@ import java.util.concurrent.ExecutionException;
 public class Init {
     public static void main(String[] args) throws Exception {
         int portNumber = 6942;
+        ClientNode selfIP = new ClientNode("127.0.0.1", 1212);
 
         if (args.length > 0) {
             String port = args[0];
             portNumber = Integer.parseInt(port);
+        }
+
+        if (args.length > 1) {
+            String ip = args[1];
+            selfIP = new ClientNode(ip, 1212);
         }
 
         RPC rpc = new RPC();
