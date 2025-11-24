@@ -19,11 +19,13 @@ package com.swe.aiinsights.getkeys;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swe.aiinsights.logging.CommonLogger;
-import com.swe.cloud.datastructures.Entity;
-import com.swe.cloud.datastructures.TimeRange;
-import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
+import datastructures.Entity;
+import datastructures.Response;
+import datastructures.TimeRange;
+import functionlibrary.CloudFunctionLibrary;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,13 +98,17 @@ public final class GeminiKeyManager {
 
         final AtomicReference<Object> keyList = new AtomicReference<>();
         LOG.debug("Getting key list from Cloud");
-        cloud.cloudGet(req).thenAccept(response -> {
-            final ObjectMapper objectMapper = new ObjectMapper();
-            keyList.set(objectMapper.convertValue(
-                    response.data(),
-                    new TypeReference<List<String>>() { }
-            ));
-        }).join();
+        try {
+            final Response response = cloud.cloudGet(req);
+
+                final ObjectMapper objectMapper = new ObjectMapper();
+                keyList.set(objectMapper.convertValue(
+                        response.data(),
+                        new TypeReference<List<String>>() { }
+                ));
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return (List<String>) keyList.get();
     }
 
