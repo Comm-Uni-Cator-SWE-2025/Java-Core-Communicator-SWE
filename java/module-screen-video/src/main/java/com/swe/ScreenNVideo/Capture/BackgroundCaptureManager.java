@@ -10,7 +10,6 @@ import com.swe.ScreenNVideo.Utils;
 
 import java.awt.AWTException;
 
-
 /**
  * Manages background screen and video capture on a dedicated daemon thread.
  */
@@ -36,6 +35,7 @@ public final class BackgroundCaptureManager {
 
     /**
      * Private constructor to prevent instantiation.
+     * 
      * @param capComObjArgs CaptureComponents Object.
      */
     public BackgroundCaptureManager(final CaptureComponents capComObjArgs) {
@@ -65,7 +65,6 @@ public final class BackgroundCaptureManager {
         screenCapture = new ScreenCapture();
     }
 
-
     /**
      * The main loop for the background capture thread.
      */
@@ -76,6 +75,7 @@ public final class BackgroundCaptureManager {
                     Telemetry.getTelemetry().closeModel();
                     videoCapture.stop();
                     screenCapture.stop();
+                    System.out.println("Here");
                     Thread.sleep(Utils.SEC_IN_MS);
                     continue;
                 }
@@ -83,9 +83,9 @@ public final class BackgroundCaptureManager {
                 if (capCom.isScreenCaptureOn()) {
                     try {
                         // Overwrite the volatile variable with the latest frame
-//                        System.out.println("Capturing..");
+                        System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-//                        System.out.println("Done Capturedd..");
+                        System.out.println("Done Capturedd..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
                         Thread.sleep(500);
@@ -109,7 +109,7 @@ public final class BackgroundCaptureManager {
                     }
                 } else {
                     // close the model if available
-                    Telemetry.getTelemetry().closeModel();  
+                    Telemetry.getTelemetry().closeModel();
                     videoCapture.stop();
                     capCom.setLatestVideoFrame(null);
                 }

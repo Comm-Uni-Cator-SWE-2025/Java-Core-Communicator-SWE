@@ -4,7 +4,6 @@
 
 package com.swe.ScreenNVideo;
 
-
 import com.swe.ScreenNVideo.Model.NetworkPacketType;
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
@@ -50,7 +49,6 @@ public class CaptureComponents {
         return isScreenCaptureOn;
     }
 
-
     /**
      * Flag for video capture.
      */
@@ -76,7 +74,6 @@ public class CaptureComponents {
      */
     private final AudioCapture audioCapture;
 
-
     /**
      * Image stitcher object.
      */
@@ -96,11 +93,13 @@ public class CaptureComponents {
 
     /**
      * Constructor for CaptureComponents.
+     * 
      * @param argNetworking Networking object
-     * @param rpc RPC object
-     * @param port Port number
+     * @param rpc           RPC object
+     * @param port          Port number
      */
-    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port, BiFunction<String, Boolean, Void> function) {
+    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port,
+            BiFunction<String, Boolean, Void> function) {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
         isAudioCaptureOn = false;
@@ -114,7 +113,7 @@ public class CaptureComponents {
 
     private int[][] getFeedMatrix(final BufferedImage videoFeed, final BufferedImage screenFeed) {
         int[][] feed = null;
-//        long prev = System.nanoTime();
+        // long prev = System.nanoTime();
         if (screenFeed != null) {
             feed = Utils.convertToRGBMatrix(screenFeed);
         }
@@ -128,9 +127,10 @@ public class CaptureComponents {
                 final int width = feed[0].length;
                 final int targetHeight = height / Utils.SCALE_Y;
                 final int targetWidth = width / Utils.SCALE_X;
-//                    long curr = System.nanoTime();
+                // long curr = System.nanoTime();
                 final int[][] scaledDownedFeed = scalar.scale(videoMatrix, targetHeight, targetWidth);
-//                    System.out.println("Scalling Video :" + (curr - System.nanoTime()) / ((double) Utils.MSEC_IN_NS));
+                // System.out.println("Scalling Video :" + (curr - System.nanoTime()) /
+                // ((double) Utils.MSEC_IN_NS));
                 final int videoPosY = height - Utils.VIDEO_PADDING_Y - targetHeight;
                 final int videoPosX = width - Utils.VIDEO_PADDING_X - targetWidth;
                 final Patch videoPatch = new Patch(scaledDownedFeed, videoPosX, videoPosY);
@@ -139,40 +139,44 @@ public class CaptureComponents {
                 feed = imageStitcher.getCanvas();
             }
         }
-//            long curr = System.nanoTime();
-//            System.out.println("Stitching Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
-//            prev = curr;
-        if (feed != null && (feed.length > Utils.SERVER_HEIGHT || feed[0].length > Utils.SERVER_WIDTH )) {
+        // long curr = System.nanoTime();
+        // System.out.println("Stitching Time : " + (curr - prev) / ((double)
+        // Utils.MSEC_IN_NS));
+        // prev = curr;
+        if (feed != null && (feed.length > Utils.SERVER_HEIGHT || feed[0].length > Utils.SERVER_WIDTH)) {
             feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
         }
-//            curr = System.nanoTime();
-//            System.out.println("Scaling Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
+        // curr = System.nanoTime();
+        // System.out.println("Scaling Time : " + (curr - prev) / ((double)
+        // Utils.MSEC_IN_NS));
         return feed;
     }
 
-
     /**
      * Capture the feed from screen and video.
+     * 
      * @return 2D RGB matrix of the feed
      */
     public int[][] getFeed() {
         final BufferedImage videoFeed = latestVideoFrame;
         final BufferedImage screenFeed = latestScreenFrame;
         final int[][] feed;
-//            long prev = System.nanoTime();
+        // long prev = System.nanoTime();
 
         if (!isScreenCaptureOn && !isVideoCaptureOn) {
             return null;
         }
 
-//            long curr = System.nanoTime();
-//            System.out.println("Capture Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
-//            prev = curr;
+        // long curr = System.nanoTime();
+        // System.out.println("Capture Time : " + (curr - prev) / ((double)
+        // Utils.MSEC_IN_NS));
+        // prev = curr;
 
         // get the feed to send
         feed = getFeedMatrix(videoFeed, screenFeed);
-//            curr = System.nanoTime();
-//            System.out.println("Processing Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
+        // curr = System.nanoTime();
+        // System.out.println("Processing Time : " + (curr - prev) / ((double)
+        // Utils.MSEC_IN_NS));
         return feed;
     }
 
@@ -188,6 +192,7 @@ public class CaptureComponents {
     private void initializeHandlers(final AbstractRPC rpc, final int port) {
         rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
             isVideoCaptureOn = true;
+            System.out.println("Received Start Video Capture RPC");
             final byte[] res = new byte[1];
             res[0] = 1;
             return res;
@@ -245,7 +250,7 @@ public class CaptureComponents {
 
             addSynchron.apply(dest.ip(), dest.reqCompression());
             final byte[] subscribeData = subsPacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
-            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
+            networking.sendData(subscribeData, new ClientNode[] { destNode }, ModuleType.SCREENSHARING.ordinal(), 2);
 
             return res;
         });
@@ -266,7 +271,7 @@ public class CaptureComponents {
             final IPPacket subsPacket = new IPPacket(localIp, false);
 
             final byte[] unSubscribeData = subsPacket.serialize(NetworkPacketType.UNSUBSCRIBE_AS_VIEWER);
-            networking.sendData(unSubscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
+            networking.sendData(unSubscribeData, new ClientNode[] { destNode }, ModuleType.SCREENSHARING.ordinal(), 2);
 
             return res;
         });

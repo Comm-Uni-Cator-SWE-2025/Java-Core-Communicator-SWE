@@ -55,16 +55,16 @@ public class Init {
 
         new ChatManager(Networking.getNetwork());
 
-         MediaCaptureManager
-             mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
-         Thread mediaCaptureManagerThread = new Thread(() -> {
-             try {
-                 mediaCaptureManager.startCapture(24);
-             } catch (ExecutionException | InterruptedException e) {
-                 throw new RuntimeException(e);
-             }
-         });
-         mediaCaptureManagerThread.start();
+        MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
+        Thread mediaCaptureManagerThread = new Thread(() -> {
+            try {
+                mediaCaptureManager.startCapture(24);
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        mediaCaptureManagerThread.start();
+        System.out.println("Media Capture Manager started.");
 
         addRPCSubscriptions(rpc);
 
