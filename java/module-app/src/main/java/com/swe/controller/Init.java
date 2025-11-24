@@ -37,7 +37,7 @@ import java.util.logging.Level;
 // CHECKSTYLE:OFF: ClassDataAbstractionCoupling
 // CHECKSTYLE:OFF: ClassFanOutComplexity
 public class Init {
-        static ChatManager chatmanager;
+    static ChatManager chatmanager;
 
     /**
      * Default RPC port number.
