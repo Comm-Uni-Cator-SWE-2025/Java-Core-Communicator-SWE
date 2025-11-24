@@ -13,14 +13,14 @@ pool:
 resources:
   pipelines:
     - pipeline: core_build
-      source: 'Java-Core-CI'   # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      source: 'Comm-Uni-Cator-SWE-2025.Java-Core-Communicator-SWE'   # <--- UPDATE THIS: Exact Name from Azure DevOps UI
       trigger: 
         branches:
           include:
             - main             # <--- UPDATE THIS: The branch you build on
     
     - pipeline: front_build
-      source: 'Java-Front-CI'  # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      source: 'Comm-Uni-Cator-SWE-2025.Java-front-Communicator-SWE'  # <--- UPDATE THIS: Exact Name from Azure DevOps UI
       trigger: 
         branches:
           include:
