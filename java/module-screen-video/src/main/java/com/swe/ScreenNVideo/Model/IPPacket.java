@@ -1,5 +1,5 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -46,7 +46,7 @@ public record IPPacket(String ip, boolean reqCompression) {
         for (int i = 0; i < 4; i++) {
             ipInts[i] = buffer.getInt();
         }
-        String ip = Arrays.stream(ipInts).mapToObj(String::valueOf).collect(Collectors.joining("."));
+        final String ip = Arrays.stream(ipInts).mapToObj(String::valueOf).collect(Collectors.joining("."));
         final boolean reqCompression = buffer.get() == 1;
         return new IPPacket(ip, reqCompression);
     }

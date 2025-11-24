@@ -1,10 +1,9 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo;
 
-import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -14,7 +13,11 @@ public interface CaptureManager {
     /**
      * Start Screen And Video Caputering service
      * Never returns.
+     *
+     * @param sendFPS The number of frames per second to capture and send.
+     * @throws ExecutionException      If an error occurs during asynchronous execution.
+     * @throws InterruptedException    If the operation is interrupted.
      */
-    void startCapture(final int sendFPS) throws ExecutionException, InterruptedException;
+    void startCapture(int sendFPS) throws ExecutionException, InterruptedException;
 
 }

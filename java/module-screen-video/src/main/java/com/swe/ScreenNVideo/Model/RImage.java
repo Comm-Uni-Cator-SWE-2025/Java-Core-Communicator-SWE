@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -23,7 +23,7 @@ public class RImage {
     private final String ip;
 
     /**
-     * Data rate
+     * Data rate.
      */
     private final long dataRate;
 

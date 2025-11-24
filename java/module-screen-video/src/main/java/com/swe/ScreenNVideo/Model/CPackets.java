@@ -1,5 +1,5 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -84,7 +84,7 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
         final ByteBuffer buffer = ByteBuffer.wrap(data);
         final long packetStart = buffer.getLong();
         System.out.println(packetStart);
-        System.out.println("Packet took " + (System.currentTimeMillis() - packetStart)/(double)(Utils.SEC_IN_MS));
+        System.out.println("Packet took " + (System.currentTimeMillis() - packetStart) / (double) (Utils.SEC_IN_MS));
         // get packet type
         final byte packetType = buffer.get();
 

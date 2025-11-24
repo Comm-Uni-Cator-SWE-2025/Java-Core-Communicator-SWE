@@ -1,5 +1,5 @@
 /**
- * Contributed by @Devansh-Kesan
+ * Contributed by @Devansh-Kesan.
  */
 
 package com.swe.ScreenNVideo.PatchGenerator;
