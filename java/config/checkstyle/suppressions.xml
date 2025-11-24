@@ -3,5 +3,18 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <!-- Currently no suppressions -->
+    <!-- Suppress complexity checks for deserialization methods -->
+    <suppress checks="CyclomaticComplexity" files=".*IamPacket\.java" lines="148"/>
+    <suppress checks="NPathComplexity" files=".*IamPacket\.java" lines="148"/>
+    <suppress checks="CyclomaticComplexity" files=".*JoinAckPacket\.java" lines="169"/>
+    <suppress checks="NPathComplexity" files=".*JoinAckPacket\.java" lines="169"/>
+    <suppress checks="JavaNCSS" files=".*JoinAckPacket\.java" lines="169"/>
+    
+    <!-- Suppress complexity checks for Init class -->
+    <suppress checks="ClassDataAbstractionCoupling" files=".*Init\.java" lines="38"/>
+    <suppress checks="ClassFanOutComplexity" files=".*Init\.java" lines="38"/>
+    <suppress checks="CyclomaticComplexity" files=".*Init\.java" lines="137"/>
+    <suppress checks="MethodLength" files=".*Init\.java" lines="137"/>
+    <suppress checks="JavaNCSS" files=".*Init\.java" lines="137"/>
+    <suppress checks="NPathComplexity" files=".*Init\.java" lines="137"/>
 </suppressions>

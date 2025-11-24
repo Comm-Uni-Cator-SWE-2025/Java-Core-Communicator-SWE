@@ -31,6 +31,9 @@
 
 package com.swe.aiinsights.modeladapter;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,8 +42,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.logging.CommonLogger;
 import okhttp3.Response;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 
 /**
@@ -53,8 +54,8 @@ public class OllamaAdapter implements ModelAdapter {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(OllamaAdapter.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * {@inheritDoc}

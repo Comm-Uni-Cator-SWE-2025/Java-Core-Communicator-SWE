@@ -11,31 +11,39 @@ import com.swe.networking.Networking;
  * This allows Networking to be used where NetworkingInterface is expected.
  */
 public class NetworkingAdapter implements NetworkingInterface {
+    /**
+     * The underlying networking instance.
+     */
     private final Networking networking;
 
-    public NetworkingAdapter(Networking networking) {
-        this.networking = networking;
+    /**
+     * Constructs a new NetworkingAdapter.
+     *
+     * @param networkingParam The networking instance to wrap
+     */
+    public NetworkingAdapter(final Networking networkingParam) {
+        this.networking = networkingParam;
     }
 
     @Override
-    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
+    public void sendData(final byte[] data, final ClientNode[] destIp, final ModuleType module, final int priority) {
         networking.sendData(data, destIp, module.ordinal(), priority);
     }
 
     @Override
-    public void subscribe(ModuleType name, MessageListener function) {
+    public void subscribe(final ModuleType name, final MessageListener function) {
         // Convert SimpleNetworking.MessageListener to Networking.MessageListener
-        com.swe.networking.MessageListener networkingListener = function::receiveData;
+        final com.swe.networking.MessageListener networkingListener = function::receiveData;
         networking.subscribe(name.ordinal(), networkingListener);
     }
 
     @Override
-    public void removeSubscription(ModuleType name) {
+    public void removeSubscription(final ModuleType name) {
         networking.removeSubscription(name.ordinal());
     }
 
     @Override
-    public void addUser(ClientNode deviceAddress, ClientNode mainServerAddress) {
+    public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
         networking.addUser(deviceAddress, mainServerAddress);
     }
 
@@ -45,22 +53,25 @@ public class NetworkingAdapter implements NetworkingInterface {
     }
 
     @Override
-    public void consumeRPC(AbstractRPC rpc) {
+    public void consumeRPC(final AbstractRPC rpc) {
         // Convert RPCinterface.AbstractRPC to RPCinteface.AbstractRPC
         // Create an adapter wrapper since they're in different packages
-        com.swe.core.RPCinterface.AbstractRPC adaptedRpc = new com.swe.core.RPCinterface.AbstractRPC() {
+        final com.swe.core.RPCinterface.AbstractRPC adaptedRpc =
+            new com.swe.core.RPCinterface.AbstractRPC() {
             @Override
-            public void subscribe(String methodName, java.util.function.Function<byte[], byte[]> method) {
+            public void subscribe(final String methodName,
+                                  final java.util.function.Function<byte[], byte[]> method) {
                 rpc.subscribe(methodName, method);
             }
 
             @Override
-            public Thread connect(int portNumber) throws java.io.IOException, java.util.concurrent.ExecutionException, InterruptedException {
+            public Thread connect(final int portNumber)
+                throws java.io.IOException, java.util.concurrent.ExecutionException, InterruptedException {
                 return rpc.connect(portNumber);
             }
 
             @Override
-            public java.util.concurrent.CompletableFuture<byte[]> call(String methodName, byte[] data) {
+            public java.util.concurrent.CompletableFuture<byte[]> call(final String methodName, final byte[] data) {
                 return rpc.call(methodName, data);
             }
         };

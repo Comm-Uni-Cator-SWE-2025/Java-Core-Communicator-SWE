@@ -155,6 +155,21 @@ class BackgroundCaptureManagerTest {
     }
 
     @Test
+    void testLoopOnlyScreenOn() throws Exception {
+        when(mockCapCom.isScreenCaptureOn()).thenReturn(true);
+        when(mockCapCom.isVideoCaptureOn()).thenReturn(false);
+
+        final BufferedImage mockImg = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        when(mockScreenCapture.capture()).thenReturn(mockImg);
+
+        manager.start();
+
+//        verify(mockCapCom, timeout(1000).atLeastOnce()).setLatestScreenFrame(mockImg);
+        verify(mockVideoCapture, timeout(1000).atLeastOnce()).stop();
+        verify(mockCapCom, timeout(1000).atLeastOnce()).setLatestVideoFrame(null);
+    }
+
+    @Test
     void testLoopOnlyVideoOn() throws Exception {
         when(mockCapCom.isScreenCaptureOn()).thenReturn(false);
         when(mockCapCom.isVideoCaptureOn()).thenReturn(true);

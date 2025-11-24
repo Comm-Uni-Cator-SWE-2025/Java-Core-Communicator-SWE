@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -83,6 +84,9 @@ public class AuthHelperTest {
 
     private static final class GoogleHttpsInterceptor implements URLStreamHandlerFactory {
 
+        private final URLStreamHandler defaultHttpsHandler = buildDefaultHttpsHandler();
+        private final Method openConnectionMethod = resolveOpenConnectionMethod();
+
         @Override
         public URLStreamHandler createURLStreamHandler(final String protocol) {
             if (!"https".equals(protocol)) {
@@ -94,9 +98,36 @@ public class AuthHelperTest {
                     if (GOOGLE_USERINFO.equals(url.toString())) {
                         return new FakeHttpsURLConnection(url);
                     }
-                    throw new UnsupportedOperationException("Unexpected HTTPS URL in test: " + url);
+                    return openDefault(url);
                 }
             };
+        }
+
+        private URLConnection openDefault(final URL url) throws IOException {
+            try {
+                return (URLConnection) openConnectionMethod.invoke(defaultHttpsHandler, url);
+            } catch (Exception exception) {
+                throw new IOException("Unable to open default HTTPS connection", exception);
+            }
+        }
+
+        private URLStreamHandler buildDefaultHttpsHandler() {
+            try {
+                final Class<?> handlerClass = Class.forName("sun.net.www.protocol.https.Handler");
+                return (URLStreamHandler) handlerClass.getDeclaredConstructor().newInstance();
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to build default HTTPS handler", exception);
+            }
+        }
+
+        private Method resolveOpenConnectionMethod() {
+            try {
+                final Method method = URLStreamHandler.class.getDeclaredMethod("openConnection", URL.class);
+                method.setAccessible(true);
+                return method;
+            } catch (Exception exception) {
+                throw new IllegalStateException("Unable to access URLStreamHandler#openConnection", exception);
+            }
         }
     }
 

@@ -5,6 +5,8 @@
 package com.swe.ScreenNVideo.PatchGenerator;
 
 import com.swe.ScreenNVideo.Utils;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.List;
 
@@ -12,6 +14,8 @@ import java.util.List;
  * Handles stitching multiple patches together into a single canvas.
  */
 public class ImageStitcher {
+
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**
      * The target canvas for image stitching.
@@ -49,7 +53,7 @@ public class ImageStitcher {
         this.canvas = initialCanvas;
         this.currentHeight = initialCanvas.length;
         this.currentWidth = initialCanvas[0].length;
-        System.out.println("Setting canvas " + currentHeight + " " + currentWidth);
+        LOG.debug("Setting canvas " + currentHeight + "x" + currentWidth);
     }
 
     /**
@@ -70,7 +74,7 @@ public class ImageStitcher {
         this.canvas = new int[0][0];
         this.currentHeight = 0;
         this.currentWidth = 0;
-        System.out.println("Resetting canvas " + currentHeight + " " + currentWidth);
+        LOG.debug("Resetting canvas to empty");
     }
 
     /**
@@ -111,7 +115,7 @@ public class ImageStitcher {
      */
     private void resize(final int height, final int width, final boolean fill) {
         final int[][] newCanvas = new int[height][width];
-        System.out.println("Resizing from" + currentHeight + " " + currentWidth +  " to " + height + " " + width);
+        LOG.debug("Resizing canvas from " + currentHeight + "x" + currentWidth + " to " + height + "x" + width);
 
         if (fill) {
             Utils.copyMatrix(this.canvas, newCanvas);

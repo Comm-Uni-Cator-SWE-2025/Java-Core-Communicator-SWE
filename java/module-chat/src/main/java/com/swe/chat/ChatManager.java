@@ -1,12 +1,12 @@
 package com.swe.chat;
 
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.core.ClientNode;
 import com.swe.core.Context;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
 import com.swe.aiinsights.aiinstance.AiInstance;
 import com.swe.aiinsights.apiendpoints.AiClientService;
+import com.swe.core.logging.SweLogger;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -54,6 +54,10 @@ public class ChatManager implements IChatService {
 
     private final AbstractRPC rpc;
     private final Networking network;
+    private final SweLogger logger;
+
+    private final AiClientService aiService;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final AiClientService aiService;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -68,9 +72,10 @@ public class ChatManager implements IChatService {
     public final static List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
     private int lastSummarizedIndex = 0;
 
-    public ChatManager(Networking network) {
+    public ChatManager(Networking network, SweLogger logger) {
+        this.logger = Objects.requireNonNull(logger, "logger");
         Context context = Context.getInstance();
-        this.rpc = context.rpc;
+        this.rpc = context.getRpc();
         this.network = network;
 
         // 1. Initialize AI Service
@@ -122,19 +127,17 @@ public class ChatManager implements IChatService {
         try {
             String historyJson = generateChatHistoryJson(newMessages);
 
-            System.out.println("[AI-Backend] Sending " + newMessages.size() + " new messages for summarization...");
+            logger.info("Sending " + newMessages.size() + " new messages for summarization");
 
             aiService.summariseText(historyJson)
-                    .thenAccept(summary -> {
-                        System.out.println("[AI-Backend] Incremental Summary: " + summary);
-                    })
+                    .thenAccept(summary -> logger.info("Incremental summary: " + summary))
                     .exceptionally(e -> {
-                        System.err.println("[AI-Backend] Summarization failed: " + e.getMessage());
+                        logger.error("Incremental summarization failed", e);
                         return null;
                     });
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to process incremental summary", e);
         }
     }
 
@@ -207,13 +210,13 @@ public class ChatManager implements IChatService {
      * ============================================================================
      */
     private byte[] handleFrontendTextMessage(byte[] messageBytes) {
-        System.out.println("[Core] Received text message from frontend");
+        logger.info("Received text message from frontend");
 
         try {
             // 1. Deserialize to inspect content
             ChatMessage message = ChatMessageSerializer.deserialize(messageBytes);
 
-            System.out.println("[Core] Received text: " + message.getContent());
+            logger.debug("Received text: " + message.getContent());
 
             // 2. Add to Backend History (for summarization)
             fullMessageHistory.add(message);
@@ -234,7 +237,7 @@ public class ChatManager implements IChatService {
 
             return new byte[0];  // Empty array with brackets
         } catch (Exception e) {
-            System.err.println("[Core] Error sending text message: " + e.getMessage());
+            logger.error("Error sending text message", e);
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
         }
     }
@@ -246,7 +249,7 @@ public class ChatManager implements IChatService {
         String question = fullText.substring(3).trim(); // Remove "@AI"
         if (question.isEmpty()) return;
 
-        System.out.println("[Core] Processing AI Question: " + question);
+        logger.info("Processing AI question: " + question);
 
         aiService.answerQuestion(question)
                 .thenAccept(answer -> {
@@ -274,7 +277,7 @@ public class ChatManager implements IChatService {
             this.rpc.call("chat:new-message", aiBytes); // Update local UI
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to broadcast AI response", e);
         }
     }
 
@@ -292,7 +295,7 @@ public class ChatManager implements IChatService {
      *   5. Send compressed data to network
      */
     private byte[] handleFrontendFileMessage(byte[] messageBytes) {
-        System.out.println("[Core] Received file message from frontend (PATH mode)");
+        logger.info("Received file message from frontend (PATH mode)");
 
         try {
             // 1. Deserialize PATH mode message
@@ -309,7 +312,7 @@ public class ChatManager implements IChatService {
                 filePath = filePath.substring(1).trim();
             }
 
-            System.out.println("[Core] Reading file: " + filePath);
+            logger.debug("Reading file: " + filePath);
 
             // Check if file exists
             if (!Files.exists(Paths.get(filePath))) {
@@ -318,15 +321,14 @@ public class ChatManager implements IChatService {
 
             // 2. Read and compress
             byte[] uncompressedData = Files.readAllBytes(Paths.get(filePath));
-            System.out.println("[Core] File size: " + uncompressedData.length + " bytes");
+            logger.debug("File size: " + uncompressedData.length + " bytes");
 
             byte[] compressedData = Utilities.Compress(uncompressedData, Deflater.BEST_SPEED);
             if (compressedData == null) {
                 throw new IOException("Failed to compress file");
             }
 
-            System.out.println("[Core] Compressed: " + uncompressedData.length + " → " +
-                    compressedData.length + " bytes");
+            logger.debug("Compressed payload from " + uncompressedData.length + " to " + compressedData.length + " bytes");
 
             // ===== STEP 1: Send METADATA-ONLY to frontend =====
             FileMessage metadataMsg = new FileMessage(
@@ -342,11 +344,11 @@ public class ChatManager implements IChatService {
             this.rpc.call("chat:file-metadata-received", metadataBytes);
 
 
-            System.out.println("[Core] Sent metadata to frontend");
+            logger.debug("Sent metadata to frontend");
 
             // ===== STEP 2: Cache the compressed file =====
             fileCache.put(pathModeMsg.getMessageId(), new FileCacheEntry(pathModeMsg.getFileName(), compressedData));
-            System.out.println("[Core] Cached compressed file: " + pathModeMsg.getMessageId());
+            logger.debug("Cached compressed file: " + pathModeMsg.getMessageId());
 
             // ===== STEP 3: Send to remote peers (with compressed data) =====
             FileMessage contentModeMsg = new FileMessage(
@@ -366,13 +368,12 @@ public class ChatManager implements IChatService {
             // ClientNode[] dests = { new ClientNode("127.0.0.1", 1234) };
             this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
 
-            System.out.println("[Core] Sent file to network");
+            logger.info("Sent file to network");
 
             return new byte[0];
 
         } catch (Exception e) {
-            System.err.println("[Core] Error processing file: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error processing file message", e);
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
         }
     }
@@ -384,7 +385,7 @@ public class ChatManager implements IChatService {
      */
     private byte[] handleSaveFileToDisk(byte[] messageIdBytes) {
         String messageId = new String(messageIdBytes, StandardCharsets.UTF_8);
-        System.out.println("[Core] User requested save for: " + messageId);
+        logger.info("User requested save for message " + messageId);
 
         try {
             // Retrieve compressed file from cache
@@ -393,7 +394,7 @@ public class ChatManager implements IChatService {
                 throw new Exception("File not found in cache: " + messageId);
             }
 
-            System.out.println("[Core] Retrieved compressed file (" + cacheEntry.compressedData.length + " bytes)");
+            logger.debug("Retrieved compressed file (" + cacheEntry.compressedData.length + " bytes)");
 
             byte[] decompressedData = Utilities.Decompress(cacheEntry.compressedData);
             if (decompressedData == null) {
@@ -435,7 +436,7 @@ public class ChatManager implements IChatService {
 
             // 4. Save file
             Files.write(savePath, decompressedData);
-            System.out.println("[Core] Saved to: " + savePath.toString());
+            logger.info("Saved file to " + savePath);
 
             // Notify frontend of success
             String successMsg = "File saved to: " + savePath;
@@ -444,8 +445,7 @@ public class ChatManager implements IChatService {
             return successMsg.getBytes(StandardCharsets.UTF_8);
 
         } catch (Exception e) {
-            System.err.println("[Core] Error saving file: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error saving file", e);
 
             String errorMsg = "Failed to save file: " + e.getMessage();
             this.rpc.call("chat:file-saved-error", errorMsg.getBytes(StandardCharsets.UTF_8));
@@ -463,7 +463,7 @@ public class ChatManager implements IChatService {
         // 1. Sanitize ID (Crucial for the newline issue we discussed)
         String messageId = new String(messageIdBytes, StandardCharsets.UTF_8).trim();
 
-        System.out.println("[Core] Deleting message: " + messageId);
+        logger.info("Deleting message " + messageId);
 
         // 2. Remove from local file cache if exists
         fileCache.remove(messageId);
@@ -477,9 +477,9 @@ public class ChatManager implements IChatService {
             byte[] networkPacket = addProtocolFlag(cleanIdBytes, FLAG_DELETE_MESSAGE);
             this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
 
-            System.out.println("[Core] Broadcasted delete signal to network");
+            logger.debug("Broadcasted delete signal to network");
         } catch (Exception e) {
-            System.err.println("[Core] Failed to broadcast delete: " + e.getMessage());
+            logger.error("Failed to broadcast delete", e);
         }
 
         return new byte[0];
@@ -499,14 +499,14 @@ public class ChatManager implements IChatService {
         try {
             switch (flag) {
                 case FLAG_TEXT_MESSAGE:
-                    System.out.println("[Core] Received text from network");
+                    logger.debug("Received text from network");
                     ChatMessage msg = ChatMessageSerializer.deserialize(messageBytes);
                     fullMessageHistory.add(msg);
                     this.rpc.call("chat:new-message", messageBytes);
                     break;
 
                 case FLAG_FILE_MESSAGE:
-                    System.out.println("[Core] Received file from network");
+                    logger.debug("Received file from network");
                     FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
 
                     // Cache the received compressed file
@@ -527,7 +527,7 @@ public class ChatManager implements IChatService {
                     break;
 
                 case FLAG_DELETE_MESSAGE:
-                    System.out.println("[Core] Received DELETE signal from network");
+                    logger.debug("Received delete signal from network");
 
                     // 1. Clean the ID
                     String remoteId = new String(messageBytes, StandardCharsets.UTF_8).trim();
@@ -541,11 +541,10 @@ public class ChatManager implements IChatService {
                     break;
 
                 default:
-                    System.err.println("[Core] Unknown message type: " + flag);
+                    logger.warn("Unknown message type: " + flag);
             }
         } catch (Exception e) {
-            System.err.println("[Core] Error handling network message: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error handling network message", e);
         }
     }
 

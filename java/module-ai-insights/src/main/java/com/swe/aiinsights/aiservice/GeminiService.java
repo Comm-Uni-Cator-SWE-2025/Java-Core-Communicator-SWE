@@ -26,6 +26,9 @@
 
 package com.swe.aiinsights.aiservice;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.GeminiAdapter;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
@@ -43,9 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.swe.aiinsights.customexceptions.RateLimitException;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 /**
  * Gemini Service builds the request and calls the AI api.
  * Receives the AI response.
@@ -55,7 +55,7 @@ public final class GeminiService implements LlmService {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(GeminiService.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
 
     /**
@@ -112,7 +112,7 @@ public final class GeminiService implements LlmService {
                 .readTimeout(timeout * readMul, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
-        LOG.info("GeminiService initialized with timeout: {} seconds", timeout);
+        LOG.info("GeminiService initialized with timeout: " + timeout + " seconds");
 
     }
 
@@ -128,11 +128,11 @@ public final class GeminiService implements LlmService {
         final String requestBody = adapter.buildRequest(aiRequest);
 
         final int maxRetries = keyManager.getNumberOfKeys();
-//        System.out.println(maxRetries);
+//        LOG.info(maxRetries);
         int attempt = 0;
         while (attempt < maxRetries) {
-//            System.out.println("Attempt");
-//            System.out.println(attempt);
+//            LOG.info("Attempt");
+//            LOG.info(attempt);
             final String currentKey = keyManager.getCurrentKey();
             final String apiUrl = GEMINI_API_URL_TEMPLATE + currentKey;
 
@@ -145,7 +145,7 @@ public final class GeminiService implements LlmService {
             final int permissionDenied = 403;
 
             try (Response response = httpClient.newCall(request).execute()) {
-                System.out.println("trying to get response");
+                LOG.info("trying to get response");
                 if (response.isSuccessful()) {
                     final AiResponse returnResponse = aiRequest.getAiResponse();
                     final String textResponse = adapter.getResponse(response);
@@ -157,7 +157,7 @@ public final class GeminiService implements LlmService {
                     LOG.debug("Key limit hit\n");
                     keyManager.setKeyIndex(currentKey);
                     attempt++; // Increment attempt and loop again to try next key
-//                    System.out.println(attempt);
+//                    LOG.info(attempt);
                     continue;  // Skip the rest and restart loop
                 }
                 if (response.code() == permissionDenied) {
@@ -165,7 +165,7 @@ public final class GeminiService implements LlmService {
                     LOG.debug("Permission denied for the key\n");
                     keyManager.setKeyIndex(currentKey);
                     attempt++; // Increment attempt and loop again to try next key
-//                    System.out.println(attempt);
+//                    LOG.info(attempt);
                     continue;  // Skip the rest and restart loop
                 }
             }

@@ -4,11 +4,7 @@
 
 package com.swe.ScreenNVideo.Model;
 
-
-/*import com.fasterxml.jackson.annotation.JsonProperty;*/
-
 import java.nio.ByteBuffer;
-/*import java.util.Arrays;*/
 
 /**
  * Subscribe Packet.

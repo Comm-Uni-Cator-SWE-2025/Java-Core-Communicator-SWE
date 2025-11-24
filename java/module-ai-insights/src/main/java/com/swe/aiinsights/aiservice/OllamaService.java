@@ -23,6 +23,9 @@
 
 package com.swe.aiinsights.aiservice;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
 import com.swe.aiinsights.modeladapter.OllamaAdapter;
@@ -33,10 +36,6 @@ import okhttp3.Request;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import com.swe.aiinsights.response.AiResponse;
-
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +49,7 @@ public class OllamaService implements LlmService {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(OllamaService.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Loads environment variables from the .env file.
@@ -79,7 +78,7 @@ public class OllamaService implements LlmService {
                 .readTimeout(timeout, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
-        LOG.info("OllamaService initialized with timeout: {} seconds", timeout);
+        LOG.info("OllamaService initialized with timeout: " + timeout + " seconds");
     }
 
     /**
@@ -104,12 +103,12 @@ public class OllamaService implements LlmService {
                 .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
-            LOG.debug("Response code: {}", response.code());
+            LOG.debug("Response code: " + response.code());
 
             if (!response.isSuccessful()) {
                 assert response.body() != null;
                 final String errorBody = response.body().string();
-                LOG.error("Ollama API failed - Code: {}, Error: {}", response.code(), errorBody);
+                LOG.error("Ollama API failed - Code: " + response.code() + ", Error: " + errorBody);
                 throw new IOException("Unexpected code " + response
                         + " - " + response.body().string());
             }

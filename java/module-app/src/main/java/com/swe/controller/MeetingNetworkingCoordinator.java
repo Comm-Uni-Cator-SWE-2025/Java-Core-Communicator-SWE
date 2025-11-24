@@ -9,6 +9,8 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -22,7 +24,14 @@ import java.util.UUID;
  * Coordinates networking responsibilities for meeting lifecycle messages.
  */
 public final class MeetingNetworkingCoordinator {
-    private static final String TAG = "[MEETING-NETWORK]";
+    /**
+     * Logger for meeting networking coordinator.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("CONTROLLER-APP");
+
+    /**
+     * Array of packet types for quick lookup.
+     */
     private static final MeetingPacketType[] PACKET_TYPES = MeetingPacketType.values();
 
     private MeetingNetworkingCoordinator() {
@@ -35,7 +44,7 @@ public final class MeetingNetworkingCoordinator {
      */
     public static void initialize(final NetworkingInterface networking) {
         networking.subscribe(ModuleType.CONTROLLER, MeetingNetworkingCoordinator::handleIncomingPacket);
-        System.out.println(TAG + " Registered controller networking handlers");
+        LOG.info("Registered controller networking handlers");
     }
 
     /**
@@ -46,12 +55,12 @@ public final class MeetingNetworkingCoordinator {
     public static void handleMeetingCreated(final MeetingSession meeting) {
         final ControllerServices services = ControllerServices.getInstance();
         final ClientNode localNode = getLocalClientNode();
-        if (services.context.self != null) {
-            meeting.upsertParticipantNode(services.context.self.getEmail(), 
-                                         services.context.self.getDisplayName(), 
+        if (services.getContext().getSelf() != null) {
+            meeting.upsertParticipantNode(services.getContext().getSelf().getEmail(), 
+                                         services.getContext().getSelf().getDisplayName(), 
                                          localNode);
         }
-        System.out.println(TAG + " Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
+        LOG.info("Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
     }
 
     /**
@@ -65,9 +74,9 @@ public final class MeetingNetworkingCoordinator {
         final MeetingSession session = ensureMeetingSession(services, meetingId);
         final ClientNode localNode = getLocalClientNode();
 
-        if (services.context.self != null) {
-            session.upsertParticipantNode(services.context.self.getEmail(), 
-                                         services.context.self.getDisplayName(), 
+        if (services.getContext().getSelf() != null) {
+            session.upsertParticipantNode(services.getContext().getSelf().getEmail(), 
+                                         services.getContext().getSelf().getDisplayName(), 
                                          localNode);
         }
 
@@ -76,54 +85,56 @@ public final class MeetingNetworkingCoordinator {
 
     private static void handleIncomingPacket(final byte[] data) {
         if (data == null || data.length == 0) {
-            System.out.println(TAG + " Received empty packet");
+            LOG.warn("Received empty packet");
             return;
         }
 
         final byte ordinal = data[0];
         if (ordinal < 0 || ordinal >= PACKET_TYPES.length) {
-            System.out.println(TAG + " Unknown packet ordinal: " + ordinal);
+            LOG.warn("Unknown packet ordinal: " + ordinal);
             return;
         }
         final MeetingPacketType type = PACKET_TYPES[ordinal];
 
-        System.out.println(TAG + " Handling packet type: " + type);
+        LOG.debug("Handling packet type: " + type);
 
         switch (type) {
             case IAM -> handleIamPacket(data);
             case JOINACK -> handleJoinAckPacket(data);
-            default -> System.out.println(TAG + " Unhandled packet type: " + type);
+            default -> LOG.warn("Unhandled packet type: " + type);
         }
 
         final ControllerServices services = ControllerServices.getInstance();
         try {
-            services.context.rpc.call("core/updateParticipants", DataSerializer.serialize(services.context.meetingSession.getParticipants())).get();
+            services.getContext().getRpc().call("core/updateParticipants",
+                DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants())).get();
         } catch (Exception e) {
-            System.out.println("Error calling core/updateParticipants: " + e.getMessage());
+            LOG.error("Error calling core/updateParticipants", e);
         }
-        System.out.println("Total participants: " + services.context.meetingSession.getParticipants());
+        LOG.debug("Total participants: " + services.getContext().getMeetingSession().getParticipants());
     }
 
     private static void handleIamPacket(final byte[] data) {
         final ControllerServices services = ControllerServices.getInstance();
-        final MeetingSession meeting = services.context.meetingSession;
+        final MeetingSession meeting = services.getContext().getMeetingSession();
         if (meeting == null) {
-            System.out.println(TAG + " No active meeting to process IAM packet");
+            LOG.warn("No active meeting to process IAM packet");
             return;
         }
 
         final IamPacket packet = IamPacket.deserialize(data);
-        final boolean isServer = services.context.self != null && 
-                                  meeting.getCreatedBy().equals(services.context.self.getEmail());
+        final boolean isServer = services.getContext().getSelf() != null
+                                  && meeting.getCreatedBy().equals(services.getContext().getSelf().getEmail());
 
         if (isServer) {
             // Server receives IAM as a join request
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
-                System.out.println(TAG + " User already in meeting");
+                LOG.info("User already in meeting, ignoring IAM join request");
                 return;
             }
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
-            System.out.println(TAG + " Received IAM (join request) from " + packet.getEmail() + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+            LOG.info("Received IAM (join request) from " + packet.getEmail()
+                + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
 
             // Convert participants map to the two separate maps for JoinAckPacket
             final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
@@ -143,7 +154,8 @@ public final class MeetingNetworkingCoordinator {
         } else {
             // Peer receives IAM as an announcement
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
-            System.out.println(TAG + " Received IAM (announcement) from " + packet.getEmail() + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+            LOG.info("Received IAM (announcement) from " + packet.getEmail()
+                + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
         }
     }
 
@@ -162,7 +174,7 @@ public final class MeetingNetworkingCoordinator {
             meeting.upsertParticipantNode(email, displayName, entry.getKey());
         }
 
-        System.out.println(TAG + " Received JOINACK with " + nodeToEmailMap.size() + " mappings");
+        LOG.info("Received JOINACK with " + nodeToEmailMap.size() + " participant mappings");
 
         final ClientNode localNode = getLocalClientNode();
         final List<ClientNode> recipients = new ArrayList<>();
@@ -177,13 +189,13 @@ public final class MeetingNetworkingCoordinator {
 
     private static void sendIamPacket(final ClientNode serverNode, final ClientNode localNode) {
         final ControllerServices services = ControllerServices.getInstance();
-        if (services.networking == null || services.context.self == null) {
-            System.out.println(TAG + " Cannot send IAM: networking or self profile not initialized");
+        if (services.getNetworking() == null || services.getContext().getSelf() == null) {
+            LOG.warn("Cannot send IAM: networking or self profile not initialized");
             return;
         }
 
-        final IamPacket iamPacket = new IamPacket(services.context.self.getEmail(), 
-                                                  services.context.self.getDisplayName(), 
+        final IamPacket iamPacket = new IamPacket(services.getContext().getSelf().getEmail(), 
+                                                  services.getContext().getSelf().getDisplayName(), 
                                                   localNode);
         sendBytes(iamPacket.serialize(), new ClientNode[]{serverNode});
     }
@@ -193,42 +205,54 @@ public final class MeetingNetworkingCoordinator {
         if (recipients == null || recipients.isEmpty()) {
             return;
         }
-        if (services.networking == null || services.context.self == null) {
-            System.out.println(TAG + " Cannot send IAM: networking or self profile not initialized");
+        if (services.getNetworking() == null || services.getContext().getSelf() == null) {
+            LOG.warn("Cannot broadcast IAM: networking or self profile not initialized");
             return;
         }
 
         final ClientNode localNode = getLocalClientNode();
-        final IamPacket packet = new IamPacket(services.context.self.getEmail(), 
-                                              services.context.self.getDisplayName(), 
+        final IamPacket packet = new IamPacket(services.getContext().getSelf().getEmail(), 
+                                              services.getContext().getSelf().getDisplayName(), 
                                               localNode);
         sendBytes(packet.serialize(), recipients.toArray(new ClientNode[0]));
     }
 
     private static void sendBytes(final byte[] payload, final ClientNode[] destination) {
         final ControllerServices services = ControllerServices.getInstance();
-        if (destination == null || destination.length == 0 || services.networking == null) {
-            System.out.println(TAG + " Cannot send: invalid destination or networking not available");
+        if (destination == null || destination.length == 0 || services.getNetworking() == null) {
+            LOG.warn("Cannot send packet: invalid destination or networking not available");
             return;
         }
-        services.networking.sendData(payload, destination, ModuleType.CONTROLLER, 0);
+        services.getNetworking().sendData(payload, destination, ModuleType.CONTROLLER, 0);
     }
 
     private static MeetingSession ensureMeetingSession(final ControllerServices services, final String meetingId) {
-        if (services.context.meetingSession != null) {
-            return services.context.meetingSession;
+        if (services.getContext().getMeetingSession() != null) {
+            return services.getContext().getMeetingSession();
         }
 
-        final String id = meetingId != null ? meetingId : UUID.randomUUID().toString();
-        services.context.meetingSession = new MeetingSession(
+        final String id;
+        if (meetingId != null) {
+            id = meetingId;
+        } else {
+            id = UUID.randomUUID().toString();
+        }
+        final String creatorEmail;
+        if (services.getContext().getSelf() != null) {
+            creatorEmail = services.getContext().getSelf().getEmail();
+        } else {
+            creatorEmail = "";
+        }
+        final MeetingSession newSession = new MeetingSession(
                 id,
-                services.context.self != null ? services.context.self.getEmail() : "",
+                creatorEmail,
                 System.currentTimeMillis(),
                 SessionMode.CLASS,
                 null
         );
-        System.out.println(TAG + " Created placeholder MeetingSession for networking with ID " + id);
-        return services.context.meetingSession;
+        services.getContext().setMeetingSession(newSession);
+        LOG.info("Created placeholder MeetingSession for networking with ID " + id);
+        return services.getContext().getMeetingSession();
     }
 
     private static ClientNode getLocalClientNode() {
