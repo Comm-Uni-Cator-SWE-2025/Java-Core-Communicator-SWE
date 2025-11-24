@@ -1,5 +1,5 @@
 /**
- * Contributed by @Sandeep-Kumar
+ * Contributed by @Sandeep-Kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;
@@ -85,7 +85,7 @@ public final class BackgroundCaptureManager {
                         // Overwrite the volatile variable with the latest frame
 //                        System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-//                        System.out.println("Done Capturedd..");
+//                        System.out.println("Done Captured..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
                         Thread.sleep(500);
