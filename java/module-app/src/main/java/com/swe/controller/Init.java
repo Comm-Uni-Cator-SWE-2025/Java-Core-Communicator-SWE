@@ -60,7 +60,7 @@ public class Init {
         Thread rpcThread = rpc.connect(portNumber);
 
         rpcThread.join();
-         mediaCaptureManagerThread.join();
+        mediaCaptureManagerThread.join();
     }
 
     private static void addRPCSubscriptions(RPC rpc) {
@@ -79,7 +79,7 @@ public class Init {
             }
 
             controllerServices.context.self = RegisteredUser;
-            
+
             try {
                 return DataSerializer.serialize(RegisteredUser);
             } catch (JsonProcessingException e) {
@@ -89,7 +89,8 @@ public class Init {
 
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
             System.out.println("[CONTROLLER] Creating meeting");
-            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.context.self, SessionMode.CLASS);
+            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.context.self,
+                    SessionMode.CLASS);
             controllerServices.context.meetingSession = meetingSession;
 
             try {
@@ -107,7 +108,7 @@ public class Init {
                 System.out.println("Returning meeting session");
                 byte[] serializedMeetingSession = DataSerializer.serialize(meetingSession);
                 System.out.println(
-                    "Serialized meeting session: " + new String(serializedMeetingSession, StandardCharsets.UTF_8));
+                        "Serialized meeting session: " + new String(serializedMeetingSession, StandardCharsets.UTF_8));
                 return serializedMeetingSession;
             } catch (Exception e) {
                 System.out.println("Error serializing meeting session: " + e.getMessage());
@@ -153,6 +154,19 @@ public class Init {
                 return ("Error logging out: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
         });
+
+        rpc.subscribe("core/endMeeting", (byte[] data) -> {
+            System.out.println("Ending meeting");
+            try {
+                Networking.getNetwork().closeNetworking();
+                System.out.println("Meeting ended successfully");
+                // Clear the meeting session from context
+                controllerServices.context.meetingSession = null;
+                return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                System.out.println("Error ending meeting: " + e.getMessage());
+                return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
+        });
     }
 }
-

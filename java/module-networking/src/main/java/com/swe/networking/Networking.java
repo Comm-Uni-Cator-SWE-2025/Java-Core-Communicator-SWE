@@ -62,7 +62,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * Variable to store the thread to start the send packets.
      */
-    // private final Thread sendThread;
+    private final Thread sendThread;
 
     /**
      * Private constructor for Netwroking class.
@@ -72,8 +72,8 @@ public class Networking implements AbstractNetworking, AbstractController {
         priorityQueue = PriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        // sendThread = new Thread(this::start);
-        // sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
+        sendThread = new Thread(this::start);
+        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -119,8 +119,8 @@ public class Networking implements AbstractNetworking, AbstractController {
                 // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-                topology.sendPacket(chunk, newdest);
-                // priorityQueue.addPacket(chunk);
+                // topology.sendPacket(chunk, newdest);
+                priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
             }
         }
@@ -201,7 +201,12 @@ public class Networking implements AbstractNetworking, AbstractController {
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
-                topology.sendPacket(chunk, client);
+                // topology.sendPacket(chunk, client);
+                try {
+                    priorityQueue.addPacket(chunk);
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -263,6 +268,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
+        sendThread.interrupt();
     }
 
     /**

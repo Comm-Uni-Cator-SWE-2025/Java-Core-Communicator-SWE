@@ -30,7 +30,7 @@ public class PriorityQueue {
     /**
      * Time for each epoch (budget reset).
      */
-    private static final int EPOCH_MS = 10;
+    private static final int EPOCH_MS = 100;
     /**
      * Total number of packets to be sent in one epoch.
      */
@@ -362,7 +362,7 @@ public class PriorityQueue {
      */
     public synchronized byte[] nextPacket() {
         byte[] packet;
-        final int maxRetryCount = 10;
+        // final int maxRetryCount = 10;
         int retryCount = 0;
 
         while (true) {
@@ -387,10 +387,10 @@ public class PriorityQueue {
 
             retryCount++;
             // optional safety escape
-            if (retryCount > maxRetryCount) {
-                NetworkLogger.printInfo(MODULENAME, "Max number of retires has been reached, Returning null.");
-                return null;
-            }
+            // if (retryCount > maxRetryCount) {
+            //     NetworkLogger.printInfo(MODULENAME, "Max number of retires has been reached, Returning null.");
+            //     return null;
+            // }
         }
 
     }

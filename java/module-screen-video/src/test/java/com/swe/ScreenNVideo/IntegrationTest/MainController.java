@@ -5,6 +5,7 @@
 package com.swe.ScreenNVideo.IntegrationTest;
 
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.core.Context;
 import com.swe.core.RPC;
 import com.swe.networking.AbstractController;
 import com.swe.networking.AbstractNetworking;
@@ -38,8 +39,8 @@ public class MainController {
     static void main(final String[] args) throws InterruptedException {
 //        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
 //        final AbstractNetworking networking = Networking.getNetwork();
-//        final AbstractNetworking networking = new DummyNetworking();
-        final AbstractNetworking networking = new DummyNetworkingWithQueue();
+        final AbstractNetworking networking = new DummyNetworking();
+//        final AbstractNetworking networking = new DummyNetworkingWithQueue();
 
         // Get IP address as string
         final String ipAddress = getSelfIP();
@@ -48,17 +49,22 @@ public class MainController {
 
         final RPC rpc = new RPC();
 
+        // Replace Context.getInstance().rpc with the rpc instance
+        // Note: Mockito's static mocking doesn't work with Java 24 due to Byte Buddy compatibility,
+        // so we set the public field directly
+        Context.getInstance().rpc = rpc;
+
         final MediaCaptureManager screenNVideo =
             new MediaCaptureManager(networking, SERVERPORT);
         System.out.println("Connection RPC..");
 
 
         Thread handler = null;
-        try {
-            handler = rpc.connect(6942);
-        } catch (IOException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            handler = rpc.connect(6942);
+//        } catch (IOException | ExecutionException e) {
+//            throw new RuntimeException(e);
+//        }
 
 //        SimpleNetworking.getSimpleNetwork().addUser(deviceNode, serverNode);
 

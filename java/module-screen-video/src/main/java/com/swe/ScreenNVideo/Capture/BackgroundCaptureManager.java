@@ -1,10 +1,11 @@
 /**
- * Contributed by @Sandeep-Kumar
+ * Contributed by @Sandeep-Kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;
 
 import com.swe.ScreenNVideo.CaptureComponents;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 import com.swe.ScreenNVideo.Utils;
 
 import java.awt.AWTException;
@@ -72,6 +73,7 @@ public final class BackgroundCaptureManager {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 if (!capCom.isScreenCaptureOn() && !capCom.isVideoCaptureOn()) {
+                    Telemetry.getTelemetry().closeModel();
                     videoCapture.stop();
                     screenCapture.stop();
                     Thread.sleep(Utils.SEC_IN_MS);
@@ -83,7 +85,7 @@ public final class BackgroundCaptureManager {
                         // Overwrite the volatile variable with the latest frame
 //                        System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-//                        System.out.println("Done Capturedd..");
+//                        System.out.println("Done Captured..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
                         Thread.sleep(500);
@@ -91,6 +93,8 @@ public final class BackgroundCaptureManager {
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }
                 } else {
+                    // close the model if available
+                    Telemetry.getTelemetry().closeModel();
                     screenCapture.stop();
                     capCom.setLatestScreenFrame(null);
                 }
@@ -104,6 +108,8 @@ public final class BackgroundCaptureManager {
                         capCom.setLatestVideoFrame(null); // Clear frame on error
                     }
                 } else {
+                    // close the model if available
+                    Telemetry.getTelemetry().closeModel();  
                     videoCapture.stop();
                     capCom.setLatestVideoFrame(null);
                 }

@@ -85,7 +85,6 @@ public class UserAnalytics {
             System.out.println("Name: " + user.getDisplayName());
             System.out.println("Email: " + user.getEmail());
             System.out.println("Role: " + user.getRole());
-            System.out.println("Logo: " + user.getLogoUrl());
         }
     }
 

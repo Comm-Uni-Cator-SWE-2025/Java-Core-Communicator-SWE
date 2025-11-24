@@ -6,7 +6,6 @@ package com.swe.ScreenNVideo;
 
 
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
-import com.swe.ScreenNVideo.Codec.ADPCMDecoder;
 import com.swe.ScreenNVideo.Model.APackets;
 import com.swe.ScreenNVideo.Model.CPackets;
 import com.swe.ScreenNVideo.Model.Feed;
@@ -19,9 +18,9 @@ import com.swe.ScreenNVideo.Playback.AudioPlayer;
 import com.swe.ScreenNVideo.Synchronizer.AudioSynchronizer;
 import com.swe.ScreenNVideo.Synchronizer.FeedData;
 import com.swe.ScreenNVideo.Synchronizer.ImageSynchronizer;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 import com.swe.core.ClientNode;
 import com.swe.core.Context;
-import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.AbstractNetworking;
 import com.swe.networking.MessageListener;
@@ -31,7 +30,6 @@ import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -98,7 +96,8 @@ public class MediaCaptureManager implements CaptureManager {
         this.rpc = context.rpc;
         this.port = portArgs;
         this.networking = argNetworking;
-        final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port, (k,v) -> updateImage(k,v));
+        final CaptureComponents captureComponents =
+            new CaptureComponents(networking, rpc, port, (k, v) -> updateImage(k, v));
         audioPlayer = new AudioPlayer(Utils.DEFAULT_SAMPLE_RATE, Utils.DEFAULT_CHANNELS, Utils.DEFAULT_SAMPLE_SIZE);
 
         try {
@@ -120,7 +119,7 @@ public class MediaCaptureManager implements CaptureManager {
         this.localIp = Utils.getSelfIP();
         System.out.println(this.localIp);
 
-//        addParticipant(localIp, false);
+        addParticipant("10.128.5.156", false);
 
         clientHandler = new MediaCaptureManager.ClientHandler();
 
@@ -171,6 +170,7 @@ public class MediaCaptureManager implements CaptureManager {
 
     /**
      * Server-side of the ScreenNVideo.
+     *
      * @param sendFPS Send FPS. Max rate at which data is sent to the viewers.
      */
     @Override
@@ -179,15 +179,14 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Starting capture");
         int[][] feed = null;
         double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
-        long prevSendAt= 0;
+        long prevSendAt = 0;
         while (true) {
             long diff = System.currentTimeMillis() - prevSendAt;
             // get audio Feed
             final byte[] encodedAudio = videoComponent.captureAudio();
-            if (encodedAudio == null) {
-                continue;
+            if (encodedAudio != null) {
+                networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
             }
-            networking.broadcast(encodedAudio, ModuleType.SCREENSHARING.ordinal(), 2);
 
             if (diff < timePerFrame) {
                 continue;
@@ -210,7 +209,9 @@ public class MediaCaptureManager implements CaptureManager {
                 // send unCompressedFeed
 //                System.out.println("Sending to uncompress");
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
-                System.out.println("Sent Data at " + (int) ((double) (Utils.SEC_IN_MS) / (diff )) + " FPS");
+                final double sendingFPS = ((double) (Utils.SEC_IN_MS) / (diff));
+                System.out.println("Sent Data at " + sendingFPS + " FPS");
+                Telemetry.getTelemetry().addFps(sendingFPS);
             }
 
         }
@@ -219,6 +220,7 @@ public class MediaCaptureManager implements CaptureManager {
     /**
      * Applies filter and send data to those viewers.
      * Send to viewer at send FPS for data bandwidth.
+     *
      * @param feed         the data to send
      * @param viewerFilter predicate to filter which viewers should receive the data
      */
@@ -239,7 +241,7 @@ public class MediaCaptureManager implements CaptureManager {
         System.out.println("Size : " + feed.length / Utils.KB + " KB");
         networking.sendData(feed, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
 
-        System.out.println("Sent to viewers " + clientNodes.length );
+        System.out.println("Sent to viewers " + clientNodes.length);
         for (ClientNode c : clientNodes) {
             System.out.println(c.hostName());
         }

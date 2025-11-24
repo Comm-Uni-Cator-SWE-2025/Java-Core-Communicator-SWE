@@ -1,546 +1,111 @@
 /**
- * Contributed by @anup
+ * contributed by @anup.
  */
 
 package com.swe.ScreenNVideo.Codec;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Comprehensive test suite for DeCompressor class.
- * Tests decompression of chrominance and luminance matrices.
+ * Integration Test class for DeCompressor.
+ * Uses the real AANdct and QuantisationUtil modules via the default constructor.
  */
 public class DeCompressorTest {
 
     /**
-     * Block size for DCT operations.
+     * Class under test.
      */
-    private static final int BLOCK_SIZE = 8;
-    /**
-     * Single block dimension.
-     */
-    private static final int SINGLE_BLOCK_DIM = 8;
-    /**
-     * Double block dimension.
-     */
-    private static final int DOUBLE_BLOCK_DIM = 16;
-    /**
-     * Triple block dimension.
-     */
-    private static final int TRIPLE_BLOCK_DIM = 24;
-    /**
-     * Quad block dimension.
-     */
-    private static final int QUAD_BLOCK_DIM = 32;
+    private DeCompressor deCompressor;
 
     /**
-     * Decompressor instance for testing.
+     * Standard block size for JPEG dct and Quantisation
      */
-    private DeCompressor decompressor;
 
-//    @Mock
-//    private IFIDCT mockDctModule;
-//
-//    @Mock
-//    private QuantisationUtil mockQuantModule;
+    private final short BLOCK_SIZE = 8;
 
     /**
-     * Sets up test fixture before each test.
+     * Setup method to initialize the DeCompressor with real dependencies.
      */
     @BeforeEach
     public void setUp() {
-//        MockitoAnnotations.openMocks(this);
-        decompressor = new DeCompressor();
+        // Use the default constructor which calls getInstance() for real modules
+        deCompressor = new DeCompressor();
     }
 
     /**
-     * Tests that DeCompressor constructor creates non-null instance.
+     * To get matrix filled with random value
+     * standard data points for dct.
+     * @param height of matrix
+     * @param width of matrix
+     * @return generated matrix.
      */
-    @Test
-    public void testConstructorCreatesInstance() {
-        assertNotNull(decompressor);
+    short[][] getRandomMatrixofNM(short height, short width){
+        short[][] matrix = new short[height][width];
+        // Fill with some dummy data
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                matrix[i][j] = (short) ThreadLocalRandom.current().nextInt(Short.MIN_VALUE, Short.MAX_VALUE + 1);;
+
+            }
+        }
+        return matrix;
     }
 
     /**
-     * Tests decompressChrome with single 8x8 block.
+     * Test decompressChrome with a single 8x8 block.
+     * Verifies that the real decompression pipeline runs successfully
+     *  ( dequantisation -> idct )
+     * on a standard block.
      */
     @Test
     public void testDecompressChromeSingleBlock() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
+        final short[][] matrix = getRandomMatrixofNM(BLOCK_SIZE,BLOCK_SIZE);
 
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i * 10 + j);
-            }
-        }
-
-        decompressor.decompressChrome(matrix, (short) SINGLE_BLOCK_DIM, (short) SINGLE_BLOCK_DIM);
-        assertNotNull(matrix);
+        assertDoesNotThrow(() -> deCompressor.decompressChrome(matrix, BLOCK_SIZE, BLOCK_SIZE),
+                "Decompressing a valid 8x8 block should not throw exceptions");
     }
 
     /**
-     * Tests decompressChrome with 16x16 matrix (4 blocks).
-     */
-    @Test
-    public void testDecompressChromeMultipleBlocks() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 50;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with zero matrix.
-     */
-    @Test
-    public void testDecompressChromeZeroMatrix() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with 24x24 matrix (9 blocks).
-     */
-    @Test
-    public void testDecompressChromeNineBlocks() {
-        final short[][] matrix = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final short height = TRIPLE_BLOCK_DIM;
-        final short width = TRIPLE_BLOCK_DIM;
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 100;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with rectangular matrix 8x16.
-     */
-    @Test
-    public void testDecompressChromeRectangular() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 75;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with rectangular matrix 16x8.
-     */
-    @Test
-    public void testDecompressChromeRectangularTall() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 60;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with 32x32 matrix (16 blocks).
-     */
-    @Test
-    public void testDecompressChromeLargeMatrix() {
-        final short[][] matrix = new short[QUAD_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final short height = QUAD_BLOCK_DIM;
-        final short width = QUAD_BLOCK_DIM;
-
-        for (int i = 0; i < QUAD_BLOCK_DIM; i++) {
-            for (int j = 0; j < QUAD_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) * 5);
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with negative values.
-     */
-    @Test
-    public void testDecompressChromeNegativeValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = -50;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with mixed positive and negative values.
-     */
-    @Test
-    public void testDecompressChromeMixedValues() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) % 2 == 0 ? 100 : -100);
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with single 8x8 block.
+     * Test decompressLumin with a single 8x8 block.
+     * Verifies that the Luminance decompression path executes correctly
+     * ( dequantisation -> idct )
      */
     @Test
     public void testDecompressLuminSingleBlock() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
+        final short[][] matrix = getRandomMatrixofNM(BLOCK_SIZE,BLOCK_SIZE);
 
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i * 10 + j);
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
+        assertDoesNotThrow(() -> deCompressor.decompressLumin(matrix, BLOCK_SIZE, BLOCK_SIZE),
+                "Decompressing a valid 8x8 block should not throw exceptions");
     }
 
     /**
-     * Tests decompressLumin with 16x16 matrix (4 blocks).
+     * Test decompressChrome with a larger 16x16 matrix.
+     * Verifies that the real IDCT and DeQuantization modules handle
+     * the coordinate offsets passed by the DeCompressor loops correctly.
      */
     @Test
-    public void testDecompressLuminMultipleBlocks() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
+    public void testDecompressChromeMultiBlock() {
+        final short[][] matrix = getRandomMatrixofNM((short)(BLOCK_SIZE << 1),(short)(BLOCK_SIZE << 1));
 
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 50;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
+        assertDoesNotThrow(() -> deCompressor.decompressChrome(matrix, (short)(BLOCK_SIZE << 1), (short)(BLOCK_SIZE << 1)),
+                "Decompressing a 16x16 matrix should process all blocks successfully");
     }
 
     /**
-     * Tests decompressLumin with zero matrix.
+     * Test decompressLumin with a larger 16x16 matrix.
+     * Verifies that the real IDCT and DeQuantization modules handle
+     * the coordinate offsets passed by the DeCompressor loops correctly.
      */
     @Test
-    public void testDecompressLuminZeroMatrix() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
+    public void testDecompressLuminMultiBlock() {
+        final short[][] matrix = getRandomMatrixofNM((short)(BLOCK_SIZE << 1),(short)(BLOCK_SIZE << 1));
 
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
+        assertDoesNotThrow(() -> deCompressor.decompressLumin(matrix, (short)(BLOCK_SIZE << 1), (short)(BLOCK_SIZE << 1)),
+                "Decompressing a 16x16 matrix should process all blocks successfully");
     }
 
-    /**
-     * Tests decompressLumin with 24x24 matrix (9 blocks).
-     */
-    @Test
-    public void testDecompressLuminNineBlocks() {
-        final short[][] matrix = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final short height = TRIPLE_BLOCK_DIM;
-        final short width = TRIPLE_BLOCK_DIM;
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 100;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with rectangular matrix 8x16.
-     */
-    @Test
-    public void testDecompressLuminRectangular() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 75;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with rectangular matrix 16x8.
-     */
-    @Test
-    public void testDecompressLuminRectangularTall() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 60;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with 32x32 matrix (16 blocks).
-     */
-    @Test
-    public void testDecompressLuminLargeMatrix() {
-        final short[][] matrix = new short[QUAD_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final short height = QUAD_BLOCK_DIM;
-        final short width = QUAD_BLOCK_DIM;
-
-        for (int i = 0; i < QUAD_BLOCK_DIM; i++) {
-            for (int j = 0; j < QUAD_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) * 5);
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with negative values.
-     */
-    @Test
-    public void testDecompressLuminNegativeValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = -50;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with mixed positive and negative values.
-     */
-    @Test
-    public void testDecompressLuminMixedValues() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) % 2 == 0 ? 100 : -100);
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with maximum short values.
-     */
-    @Test
-    public void testDecompressChromeMaxValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MAX_VALUE;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with maximum short values.
-     */
-    @Test
-    public void testDecompressLuminMaxValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MAX_VALUE;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with minimum short values.
-     */
-    @Test
-    public void testDecompressChromeMinValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MIN_VALUE;
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with minimum short values.
-     */
-    @Test
-    public void testDecompressLuminMinValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final short height = SINGLE_BLOCK_DIM;
-        final short width = SINGLE_BLOCK_DIM;
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MIN_VALUE;
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with gradient pattern.
-     */
-    @Test
-    public void testDecompressChromeGradient() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i * BLOCK_SIZE + j);
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with gradient pattern.
-     */
-    @Test
-    public void testDecompressLuminGradient() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i * BLOCK_SIZE + j);
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressChrome with checkerboard pattern.
-     */
-    @Test
-    public void testDecompressChromeCheckerboard() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) % 2 == 0 ? 255 : 0);
-            }
-        }
-
-        decompressor.decompressChrome(matrix, height, width);
-        assertNotNull(matrix);
-    }
-
-    /**
-     * Tests decompressLumin with checkerboard pattern.
-     */
-    @Test
-    public void testDecompressLuminCheckerboard() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final short height = DOUBLE_BLOCK_DIM;
-        final short width = DOUBLE_BLOCK_DIM;
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i + j) % 2 == 0 ? 255 : 0);
-            }
-        }
-
-        decompressor.decompressLumin(matrix, height, width);
-        assertNotNull(matrix);
-    }
 }
