@@ -220,7 +220,7 @@ public class Dynamo {
 
     private void sendData(byte[] data, Node[] destNodes, int module, int priority) {
 
-        shuffleNodes(destNodes);
+        // shuffleNodes(destNodes);
 
         System.out.println("Sending data to " + Arrays.toString(destNodes));
 
