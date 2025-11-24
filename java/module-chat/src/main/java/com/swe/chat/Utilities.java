@@ -3,8 +3,16 @@ package com.swe.chat;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
-import java.io.*;
-import java.util.zip.*;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
+
 
 public class Utilities {
 

@@ -37,6 +37,8 @@ import java.util.logging.Level;
 // CHECKSTYLE:OFF: ClassDataAbstractionCoupling
 // CHECKSTYLE:OFF: ClassFanOutComplexity
 public class Init {
+        static ChatManager chatmanager;
+
     /**
      * Default RPC port number.
      */
@@ -101,7 +103,7 @@ public class Init {
         controllerServices.setNetworking(networking);
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork(), chatLogger);
+        chatmanager = new ChatManager(Networking.getNetwork(), chatLogger);
         controllerServices.setCanvasManager(new CanvasManager(Networking.getNetwork(), canvasLogger));
 
         final MediaCaptureManager mediaCaptureManager =
@@ -254,9 +256,8 @@ public class Init {
         rpc.subscribe("core/AiSentiment", (byte[] data) -> {
             try {
                 LOG.info("Performing Sentiment Analysis");
-                final List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                final String cache = ChatManager.generateChatHistoryJson(messages);
-
+                final List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                final String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode cachNode = mapper.readTree(cache);
                 LOG.debug("Chat History JSON for Sentiment: " + cachNode);
@@ -274,8 +275,8 @@ public class Init {
         rpc.subscribe("core/AiAction", (byte[] data) -> {
             try {
                 LOG.info("Generating Action Items");
-                final List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                final String cache = ChatManager.generateChatHistoryJson(messages);
+                final List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                final String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
 
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode cachNode = mapper.readTree(cache);
