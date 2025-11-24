@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.PatchGenerator;
@@ -45,7 +45,8 @@ public record CompressedPatch(int x, int y, int width, int height, byte[] data) 
      */
     public static CompressedPatch deserializeCPacket(final byte[] packet) {
         final ByteBuffer buffer = ByteBuffer.wrap(packet);
-        return deserializeCPacket(buffer, packet.length);
+        final int patchLength = buffer.getInt();
+        return deserializeCPacket(buffer, patchLength);
     }
 
     /**

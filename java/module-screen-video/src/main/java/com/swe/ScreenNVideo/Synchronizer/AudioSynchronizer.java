@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo.Synchronizer;
@@ -32,27 +32,28 @@ public class AudioSynchronizer {
 
     /**
      * Create a new audio synchronizer.
-     *
+     * @param audioPlayerArg the audio player used to output decoded PCM audio
      */
-    public AudioSynchronizer(AudioPlayer audioPlayerArg) {
+    public AudioSynchronizer(final AudioPlayer audioPlayerArg) {
         this.decoder = new ADPCMDecoder();
         this.audioPlayer = audioPlayerArg;
     }
 
     /**
-     * .
-     *
+     * Synchronize APackets.
+     * @param apacket the incoming ADPCM packet containing audio data and decoder state
+     * @return true if the packet was processed and played successfully
      */
     public boolean synchronize(final APackets apacket) {
 
         // setting the decoder state before decoding
-        int predictedPCM = apacket.predictedPCM();
-        int indexPCM = apacket.indexPCM();
+        final int predictedPCM = apacket.predictedPCM();
+        final int indexPCM = apacket.indexPCM();
         decoder.setState(predictedPCM, indexPCM);
 
         // playing the decoded audio sample
         this.audioPlayer.play(decoder.decode(apacket.data()));
 
-    return true;
+        return true;
     }
 }

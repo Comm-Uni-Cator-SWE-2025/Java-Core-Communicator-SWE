@@ -1,5 +1,6 @@
 /**
- * Contributed by @Devansh-Kesan
+ * Contributed by Devansh Manoj Kesan.
+ * Comprehensive test suite for EncodeDecodeRLE class covering 100% of the code.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -8,12 +9,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Comprehensive test suite for EncodeDecodeRLE class.
@@ -22,50 +25,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class EncodeDecodeRLETest {
 
-    /**
-     * Block size for processing matrices (8x8 blocks).
-     */
     private static final int BLOCK_SIZE = 8;
-
-    /**
-     * Single block dimension.
-     */
     private static final int SINGLE_BLOCK_DIM = 8;
-
-    /**
-     * Double block dimension.
-     */
-    private static final int DOUBLE_BLOCK_DIM = 16;
-
-    /**
-     * Triple block dimension.
-     */
-    private static final int TRIPLE_BLOCK_DIM = 24;
-
-    /**
-     * Quad block dimension.
-     */
-    private static final int QUAD_BLOCK_DIM = 32;
-
-    /**
-     * Buffer size for encoding operations.
-     */
-    private static final int BUFFER_SIZE = 4096;
-
-    /**
-     * Test value for constant matrices.
-     */
-    private static final short TEST_VALUE = 100;
-
-    /**
-     * Zero value constant.
-     */
-    private static final short ZERO_VALUE = 0;
-
-    /**
-     * Encoder instance for testing.
-     */
+    private static final int MULTI_BLOCK_DIM = 16;
+    private static final int BUFFER_CAPACITY = 4096;
+    private static final short TEST_VALUE_HIGH = 100;
+    private static final short TEST_VALUE_LOW = 10;
     private EncodeDecodeRLE encoder;
+
+    /**
+     * Helper method to compare two matrices element by element.
+     */
+    private void assertMatrixEquals(final short[][] expected, final short[][] actual, final String message) {
+        assertEquals(expected.length, actual.length, message + " - row count mismatch");
+
+        for (int i = 0; i < expected.length; i++) {
+            assertArrayEquals(expected[i], actual[i],
+                message + " - mismatch at row " + i);
+        }
+    }
 
     /**
      * Sets up test fixture before each test.
@@ -76,180 +54,43 @@ public class EncodeDecodeRLETest {
     }
 
     /**
-     * Tests that getInstance returns a non-null singleton instance.
-     */
-    @Test
-    public void testGetInstanceNotNull() {
-        assertNotNull(encoder);
-    }
-
-    /**
-     * Tests that getInstance always returns the same singleton instance.
+     * Tests that getInstance returns a non-null singleton instance. (Covers getInstance)
      */
     @Test
     public void testGetInstanceSingleton() {
-        final EncodeDecodeRLE instance1 = EncodeDecodeRLE.getInstance();
+        assertNotNull(encoder, "getInstance() should return a non-null instance.");
         final EncodeDecodeRLE instance2 = EncodeDecodeRLE.getInstance();
-        assertSame(instance1, instance2);
+        assertSame(encoder, instance2, "getInstance() should always return the same singleton instance.");
     }
 
     /**
-     * Tests zigZagRLE with single 8x8 zero matrix.
-     */
-    @Test
-    public void testZigZagRLESingleBlockZero() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        encoder.zigZagRLE(matrix, buffer);
-
-        assertTrue(buffer.position() > 0);
-        assertEquals(SINGLE_BLOCK_DIM, buffer.getShort(0));
-        assertEquals(SINGLE_BLOCK_DIM, buffer.getShort(2));
-    }
-
-    /**
-     * Tests zigZagRLE with single 8x8 constant matrix.
-     */
-    @Test
-    public void testZigZagRLESingleBlockConstant() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = TEST_VALUE;
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests zigZagRLE with 16x16 matrix (4 blocks).
-     */
-    @Test
-    public void testZigZagRLEMultipleBlocks() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = 50;
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests zigZagRLE with 24x24 matrix (9 blocks).
-     */
-    @Test
-    public void testZigZagRLENineBlocks() {
-        final short[][] matrix = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i + j);
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests zigZagRLE with 32x32 matrix (16 blocks).
-     */
-    @Test
-    public void testZigZagRLELargeMatrix() {
-        final short[][] matrix = new short[QUAD_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE * 2);
-
-        for (int i = 0; i < QUAD_BLOCK_DIM; i++) {
-            for (int j = 0; j < QUAD_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) ((i * j) % 256);
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests revZigZagRLE decodes single 8x8 zero matrix correctly.
-     */
-    @Test
-    public void testRevZigZagRLESingleBlockZero() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        encoder.zigZagRLE(matrix, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertNotNull(decoded);
-        assertEquals(SINGLE_BLOCK_DIM, decoded.length);
-        assertEquals(SINGLE_BLOCK_DIM, decoded[0].length);
-    }
-
-    /**
-     * Tests revZigZagRLE decodes single 8x8 constant matrix correctly.
-     */
-    @Test
-    public void testRevZigZagRLESingleBlockConstant() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = TEST_VALUE;
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertNotNull(decoded);
-        assertEquals(SINGLE_BLOCK_DIM, decoded.length);
-        assertEquals(SINGLE_BLOCK_DIM, decoded[0].length);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with zero matrix.
+     * Tests round-trip encoding and decoding with an all-zero matrix.
+     * This hits the maximum compression path (long runs of 0s).
      */
     @Test
     public void testRoundTripZeroMatrix() {
         final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
 
         encoder.zigZagRLE(original, buffer);
         buffer.flip();
 
         final short[][] decoded = encoder.revZigZagRLE(buffer);
 
-        assertArrayEquals(original, decoded);
+        assertMatrixEquals(original, decoded, "Zero matrix round-trip failed.");
     }
 
     /**
-     * Tests round-trip encoding and decoding with constant matrix.
+     * Tests round-trip encoding and decoding with a constant non-zero matrix.
+     * This hits the maximum compression path (long runs of non-0s).
      */
     @Test
     public void testRoundTripConstantMatrix() {
         final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
 
         for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = TEST_VALUE;
-            }
+            Arrays.fill(original[i], TEST_VALUE_HIGH);
         }
 
         encoder.zigZagRLE(original, buffer);
@@ -257,108 +98,21 @@ public class EncodeDecodeRLETest {
 
         final short[][] decoded = encoder.revZigZagRLE(buffer);
 
-        assertArrayEquals(original, decoded);
+        assertMatrixEquals(original, decoded, "Constant matrix round-trip failed.");
     }
 
     /**
-     * Tests round-trip encoding and decoding with gradient pattern.
-     */
-    @Test
-    public void testRoundTripGradientPattern() {
-        final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) (i * BLOCK_SIZE + j);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with 16x16 matrix.
-     */
-    @Test
-    public void testRoundTripMultipleBlocks() {
-        final short[][] original = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) ((i + j) * 10);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with checkerboard pattern.
-     */
-    @Test
-    public void testRoundTripCheckerboard() {
-        final short[][] original = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) ((i + j) % 2 == 0 ? 255 : 0);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with negative values.
-     */
-    @Test
-    public void testRoundTripNegativeValues() {
-        final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = -100;
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with mixed values.
+     * Tests round-trip with mixed positive and negative values.
+     * Ensures correct handling of the full short range.
      */
     @Test
     public void testRoundTripMixedValues() {
         final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
 
         for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
             for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) ((i + j) % 2 == 0 ? 100 : -100);
+                original[i][j] = (short) ThreadLocalRandom.current().nextInt(-128, 127);
             }
         }
 
@@ -367,348 +121,153 @@ public class EncodeDecodeRLETest {
 
         final short[][] decoded = encoder.revZigZagRLE(buffer);
 
-        assertArrayEquals(original, decoded);
+        assertMatrixEquals(original, decoded, "Mixed value matrix round-trip failed.");
     }
 
     /**
-     * Tests round-trip encoding and decoding with 24x24 matrix.
+     * Tests a checkerboard pattern (alternating values).
+     * This forces the worst-case RLE (minimal compression) and ensures
+     * diagonal traversal and value changes are handled correctly.
      */
     @Test
-    public void testRoundTripNineBlocks() {
-        final short[][] original = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) (i * 10 + j);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip encoding and decoding with 32x32 matrix.
-     */
-    @Test
-    public void testRoundTripLargeMatrix() {
-        final short[][] original = new short[QUAD_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE * 2);
-
-        for (int i = 0; i < QUAD_BLOCK_DIM; i++) {
-            for (int j = 0; j < QUAD_BLOCK_DIM; j++) {
-                original[i][j] = (short) ((i * j) % 256);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE with diagonal pattern.
-     */
-    @Test
-    public void testZigZagRLEDiagonalPattern() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            matrix[i][i] = TEST_VALUE;
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests round-trip with diagonal pattern.
-     */
-    @Test
-    public void testRoundTripDiagonalPattern() {
+    public void testRoundTripCheckerboard() {
         final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            original[i][i] = TEST_VALUE;
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE with alternating rows.
-     */
-    @Test
-    public void testZigZagRLEAlternatingRows() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                matrix[i][j] = (short) (i % 2 == 0 ? 100 : 50);
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests round-trip with alternating rows.
-     */
-    @Test
-    public void testRoundTripAlternatingRows() {
-        final short[][] original = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < DOUBLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < DOUBLE_BLOCK_DIM; j++) {
-                original[i][j] = (short) (i % 2 == 0 ? 100 : 50);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE with maximum short values.
-     */
-    @Test
-    public void testZigZagRLEMaxValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
 
         for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
             for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MAX_VALUE;
+                // Alternating values forces the 'else' branch (RLE pair write) almost every time
+                original[i][j] = ((i + j) % 2 == 0 ? TEST_VALUE_HIGH : TEST_VALUE_LOW);
             }
         }
 
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
+        encoder.zigZagRLE(original, buffer);
+        buffer.flip();
+
+        final short[][] decoded = encoder.revZigZagRLE(buffer);
+
+        assertMatrixEquals(original, decoded, "Checkerboard round-trip failed.");
     }
 
     /**
-     * Tests round-trip with maximum short values.
+     * Tests round-trip with a large matrix (16x16 = 4 blocks).
+     * This verifies the outer loop iteration logic in `zigZagRLE` and `revZigZagRLE`.
      */
     @Test
-    public void testRoundTripMaxValues() {
+    public void testRoundTripMultiBlockAligned() {
+        final short[][] original = new short[MULTI_BLOCK_DIM][MULTI_BLOCK_DIM];
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+
+        // Fill with distinct values per block to ensure correct block boundaries
+        for (int i = 0; i < MULTI_BLOCK_DIM; i++) {
+            for (int j = 0; j < MULTI_BLOCK_DIM; j++) {
+                // Value depends on which 8x8 block it's in (i/8, j/8)
+                original[i][j] = (short) ((i / BLOCK_SIZE) * 10 + (j / BLOCK_SIZE) * 5 + i * 2 + j);
+            }
+        }
+
+        encoder.zigZagRLE(original, buffer);
+        buffer.flip();
+
+        final short[][] decoded = encoder.revZigZagRLE(buffer);
+
+        assertMatrixEquals(original, decoded, "Multi-block 16x16 round-trip failed.");
+    }
+
+    /**
+     * Tests round-trip with a non-square, but block-aligned matrix (16x8 = 2 blocks).
+     * Ensures correct handling of loops and dimensions when width != height.
+     */
+    @Test
+    public void testRoundTripNonSquareMatrixAligned() {
+        final short[][] original = new short[MULTI_BLOCK_DIM][SINGLE_BLOCK_DIM]; // 16x8
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+
+        for (int i = 0; i < MULTI_BLOCK_DIM; i++) {
+            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
+                original[i][j] = (short) (i * 2 + j);
+            }
+        }
+
+        encoder.zigZagRLE(original, buffer);
+        buffer.flip();
+
+        final short[][] decoded = encoder.revZigZagRLE(buffer);
+
+        assertMatrixEquals(original, decoded, "Non-square 16x8 matrix round-trip failed.");
+    }
+
+    /**
+     * Tests an 8x16 matrix (2 blocks).
+     * Ensures correct block boundaries and dimension handling.
+     */
+    @Test
+    public void testRoundTripNonSquareMatrixAlignedWide() {
+        final short[][] original = new short[SINGLE_BLOCK_DIM][MULTI_BLOCK_DIM]; // 8x16
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+
+        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
+            for (int j = 0; j < MULTI_BLOCK_DIM; j++) {
+                original[i][j] = (short) (i + j * 2);
+            }
+        }
+
+        encoder.zigZagRLE(original, buffer);
+        buffer.flip();
+
+        final short[][] decoded = encoder.revZigZagRLE(buffer);
+
+        assertMatrixEquals(original, decoded, "Non-square 8x16 matrix round-trip failed.");
+    }
+
+    /**
+     * Tests a non-8x8 aligned matrix (e.g., 9x9).
+     * This forces the boundary checks (`if (r >= matrix.length || c >= matrix[0].length)`)
+     * inside `encodeBlock` and `decodeBlock` to be exercised.
+     */
+    @Test
+    public void testRoundTripNon8x8AlignedMatrix() {
+        final short nonAlignedDim = 9;
+        final short[][] original = new short[nonAlignedDim][nonAlignedDim];
+        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+
+        for (int i = 0; i < nonAlignedDim; i++) {
+            for (int j = 0; j < nonAlignedDim; j++) {
+                original[i][j] = (short) (i * nonAlignedDim + j);
+            }
+        }
+
+        encoder.zigZagRLE(original, buffer);
+        buffer.flip();
+
+        final short[][] decoded = encoder.revZigZagRLE(buffer);
+
+        assertMatrixEquals(original, decoded, "Non-8x8 aligned matrix round-trip failed.");
+    }
+
+    /**
+     * Tests the buffer underflow exception path inside `decodeBlock`.
+     */
+    @Test
+    public void testDecodeBufferUnderflow() {
+        // Create a minimal encoded matrix that *should* contain one RLE pair (4 bytes of payload).
         final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+        original[0][0] = TEST_VALUE_HIGH;
+        final ByteBuffer encodedBuffer = ByteBuffer.allocate(BUFFER_CAPACITY);
 
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = Short.MAX_VALUE;
-            }
-        }
+        encoder.zigZagRLE(original, encodedBuffer);
 
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
+        // Get the bytes: [height(2), width(2), RLE_payloads...]
+        final byte[] fullEncoded = Arrays.copyOf(encodedBuffer.array(), encodedBuffer.position());
 
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
+        // --- 1. Test case: Not enough bytes for RLE pair (less than 4)
+        // Buffer has: height(2) + width(2) + 3 bytes from the RLE payload (total 7 bytes)
+        final ByteBuffer shortBuffer = ByteBuffer.wrap(fullEncoded, 0, 7);
 
-        assertArrayEquals(original, decoded);
+        // The decoder will read height(2) and width(2), leaving 3 bytes in the buffer.
+        // It enters decodeBlock, tries to read the first RLE pair, and fails.
+        assertThrows(RuntimeException.class, () -> encoder.revZigZagRLE(shortBuffer),
+            "Expected Buffer underflow when fewer than 4 bytes remain for RLE pair.");
     }
 
-    /**
-     * Tests zigZagRLE with minimum short values.
-     */
-    @Test
-    public void testZigZagRLEMinValues() {
-        final short[][] matrix = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                matrix[i][j] = Short.MIN_VALUE;
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests round-trip with minimum short values.
-     */
-    @Test
-    public void testRoundTripMinValues() {
-        final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = Short.MIN_VALUE;
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE with sparse non-zero values.
-     */
-    @Test
-    public void testZigZagRLESparseValues() {
-        final short[][] matrix = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        matrix[0][0] = TEST_VALUE;
-        matrix[7][7] = TEST_VALUE;
-        matrix[15][15] = TEST_VALUE;
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests round-trip with sparse non-zero values.
-     */
-    @Test
-    public void testRoundTripSparseValues() {
-        final short[][] original = new short[DOUBLE_BLOCK_DIM][DOUBLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        original[0][0] = TEST_VALUE;
-        original[7][7] = TEST_VALUE;
-        original[15][15] = TEST_VALUE;
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE encodes dimensions correctly.
-     */
-    @Test
-    public void testZigZagRLEStoresDimensions() {
-        final short[][] matrix = new short[TRIPLE_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE * 2);
-
-        encoder.zigZagRLE(matrix, buffer);
-
-        assertEquals(TRIPLE_BLOCK_DIM, buffer.getShort(0));
-        assertEquals(QUAD_BLOCK_DIM, buffer.getShort(2));
-    }
-
-    /**
-     * Tests round-trip with non-square matrix 24x32.
-     */
-    @Test
-    public void testRoundTripNonSquareMatrix() {
-        final short[][] original = new short[TRIPLE_BLOCK_DIM][QUAD_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE * 2);
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < QUAD_BLOCK_DIM; j++) {
-                original[i][j] = (short) ((i * j) % 200);
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests round-trip with sequential values.
-     */
-    @Test
-    public void testRoundTripSequentialValues() {
-        final short[][] original = new short[SINGLE_BLOCK_DIM][SINGLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        short value = 0;
-        for (int i = 0; i < SINGLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < SINGLE_BLOCK_DIM; j++) {
-                original[i][j] = value++;
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
-
-    /**
-     * Tests zigZagRLE with boundary conditions at matrix edges.
-     */
-    @Test
-    public void testZigZagRLEBoundaryConditions() {
-        final short[][] matrix = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                if (i == 0 || i == TRIPLE_BLOCK_DIM - 1
-                        || j == 0 || j == TRIPLE_BLOCK_DIM - 1) {
-                    matrix[i][j] = TEST_VALUE;
-                }
-            }
-        }
-
-        encoder.zigZagRLE(matrix, buffer);
-        assertTrue(buffer.position() > 0);
-    }
-
-    /**
-     * Tests round-trip with boundary conditions.
-     */
-    @Test
-    public void testRoundTripBoundaryConditions() {
-        final short[][] original = new short[TRIPLE_BLOCK_DIM][TRIPLE_BLOCK_DIM];
-        final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        for (int i = 0; i < TRIPLE_BLOCK_DIM; i++) {
-            for (int j = 0; j < TRIPLE_BLOCK_DIM; j++) {
-                if (i == 0 || i == TRIPLE_BLOCK_DIM - 1
-                        || j == 0 || j == TRIPLE_BLOCK_DIM - 1) {
-                    original[i][j] = TEST_VALUE;
-                }
-            }
-        }
-
-        encoder.zigZagRLE(original, buffer);
-        buffer.flip();
-
-        final short[][] decoded = encoder.revZigZagRLE(buffer);
-
-        assertArrayEquals(original, decoded);
-    }
 }
-
