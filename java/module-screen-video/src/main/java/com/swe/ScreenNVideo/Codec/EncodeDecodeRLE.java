@@ -18,7 +18,7 @@ public class EncodeDecodeRLE implements IRLE {
     private static final short BLOCK_SIZE = 8;
 
     /**
-     * Number of diagonals in an 8x8 block for zigzag scanning.
+     * Number of diagonals in a 8x8 block for zigzag scanning.
      */
     private static final short NUM_DIAGONALS = 15;
 
@@ -42,14 +42,6 @@ public class EncodeDecodeRLE implements IRLE {
      */
     private static final short ZERO = 0;
 
-    /**
-     * Extra count for debugging.
-     */
-    private static int extraCount = 0;
-    /**
-     * Total count for debugging.
-     */
-    private static int tcount = 0;
 
     /** Singleton instance. */
     public static final EncodeDecodeRLE ENCODE_DECODE_RLE = new EncodeDecodeRLE();
@@ -77,8 +69,6 @@ public class EncodeDecodeRLE implements IRLE {
         // Write matrix dimensions at the beginning.
         resRLEbuffer.putShort(height);
         resRLEbuffer.putShort(width);
-        extraCount = 0;
-        tcount = 0;
 
         // Process the matrix in 8x8 blocks.
         for (short rowBlock = ZERO; rowBlock < height; rowBlock += BLOCK_SIZE) {
@@ -86,17 +76,6 @@ public class EncodeDecodeRLE implements IRLE {
                 // Perform zigzag scan + RLE on each 8x8 block.
                 encodeBlock(matrix, rowBlock, colBlock, resRLEbuffer);
             }
-        }
-
-//        System.err.println("RLE Extra Count: " + extraCount + " Total Count: " + tcount);
-        int actualNeeded = matrix.length * matrix[0].length * 2;
-//        System.err.println("RLE Buffer Size: " + resRLEbuffer.position() + " Actual Needed: " + actualNeeded);
-        double ratio = (resRLEbuffer.position() * 1.0) / actualNeeded;
-        if (ratio > 1.0) {
-//            System.err.println("RLE Compression Ratio > 1.0 : " + ratio);
-//            System.err.println("Height: " + height + " Width: " + width);
-//            System.err.println("resRLEbuffer position: " + resRLEbuffer.position());
-//            System.err.println("Actual Needed: " + actualNeeded);
         }
 
     }
@@ -110,8 +89,8 @@ public class EncodeDecodeRLE implements IRLE {
     @Override
     public short[][] revZigZagRLE(final ByteBuffer resRLEbuffer) {
         // Extract height and width from the start of the buffer.
-        final short height = (short) resRLEbuffer.getShort();
-        final short width = (short) resRLEbuffer.getShort();
+        final short height = resRLEbuffer.getShort();
+        final short width = resRLEbuffer.getShort();
 
         final short[][] matrix = new short[height][width];
 
@@ -139,7 +118,6 @@ public class EncodeDecodeRLE implements IRLE {
                              final ByteBuffer buffer) {
         short prevVal = matrix[startRow][startCol];
         short count = 0;
-        int prevPos = buffer.position();
 
         // ZigZag traversal
         for (short diag = ZERO; diag < NUM_DIAGONALS; ++diag) {
@@ -186,14 +164,14 @@ public class EncodeDecodeRLE implements IRLE {
         buffer.putShort(prevVal);
         buffer.putShort(count);
 
-        tcount ++;
-        if (buffer.position() - prevPos > 128) {
-            extraCount ++;
-        }
     }
 
+
+
+
+
     /**
-     * Decodes an 8x8 block using RLE decoding and reverse ZigZag scanning.
+     * Decodes a 8x8 block using RLE decoding and reverse ZigZag scanning.
      *
      * @param matrix        the output matrix to fill
      * @param startRow      starting row index for the block
@@ -221,9 +199,7 @@ public class EncodeDecodeRLE implements IRLE {
                         continue;
                     }
                     if (remaining == 0) {
-                        if (!buffer.hasRemaining() || buffer.remaining() < 4) {
-                            throw new RuntimeException("Buffer underflow during decode: insufficient data for RLE block");
-                        }
+
                         currentVal = buffer.getShort();
                         remaining = buffer.getShort();
                     }
@@ -240,9 +216,7 @@ public class EncodeDecodeRLE implements IRLE {
                         continue;
                     }
                     if (remaining == 0) {
-                        if (!buffer.hasRemaining() || buffer.remaining() < 4) {
-                            throw new RuntimeException("Buffer underflow during decode: insufficient data for RLE block");
-                        }
+
                         currentVal = buffer.getShort();
                         remaining = buffer.getShort();
                     }
