@@ -22,6 +22,9 @@
     <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLEHuffman.java" />
     <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLE.java" />
     <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+
+    <!-- Fan out Complexities -->
+    <suppress checks="ClassFanOutComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
     
     <!-- Class Data Abstraction Coupling suppressions -->
     <suppress checks="ClassDataAbstractionCoupling" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java"/>
