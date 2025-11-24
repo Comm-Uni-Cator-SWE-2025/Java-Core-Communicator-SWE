@@ -10,7 +10,7 @@
 <!--        <relativePath>../pom.xml</relativePath>-->
     </parent>
 
-    <artifactId>module-chat2</artifactId>
+    <artifactId>module-chat</artifactId>
 
     <properties>
         <maven.compiler.source>24</maven.compiler.source>
