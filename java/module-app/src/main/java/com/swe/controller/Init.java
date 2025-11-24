@@ -5,6 +5,7 @@ import com.swe.ScreenNVideo.MediaCaptureManager;
 import com.swe.chat.ChatManager;
 import com.swe.core.Auth.AuthService;
 import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
@@ -34,10 +35,12 @@ public class Init {
             selfIP = new ClientNode(ip, 1212);
         }
 
+        ControllerServices controllerServices = ControllerServices.getInstance();
+        Context.getInstance().selfIP = selfIP;
+
         RPC rpc = new RPC();
         CloudFunctionLibrary cloud = new CloudFunctionLibrary();
 
-        ControllerServices controllerServices = ControllerServices.getInstance();
         controllerServices.context.rpc = rpc;
         controllerServices.cloud = cloud;
 
@@ -54,7 +57,7 @@ public class Init {
              mediaCaptureManager = new MediaCaptureManager(DynamoNetworking.getDynamoNetworking(), 1212);
          Thread mediaCaptureManagerThread = new Thread(() -> {
              try {
-                 mediaCaptureManager.startCapture(1);
+                 mediaCaptureManager.startCapture(20);
              } catch (ExecutionException | InterruptedException e) {
                  throw new RuntimeException(e);
              }
@@ -89,6 +92,26 @@ public class Init {
 
             try {
                 return DataSerializer.serialize(RegisteredUser);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        rpc.subscribe("core/FakeUser", (byte[] userProfileData) -> {
+            System.out.println("Creating fake user (no Google auth)");
+            UserProfile fakeUser = null;
+            try {
+                fakeUser = DataSerializer.deserialize(userProfileData, UserProfile.class);
+                System.out.println("Fake user created with email: " + fakeUser.getEmail());
+            } catch (JsonProcessingException e) {
+                System.out.println("Error deserializing user profile: " + e.getMessage());
+                return new byte[0];
+            }
+
+            controllerServices.context.self = fakeUser;
+
+            try {
+                return DataSerializer.serialize(fakeUser);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -173,6 +196,18 @@ public class Init {
             } catch (Exception e) {
                 System.out.println("Error ending meeting: " + e.getMessage());
                 return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
+            }
+        });
+
+        rpc.subscribe("core/ip", (byte[] data) -> {
+            System.out.println("Getting IP address");
+            try {
+                String ipAddress = Context.getInstance().selfIP.hostName();
+                System.out.println("IP address: " + ipAddress);
+                return ipAddress.getBytes(StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                System.out.println("Error getting IP address: " + e.getMessage());
+                return ("Error getting IP address: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
         });
     }

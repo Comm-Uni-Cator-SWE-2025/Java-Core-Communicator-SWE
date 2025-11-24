@@ -193,14 +193,16 @@ public class Utils {
      * @return IP address of self machine
      */
     public static String getSelfIP() {
+        System.out.println("Self IP: " + Context.getInstance().selfIP.hostName());
+        return Context.getInstance().selfIP.hostName();
         // Get IP address as string
-        try (DatagramSocket socket = new DatagramSocket()) {
-            final int pingPort = 10002;
-            socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
-            return socket.getLocalAddress().getHostAddress();
-        } catch (SocketException | UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
+        // try (DatagramSocket socket = new DatagramSocket()) {
+        //     final int pingPort = 10002;
+        //     socket.connect(InetAddress.getByName("8.8.8.8"), pingPort);
+        //     return socket.getLocalAddress().getHostAddress();
+        // } catch (SocketException | UnknownHostException e) {
+        //     throw new RuntimeException(e);
+        // }
     }
 
     /**
