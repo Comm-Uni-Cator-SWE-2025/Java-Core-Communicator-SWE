@@ -81,6 +81,7 @@ public class Dynamo {
     private ConcurrentHashMap<Integer, Function<byte[], Void>> subscriptions;
 
     private final int peerCount = 4;
+    private final int chunkSize = 1024 * 4;
 
     private Thread coilThread;
     private Thread priorityThread;
@@ -152,7 +153,7 @@ public class Dynamo {
                         System.out.println("Sending data to " + packet.reciever());
                         coil.sendData(packet.reciever(), packet.chunk());
 
-                        if (frame.getLength() / 1024 == chunk.getChunkNumber()) {
+                        if (frame.getLength() / chunkSize == chunk.getChunkNumber()) {
                             outgoingMessageMap.remove(chunk.getMessageID());
                         }
                         System.out.println("Sent data to " + packet.reciever());
@@ -231,11 +232,11 @@ public class Dynamo {
 
         outgoingMessageMap.put(messageId, frame);
 
-        Chunk[] chunks = new Chunk[frame.getLength() / 1024 + 1];
+        Chunk[] chunks = new Chunk[frame.getLength() / chunkSize + 1];
         byte[] payload = frame.serialize();
         for (int i = 0; i < chunks.length; i++) {
             chunks[i] = new Chunk(messageId, i,
-                    Arrays.copyOfRange(payload, i * 1024, Math.min((i + 1) * 1024, payload.length)));
+                    Arrays.copyOfRange(payload, i * chunkSize, Math.min((i + 1) * chunkSize, payload.length)));
         }
         for (Chunk chunk : chunks) {
             packetQueues[priority].add(new PendingPacket(chunk, destNodes[0]));
@@ -265,7 +266,7 @@ public class Dynamo {
         if (chunk.getChunkNumber() == 0) {
             // first chunk
             frame = Frame.deserialize(chunk.getPayload());
-            if (frame.getLength() < 1024) {
+            if (frame.getLength() < chunkSize) {
                 handleFrame(frame);
             } else {
                 incomingMessageMap.put(chunk.getMessageID(), frame);

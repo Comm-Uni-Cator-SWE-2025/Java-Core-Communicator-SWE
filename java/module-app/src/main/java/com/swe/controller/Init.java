@@ -48,7 +48,7 @@ public class Init {
              mediaCaptureManager = new MediaCaptureManager(DynamoNetworking.getDynamoNetworking(), 1212);
          Thread mediaCaptureManagerThread = new Thread(() -> {
              try {
-                 mediaCaptureManager.startCapture(24);
+                 mediaCaptureManager.startCapture(1);
              } catch (ExecutionException | InterruptedException e) {
                  throw new RuntimeException(e);
              }
