@@ -16,8 +16,8 @@
 
 package com.swe.aiinsights.request;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +30,8 @@ public class AiRegularisationRequest implements AiRequestable {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(AiRegularisationRequest.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * metadata would store prompt, and other
      * details of the request like the content.

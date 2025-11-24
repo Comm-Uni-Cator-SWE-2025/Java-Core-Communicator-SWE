@@ -4,6 +4,8 @@
 
 package com.swe.ScreenNVideo;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -17,6 +19,10 @@ import java.net.UnknownHostException;
  * Utility class for ScreenN Video.
  */
 public class Utils {
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * Hashing stride for the hashing algorithm.
      */
@@ -180,7 +186,7 @@ public class Utils {
         for (int y = 0; y < height; y++) {
             System.arraycopy(data, y * width, matrix[y], 0, width);
         }
-//        System.out.println("Image to RGB Matrix Conversion Time: "
+//        LOG.info("Image to RGB Matrix Conversion Time: "
 //                + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
         return matrix;
     }

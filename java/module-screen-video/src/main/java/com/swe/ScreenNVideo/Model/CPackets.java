@@ -6,6 +6,8 @@ package com.swe.ScreenNVideo.Model;
 
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.Utils;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,6 +29,11 @@ import java.util.List;
  */
 public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean compress, int height, int width,
                        List<CompressedPatch> packets) {
+
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**
      * Serializes List of CompressedPackets for networking layer.
@@ -92,8 +99,7 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
     public static CPackets deserialize(final byte[] data) {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
         final long packetStart = buffer.getLong();
-        System.out.println(packetStart);
-        System.out.println("Packet took " + (System.currentTimeMillis() - packetStart) / (double) (Utils.SEC_IN_MS));
+        final double duration = (System.currentTimeMillis() - packetStart) / (double) (Utils.SEC_IN_MS);
         // get packet type
         final byte packetType = buffer.get();
 
@@ -103,6 +109,7 @@ public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean
         }
         // get feed number
         final int packetNumber = buffer.getInt();
+        LOG.debug("Deserializing packet " + packetNumber + " processed in " + duration + " ms");
         // get flags
         final byte flags = buffer.get();
         final boolean isFullImage = (flags & 1) == 1;

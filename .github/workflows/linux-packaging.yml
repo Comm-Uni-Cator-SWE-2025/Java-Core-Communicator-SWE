@@ -1,0 +1,168 @@
+# ==============================================================
+# Linux Packaging Pipeline
+# Outputs: AppImage & Portable Zip
+# ==============================================================
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+resources:
+  pipelines:
+    # -----------------------------
+    # CORE PIPELINE CONFIG
+    # -----------------------------
+    - pipeline: core_build
+      source: 'Comm-Uni-Cator-SWE-2025.Java-Core-Communicator-SWE'   # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      trigger: 
+        branches:
+          include:
+            - main
+
+    # -----------------------------
+    # FRONT PIPELINE CONFIG
+    # -----------------------------
+    - pipeline: front_build
+      source: 'Comm-Uni-Cator-SWE-2025.Java-front-Communicator-SWE'  # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      trigger: 
+        branches:
+          include:
+            - main
+
+variables:
+  APP_NAME: 'MyCombinedApp'
+  # JDK 24 URL (Linux x64)
+  JAVA_URL: 'https://download.java.net/java/GA/jdk24/35/GPL/openjdk-24_linux-x64_bin.tar.gz'
+
+steps:
+  # -----------------------------
+  # 1. Download Core Artifacts
+  # -----------------------------
+  - download: core_build
+    artifact: java-build-artifacts  # Matches your Core Pipeline YAML
+
+  # -----------------------------
+  # 2. Download Front Artifacts
+  # -----------------------------
+  - download: front_build
+    artifact: java-build-artifacts  # Matches your Front Pipeline YAML
+
+  # -----------------------------
+  # 3. Setup Directories & Smart Copy
+  # -----------------------------
+  - script: |
+      echo "--- Setting up Directories ---"
+      # Create a named folder so the Zip extracts cleanly
+      mkdir -p $(APP_NAME)/usr/bin
+      mkdir -p $(APP_NAME)/usr/lib
+      
+      echo "--- Smart Copying Core JAR ---"
+      # Find valid JAR in core_build folder (ignoring sources/javadoc/original)
+      CORE_JAR=$(find $(Pipeline.Workspace)/core_build -name "*.jar" | grep -v "original" | grep -v "sources" | grep -v "javadoc" | head -n 1)
+      
+      echo "Found Core: $CORE_JAR"
+      cp "$CORE_JAR" $(APP_NAME)/usr/lib/java-core.jar
+
+      echo "--- Smart Copying Front JAR ---"
+      # Find valid JAR in front_build folder
+      FRONT_JAR=$(find $(Pipeline.Workspace)/front_build -name "*.jar" | grep -v "original" | grep -v "sources" | grep -v "javadoc" | head -n 1)
+      
+      echo "Found Front: $FRONT_JAR"
+      cp "$FRONT_JAR" $(APP_NAME)/usr/lib/java-front.jar
+    displayName: "Setup Directories & Copy Jars"
+
+  # -----------------------------
+  # 4. Bundle JDK 24
+  # -----------------------------
+  - script: |
+      echo "Downloading JDK 24..."
+      wget -q -O java.tar.gz $(JAVA_URL)
+      
+      mkdir -p $(APP_NAME)/usr/lib/jre
+      # Extract stripping the root folder so 'bin' is directly inside 'jre'
+      tar -xzf java.tar.gz -C $(APP_NAME)/usr/lib/jre --strip-components=1
+      rm java.tar.gz
+    displayName: "Bundle Java Runtime"
+
+  # -----------------------------
+  # 5. Create Launchers
+  # -----------------------------
+  - script: |
+      # --- launcher.sh ---
+      cat > $(APP_NAME)/usr/bin/launcher.sh <<EOF
+      #!/bin/bash
+      HERE="\$(dirname "\$(readlink -f "\${0}")")"
+      
+      # Logic: If running in AppImage/Zip, root is relative to bin/
+      APPDIR_ROOT="\$HERE/../../"
+      
+      JAVA_EXEC="\$APPDIR_ROOT/usr/lib/jre/bin/java"
+      
+      echo "Starting Core..."
+      "\$JAVA_EXEC" -jar "\$APPDIR_ROOT/usr/lib/java-core.jar" &
+      PID1=\$!
+      
+      echo "Starting Front..."
+      "\$JAVA_EXEC" -jar "\$APPDIR_ROOT/usr/lib/java-front.jar" &
+      PID2=\$!
+      
+      trap "kill \$PID1 \$PID2" EXIT
+      wait
+      EOF
+
+      # --- AppRun (AppImage Entry) ---
+      cat > $(APP_NAME)/AppRun <<EOF
+      #!/bin/bash
+      export PATH="\$APPDIR/usr/bin:\$APPDIR/usr/lib/jre/bin:\$PATH"
+      exec "\$APPDIR/usr/bin/launcher.sh" "\$@"
+      EOF
+
+      # --- Desktop File ---
+      cat > $(APP_NAME)/myapp.desktop <<EOF
+      [Desktop Entry]
+      Name=$(APP_NAME)
+      Exec=AppRun
+      Icon=myapp
+      Type=Application
+      Categories=Utility;
+      EOF
+
+      # --- Dummy Icon ---
+      wget -q -O $(APP_NAME)/myapp.png https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg
+
+      # --- Permissions ---
+      chmod +x $(APP_NAME)/AppRun
+      chmod +x $(APP_NAME)/usr/bin/launcher.sh
+    displayName: "Create Scripts & Metadata"
+
+  # -----------------------------
+  # 6. Build Portable ZIP
+  # -----------------------------
+  - script: |
+      echo "Creating Portable Zip..."
+      # Zips the folder so user gets 'MyCombinedApp/' when extracting
+      zip -r $(APP_NAME)-portable.zip $(APP_NAME)
+    displayName: "Build .Zip"
+
+  # -----------------------------
+  # 7. Build AppImage
+  # -----------------------------
+  - script: |
+      echo "Downloading AppImageTool..."
+      wget -q -O appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
+      chmod +x appimagetool-x86_64.AppImage
+      
+      echo "Building AppImage..."
+      # ARCH=x86_64 is required for appimagetool
+      ARCH=x86_64 ./appimagetool-x86_64.AppImage $(APP_NAME) $(APP_NAME).AppImage
+    displayName: "Build .AppImage"
+
+  # -----------------------------
+  # 8. Publish Artifacts
+  # -----------------------------
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(System.DefaultWorkingDirectory)'
+      artifactName: 'Linux-Release-Packages'
+      publishLocation: 'Container'

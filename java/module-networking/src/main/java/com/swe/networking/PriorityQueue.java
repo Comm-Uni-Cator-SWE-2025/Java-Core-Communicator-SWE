@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.net.UnknownHostException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -18,6 +21,8 @@ public class PriorityQueue {
     /**
      * Variable to store the name of the module.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[PRIORITY QUEUE]";
     /**
      * The static class object for the priority queue.
@@ -76,7 +81,7 @@ public class PriorityQueue {
      * Creates a priority queue and initializes budgets and queues.
      */
     private PriorityQueue() {
-        // System.out.println("Networking][Priority Queue] MLFQ has been created");
+        // LOG.info("Networking][Priority Queue] MLFQ has been created");
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
@@ -93,10 +98,10 @@ public class PriorityQueue {
     public static PriorityQueue getPriorityQueue() {
         if (priorityQueue == null) {
             priorityQueue = new PriorityQueue();
-            NetworkLogger.printInfo(MODULENAME, "Instantiated a new priority Queue...");
+            LOG.info("Instantiated a new priority Queue...");
             return priorityQueue;
         }
-        NetworkLogger.printInfo(MODULENAME, "Passing already instantiated priority Queue...");
+        LOG.info("Passing already instantiated priority Queue...");
         return priorityQueue;
     }
 
@@ -153,7 +158,7 @@ public class PriorityQueue {
             final int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
-        NetworkLogger.printInfo(MODULENAME, "Reset Initiated...");
+        LOG.info("Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -164,7 +169,7 @@ public class PriorityQueue {
     public void rotateQueues() {
         final long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
-            NetworkLogger.printInfo(MODULENAME, "Rotating MLFQ levels...");
+            LOG.info("Rotating MLFQ levels...");
             final Deque<byte[]> level2 = mlfq.get(2);
             final Deque<byte[]> level1 = mlfq.get(1);
             final Deque<byte[]> level0 = mlfq.get(0);
@@ -211,16 +216,16 @@ public class PriorityQueue {
         switch (priority) {
             case ZERO, ONE, TWO:
                 highestPriorityQueue.add(data);
-                NetworkLogger.printInfo(MODULENAME, "Packet added to the Highest priority queue");
+                LOG.info("Packet added to the Highest priority queue");
                 break;
             case THREE, FOUR, FIVE, SIX:
                 midPriorityQueue.add(data);
-                NetworkLogger.printInfo(MODULENAME, "Packet added to mid priority queue");
+                LOG.info("Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
                 mlfq.get(0).add(data);
-                NetworkLogger.printInfo(MODULENAME, "Packet added to MLFQ level 0");
+                LOG.info("Packet added to MLFQ level 0");
                 break;
         }
     }
@@ -235,7 +240,7 @@ public class PriorityQueue {
                 && currentBudget.get(PacketPriority.ZERO) > 0) {
             currentBudget.put(PacketPriority.ZERO,
                     currentBudget.get(PacketPriority.ZERO) - 1);
-            NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent");
+            LOG.info("Highest Priority Packet sent");
             return highestPriorityQueue.pollFirst();
         }
         return null;
@@ -258,11 +263,11 @@ public class PriorityQueue {
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from p2 budget");
+                LOG.info("Mid-priority sent from p2 budget");
             } else if (p1Current > 0) {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
-                NetworkLogger.printInfo(MODULENAME, "Mid-priority sent from p1 budget");
+                LOG.info("Mid-priority sent from p1 budget");
             }
             return midPriorityQueue.pollFirst();
         }
@@ -289,14 +294,14 @@ public class PriorityQueue {
                     // Decrement the budget in order: P3 -> P2 -> P1
                     if (p3Current > 0) {
                         currentBudget.put(PacketPriority.TWO, p3Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p3 budget");
+                        LOG.info("Low Priority Packet sent from p3 budget");
                     } else if (p2Current > 0) {
                         currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p2 budget");
+                        LOG.info("Low Priority Packet sent from p2 budget");
                     } else if (p1Current > 0) { // Use P1's budget
                         currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
-                        NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from p1 budget");
+                        LOG.info("Low Priority Packet sent from p1 budget");
                     } else {
                         // This case should be covered by
                         // the totalP3Budget > 0 check,
@@ -305,7 +310,7 @@ public class PriorityQueue {
                         continue;
                     }
 
-                    NetworkLogger.printInfo(MODULENAME, "Low Priority Packet sent from MLFQ level " + i);
+                    LOG.info("Low Priority Packet sent from MLFQ level " + i);
                     return q.pollFirst();
                 }
             }
@@ -380,7 +385,7 @@ public class PriorityQueue {
 
             // If the packet is null it makes the thread wait and they retry.
             try {
-                NetworkLogger.printInfo(MODULENAME, "No packets has been received, Thread going to sleep");
+                LOG.info("No packets has been received, Thread going to sleep");
                 Thread.sleep(1);
             } catch (InterruptedException ignored) {
             }
@@ -388,7 +393,7 @@ public class PriorityQueue {
             retryCount++;
             // optional safety escape
             // if (retryCount > maxRetryCount) {
-            //     NetworkLogger.printInfo(MODULENAME, "Max number of retires has been reached, Returning null.");
+            //     LOG.info("Max number of retires has been reached, Returning null.");
             //     return null;
             // }
         }

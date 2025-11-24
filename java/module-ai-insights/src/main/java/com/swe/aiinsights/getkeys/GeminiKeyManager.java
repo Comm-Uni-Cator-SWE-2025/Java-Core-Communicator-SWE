@@ -16,15 +16,15 @@
 
 package com.swe.aiinsights.getkeys;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.swe.aiinsights.logging.CommonLogger;
 import datastructures.Entity;
 import datastructures.Response;
 import datastructures.TimeRange;
 import functionlibrary.CloudFunctionLibrary;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ public final class GeminiKeyManager {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(GeminiKeyManager.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * THe cloud function library which will fetch the keys.
      */
@@ -83,7 +83,7 @@ public final class GeminiKeyManager {
         final String currentKey = apiKeys.get(Math.abs(currentIndex));
         if (currentKey.equals(expiredKey)) {
             apiKeyIndex.compareAndSet(currentIndex, currentIndex + 1);
-            System.out.println(apiKeyIndex);
+            LOG.info("API key index: " + apiKeyIndex);
         }
     }
 

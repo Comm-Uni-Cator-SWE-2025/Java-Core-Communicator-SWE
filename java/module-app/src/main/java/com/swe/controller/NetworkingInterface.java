@@ -5,6 +5,10 @@ import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.SimpleNetworking.MessageListener;
 
+/**
+ * Interface for networking operations.
+ * Provides methods for sending data, subscribing to messages, and managing networking.
+ */
 public interface NetworkingInterface {
     void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority);
     

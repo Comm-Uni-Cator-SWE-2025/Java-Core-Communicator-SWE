@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -13,6 +16,8 @@ public class SplitPackets {
     /**
      * The module name for logging.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[SPLITPACKETS]";
 
     /**
@@ -46,10 +51,10 @@ public class SplitPackets {
      */
     public static SplitPackets getSplitPackets() {
         if (splitPackets == null) {
-            NetworkLogger.printInfo(MODULENAME, "Creating new SplitPackets object...");
+            LOG.info("Creating new SplitPackets object...");
             splitPackets = new SplitPackets();
         }
-        NetworkLogger.printInfo(MODULENAME, "Passing already instantiated SplitPackets object...");
+        LOG.info("Passing already instantiated SplitPackets object...");
         return splitPackets;
     }
 
@@ -65,12 +70,12 @@ public class SplitPackets {
 
         if (incompleteBuffer.position() > 0) {
             incompleteBuffer.flip();
-            System.out.println("Remaining data from previous read");
+            LOG.info("Remaining data from previous read");
             final byte[] oldData = new byte[incompleteBuffer.remaining()];
             incompleteBuffer.get(oldData);
 
             final byte[] combined = new byte[oldData.length + data.length];
-            NetworkLogger.printInfo(MODULENAME, "Combined length: " + combined.length + " bytes.");
+            LOG.info("Combined length: " + combined.length + " bytes.");
             System.arraycopy(oldData, 0, combined, 0, oldData.length);
             System.arraycopy(data, 0, combined, oldData.length, data.length);
             buffer = ByteBuffer.wrap(combined);
@@ -79,14 +84,14 @@ public class SplitPackets {
             buffer = ByteBuffer.wrap(data);
         }
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        System.out.println("Buffer size : " + data.length);
+        LOG.info("Buffer size : " + data.length);
         while (buffer.hasRemaining() && buffer.remaining() > 2) {
             buffer.mark();
             final int len = buffer.getShort();
-            System.out.println("Packet length " + len);
+            LOG.info("Packet length " + len);
             buffer.reset();
             if (len <= 2 || len > MAX_PACKET_SIZE) {
-                NetworkLogger.printWarning(MODULENAME, "Invalid packet length " + len);
+                LOG.warn("Invalid packet length " + len);
             }
             if (buffer.remaining() < len) {
                 buffer.reset();
@@ -102,7 +107,7 @@ public class SplitPackets {
         if (buffer.hasRemaining()) {
             final int remaining = buffer.remaining();
             incompleteBuffer.put(buffer);
-            NetworkLogger.printInfo(MODULENAME, "Carrying over " + remaining + " bytes to next read.");
+            LOG.info("Carrying over " + remaining + " bytes to next read.");
         }
         return packets;
     }

@@ -4,6 +4,9 @@
 
 package com.swe.ScreenNVideo.Capture;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.ScreenNVideo.Telemetry.Telemetry;
 
 import java.awt.AWTException;
@@ -31,6 +34,8 @@ import java.util.concurrent.TimeoutException;
 public class ScreenCapture extends ICapture {
 
     /** The {@link Robot} used to capture the screen image. */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /** robot instance to capture screen. */
     private Robot robot;
 
     /** Cached screen rectangle to avoid repeated Toolkit calls. */
@@ -82,7 +87,7 @@ public class ScreenCapture extends ICapture {
             return future.get(CAPTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             final String message = "Screen capture" + " timed out after " + CAPTURE_TIMEOUT_SECONDS + " seconds";
-            System.err.println(message);
+            LOG.error(message);
             reInit();
             throw new AWTException(message);
         } catch (InterruptedException e) {
@@ -100,7 +105,7 @@ public class ScreenCapture extends ICapture {
             robot = new Robot(screens[0]);
             final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             screenRect = new Rectangle(screenSize);
-            System.out.println("Reinitialized");
+            LOG.info("Reinitialized");
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }

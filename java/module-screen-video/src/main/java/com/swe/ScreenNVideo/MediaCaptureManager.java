@@ -24,12 +24,14 @@ import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.AbstractNetworking;
 import com.swe.networking.MessageListener;
 import com.swe.networking.ModuleType;
+import com.swe.core.logging.SweLogger;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.Objects;
 
 /**
  * Media Manager for Screen N Video.
@@ -83,16 +85,22 @@ public class MediaCaptureManager implements CaptureManager {
      * Audio Player object.
      */
     private final AudioPlayer audioPlayer;
+    /**
+     * Screen Video logger.
+     */
+    private final SweLogger logger;
 
     /**
      * Constructor for the MediaCaptureManager.
      *
      * @param argNetworking Networking object
      * @param portArgs      Port for the server
+     * @param loggerArgs        Screen Video logger.
      */
-    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs) {
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs, final SweLogger loggerArgs) {
+        this.logger = Objects.requireNonNull(loggerArgs, "logger");
         final Context context = Context.getInstance();
-        this.rpc = context.rpc;
+        this.rpc = context.getRpc();
         this.port = portArgs;
         this.networking = argNetworking;
         final CaptureComponents captureComponents = new CaptureComponents(networking, rpc, port,
@@ -102,7 +110,7 @@ public class MediaCaptureManager implements CaptureManager {
         try {
             audioPlayer.init();
         } catch (LineUnavailableException e) {
-            System.err.println("Unable to instantiate AudioPlayer");
+            logger.error("Unable to instantiate AudioPlayer", e);
         }
 
         final BackgroundCaptureManager backgroundCaptureManager = new BackgroundCaptureManager(captureComponents);
@@ -116,7 +124,7 @@ public class MediaCaptureManager implements CaptureManager {
 
         // Cache local IP once to avoid repeated socket operations during capture
         this.localIp = Utils.getSelfIP();
-        System.out.println(this.localIp);
+        logger.debug("Local IP is " + this.localIp);
 
         clientHandler = new MediaCaptureManager.ClientHandler();
 
@@ -125,7 +133,8 @@ public class MediaCaptureManager implements CaptureManager {
 
     /**
      * Updates image and start waiting for extra data.
-     * @param ip ip of sender
+     * 
+     * @param ip  ip of sender
      * @param val to compress or not
      * @return void
      */
@@ -146,7 +155,7 @@ public class MediaCaptureManager implements CaptureManager {
     public void broadcastJoinMeeting() {
         final IPPacket subscriberPacket = new IPPacket(localIp, true);
 
-        // System.out.println("Broadcasting join meeting to : " +
+        // logger.info("Broadcasting join meeting to : " +
         // Arrays.toString(clientNodes));
         final byte[] subscribeData = subscriberPacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
         networking.broadcast(subscribeData, ModuleType.SCREENSHARING.ordinal(), 2);
@@ -180,7 +189,7 @@ public class MediaCaptureManager implements CaptureManager {
     @Override
     public void startCapture(final int sendFPS) throws ExecutionException, InterruptedException {
 
-        System.out.println("Starting capture");
+        logger.info("Starting capture");
         int[][] feed = null;
         final double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
         long prevSendAt = 0;
@@ -208,13 +217,13 @@ public class MediaCaptureManager implements CaptureManager {
             } else {
                 feed = newFeed;
                 // send compressedFeed
-                // System.out.println("Sending to Compress");
+                // logger.info("Sending to Compress");
                 sendDataToViewers(encodedFeed.compressedFeed(), Viewer::isRequireCompressed);
                 // send unCompressedFeed
-                // System.out.println("Sending to uncompress");
+                // logger.info("Sending to uncompress");
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
                 final double sendingFPS = (double) (Utils.SEC_IN_MS) / diff;
-                System.out.println("Sent Data at " + sendingFPS + " FPS");
+                logger.info("Sent Data at " + sendingFPS + " FPS");
                 Telemetry.getTelemetry().addFps(sendingFPS);
             }
 
@@ -242,18 +251,18 @@ public class MediaCaptureManager implements CaptureManager {
             return;
         }
 
-        System.out.println("Size : " + feed.length / Utils.KB + " KB");
+        logger.info("Size : " + feed.length / Utils.KB + " KB");
         networking.sendData(feed, clientNodes, ModuleType.SCREENSHARING.ordinal(), 2);
 
-        System.out.println("Sent to viewers " + clientNodes.length);
+        logger.info("Sent to viewers " + clientNodes.length);
         for (ClientNode c : clientNodes) {
-            System.out.println(c.hostName());
+            logger.info(c.hostName());
         }
         // CompletableFuture.runAsync(() -> {
         // try {
         // Thread.sleep(5000);
         // } catch (InterruptedException e) {
-        // System.err.println("Error in timer");
+        // logger.error("Error in timer");
         // throw new RuntimeException(e);
         // }
         // });
@@ -272,27 +281,27 @@ public class MediaCaptureManager implements CaptureManager {
         @Override
         public void receiveData(final byte[] data) {
 
-             System.out.println("Received " + data.length);
+            logger.info("Received " + data.length);
             if (data.length == 0) {
                 return;
             }
-//              System.out.println("first 40 bytes:" +
-//             (Arrays.toString(Arrays.copyOf(data, 40))));
+            // logger.info("first 40 bytes:" +
+            // (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
-                System.err.println("Error: Invalid packet type: " + packetType + "  " + data.length);
-                System.err.println("Error: Packet data: " + (Arrays.toString(Arrays.copyOf(data, printLen))));
+                logger.error("Error: Invalid packet type: " + packetType + "  " + data.length);
+                logger.error("Error: Packet data: " + (Arrays.toString(Arrays.copyOf(data, printLen))));
                 return;
             }
             final NetworkPacketType type = enumVals[packetType];
             switch (type) {
                 case NetworkPacketType.LIST_CPACKETS -> {
-                    // // System.out.println(Arrays.toString(Arrays.copyOf(data, 10)));
+                    // // logger.info(Arrays.toString(Arrays.copyOf(data, 10)));
                     final CPackets networkPackets = CPackets.deserialize(data);
-                    System.out.println(
+                    logger.info(
                             "Received CPackets : " + data.length / Utils.KB + " KB " + networkPackets.packetNumber());
-                    System.out.println(
+                    logger.info(
                             "Height: " + networkPackets.height() + " Width: " + networkPackets.width() + " from "
                                     + networkPackets.ip() + " " + networkPackets.compress());
 
@@ -312,14 +321,14 @@ public class MediaCaptureManager implements CaptureManager {
                         imageSynchronizer.setPrevSend();
                     }
 
-                    // System.out.println("Recieved " + networkPackets.packetNumber() + "; Expected
+                    // logger.info("Recieved " + networkPackets.packetNumber() + "; Expected
                     // : " +
                     // imageSynchronizer.getExpectedFeedNumber() + " " +
                     // imageSynchronizer.getHeap().size() + " " +
                     // imageSynchronizer.waitingForFullImage);
 
                     if (networkPackets.isFullImage()) {
-                        System.out.println("Full Image");
+                        logger.info("Full Image");
                         // reset expected feed number
                         imageSynchronizer.setExpectedFeedNumber(networkPackets.packetNumber());
 
@@ -331,7 +340,7 @@ public class MediaCaptureManager implements CaptureManager {
 
                     // if heap is growing too large, request a full frame to resync
                     if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
-                        System.out.println("Too Large");
+                        logger.info("Too Large");
                         askForFullImage(networkPackets.ip(), imageSynchronizer.isReqCompression());
                         imageSynchronizer.setWaitingForFullImage(true);
                         imageSynchronizer.getHeap().clear();
@@ -342,7 +351,7 @@ public class MediaCaptureManager implements CaptureManager {
                     while (!imageSynchronizer.getHeap().isEmpty()
                             && imageSynchronizer.getHeap().peek().getFeedNumber() < imageSynchronizer
                                     .getExpectedFeedNumber()) {
-                        // System.out.println("Removing " +
+                        // logger.info("Removing " +
                         // imageSynchronizer.getHeap().peek().getFeedNumber());
                         imageSynchronizer.getHeap().poll();
                     }
@@ -354,7 +363,7 @@ public class MediaCaptureManager implements CaptureManager {
                         final FeedData feedData = imageSynchronizer.getHeap().peek();
                         if (feedData == null || feedData.getFeedNumber() != imageSynchronizer.getExpectedFeedNumber()) {
                             // if (feedData != null) {
-                            // System.out.println("Expected " + imageSynchronizer.getExpectedFeedNumber()
+                            // logger.info("Expected " + imageSynchronizer.getExpectedFeedNumber()
                             // + " GOT : " + feedData.getFeedNumber() + " Len " +
                             // imageSynchronizer.getHeap().size());
                             // }
@@ -368,7 +377,7 @@ public class MediaCaptureManager implements CaptureManager {
                         }
 
                         final CPackets minFeedCPacket = minFeedNumPacket.getFeedPackets();
-                        System.out.println("Min Feed Packet " + minFeedCPacket.packetNumber());
+                        logger.info("Min Feed Packet " + minFeedCPacket.packetNumber());
                         final List<CompressedPatch> patches = minFeedCPacket.packets();
                         final int newHeight = minFeedCPacket.height();
                         final int newWidth = minFeedCPacket.width();
@@ -379,7 +388,7 @@ public class MediaCaptureManager implements CaptureManager {
                             image = imageSynchronizer.synchronize(newHeight, newWidth, patches,
                                     networkPackets.compress());
                         } catch (Exception e) {
-                            System.out.println(
+                            logger.info(
                                     "-----------------------------=------------------------Exception "
                                             + e.getMessage());
                             e.printStackTrace();
@@ -395,7 +404,7 @@ public class MediaCaptureManager implements CaptureManager {
 
                     final RImage rImage = new RImage(image, networkPackets.ip(), dataPerSec);
                     final byte[] serializedImage = rImage.serialize();
-                    System.out.println("Sending to UI" + ("; Expected : "
+                    logger.info("Sending to UI" + ("; Expected : "
                             + imageSynchronizer.getExpectedFeedNumber()));
                     try {
                         final byte[] res = rpc.call(Utils.UPDATE_UI, serializedImage).get();
@@ -406,7 +415,7 @@ public class MediaCaptureManager implements CaptureManager {
                         if (!success) {
                             addParticipant(networkPackets.ip(), imageSynchronizer.isReqCompression());
                         }
-                        System.out.println("Done");
+                        logger.info("Done");
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace(System.out);
                     }
@@ -414,7 +423,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case NetworkPacketType.SUBSCRIBE_AS_VIEWER -> {
                     final IPPacket viewerIP = IPPacket.deserialize(data);
-                    System.out.println("Viewer joined" + viewerIP);
+                    logger.info("Viewer joined" + viewerIP);
                     addUserNFullImageRequest(viewerIP.ip(), viewerIP.reqCompression());
                 }
                 case STOP_SHARE -> {
@@ -423,7 +432,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case APACKETS -> {
                     final APackets networkPackets = APackets.deserialize(data);
-                    System.out.println("Audio" + networkPackets.packetNumber());
+                    logger.info("Audio" + networkPackets.packetNumber());
                     AudioSynchronizer audioSynchronizer = audioSynchronizers.get(networkPackets.ip());
                     if (audioSynchronizer == null) {
                         // add new participant if not already present, with true by default
@@ -436,7 +445,7 @@ public class MediaCaptureManager implements CaptureManager {
                 }
                 case UNSUBSCRIBE_AS_VIEWER -> {
                     final IPPacket viewerIP = IPPacket.deserialize(data);
-                    System.out.println("Viewer requested to be removed" + viewerIP);
+                    logger.info("Viewer requested to be removed" + viewerIP);
                     removeViewer(viewerIP.ip());
                 }
                 default -> {
@@ -445,7 +454,7 @@ public class MediaCaptureManager implements CaptureManager {
         }
 
         private void askForFullImage(final String ip, final boolean reqCompress) {
-            System.out.println("Asking for data...");
+            logger.info("Asking for data...");
             final IPPacket subscribePacket = new IPPacket(localIp, reqCompress);
             final byte[] subscribeData = subscribePacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
             final ClientNode destNode = new ClientNode(ip, port);
@@ -471,7 +480,7 @@ public class MediaCaptureManager implements CaptureManager {
             if (fullImageEncoded == null) {
                 return;
             }
-            System.out.println("Sending Full Image");
+            logger.info("Sending Full Image");
             networking.sendData(fullImageEncoded, new ClientNode[] {new ClientNode(ip, port)},
                     ModuleType.SCREENSHARING.ordinal(), 2);
         }

@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -13,6 +16,8 @@ public class MainServer implements P2PUser {
     /**
      * Communicator object to send and receive data.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private final ProtocolBase communicator;
 
     /**
@@ -83,14 +88,14 @@ public class MainServer implements P2PUser {
      */
     public MainServer(final ClientNode deviceAddress,
             final ClientNode mainServerAddress) {
-        NetworkLogger.printInfo("MainServer", "Creating a new Main Server...");
+        LOG.info("Creating a new Main Server...");
         serverPort = deviceAddress.port();
         mainserver = mainServerAddress;
         mainServerClusterIdx = 0;
         serializer = NetworkSerializer.getNetworkSerializer();
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
         timer = new Timer(timerTimeoutMilliSeconds, this::handleClientTimeout);
-        NetworkLogger.printInfo("MainServer", "Listening at port:" + serverPort + " ...");
+        LOG.info("Listening at port:" + serverPort + " ...");
         communicator = new TCPCommunicator(serverPort);
         receiveThread = new Thread(() -> receive());
         receiveThread.start();
@@ -105,7 +110,7 @@ public class MainServer implements P2PUser {
     @Override
     public void send(final byte[] data, final ClientNode[] destIp) {
         for (ClientNode dest : destIp) {
-            NetworkLogger.printInfo("MainServer", "Sending data");
+            LOG.info("Sending data");
             final ClientNode sendDest = topology.getDestination(mainserver, dest);
             communicator.sendData(data, sendDest); // check of this should be dest
         }
@@ -119,7 +124,7 @@ public class MainServer implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
-        NetworkLogger.printInfo("MainServer", "Sending data");
+        LOG.info("Sending data");
         final ClientNode sendDest = topology.getDestination(mainserver, destIp);
         communicator.sendData(data, sendDest); // check of this should be dest
     }
@@ -156,7 +161,7 @@ public class MainServer implements P2PUser {
             final int destinationPort = packetInfo.getPortNum();
             final ClientNode dest = new ClientNode(destinationIp,
                     destinationPort);
-            NetworkLogger.printInfo("MainServer", "Packet received from " + dest + " of type "
+            LOG.info("Packet received from " + dest + " of type "
                     + type + " and connection type " + connectionType + "...");
             // check for broadcast packet
             if (packetInfo.getBroadcast() == 1) {
@@ -180,7 +185,7 @@ public class MainServer implements P2PUser {
                 }
                 send(packet, clusterServer);
             } else {
-                System.out.println("Unknown packet type received.");
+                LOG.info("Unknown packet type received.");
             }
         } catch (UnknownHostException ex) {
         }
@@ -201,9 +206,9 @@ public class MainServer implements P2PUser {
                 handleRemove(packet, dest);
             } else if (connectionType == NetworkConnectionType.ALIVE.ordinal()) {
                 timer.updateTimeout(dest);
-                NetworkLogger.printInfo("MainServer", "Received alive packet from " + dest);
+                LOG.info("Received alive packet from " + dest);
             } else if (connectionType == NetworkConnectionType.MODULE.ordinal()) {
-                NetworkLogger.printInfo("MainServer", "Passing to chunk manager...");
+                LOG.info("Passing to chunk manager...");
                 final int module = parser.parsePacket(packet).getModule();
                 final byte[] data = chunkManager.addChunk(packet);
                 final Networking networking = Networking.getNetwork();
@@ -211,7 +216,7 @@ public class MainServer implements P2PUser {
                     networking.callSubscriber(module, parser.parsePacket(data).getPayload());
                 }
             } else if (connectionType == NetworkConnectionType.CLOSE.ordinal()) {
-                NetworkLogger.printInfo("MainServer", "Closing the Main Server");
+                LOG.info("Closing the Main Server");
             }
         } catch (UnknownHostException ex) {
         }
@@ -247,7 +252,7 @@ public class MainServer implements P2PUser {
                 send(newPacket, dest);
             }
         } else {
-            System.out.println("Broadcast packet of unknown type received at P2PServer.");
+            LOG.info("Broadcast packet of unknown type received at P2PServer.");
             return;
         }
 
@@ -290,8 +295,8 @@ public class MainServer implements P2PUser {
             responsePacket.setChunkNum(0);
             responsePacket.setChunkLength(1);
             responsePacket.setPayload(networkBytes);
-            NetworkLogger.printInfo("MainServer", "Sending current network details...");
-            NetworkLogger.printInfo("MainServer", network.toString()); // network is an object, convert to string
+            LOG.info("Sending current network details...");
+            LOG.info(network.toString()); // network is an object, convert to string
             final byte[] responsePkt = parser.createPkt(responsePacket);
             send(responsePkt, dest);
         } catch (UnknownHostException ex) {
@@ -356,7 +361,7 @@ public class MainServer implements P2PUser {
             }
             send(packet, s);
         }
-        NetworkLogger.printInfo("MainServer", "Client " + remClient.client().hostName()
+        LOG.info("Client " + remClient.client().hostName()
                 + " removed from cluster"
                 + remClient.clusterIndex());
     }
@@ -367,7 +372,7 @@ public class MainServer implements P2PUser {
      * @param dest the destination to the network structure to
      */
     private void handleHello(final ClientNode dest) {
-        NetworkLogger.printInfo("MainServer", "Responding " + dest + " with a Hello packet...");
+        LOG.info("Responding " + dest + " with a Hello packet...");
         final int clusterIdx = topology.addClient(dest);
 //        addClientToTimer(dest, clusterIdx);
         // The controller is notified of any new client that is added.
@@ -421,7 +426,7 @@ public class MainServer implements P2PUser {
      */
     private void handleClientTimeout(final ClientNode client) {
         try {
-            NetworkLogger.printInfo("MainServer", "Reached timeout for client " + client + " ...");
+            LOG.info("Reached timeout for client " + client + " ...");
             // send remove packet to all clients in the cluster and main server
             final ClientNetworkRecord remClient = new ClientNetworkRecord(client,
                     topology.getClusterIndex(client));
@@ -438,7 +443,7 @@ public class MainServer implements P2PUser {
             packetInfo.setPortNum(client.port());
             final byte[] removePacket = parser.createPkt(packetInfo);
             final List<ClientNode> servers = topology.getAllClusterServers();
-            NetworkLogger.printInfo("MainServer", "servers " + servers);
+            LOG.info("servers " + servers);
             for (ClientNode server : servers) {
                 if (server.equals(mainserver) || server.equals(client)) {
                     continue;
@@ -446,7 +451,7 @@ public class MainServer implements P2PUser {
                 send(removePacket, server);
             }
             final List<ClientNode> clients = topology.getClients(mainServerClusterIdx);
-            NetworkLogger.printInfo("MainServer", "clients " + clients);
+            LOG.info("clients " + clients);
             for (ClientNode newClient : clients) {
                 if (newClient.equals(mainserver) || newClient.equals(client)) {
                     continue;

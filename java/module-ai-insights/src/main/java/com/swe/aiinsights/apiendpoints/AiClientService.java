@@ -17,18 +17,15 @@
 package com.swe.aiinsights.apiendpoints;
 
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.swe.aiinsights.data.WhiteBoardData;
 import com.swe.aiinsights.request.AiRequestable;
 import com.swe.aiinsights.request.RequestFactory;
 
 import java.util.concurrent.CompletableFuture;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
-
-
-
 import java.io.IOException;
 
 /**
@@ -40,7 +37,7 @@ public class AiClientService {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(AiClientService.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
 
     /**
@@ -78,12 +75,12 @@ public class AiClientService {
      * @return textual description of the image
      */
     public CompletableFuture<String> describe(final String file) {
-        LOG.info("Received image describe request for file: {}", file);
+        LOG.info("Received image describe request for file: " + file);
 
         try {
             // Pass file path to your existing data class
             final WhiteBoardData data = new WhiteBoardData(file);
-            LOG.debug("Created WhiteBoardData for file {}", file);
+            LOG.debug("Created WhiteBoardData for file " + file);
 
             final AiRequestable interpreterRequest = factory.getRequest("DESC", data);
             LOG.debug("Built AI request for image interpretation (DESC)");
@@ -91,7 +88,7 @@ public class AiClientService {
             LOG.info("Submitting image interpretation request to AI executor");
             return ASYNC_AI_EXECUTOR.execute(interpreterRequest);
         } catch (IOException e) {
-            LOG.error("Failed to execute image describe() for file: {}", file, e);
+            LOG.error("Failed to execute image describe() for file: " + file, e);
             throw new RuntimeException(e);
         }
     }
@@ -224,7 +221,7 @@ public class AiClientService {
     public CompletableFuture<String> answerQuestion(
             final String question) {
         LOG.info("Received request: answerQuestion()");
-        LOG.info("Question received: {}", question);
+        LOG.info("Question received: " + question);
 
         try {
 

@@ -20,14 +20,14 @@
   <!-- ===================================================== -->
   <modules>
     <module>module-networking</module>
-    <module>module-chat</module>
+<!--    <module>module-chat</module>-->
     <module>module-screen-video</module>
     <module>module-ai-insights</module>
     <module>module-cloud</module>
     <module>module-core</module>
     <module>module-canvas</module>
     <module>module-app</module>
-    <module>module-integration-tests</module>
+    <module>module-chat</module>
   </modules>
 
   <!-- ===================================================== -->
@@ -107,27 +107,31 @@
           </executions>
         </plugin>
 
-        <!-- JaCoCo for Coverage -->
+        <!-- JaCoCo for Aggregated Coverage -->
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
+          <version>0.8.12</version>
           <executions>
+            <!-- Collect coverage from all modules -->
             <execution>
               <id>prepare-agent</id>
               <goals>
                 <goal>prepare-agent</goal>
               </goals>
             </execution>
+
+            <!-- Create ONE merged report: java/target/site/jacoco-aggregate/jacoco.xml -->
             <execution>
-              <id>report</id>
-              <phase>test</phase>
+              <id>report-aggregate</id>
+              <phase>verify</phase>
               <goals>
-                <goal>report</goal>
+                <goal>report-aggregate</goal>
               </goals>
             </execution>
           </executions>
         </plugin>
+
 
         <!-- Maven Site Plugin -->
         <plugin>

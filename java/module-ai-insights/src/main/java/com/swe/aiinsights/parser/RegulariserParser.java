@@ -26,14 +26,14 @@
 
 package com.swe.aiinsights.parser;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 /**
  * This parser cleans AI output, validates JSON structure.
  */
@@ -41,8 +41,8 @@ public class RegulariserParser {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(RegulariserParser.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Cleans and validates the AI response.
