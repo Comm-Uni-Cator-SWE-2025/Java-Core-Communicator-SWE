@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -159,9 +159,9 @@ public class ADPCMDecoder {
         index = 0;
     }
 
-    public void setState(int predictor, int index) {
-        this.predictor = predictor;
-        this.index = index;
+    public void setState(final int predictorArg, final int indexArg) {
+        this.predictor = predictorArg;
+        this.index = indexArg;
     }
 
 }
