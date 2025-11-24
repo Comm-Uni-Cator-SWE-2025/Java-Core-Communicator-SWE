@@ -117,11 +117,13 @@ public class CanvasManager {
                 // Host Logic:
                 // Received data from a Client.
                 // DO NOT broadcast yet. Send to Frontend for verification.
+                System.out.println("[CanvasManager] Host received data from client for verification.");
                 rpc.call("canvas:update", data);
             } else {
                 // Client Logic:
                 // Received broadcast from Host.
                 // Update Frontend.
+                System.out.println("[CanvasManager] Clients received broadcast from host.");
                 rpc.call("canvas:update", data);
                 
                 // Store in local history
@@ -138,6 +140,7 @@ public class CanvasManager {
         // Called by Host Frontend AFTER verification.
         try {
             // Broadcast to all clients
+            System.out.println("[CanvasManager] Host broadcasting verified data to all clients.");
             networking.broadcast(data, ModuleType.CANVAS.ordinal(), 1);
             
             // Store in Host history
