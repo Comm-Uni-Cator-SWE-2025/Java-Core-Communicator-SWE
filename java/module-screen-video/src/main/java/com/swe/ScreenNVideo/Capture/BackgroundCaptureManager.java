@@ -75,7 +75,6 @@ public final class BackgroundCaptureManager {
                     Telemetry.getTelemetry().closeModel();
                     videoCapture.stop();
                     screenCapture.stop();
-                    System.out.println("Here");
                     Thread.sleep(Utils.SEC_IN_MS);
                     continue;
                 }
@@ -83,9 +82,9 @@ public final class BackgroundCaptureManager {
                 if (capCom.isScreenCaptureOn()) {
                     try {
                         // Overwrite the volatile variable with the latest frame
-                        System.out.println("Capturing..");
+                        // System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-                        System.out.println("Done Capturedd..");
+                        // System.out.println("Done Capturedd..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
                         Thread.sleep(500);
