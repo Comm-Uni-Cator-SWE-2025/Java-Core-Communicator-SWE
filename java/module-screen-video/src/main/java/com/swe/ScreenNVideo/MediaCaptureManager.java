@@ -266,12 +266,12 @@ public class MediaCaptureManager implements CaptureManager {
         @Override
         public void receiveData(final byte[] data) {
 
-            // System.out.println("Received");
+             System.out.println("Received " + data.length);
             if (data.length == 0) {
                 return;
             }
-            // // System.out.println("first 40 bytes:" +
-            // (Arrays.toString(Arrays.copyOf(data, 40))));
+              System.out.println("first 40 bytes:" +
+             (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
