@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiActionItemsRequest.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Class that handles action item generation requests to AI.
  * <p>
@@ -14,6 +23,8 @@
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,6 +35,11 @@ import java.util.Map;
  * Stores the metadata of the request to be made to the AI.
  */
 public class AiActionItemsRequest implements AiRequestable<JsonNode> {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG =
+            CommonLogger.getLogger(AiActionItemsRequest.class);
     /**
      * metaData stores the prompt.
      * Also, other details of the request like the content.
@@ -43,6 +59,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
 
     public AiActionItemsRequest(final JsonNode chatData) throws IOException {
         // Initialises the metaData with prompt and data.
+        LOG.info("Creating new ActionItems request");
         metaData = new HashMap<>();
         metaData.put("InputChatData", chatData);
         metaData.put("RequestPrompt", """
@@ -63,6 +80,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getContext() {
         // Returns the request prompt.
+        LOG.info("Fetching ActionItems request prompt");
         return metaData.get("RequestPrompt").toString();
     }
 
@@ -72,6 +90,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getReqType() {
         // returns "INS".
+        LOG.info("Fetching request type");
         return type;
     }
 
@@ -81,6 +100,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public JsonNode getInput() {
         // this function returns the input.
+        LOG.info("Fetching ActionItems input data");
         return (JsonNode) metaData.get("InputChatData");
     }
 }

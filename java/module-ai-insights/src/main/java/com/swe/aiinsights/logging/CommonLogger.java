@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: CommonLogger.java
+ *  Owner: Berelli Gouthami
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.logging
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.aiinsights.logging;
 
 import org.slf4j.Logger;

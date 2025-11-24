@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiClientService.java
+ *  Owner: Abhirami R Iyer, Nandhana Sunil, Berelli Gouthami
+ *  Roll Number : 112201001, 112201008, 112201003
+ *  Module : com.swe.aiinsights.apiendpoints
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * API functions for various AI services.
  *
@@ -69,12 +78,20 @@ public class AiClientService {
      * @return textual description of the image
      */
     public CompletableFuture<String> describe(final String file) {
+        LOG.info("Received image describe request for file: {}", file);
+
         try {
             // Pass file path to your existing data class
             final WhiteBoardData data = new WhiteBoardData(file);
+            LOG.debug("Created WhiteBoardData for file {}", file);
+
             final AiRequestable interpreterRequest = factory.getRequest("DESC", data);
+            LOG.debug("Built AI request for image interpretation (DESC)");
+
+            LOG.info("Submitting image interpretation request to AI executor");
             return ASYNC_AI_EXECUTOR.execute(interpreterRequest);
         } catch (IOException e) {
+            LOG.error("Failed to execute image describe() for file: {}", file, e);
             throw new RuntimeException(e);
         }
     }
@@ -86,10 +103,18 @@ public class AiClientService {
      * @return regularised point data as a response
      */
     public  CompletableFuture<String> regularise(final String points) {
+        LOG.info("Received regularisation request");
+
         try {
+            LOG.debug("Regularisation payload: received");
+
             final AiRequestable regulariserRequest = factory.getRequest("REG", points);
+            LOG.debug("Built request for regularisation (REG)");
+
+            LOG.info("Submitting regularisation request to AI executor");
             return ASYNC_AI_EXECUTOR.execute(regulariserRequest);
         } catch (Exception e) {
+            LOG.error("Regularisation failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -103,11 +128,20 @@ public class AiClientService {
      */
     public  CompletableFuture<String> sentiment(
             final JsonNode chatData) {
+        LOG.info("Received sentiment analysis request");
+
         try {
+            LOG.debug("Chat data received for sentiment analysis");
+
             AiRequestable sentimentRequest = null;
+
             sentimentRequest = factory.getRequest("INS", chatData);
+            LOG.debug("Built AI request for sentiment analysis (INS)");
+
+            LOG.info("Submitting sentiment analysis request to AI executor");
             return ASYNC_AI_EXECUTOR.execute(sentimentRequest);
         } catch (IOException e) {
+            LOG.error("Sentiment analysis failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -233,11 +267,19 @@ public class AiClientService {
      * @return AI response
      */
     public CompletableFuture<String> action(
-        final JsonNode chatData) {
+            final JsonNode chatData) {
+        LOG.info("Received action-item generation request");
+
         try {
+            LOG.debug("Action raw chat input received");
+
             final AiRequestable actionRequest = factory.getRequest("ACTION", chatData);
+            LOG.debug("Built AI request for ACTION");
+
+            LOG.info("Submitting ACTION request to AI executor");
             return ASYNC_AI_EXECUTOR.execute(actionRequest);
         } catch (IOException e) {
+            LOG.error("Failed to generate action items", e);
             throw new RuntimeException(e);
         }
     }

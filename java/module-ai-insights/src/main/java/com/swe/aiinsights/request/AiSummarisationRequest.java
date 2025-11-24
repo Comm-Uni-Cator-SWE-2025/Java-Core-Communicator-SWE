@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiSummarisationRequest.java
+ *  Owner: Berelli Gouthami
+ *  Roll Number : 112201003
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Author Berelli Gouthami.
  */

@@ -1,4 +1,5 @@
 /**
- * Contains REST API controllers for AI image interpretation and regularisation.
+ * API endpoints for AI services.
  */
+
 package com.swe.aiinsights.apiendpoints;

@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: RequestGeneraliser.java
+ *  Owner: Berelli Gouthami
+ *  Roll Number : 112201003
+ *  Module : com.swe.aiinsights.generaliser
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  *
  * <p>
@@ -26,7 +35,9 @@
 package com.swe.aiinsights.generaliser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.swe.aiinsights.logging.CommonLogger;
 import com.swe.aiinsights.parser.RegulariserParser;
+import com.swe.aiinsights.parser.InsightsParser;
 import com.swe.aiinsights.request.AiRequestable;
 import com.swe.aiinsights.response.AiResponse;
 import com.swe.aiinsights.response.InterpreterResponse;
@@ -35,8 +46,7 @@ import com.swe.aiinsights.response.SummariserResponse;
 import com.swe.aiinsights.response.InsightsResponse;
 import com.swe.aiinsights.response.ActionItemsResponse;
 import com.swe.aiinsights.response.QuestionAnswerResponse;
-
-
+import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +58,10 @@ import java.util.Objects;
  * the kinds of requests.
  */
 public class RequestGeneraliser {
-
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG = CommonLogger.getLogger(RequestGeneraliser.class);
     /**
      * Holds the prompt of the request.
      */
@@ -78,14 +91,14 @@ public class RequestGeneraliser {
 
     public RequestGeneraliser(final AiRequestable request) {
 
-        System.out.println("DEBUG >>> ReqType: " + request.getReqType());
-        System.out.println("DEBUG >>> Registered keys: " + registeredKeys);
+        LOG.info("ReqType: " + request.getReqType());
+        LOG.info("Registered keys: " + registeredKeys);
 
         setPrompt(request.getContext());
 
         this.reqType = request.getReqType();
         if (Objects.equals(reqType, "DESC")) {
-            setImgData(request.getInput().toString());
+            setImgData((String) request.getInput());
         } else {
             setTextData(request.getInput().toString());
         }
@@ -109,6 +122,7 @@ public class RequestGeneraliser {
                 aiResponse = new QuestionAnswerResponse();
                 break;
             default:
+                // this case is not reachable
                 aiResponse = null;
                 break;
         }
@@ -154,9 +168,11 @@ public class RequestGeneraliser {
      */
     public String formatOutput(final AiResponse response) throws JsonProcessingException {
         if (Objects.equals(reqType, "REG")) {
+            LOG.info("Calling parser for regularisation output");
             final RegulariserParser parser = new RegulariserParser();
-
             return parser.parseInput(this.textData, response.getResponse());
+        } else if (Objects.equals(reqType, "INS")) {
+            return InsightsParser.parse(response.getResponse());
         }
         return response.getResponse();
     }

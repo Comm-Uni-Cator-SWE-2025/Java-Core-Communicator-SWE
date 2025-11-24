@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiInsightsRequest.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Class that handles insights generation requests to AI.
  * <p>
@@ -24,6 +33,8 @@
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -34,6 +45,11 @@ import java.util.Map;
  * Stores the metadata of the request to be made to the AI.
  */
 public class AiInsightsRequest implements AiRequestable<JsonNode> {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG =
+            CommonLogger.getLogger(AiInsightsRequest.class);
     /**
      * metaDataInsight stores the prompt.
      * Also, other details of the request like the content.
@@ -53,6 +69,7 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
 
     public AiInsightsRequest(final JsonNode chatData) throws IOException {
         // Initialises the metaDataInsight with prompt and data.
+        LOG.info("Creating insights Request..");
         metaDataInsight = new HashMap<>();
         metaDataInsight.put("InputChatData", chatData);
         metaDataInsight.put("RequestPrompt", """
@@ -85,6 +102,7 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getContext() {
         // Returns the request prompt.
+        LOG.info("Fetching Insights Request prompt..");
         return metaDataInsight.get("RequestPrompt").toString();
     }
 
@@ -94,6 +112,7 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getReqType() {
         // returns "INS".
+        LOG.info("Fetching Request type..");
         return type;
     }
 
@@ -103,6 +122,7 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
     @Override
     public JsonNode getInput() {
         // this function returns the input.
+        LOG.info("Fetching Insights Request input data..");
         return (JsonNode) metaDataInsight.get("InputChatData");
     }
 }

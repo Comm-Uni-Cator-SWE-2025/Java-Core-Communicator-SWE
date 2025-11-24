@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: RateLimitException.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.customexceptions
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Class that creates a custom Exception when rate limit of cloud LLM is reached.
  * <p>

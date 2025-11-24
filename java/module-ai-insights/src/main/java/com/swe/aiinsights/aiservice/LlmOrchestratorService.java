@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: LlmOrchestratorService.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.aiinstance
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Switches between cloud models and local LLMs when rate limit is hit.
  * 
@@ -97,6 +106,7 @@ public class LlmOrchestratorService implements LlmService {
         
         // Should be unreachable, because last one will be local LLM
         // but included for safety incase any other exception occurs.
+        LOG.error("All configured LLM services failed to process the request.");
         throw new IOException("All configured LLM services failed to process the request.");
     }
 }
