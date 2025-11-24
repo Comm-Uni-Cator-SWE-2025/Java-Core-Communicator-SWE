@@ -200,7 +200,7 @@ public class DummyNetworking implements AbstractNetworking {
 
     @Override
     public void broadcast(byte[] data, int module, int priority) {
-        sendData(data, new ClientNode[]{new ClientNode("10.32.1.250", 40000)},module,priority);
+        sendData(data, new ClientNode[]{new ClientNode("10.128.5.156", 40000)},module,priority);
     }
 
     @Override

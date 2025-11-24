@@ -1,5 +1,5 @@
 /**
- * Contributed by @sandeep-kumar
+ * Contributed by @sandeep-kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;

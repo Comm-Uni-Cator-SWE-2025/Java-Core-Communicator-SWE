@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -12,10 +12,20 @@ import java.util.stream.Collectors;
 
 /**
  * Audio Packets to be sent over networking layer.
- * @param data data to be sent
+ *
  * @param packetNumber packet number of the feed
+ * @param data         audio data to be sent
+ * @param ip           sender IP address in dotted-decimal format
+ * @param predictedPCM predicted PCM sample used for ADPCM encoding
+ * @param indexPCM     ADPCM index value
  */
 public record APackets(int packetNumber, byte[] data, String ip, int predictedPCM, int indexPCM) {
+
+    /**
+     * IPV4_Octets.
+     */
+    private static final int IPV4_OCTETS = 4;
+
     /**
      * Serializes AudioPacket for networking layer.
      *
@@ -62,11 +72,11 @@ public record APackets(int packetNumber, byte[] data, String ip, int predictedPC
                 "Invalid Data type: Expected " + NetworkPacketType.APACKETS.ordinal() + " got : " + packetType);
         }
 
-        final int[] ipInts = new int[4];
-        for (int i = 0; i < 4; i++) {
+        final int[] ipInts = new int[IPV4_OCTETS];
+        for (int i = 0; i < IPV4_OCTETS; i++) {
             ipInts[i] = buffer.getInt();
         }
-        String sender_ip = Arrays.stream(ipInts).mapToObj(String::valueOf).collect(Collectors.joining("."));
+        final String senderIp = Arrays.stream(ipInts).mapToObj(String::valueOf).collect(Collectors.joining("."));
 
         // get feed number
         final int packetNumber = buffer.getInt();
@@ -80,6 +90,6 @@ public record APackets(int packetNumber, byte[] data, String ip, int predictedPC
         final byte[] audioData = new byte[buffer.remaining()];
         buffer.get(audioData);
 
-        return new APackets(packetNumber, audioData, sender_ip, predictedPCM, indexPCM);
+        return new APackets(packetNumber, audioData, senderIp, predictedPCM, indexPCM);
     }
 }

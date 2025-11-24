@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @BhupathiVarun
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -22,9 +22,15 @@ public class RImage {
      */
     private final String ip;
 
-    public RImage(final int[][] imageArgs, final String ipArgs) {
+    /**
+     * Data rate.
+     */
+    private final long dataRate;
+
+    public RImage(final int[][] imageArgs, final String ipArgs, final long dataRateArgs) {
         ip = ipArgs;
         image = imageArgs;
+        dataRate = dataRateArgs;
     }
 
     /**
@@ -35,11 +41,15 @@ public class RImage {
         final int height = image.length;
         final int width = image[0].length;
         final byte[] ipBytes = ip.getBytes();
-        final int lenReq = ipBytes.length + (height * width) * 3 + 12;
+        final int lenReq = ipBytes.length + (height * width) * 3 + 12 + Long.BYTES;
         final ByteBuffer buffer = ByteBuffer.allocate(lenReq); // three for rgb
         // put the ip
         buffer.putInt(ipBytes.length);
         buffer.put(ipBytes);
+
+        // put the dataRate
+        buffer.putLong(dataRate);
+
         // put the image
         buffer.putInt(height);
         buffer.putInt(width);
@@ -64,5 +74,9 @@ public class RImage {
 
     public String getIp() {
         return ip;
+    }
+
+    public long getDataRate() {
+        return dataRate;
     }
 }

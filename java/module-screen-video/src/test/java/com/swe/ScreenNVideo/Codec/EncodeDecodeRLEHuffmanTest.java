@@ -2,9 +2,8 @@
  * Contributed by @alonot
  */
 
-package com.swe.ScreenNVideo;
+package com.swe.ScreenNVideo.Codec;
 
-import com.swe.ScreenNVideo.Codec.EncodeDecodeRLEHuffman;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;

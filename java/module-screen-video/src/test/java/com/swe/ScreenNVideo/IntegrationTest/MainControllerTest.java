@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 import static com.swe.ScreenNVideo.Utils.getSelfIP;
 
 /**
+ * Deprecated. Use main app
+
  * Entry point for the screen and video integration test.
  * <p>
  * The {@code MainController} sets up dummy networking and RPC components,
@@ -52,7 +54,7 @@ public class MainControllerTest {
         // networking.addUser(deviceNode, deviceNode);
 
 
-        final MediaCaptureManager screenNVideo = new MediaCaptureManager((AbstractNetworking) networking, rpc,
+        final MediaCaptureManager screenNVideo = new MediaCaptureManager((AbstractNetworking) networking,
                 SERVERPORT);
 
         Thread handler = null;
@@ -67,13 +69,13 @@ public class MainControllerTest {
         // need this
         System.out.println(allNetworks);
 
-        screenNVideo.broadcastJoinMeeting(allNetworks);
+//        screenNVideo.broadcastJoinMeeting(allNetworks);
         System.out.println("Connection RPC..");
 
 
         final Thread screenNVideoThread = new Thread(() -> {
             try {
-                screenNVideo.startCapture();
+                screenNVideo.startCapture(24);
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }

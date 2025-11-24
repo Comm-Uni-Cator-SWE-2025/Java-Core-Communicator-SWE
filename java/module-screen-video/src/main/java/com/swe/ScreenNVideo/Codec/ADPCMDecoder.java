@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -17,6 +17,9 @@ public class ADPCMDecoder {
 
     /** Number of bits in a nibble. */
     private static final int NIBBLE_BITS = 4;
+
+    /** Mask to extract a 4-bit ADPCM nibble (0x0F). */
+    private static final int NIBBLE_MASK = 0x0F;
 
     /** Size of a Byte. */
     private static final int BYTE_SIZE = 8;
@@ -92,8 +95,8 @@ public class ADPCMDecoder {
         int pcmIndex = 0;
 
         for (byte adpcmByte : adpcmBytes) {
-            final int highNibble = (adpcmByte >> NIBBLE_BITS) & 0x0F;
-            final int lowNibble = adpcmByte & 0x0F;
+            final int highNibble = (adpcmByte >> NIBBLE_BITS) & NIBBLE_MASK;
+            final int lowNibble = adpcmByte & NIBBLE_MASK;
 
             predictor = decodeNibble(highNibble, predictor);
             pcmBytes[pcmIndex++] = (byte) (predictor & BYTE_MASK);
@@ -159,9 +162,9 @@ public class ADPCMDecoder {
         index = 0;
     }
 
-    public void setState(int predictor, int index) {
-        this.predictor = predictor;
-        this.index = index;
+    public void setState(final int predictorArg, final int indexArg) {
+        this.predictor = predictorArg;
+        this.index = indexArg;
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -21,10 +21,10 @@ public interface Codec {
      * @param height block's height
      * @param width block's width
      * @return list of array bytes
-     * at ind 0 : compressed
-     * at ind 1 : without compression
+     *      at ind 0 : compressed
+     *      at ind 1 : without compression
      */
-    List<byte[]> encode(final int[][] screenShot, final int x, final int y, final int height, final int width);
+    List<byte[]> encode(int[][] screenShot, int x, int y, int height, int width);
 
     /**
      * Decode and Decompress the image.
@@ -33,6 +33,6 @@ public interface Codec {
      * @param compress to compress or not
      * @return decoded image matrix
      */
-    int[][] decode(final byte[] encodedImage, boolean compress);
+    int[][] decode(byte[] encodedImage, boolean compress);
 
 }

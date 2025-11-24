@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo;
@@ -21,24 +21,9 @@ import java.awt.image.BufferedImage;
 import java.util.function.BiFunction;
 
 /**
- * Class conatining Components to capture feed.
+ * Class containing Components to capture feed.
  */
 public class CaptureComponents {
-
-
-    private boolean compareMatrices(final int[][] prev, final int[][] curr) {
-        if (prev == null || curr == null) {
-            return false;
-        }
-        for (int i = 0; i < prev.length; i++) {
-            for (int j = 0; j < prev[0].length; j++) {
-                if (prev[i][j] != curr[i][j]) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {
         this.latestScreenFrame = latestScreenFrameArgs;
@@ -107,6 +92,7 @@ public class CaptureComponents {
      */
     private final String localIp = Utils.getSelfIP();
 
+    /** Callback used to register a synchronizer for a subscriber. */
     private final BiFunction<String, Boolean, Void> addSynchron;
 
     /**
@@ -114,8 +100,10 @@ public class CaptureComponents {
      * @param argNetworking Networking object
      * @param rpc RPC object
      * @param port Port number
+     * @param function callback to add a synchronizer for a viewer (ip, compressionFlag)
      */
-    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port, BiFunction<String, Boolean, Void> function) {
+    CaptureComponents(final AbstractNetworking argNetworking, final AbstractRPC rpc, final int port,
+                      final BiFunction<String, Boolean, Void> function) {
         isScreenCaptureOn = false;
         isVideoCaptureOn = false;
         isAudioCaptureOn = false;
@@ -157,7 +145,7 @@ public class CaptureComponents {
 //            long curr = System.nanoTime();
 //            System.out.println("Stitching Time : " + (curr - prev) / ((double) Utils.MSEC_IN_NS));
 //            prev = curr;
-        if (feed != null && (feed.length > Utils.SERVER_HEIGHT || feed[0].length > Utils.SERVER_WIDTH )) {
+        if (feed != null && (feed.length > Utils.SERVER_HEIGHT || feed[0].length > Utils.SERVER_WIDTH)) {
             feed = scalar.scale(feed, Utils.SERVER_HEIGHT, Utils.SERVER_WIDTH);
         }
 //            curr = System.nanoTime();
@@ -191,6 +179,11 @@ public class CaptureComponents {
         return feed;
     }
 
+    /**
+     * Retrieves the next chunk of captured audio if audio capture is enabled.
+     *
+     * @return audio bytes, or null if audio capture is disabled
+     */
     public byte[] getAudioFeed() {
         if (isAudioCaptureOn) {
             return audioCapture.getChunk();
@@ -200,48 +193,27 @@ public class CaptureComponents {
         return null;
     }
 
+    /**
+     * Registers a simple boolean toggle handler for a capture flag.
+     *
+     * @param rpc          The RPC instance used to subscribe to the toggle key.
+     * @param key          The identifier for the toggle event.
+     * @param enableAction The action executed when the toggle event is triggered.
+     */
+    private void registerToggleHandler(final AbstractRPC rpc, final String key, final Runnable enableAction) {
+        rpc.subscribe(key, (final byte[] args) -> {
+            enableAction.run();
+            return new byte[] {1};
+        });
+    }
+
     private void initializeHandlers(final AbstractRPC rpc, final int port) {
-        rpc.subscribe(Utils.START_VIDEO_CAPTURE, (final byte[] args) -> {
-            isVideoCaptureOn = true;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
-
-        rpc.subscribe(Utils.STOP_VIDEO_CAPTURE, (final byte[] args) -> {
-            isVideoCaptureOn = false;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
-
-        rpc.subscribe(Utils.START_SCREEN_CAPTURE, (final byte[] args) -> {
-            isScreenCaptureOn = true;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
-
-        rpc.subscribe(Utils.STOP_SCREEN_CAPTURE, (final byte[] args) -> {
-            isScreenCaptureOn = false;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
-
-        rpc.subscribe(Utils.START_AUDIO_CAPTURE, (final byte[] args) -> {
-            isAudioCaptureOn = true;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
-
-        rpc.subscribe(Utils.STOP_AUDIO_CAPTURE, (final byte[] args) -> {
-            isAudioCaptureOn = false;
-            final byte[] res = new byte[1];
-            res[0] = 1;
-            return res;
-        });
+        registerToggleHandler(rpc, Utils.START_VIDEO_CAPTURE, () -> isVideoCaptureOn = true);
+        registerToggleHandler(rpc, Utils.STOP_VIDEO_CAPTURE, () -> isVideoCaptureOn = false);
+        registerToggleHandler(rpc, Utils.START_SCREEN_CAPTURE, () -> isScreenCaptureOn = true);
+        registerToggleHandler(rpc, Utils.STOP_SCREEN_CAPTURE, () -> isScreenCaptureOn = false);
+        registerToggleHandler(rpc, Utils.START_AUDIO_CAPTURE, () -> isAudioCaptureOn = true);
+        registerToggleHandler(rpc, Utils.STOP_AUDIO_CAPTURE, () -> isAudioCaptureOn = false);
 
         rpc.subscribe(Utils.SUBSCRIBE_AS_VIEWER, (final byte[] args) -> {
             final byte[] res = new byte[1];

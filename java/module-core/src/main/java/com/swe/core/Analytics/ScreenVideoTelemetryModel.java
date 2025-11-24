@@ -45,6 +45,26 @@ public class ScreenVideoTelemetryModel {
         return endTime;
     }
 
+    public void setEndTime(final long val) {
+        endTime = val;
+    }
+
+    public void setStartTime(final long val) {
+        startTime = val;
+    }
+
+    public void setWithScreen(final boolean val) {
+        withScreen = val;
+    }
+
+    public void setWithCamera(final boolean val) {
+        withCamera = val;
+    }
+
+    public void addFps(Double fps) {
+        fpsEvery3Seconds.add(fps);
+    }
+
     public ArrayList<Double> getFpsEvery3Seconds() {
         return fpsEvery3Seconds;
     }

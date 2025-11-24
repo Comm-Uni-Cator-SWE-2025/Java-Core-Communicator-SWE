@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo.Synchronizer;
@@ -31,18 +31,84 @@ public class ImageSynchronizer {
     private final ImageStitcher imageStitcher;
 
     /**
+     * Time in ms when previous packets were sent.
+     */
+    private long prevSend = 0;
+
+    /**
+     * Returns the last send timestamp.
+     * @return time in milliseconds
+     */
+    public long getPrevSend() {
+        return prevSend;
+    }
+
+    /**
+     * Data recieved from prevSend.
+     */
+    private long dataReceived = 0;
+
+    public long getDataReceived() {
+        return dataReceived;
+    }
+
+    public void setDataReceived(final long receivedTimestamp) {
+        this.dataReceived = receivedTimestamp;
+    }
+
+    /**
+     * Setter for prevSend.
+     */
+    public void setPrevSend() {
+        prevSend = System.currentTimeMillis();
+    }
+
+    /**
      * The next feed number we expect to recieve in correct order.
      * Used to ensure patches are applied sequentially.
      */
     private int expectedFeedNumber;
 
-    public boolean waitingForFullImage = false;
+    /**
+     * Indicates if the synchronizer is currently waiting for a full image.
+     */
+    private boolean waitingForFullImage = false;
+
+    /**
+     * Sets whether a full image is being awaited.
+     *
+     * @param waiting status flag
+     */
+    public void setWaitingForFullImage(final boolean waiting) {
+        this.waitingForFullImage = waiting;
+    }
 
     public int getExpectedFeedNumber() {
         return expectedFeedNumber;
     }
 
-    public boolean reqCompression = false;
+    /**
+     * If true, compression is requested for upcoming patches.
+     */
+    private boolean reqCompression = false;
+
+    /**
+     * Returns whether compression is requested.
+     *
+     * @return true if compression is required
+     */
+    public boolean isReqCompression() {
+        return reqCompression;
+    }
+
+    /**
+     * Sets the compression request status.
+     *
+     * @param required true if compression is needed
+     */
+    public void setReqCompression(final boolean required) {
+        this.reqCompression = required;
+    }
 
     /**
      * Sets the expected feedNumber.
@@ -58,6 +124,7 @@ public class ImageSynchronizer {
     private final PriorityQueue<FeedData> heap;
 
     /**
+     * Returns the priority queue used for storing reordered feed packets.
      * @return the min-heap of {@link FeedData} items used for ordering incoming packets.
      */
     public PriorityQueue<FeedData> getHeap() {

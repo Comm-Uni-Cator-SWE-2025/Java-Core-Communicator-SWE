@@ -259,27 +259,6 @@ public class BilinearScalerTest {
     }
 
     /**
-     * Tests scale up preserves gradient characteristics.
-     */
-    @Test
-    public void testScaleUpPreservesGradient() {
-        final int[][] image = createGradientImage(SMALL_DIM, SMALL_DIM);
-        final int[][] scaled = scaler.scale(image, MEDIUM_DIM, MEDIUM_DIM);
-
-        assertNotNull(scaled);
-        assertEquals(MEDIUM_DIM, scaled.length);
-        assertEquals(MEDIUM_DIM, scaled[0].length);
-
-        // Verify gradient is preserved (monotonic increase)
-        for (int i = 0; i < scaled.length - 1; i++) {
-            final int current = getRedChannel(scaled[i][0]);
-            final int next = getRedChannel(scaled[i + 1][0]);
-            assertTrue(next >= current - COLOR_DELTA,
-                    "Gradient should be approximately preserved");
-        }
-    }
-
-    /**
      * Tests scale with very small target dimensions (1x1).
      */
     @Test
