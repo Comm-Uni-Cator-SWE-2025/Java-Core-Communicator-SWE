@@ -8,6 +8,8 @@ import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.List;
 import java.util.PriorityQueue;
@@ -16,6 +18,7 @@ import java.util.PriorityQueue;
  * Synchronizer to synchronize the image from the patches.
  */
 public class ImageSynchronizer {
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * The previous image.
      * The new patch will be stitched on this image.
@@ -169,7 +172,7 @@ public class ImageSynchronizer {
         }
         previousImage = imageStitcher.getCanvas();
         if (previousImage == null) {
-            System.out.println("------------------GOT-NULL-------------");
+            LOG.warn("ImageSynchronizer produced null canvas");
         }
         return previousImage;
     }

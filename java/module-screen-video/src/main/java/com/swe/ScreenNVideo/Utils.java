@@ -8,6 +8,8 @@ import com.swe.core.ClientNode;
 import com.swe.core.Context;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.UserProfile;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -22,6 +24,7 @@ import java.util.Map;
  * Utility class for ScreenN Video.
  */
 public class Utils {
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * Hashing stride for the hashing algorithm.
      */
@@ -182,7 +185,7 @@ public class Utils {
         for (int y = 0; y < height; y++) {
             System.arraycopy(data, y * width, matrix[y], 0, width);
         }
-//        System.out.println("Image to RGB Matrix Conversion Time: "
+//        LOG.info("Image to RGB Matrix Conversion Time: "
 //                + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
         return matrix;
     }
@@ -238,7 +241,7 @@ public class Utils {
     }
 
     public static String getEmailFromIp(ClientNode ipNode) {
-        final MeetingSession meetingSession = Context.getInstance().meetingSession;
+        final MeetingSession meetingSession = Context.getInstance().getMeetingSession();
         if (meetingSession == null) {
             return null;
         }
@@ -246,9 +249,9 @@ public class Utils {
         if (participants == null) {
             return null;
         }
-        System.out.println(ipNode.port());
+        LOG.info(String.valueOf(ipNode.port()));
         participants.forEach((p,v) -> {
-            System.out.println(p.hostName() + " " + v.getEmail());
+            LOG.info(p.hostName() + " " + v.getEmail());
         });
         final UserProfile profile = participants.get(ipNode);
         return profile != null ? profile.getEmail() : null;

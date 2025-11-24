@@ -16,8 +16,8 @@
 
 package com.swe.aiinsights.response;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,8 +29,8 @@ public class InsightsResponse implements AiResponse {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(InsightsResponse.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * Type stores the type of the particular response.
      */

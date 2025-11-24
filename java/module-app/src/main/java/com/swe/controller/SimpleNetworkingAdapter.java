@@ -11,29 +11,37 @@ import com.swe.networking.SimpleNetworking.SimpleNetworking;
  * This allows SimpleNetworking to be used where NetworkingInterface is expected.
  */
 public class SimpleNetworkingAdapter implements NetworkingInterface {
+    /**
+     * The underlying simple networking instance.
+     */
     private final SimpleNetworking simpleNetworking;
 
-    public SimpleNetworkingAdapter(SimpleNetworking simpleNetworking) {
-        this.simpleNetworking = simpleNetworking;
+    /**
+     * Constructs a new SimpleNetworkingAdapter.
+     *
+     * @param simpleNetworkingParam The simple networking instance to wrap
+     */
+    public SimpleNetworkingAdapter(final SimpleNetworking simpleNetworkingParam) {
+        this.simpleNetworking = simpleNetworkingParam;
     }
 
     @Override
-    public void sendData(byte[] data, ClientNode[] destIp, ModuleType module, int priority) {
+    public void sendData(final byte[] data, final ClientNode[] destIp, final ModuleType module, final int priority) {
         simpleNetworking.sendData(data, destIp, module, priority);
     }
 
     @Override
-    public void subscribe(ModuleType name, MessageListener function) {
+    public void subscribe(final ModuleType name, final MessageListener function) {
         simpleNetworking.subscribe(name, function);
     }
 
     @Override
-    public void removeSubscription(ModuleType name) {
+    public void removeSubscription(final ModuleType name) {
         simpleNetworking.removeSubscription(name);
     }
 
     @Override
-    public void addUser(ClientNode deviceAddress, ClientNode mainServerAddress) {
+    public void addUser(final ClientNode deviceAddress, final ClientNode mainServerAddress) {
         simpleNetworking.addUser(deviceAddress, mainServerAddress);
     }
 
@@ -43,7 +51,7 @@ public class SimpleNetworkingAdapter implements NetworkingInterface {
     }
 
     @Override
-    public void consumeRPC(AbstractRPC rpc) {
+    public void consumeRPC(final AbstractRPC rpc) {
         simpleNetworking.consumeRPC(rpc);
     }
 }

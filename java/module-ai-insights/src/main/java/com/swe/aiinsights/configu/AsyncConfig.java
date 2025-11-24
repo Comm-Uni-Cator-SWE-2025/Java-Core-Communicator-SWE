@@ -17,8 +17,8 @@
 
 package com.swe.aiinsights.configu;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,8 +32,8 @@ public class AsyncConfig {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(AsyncConfig.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Creates and configures a thread pool for AI-related tasks.
@@ -45,8 +45,7 @@ public class AsyncConfig {
         final int maxPoolSize = 10;
         final int queueCapacity = 50;
 
-        LOG.info("Initializing AI Executor: core={}, max={}, queueCap={}",
-                corePoolSize, maxPoolSize, queueCapacity);
+        LOG.info("Initializing AI Executor: core=" + corePoolSize + ", max=" + maxPoolSize + ", queueCap=" + queueCapacity);
 
         final ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 corePoolSize,
@@ -57,7 +56,7 @@ public class AsyncConfig {
                 r -> {
                     final Thread t = new Thread(r);
                     t.setName("AI-Worker-" + t.getId());
-                    LOG.debug("Created new thread {}", t.getName());
+                    LOG.debug("Created new thread " + t.getName());
                     return t;
                 }
         );

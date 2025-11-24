@@ -26,19 +26,19 @@ public class ContextTest {
     @Test
     public void instanceHasNullFieldsInitially() {
         final Context context = Context.getInstance();
-        assertNull(context.rpc);
-        assertNull(context.self);
-        assertNull(context.selfIP);
-        assertNull(context.mainServerIP);
-        assertNull(context.meetingSession);
+        assertNull(context.getRpc());
+        assertNull(context.getSelf());
+        assertNull(context.getSelfIP());
+        assertNull(context.getMainServerIP());
+        assertNull(context.getMeetingSession());
     }
 
     @Test
     public void canSetRpcField() {
         final Context context = Context.getInstance();
         final RPC rpc = new RPC();
-        context.rpc = rpc;
-        assertSame(rpc, context.rpc);
+        context.setRpc(rpc);
+        assertSame(rpc, context.getRpc());
     }
 
     @Test
@@ -49,24 +49,24 @@ public class ContextTest {
             "Test User",
             com.swe.core.Meeting.ParticipantRole.STUDENT
         );
-        context.self = profile;
-        assertSame(profile, context.self);
+        context.setSelf(profile);
+        assertSame(profile, context.getSelf());
     }
 
     @Test
     public void canSetSelfIPField() {
         final Context context = Context.getInstance();
         final ClientNode node = new ClientNode("127.0.0.1", 8080);
-        context.selfIP = node;
-        assertSame(node, context.selfIP);
+        context.setSelfIP(node);
+        assertSame(node, context.getSelfIP());
     }
 
     @Test
     public void canSetMainServerIPField() {
         final Context context = Context.getInstance();
         final ClientNode node = new ClientNode("192.168.1.1", 9090);
-        context.mainServerIP = node;
-        assertSame(node, context.mainServerIP);
+        context.setMainServerIP(node);
+        assertSame(node, context.getMainServerIP());
     }
 
     @Test
@@ -76,8 +76,8 @@ public class ContextTest {
             "instructor@example.com",
             com.swe.core.Meeting.SessionMode.CLASS
         );
-        context.meetingSession = session;
-        assertSame(session, context.meetingSession);
+        context.setMeetingSession(session);
+        assertSame(session, context.getMeetingSession());
     }
 }
 

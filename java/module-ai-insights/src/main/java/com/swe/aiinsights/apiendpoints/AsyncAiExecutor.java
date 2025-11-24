@@ -16,6 +16,9 @@
 
 package com.swe.aiinsights.apiendpoints;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.aiinsights.aiservice.GeminiService;
 import com.swe.aiinsights.aiservice.LlmService;
 import com.swe.aiinsights.aiservice.OllamaService;
@@ -29,9 +32,6 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 /**
  * Handles asynchronous execution of AI requests using the LLM orchestrator.
  */
@@ -39,7 +39,7 @@ public class AsyncAiExecutor {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(AsyncAiExecutor.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Shared async executor for running AI tasks.
@@ -75,10 +75,10 @@ public class AsyncAiExecutor {
                 return response;
 
             }  catch (IOException e) {
-                LOG.error("IOException in execute: {}", e.getMessage(), e);
+                LOG.error("IOException in execute: " + e.getMessage(), e);
                 throw new RuntimeException(e);
                 } catch (Exception e) {
-                    LOG.error("Unexpected exception in execute: {}", e.getMessage(), e);
+                    LOG.error("Unexpected exception in execute: " + e.getMessage(), e);
                     throw new RuntimeException(e);
                 }
 

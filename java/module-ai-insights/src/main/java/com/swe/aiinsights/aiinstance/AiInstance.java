@@ -39,10 +39,10 @@
 
 package com.swe.aiinsights.aiinstance;
 
-import com.swe.aiinsights.apiendpoints.AiClientService;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
+import com.swe.aiinsights.apiendpoints.AiClientService;
 /**
  * THis class is used ot create a singleton instance of AI.
  * Across requests, it will remain same in a client.
@@ -51,7 +51,7 @@ public class AiInstance {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(AiInstance.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * Creates a singleton instance of AI Service using getInstance method.
      */

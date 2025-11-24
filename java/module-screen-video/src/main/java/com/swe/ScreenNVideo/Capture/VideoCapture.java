@@ -4,6 +4,9 @@
 
 package com.swe.ScreenNVideo.Capture;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -21,6 +24,7 @@ import com.swe.ScreenNVideo.Telemetry.Telemetry;
 public class VideoCapture extends ICapture {
 
     /** Capture parameters. */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     private Dimension captureArea;
     /** Capture parameters. */
     private Point captureLocation;
@@ -102,11 +106,11 @@ public class VideoCapture extends ICapture {
                 this.webcam.open();
             }
 
-            System.out.println("VideoCapture initialized: " + webcam.getName());
+            LOG.info("VideoCapture initialized: " + webcam.getName());
 
         } catch (Exception e) {
-            System.err.println("Error initializing Webcam: " + e.getMessage());
-            e.printStackTrace();
+            LOG.error("Error initializing Webcam: " + e.getMessage());
+            LOG.error("Exception", e);
             this.webcam = null;
             if (listener != null) {
                 listener.onCaptureError("Failed to initialize capture: " + e.getMessage());
@@ -151,13 +155,13 @@ public class VideoCapture extends ICapture {
 
         // Lazy initialization: Initialize webcam on first capture attempt
         if (this.webcam == null) {
-            System.out.println("Initializing webcam for the first time...");
+            LOG.info("Initializing webcam for the first time...");
             reInit();
         }
 
         // --- Webcam capture logic ---
         if (webcam == null || !webcam.isOpen()) {
-            System.err.println("Capture not started or webcam not available");
+            LOG.error("Capture not started or webcam not available");
             return null;
         }
 
@@ -166,7 +170,7 @@ public class VideoCapture extends ICapture {
             return ensureIntARGB(webcam.getImage());
 
         } catch (Exception e) {
-            System.err.println("Error capturing frame: " + e.getMessage());
+            LOG.error("Error capturing frame: " + e.getMessage());
             if (listener != null) {
                 listener.onCaptureError("Frame capture error: " + e.getMessage());
             }
@@ -193,7 +197,7 @@ public class VideoCapture extends ICapture {
     public void setCaptureArea(final int x, final int y, final int width, final int height) {
         this.captureLocation = new Point(x, y);
         this.captureArea = new Dimension(width, height);
-        System.out.println("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
+        LOG.info("Capture area updated: " + width + "x" + height + " at (" + x + "," + y + ")");
     }
 
 
@@ -216,7 +220,7 @@ public class VideoCapture extends ICapture {
         if (webcam != null && webcam.isOpen()) {
             webcam.close();
             webcam = null;
-            System.out.println("Webcam closed.");
+            LOG.info("Webcam closed.");
         }
     }
     // --- End of ADDED method ---

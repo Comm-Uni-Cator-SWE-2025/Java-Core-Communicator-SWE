@@ -4,6 +4,9 @@
 
 package com.swe.ScreenNVideo.Capture;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -20,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture, Runnable {
 
     /** The microphone input line capturing raw PCM audio. */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     private TargetDataLine microphone;
 
     /** The audio format specifying sample rate, size, and channel configuration. */
@@ -69,10 +73,10 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             captureThread = new Thread(this, "AudioCaptureThread");
             captureThread.start();
 
-            System.out.println("Audio capture started at " + SAMPLE_RATE + " Hz");
+            LOG.info("Audio capture started at " + SAMPLE_RATE + " Hz");
             return true;
         } catch (LineUnavailableException e) {
-            e.printStackTrace();
+            LOG.error("Exception", e);
             return false;
         }
     }
@@ -88,7 +92,7 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
                 audioQueue.offer(chunk); // non-blocking insert
             }
         }
-        System.out.println("AudioCapture thread stopped. Total chunks captured: ");
+        LOG.info("AudioCapture thread stopped. Total chunks captured: ");
     }
 
     @Override
@@ -124,7 +128,7 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
                 captureThread.join();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception", e);
         }
     }
 

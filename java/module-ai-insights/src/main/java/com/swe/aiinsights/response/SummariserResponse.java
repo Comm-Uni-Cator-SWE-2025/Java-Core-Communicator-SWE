@@ -13,8 +13,8 @@
 
 package com.swe.aiinsights.response;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Represents the AI's response to a chat summarisation request.
@@ -25,8 +25,8 @@ public class SummariserResponse implements AiResponse {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(SummariserResponse.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * The summary text returned by the AI model.
