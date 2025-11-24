@@ -133,7 +133,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void start() {
         while (!Thread.currentThread().isInterrupted()) {
             if (!priorityQueue.isEmpty()) {
-                final byte[] packet = priorityQueue.nextPacket();
+                final byte[] packet = priorityQueue.getPacket();
                 try {
                     final PacketInfo pktInfo = parser.parsePacket(packet);
                     final InetAddress addr = pktInfo.getIpAddress();
