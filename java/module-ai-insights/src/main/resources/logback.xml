@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n" />
+
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- File Appender with timestamp - creates new file each run -->
+    <timestamp key="bySecond" datePattern="yyyyMMdd-HHmmss"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application-${bySecond}.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="DEBUG">
+<!--        <appender-ref ref="CONSOLE"/>-->
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

@@ -1,10 +1,9 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo;
 
-import com.google.gson.stream.JsonToken;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
@@ -17,19 +16,22 @@ import com.swe.ScreenNVideo.Model.CPackets;
 import com.swe.ScreenNVideo.Model.Feed;
 import com.swe.ScreenNVideo.Model.FeedPatch;
 import com.swe.ScreenNVideo.Model.RImage;
-import com.swe.core.ClientNode;
 import com.swe.core.Context;
-import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Class containing Components to capture and process video.
  */
 public class VideoComponents {
+
+    /**
+     * Max runs without diff.
+     */
+    private static final int MAX_RUNS_WITHOUT_DIFF = 500;
+
     /**
      * Video codec object.
      */
@@ -84,10 +86,11 @@ public class VideoComponents {
         return feed;
     }
 
+    /** Counts consecutive runs without detecting diff changes. */
     private int runCount = 0;
 
     /**
-     * Class conatining Components to capture feed.
+     * Class containing Components to capture feed.
      */
     private final CaptureComponents captureComponents;
 
@@ -97,7 +100,7 @@ public class VideoComponents {
     private final BackgroundCaptureManager bgCapManager;
 
     /**
-     *
+     * Port Number.
      */
     private final int port;
 
@@ -108,7 +111,6 @@ public class VideoComponents {
     public boolean isScreenCaptureOn() {
         return captureComponents.isScreenCaptureOn();
     }
-
 
     VideoComponents(final int fps, final int portArgs, final CaptureComponents captureComponentsArgs,
                     final BackgroundCaptureManager bgCapManagerArgs) {
@@ -163,7 +165,7 @@ public class VideoComponents {
                 try {
 
 
-                    final RImage rImage = new RImage(frame, localIp);
+                    final RImage rImage = new RImage(frame, localIp, 0);
                     final byte[] serializedImage = rImage.serialize();
 
                     if (serializedImage == null) {
@@ -222,14 +224,16 @@ public class VideoComponents {
 
     /**
      * Captures the Audio, encode it and return back the bytes.
+     * @return encoded audio packet, or null if audio is unavailable
      */
     protected byte[] captureAudio() {
         final byte[] audioFeed = captureComponents.getAudioFeed();
         if (audioFeed == null) {
             return null;
         }
-        final byte[] feed = audioEncoder.encode(audioFeed);
-        final APackets audioPacket = new APackets(audioFeedNumber, feed, localIp, audioEncoder.getPredictor(), audioEncoder.getIndex());
+        final byte[] encodedfeed = audioEncoder.encode(audioFeed);
+        final APackets audioPacket = new APackets(audioFeedNumber, encodedfeed, localIp,
+                audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
         byte[] encodedPacket = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
@@ -279,10 +283,10 @@ public class VideoComponents {
 
 //        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
-        long curr1 = System.nanoTime();
-        videoCodec.quantTime = 0;
-        videoCodec.dctTime = 0;
-        videoCodec.zigZagtime = 0;
+        final long curr1 = System.nanoTime();
+        videoCodec.setQuantTime(0);
+        videoCodec.setDctTime(0);
+        videoCodec.setZigZagTime(0);
 
         final FeedPatch patches = patchGenerator.generatePackets(newFeed);
         runCount++;
@@ -304,7 +308,7 @@ public class VideoComponents {
 
         if (compressedEncodedPatches == null && unCompressedEncodedPatches == null) {
             // both are null
-            if (runCount > 500) {
+            if (runCount > MAX_RUNS_WITHOUT_DIFF) {
                 System.err.println("Reinit the Video and Screen");
                 if (captureComponents.isVideoCaptureOn()) {
                     bgCapManager.reInitVideo();

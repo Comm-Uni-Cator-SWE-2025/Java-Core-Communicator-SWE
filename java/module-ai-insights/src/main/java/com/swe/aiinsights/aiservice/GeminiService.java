@@ -1,18 +1,35 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: GeminiService.java
+ *  Owner: Abhirami R Iyer, Nandhana Sunil
+ *  Roll Number : 112201001, 112201008
+ *  Module : com.swe.aiinsights.aiservice
+ * -----------------------------------------------------------------------------
+ */
+
 /**
- * Author : Abhirami R Iyer
- * Edited by : Nandhana Sunil
- *             Berelli Gouthami
+ * Service module for Gemini.
  *
  * <p>
  * References
  *      1. https://ai.google.dev/gemini-api/docs/rate-limits
+ *      2. https://medium.com/google-cloud/
+ *          generating-request-body-for-apis-using-gemini-43977961ca2a
+ *      3. https://github.com/tanaikech/
+ *          Generating-Request-Body-for-APIs-using-Gemini
  * </p>
+ *
+ * @author Abhirami R Iyer
+ * @editedby Nandhana Sunil, Berelli Gouthami
+ *
  */
+
 package com.swe.aiinsights.aiservice;
 
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.GeminiAdapter;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
+import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -21,23 +38,26 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import com.swe.aiinsights.response.AiResponse;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.swe.aiinsights.customexceptions.RateLimitException;
-
-// import com.swe.cloud.datastructures.TimeRange;
-// import com.swe.cloud.datastructures.Entity;
-// import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
-// import com.swe.cloud.datastructures.CloudResponse;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 /**
  * Gemini Service builds the request and calls the AI api.
  * Receives the AI response.
  */
 public final class GeminiService implements LlmService {
+
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG = CommonLogger.getLogger(GeminiService.class);
+
+
     /**
      * Loads environment variables from the .env file.
      */
@@ -58,7 +78,7 @@ public final class GeminiService implements LlmService {
 //    private final String geminiApiKey;
 
     /**
-     * List of Gemini API Keys
+     * List of Gemini API Keys.
      */
     private List<String> geminiApiKeyList;
 
@@ -72,54 +92,18 @@ public final class GeminiService implements LlmService {
     private final OkHttpClient httpClient;
 
     /**
-     * This method is used to get the list of API Keys
-     * @return list of Gemini API KEYS
+     * key manager which handles the functions related to keys.
      */
-    private List<String> GetKeyList(){
-        String keys = dotenv.get("GEMINI_API_KEY_LIST");
-        if (keys == null || keys.trim().isEmpty()) {
-            throw new RuntimeException("GEMINI_API_KEY_LIST is empty or missing");
-        }
-        // Splits by comma and removes whitespace around keys
-        return Arrays.asList(keys.split("\\s*,\\s*"));
-    }
+    private final GeminiKeyManager keyManager;
 
-    /**
-     * Get the next key available
-     */
-    private String getCurrentKey() {
-        int index = apiKeyIndex.get();
-        return geminiApiKeyList.get(Math.abs(index));
-    }
-
-    /**
-     * Using compare and swap, get the currently used keys index.
-     */
-    private void setKeyIndex(String expiredKey){
-        int currentIndex = apiKeyIndex.get();
-        String currentKey = geminiApiKeyList.get(Math.abs(currentIndex));
-        if (currentKey.equals(expiredKey)) {
-            apiKeyIndex.compareAndSet(currentIndex, currentIndex+1);
-            System.out.println(apiKeyIndex);
-        }
-    }
     /**
      * Constructor for initialising the http client for making the request.
      */
+
     public GeminiService() {
-        //fetched the api key from the
-        // env file (to be changed to fetch from cloud)
-        /** cloud functions to get key
-         CloudFunctionLibrary cloud = new CloudFunctionLibrary();
-         Entity req = new Entity("AI_INSIGHT", "credentials", "gemini", "key", -1, new TimeRange(0, 0),null);
-         // Response response =testCloudFunctionLibrary.cloudPost(testEntity)
-         String key_from_cloud;
-         cloud.cloudGet(req).thenAccept(response -> {
-         // Object cleanedData = response.data;   // <- NO getData()
-         key_from_cloud = response.data();
-         });*/
-//        this.geminiApiKey = dotenv.get("GEMINI_API_KEY"); //change this in production
-        this.geminiApiKeyList = GetKeyList();
+
+        keyManager = new GeminiKeyManager();
+        LOG.info("Initializing GeminiService");
         final int timeout = 200;
         final int readMul = 6;
         // creating an http client
@@ -128,6 +112,7 @@ public final class GeminiService implements LlmService {
                 .readTimeout(timeout * readMul, TimeUnit.SECONDS)
                 .writeTimeout(timeout, TimeUnit.SECONDS)
                 .build();
+        LOG.info("GeminiService initialized with timeout: {} seconds", timeout);
 
     }
 
@@ -138,42 +123,56 @@ public final class GeminiService implements LlmService {
     public AiResponse runProcess(final RequestGeneraliser aiRequest)
             throws IOException {
 
-        ModelAdapter adapter = new GeminiAdapter();
+        final ModelAdapter adapter = new GeminiAdapter();
 
-        String requestBody = adapter.buildRequest(aiRequest);
+        final String requestBody = adapter.buildRequest(aiRequest);
 
-        int maxRetries = geminiApiKeyList.size();
-        System.out.println(maxRetries);
+        final int maxRetries = keyManager.getNumberOfKeys();
+//        System.out.println(maxRetries);
         int attempt = 0;
         while (attempt < maxRetries) {
-            System.out.println("Attempt");
-            System.out.println(attempt);
-            String currentKey = getCurrentKey();
-            String apiUrl = GEMINI_API_URL_TEMPLATE + currentKey;
+//            System.out.println("Attempt");
+//            System.out.println(attempt);
+            final String currentKey = keyManager.getCurrentKey();
+            final String apiUrl = GEMINI_API_URL_TEMPLATE + currentKey;
 
-            Request request = new Request.Builder()
+            final Request request = new Request.Builder()
                     .url(apiUrl)
                     .post(RequestBody.create(requestBody, JSON))
                     .build();
 
+            final int keyLimitCode = 429;
+            final int permissionDenied = 403;
+
             try (Response response = httpClient.newCall(request).execute()) {
                 System.out.println("trying to get response");
                 if (response.isSuccessful()) {
-                    AiResponse returnResponse = aiRequest.getAiResponse();
-                    String textResponse = adapter.getResponse(response);
+                    final AiResponse returnResponse = aiRequest.getAiResponse();
+                    final String textResponse = adapter.getResponse(response);
                     returnResponse.setResponse(textResponse);
+                    LOG.debug("Response received from adapter");
                     return returnResponse;
                 }
-                if (response.code() == 429) {
-                    System.out.println("===================key hit !!!!");
-                    setKeyIndex(currentKey);
+                if (response.code() == keyLimitCode) {
+                    LOG.debug("Key limit hit\n");
+                    keyManager.setKeyIndex(currentKey);
                     attempt++; // Increment attempt and loop again to try next key
-                    System.out.println(attempt);
+//                    System.out.println(attempt);
+                    continue;  // Skip the rest and restart loop
+                }
+                if (response.code() == permissionDenied) {
+                    // this part wouldn't be reachable in tests
+                    LOG.debug("Permission denied for the key\n");
+                    keyManager.setKeyIndex(currentKey);
+                    attempt++; // Increment attempt and loop again to try next key
+//                    System.out.println(attempt);
                     continue;  // Skip the rest and restart loop
                 }
             }
+            LOG.debug("Some other error but trying to switch model\n");
             throw new RateLimitException("Some other error but trying to switch model");
         }
+        LOG.debug("Some other error but trying to switch model");
         throw new RateLimitException("All available API keys used");
     }
 }

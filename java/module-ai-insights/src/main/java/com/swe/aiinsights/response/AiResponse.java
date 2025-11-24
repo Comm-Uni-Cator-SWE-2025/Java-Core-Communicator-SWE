@@ -1,6 +1,16 @@
-/**
- * Author : Abhirami R Iyer
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiResponse.java
+ *  Owner: Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.response
+ * -----------------------------------------------------------------------------
  */
+
+/**
+ * Author : Abhirami R Iyer .
+ */
+
 package com.swe.aiinsights.response;
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo.Model;

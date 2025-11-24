@@ -1,5 +1,5 @@
 /**
- * Contributed by @Bhupati-Varun
+ * Contributed by @Bhupati-Varun.
  */
 
 package com.swe.ScreenNVideo.Capture;
@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamResolution;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 
 /**
  * VideoCapture class for capturing video frames from webcam.
@@ -145,11 +146,13 @@ public class VideoCapture extends ICapture {
      */
     public BufferedImage capture() {
 
+        Telemetry.getTelemetry().setWithCamera(true);
+
 
         // Lazy initialization: Initialize webcam on first capture attempt
         if (this.webcam == null) {
             System.out.println("Initializing webcam for the first time...");
-            openWebcam();
+            reInit();
         }
 
         // --- Webcam capture logic ---

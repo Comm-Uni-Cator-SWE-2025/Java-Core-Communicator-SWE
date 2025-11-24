@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Pushti Vasoya.
+ */
+
 package com.swe.core;
 
 import com.socketry.SocketryClient;
@@ -31,12 +35,12 @@ public class RPC implements AbstractRPC {
     public Thread connect(int portNumber) throws IOException, InterruptedException, ExecutionException {
 
         socketryClient = new SocketryClient(new byte[] {
-            1, // Chat
-            2, // Networking
-            5, // Screensharing
-            2, // Canvas
-            1, // Controller
-            1, // Misc
+                1, // Chat
+                2, // Networking
+                5, // Screensharing
+                2, // Canvas
+                1, // Controller
+                1, // Misc
         }, portNumber, methods);
         Thread rpcThread = new Thread(socketryClient::listenLoop);
         rpcThread.start();

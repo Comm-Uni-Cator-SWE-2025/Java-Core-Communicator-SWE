@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Jyoti.
+ */
+
 package com.swe.core.Analytics;
 
 import java.util.ArrayList;
@@ -19,7 +23,8 @@ public class ScreenVideoTelemetryModel {
     private Double p95Fps; // 95th percentile (worst 5%)
 
     // --- Constructor ---
-    public ScreenVideoTelemetryModel(Long startTime, Long endTime, ArrayList<Double> fpsEvery3Seconds, boolean withCamera, boolean withScreen) {
+    public ScreenVideoTelemetryModel(Long startTime, Long endTime, ArrayList<Double> fpsEvery3Seconds,
+            boolean withCamera, boolean withScreen) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.fpsEvery3Seconds = fpsEvery3Seconds != null ? new ArrayList<>(fpsEvery3Seconds) : new ArrayList<>();
@@ -45,6 +50,26 @@ public class ScreenVideoTelemetryModel {
         return endTime;
     }
 
+    public void setEndTime(final long val) {
+        endTime = val;
+    }
+
+    public void setStartTime(final long val) {
+        startTime = val;
+    }
+
+    public void setWithScreen(final boolean val) {
+        withScreen = val;
+    }
+
+    public void setWithCamera(final boolean val) {
+        withCamera = val;
+    }
+
+    public void addFps(Double fps) {
+        fpsEvery3Seconds.add(fps);
+    }
+
     public ArrayList<Double> getFpsEvery3Seconds() {
         return fpsEvery3Seconds;
     }
@@ -64,7 +89,6 @@ public class ScreenVideoTelemetryModel {
     public Double getP95Fps() {
         return p95Fps;
     }
-
 
     // --- Helper method to calculate metrics ---
     private void calculateMetrics() {

@@ -1,163 +1,111 @@
 /**
- * Contributed by @anup
+ * contributed by @anup.
  */
-
 package com.swe.ScreenNVideo.Codec;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Test class for Compressor.
- * This class aims for 100% line coverage of the Compressor class
- * and adheres to the project's Checkstyle rules.
- * <p>
- * It relies on stub implementations of QuantisationUtil and EncodeDecodeRLE
- * being present in the same package.
+ * Integration Test class for Compressor.
+ * Uses the real AANdct and QuantisationUtil modules via the default constructor.
  */
 public class CompressorTest {
 
     /**
-     * The standard block size for DCT (8x8).
+     * Class under test.
      */
-    private static final short BLOCK_SIZE = 8;
-    /**
-     * A test matrix size for multi-block tests (16x16).
-     */
-    private static final short MATRIX_SIZE = 16;
-    /**
-     * A size for the test ByteBuffer.
-     */
-    private static final int BUFFER_CAPACITY = 1024;
-
-    private ICompressor compressor;
-    private ByteBuffer testBuffer;
+    private Compressor compressor;
 
     /**
-     * Sets up the test environment before each test.
-     * This initializes the testBuffer and, critically,
-     * constructs the Compressor, covering its constructor logic.
+     * Standard block size for JPEG dct and Quantisation
+     */
+
+    private final short BLOCK_SIZE = 8;
+
+    /**
+     * Setup method to initialize the Compressor with real dependencies.
      */
     @BeforeEach
-    void setUp() {
-        // Allocate a new buffer for each test
-        testBuffer = ByteBuffer.allocate(BUFFER_CAPACITY);
-
-        // This call tests the entire constructor of Compressor.
-        // It requires AANdct, QuantisationUtil, and EncodeDecodeRLE singletons.
+    public void setUp() {
+        // Use the default constructor which calls getInstance() for real modules
         compressor = new Compressor();
     }
 
     /**
-     * Tests that the Compressor singleton-based constructor runs without error.
+     * To get matrix filled with value of range [-128, 128]
+     * standard data points for dct.
+     * @param height of matrix
+     * @param width of matrix
+     * @return generated matrix.
      */
-    @Test
-    void testConstructor() {
-        // The real test is in setUp().
-        // If setUp() completes, the constructor worked.
-        assertNotNull(compressor, "Compressor instance should be created successfully");
+    short[][] getRandomMatrixofNM(short height, short width){
+        short[][] matrix = new short[height][width];
+        // Fill with some dummy data
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                matrix[i][j] = (short) ThreadLocalRandom.current().nextInt(-128, 129);
+
+            }
+        }
+        return matrix;
     }
 
     /**
-     * Tests compressChrome with a 0x0 matrix.
-     * This ensures the loops are skipped and zigZagRLE is still called.
+     * Test compressChrome with a single 8x8 block.
+     * Verifies that the dct -> quantisation compression pipeline runs successfully
+     * on a standard block without throwing exceptions.
      */
     @Test
-    void testCompressChrome_EmptyMatrix() {
-        final short[][] matrix = new short[0][0];
-        final short height = 0;
-        final short width = 0;
+    public void testCompressChromeSingleBlock() {
+        final short[][] matrix = getRandomMatrixofNM(BLOCK_SIZE, BLOCK_SIZE) ;
 
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        assertDoesNotThrow(() -> compressor.compressChrome(matrix, height, width, testBuffer),
-                "Compress should not throw on empty matrix");
-
-        // Verify zigZagRLE was called (by checking our stub's side-effect)
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called even for empty matrix");
+        assertDoesNotThrow(() -> compressor.compressChrome(matrix, BLOCK_SIZE, BLOCK_SIZE),
+                "Compressing a valid 8x8 block should not throw exceptions");
     }
 
     /**
-     * Tests compressChrome with a single 8x8 block.
-     * This ensures the loops are entered once.
+     * Test compressLumin with a single 8x8 block.
+     * Verifies that the Luminance compression path executes correctly
+     * using the real Quantization tables.
      */
     @Test
-    void testCompressChrome_SingleBlock() {
-        final short[][] matrix = new short[BLOCK_SIZE][BLOCK_SIZE];
+    public void testCompressLuminSingleBlock() {
+        final short[][] matrix = getRandomMatrixofNM(BLOCK_SIZE, BLOCK_SIZE) ;
 
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        compressor.compressChrome(matrix, BLOCK_SIZE, BLOCK_SIZE, testBuffer);
-
-        // Verify zigZagRLE was called
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called after processing");
+        assertDoesNotThrow(() -> compressor.compressLumin(matrix, BLOCK_SIZE, BLOCK_SIZE),
+                "Compressing a valid 8x8 block should not throw exceptions");
     }
 
     /**
-     * Tests compressChrome with a 16x16 matrix (4 blocks).
-     * This ensures the loops iterate correctly.
+     * Test compressChrome with a 16x16 matrix (four 8x8 blocks).
+     *  Verifies that the loop logic correctly feeds multiple 8x8 sub-blocks
+     * to the real FDCT and Quantization algorithms.
      */
     @Test
-    void testCompressChrome_MultiBlock() {
-        final short[][] matrix = new short[MATRIX_SIZE][MATRIX_SIZE];
+    public void testCompressChromeMultiBlock() {
+        final short[][] matrix = getRandomMatrixofNM((short) (BLOCK_SIZE << 1), (short) (BLOCK_SIZE << 1)) ;
 
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        compressor.compressChrome(matrix, MATRIX_SIZE, MATRIX_SIZE, testBuffer);
-
-        // Verify zigZagRLE was called
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called after processing");
+        assertDoesNotThrow(() -> compressor.compressChrome(matrix,(short) (BLOCK_SIZE << 1), (short) (BLOCK_SIZE << 1)),
+                "Compressing a 16x16 matrix should process all blocks successfully");
     }
 
     /**
-     * Tests compressLumin with a 0x0 matrix.
-     * This ensures the loops are skipped and zigZagRLE is still called.
+     * Test compressLumin with a 16x16 matrix (four 8x8 blocks).
+     *  Verifies that the loop logic correctly feeds multiple 8x8 sub-blocks
+     * to the real FDCT and Quantization algorithms.
      */
     @Test
-    void testCompressLumin_EmptyMatrix() {
-        final short[][] matrix = new short[0][0];
-        final short height = 0;
-        final short width = 0;
+    public void testCompressLuminMultiBlock() {
+        final short[][] matrix = getRandomMatrixofNM((short) (BLOCK_SIZE << 1), (short) (BLOCK_SIZE << 1)) ;
 
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        assertDoesNotThrow(() -> compressor.compressLumin(matrix, height, width, testBuffer),
-                "Compress should not throw on empty matrix");
-
-        // Verify zigZagRLE was called (by checking our stub's side-effect)
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called even for empty matrix");
+        assertDoesNotThrow(() -> compressor.compressLumin(matrix,(short) (BLOCK_SIZE << 1), (short) (BLOCK_SIZE << 1)),
+                "Compressing a 16x16 matrix should process all blocks successfully");
     }
 
-    /**
-     * Tests compressLumin with a single 8x8 block.
-     * This ensures the loops are entered once.
-     */
-    @Test
-    void testCompressLumin_SingleBlock() {
-        final short[][] matrix = new short[BLOCK_SIZE][BLOCK_SIZE];
-
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        compressor.compressLumin(matrix, BLOCK_SIZE, BLOCK_SIZE, testBuffer);
-
-        // Verify zigZagRLE was called
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called after processing");
-    }
-
-    /**
-     * Tests compressLumin with a 16x16 matrix (4 blocks).
-     * This ensures the loops iterate correctly.
-     */
-    @Test
-    void testCompressLumin_MultiBlock() {
-        final short[][] matrix = new short[MATRIX_SIZE][MATRIX_SIZE];
-
-        assertEquals(0, testBuffer.position(), "Buffer should be empty before compress");
-        compressor.compressLumin(matrix, MATRIX_SIZE, MATRIX_SIZE, testBuffer);
-
-        // Verify zigZagRLE was called
-        assertEquals(1, testBuffer.position(), "zigZagRLE should be called after processing");
-    }
 }

@@ -1,11 +1,39 @@
-/**
- * Author :
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AsyncConfig.java
+ *  Owner: Berelli Gouthami
+ *  Roll Number : 112201003
+ *  Module : com.swe.aiinsights.configu
+ * -----------------------------------------------------------------------------
  */
+
+/**
+ * Provides configuration for asynchronous AI execution.
+ * This includes creation of a thread pool used for AI-related tasks.
+ *
+ * @author Berelli Gouthami
+ * @editedby Abhirami R Iyer
+ */
+
 package com.swe.aiinsights.configu;
 
-import java.util.concurrent.*;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Configuration class for async executor setup.
+ */
 public class AsyncConfig {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG =
+            CommonLogger.getLogger(AsyncConfig.class);
 
     /**
      * Creates and configures a thread pool for AI-related tasks.
@@ -17,18 +45,24 @@ public class AsyncConfig {
         final int maxPoolSize = 10;
         final int queueCapacity = 50;
 
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        LOG.info("Initializing AI Executor: core={}, max={}, queueCap={}",
+                corePoolSize, maxPoolSize, queueCapacity);
+
+        final ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,
                 30L,
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(queueCapacity),
                 r -> {
-                    Thread t = new Thread(r);
+                    final Thread t = new Thread(r);
                     t.setName("AI-Worker-" + t.getId());
+                    LOG.debug("Created new thread {}", t.getName());
                     return t;
                 }
         );
+
+        LOG.info("AI Executor initialized successfully");
 
         return executor;  // returning Executor is valid
     }

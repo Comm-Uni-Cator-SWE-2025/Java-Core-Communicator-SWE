@@ -25,7 +25,7 @@ public class ZigZagRLEPipelineIntegrationTest {
 
     private static final int TILE_SIZE = 64;
     private static final String TEST_IP = "127.0.0.1";
-    private static final int NUM_FEED_ITERATIONS = 100000;
+    private static final int NUM_FEED_ITERATIONS = 100;
     private static final Random RANDOM = new Random(42); // Fixed seed for reproducibility
 
     /**

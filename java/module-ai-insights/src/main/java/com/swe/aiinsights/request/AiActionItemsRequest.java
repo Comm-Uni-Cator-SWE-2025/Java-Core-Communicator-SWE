@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiActionItemsRequest.java
+ *  Owner: Nandhana Sunil
+ *  Roll Number : 112201008
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Class that handles action item generation requests to AI.
  * <p>
@@ -10,9 +19,12 @@
  * @version 1.0.0
  * @since 1.0.0
  */
+
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,6 +35,11 @@ import java.util.Map;
  * Stores the metadata of the request to be made to the AI.
  */
 public class AiActionItemsRequest implements AiRequestable<JsonNode> {
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG =
+            CommonLogger.getLogger(AiActionItemsRequest.class);
     /**
      * metaData stores the prompt.
      * Also, other details of the request like the content.
@@ -39,19 +56,21 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
      * to identify action items.
      * @param chatData will be a json object with the chat messages
      */
+
     public AiActionItemsRequest(final JsonNode chatData) throws IOException {
         // Initialises the metaData with prompt and data.
+        LOG.info("Creating new ActionItems request");
         metaData = new HashMap<>();
         metaData.put("InputChatData", chatData);
         metaData.put("RequestPrompt", """
-        From the following chat transcript, 
-        identify only the most important and concrete action items.
-        Rewrite each as a short, clear statement in the third person,
-        using as few words as possible while keeping full meaning.
-        Exclude general discussions, suggestions, or decisions —
-        include only actions that someone explicitly commits to doing.
-        Return the output strictly as a JSON list of strings — nothing else.
-        """);
+            From the following chat transcript, 
+            identify only the most important and concrete action items.
+            Rewrite each as a short, clear statement in the third person,
+            using as few words as possible while keeping full meaning.
+            Exclude general discussions, suggestions, or decisions —
+            include only actions that someone explicitly commits to doing.
+            Return the output strictly as a JSON list of strings — nothing else.
+            """);
         type = "ACTION";
     }
 
@@ -61,6 +80,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getContext() {
         // Returns the request prompt.
+        LOG.info("Fetching ActionItems request prompt");
         return metaData.get("RequestPrompt").toString();
     }
 
@@ -70,6 +90,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public String getReqType() {
         // returns "INS".
+        LOG.info("Fetching request type");
         return type;
     }
 
@@ -79,6 +100,7 @@ public class AiActionItemsRequest implements AiRequestable<JsonNode> {
     @Override
     public JsonNode getInput() {
         // this function returns the input.
+        LOG.info("Fetching ActionItems input data");
         return (JsonNode) metaData.get("InputChatData");
     }
 }
