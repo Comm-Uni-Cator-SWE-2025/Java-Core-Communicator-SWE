@@ -232,7 +232,7 @@ public final class TCPCommunicator implements ProtocolBase {
     @Override
     public void close() {
         try {
-            NetworkLogger.printInfo(MODULENAME, "Closing TCP communicator...");
+            NetworkLogger.printWarning(MODULENAME, "Closing TCP communicator...");
             receiveSocket.close();
             for (SocketChannel socket : clientSockets.values()) {
                 NetworkLogger.printInfo(MODULENAME, "Closing socket of " + socket.getRemoteAddress() + "...");
