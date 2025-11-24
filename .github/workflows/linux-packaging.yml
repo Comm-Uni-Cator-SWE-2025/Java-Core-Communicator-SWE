@@ -1,70 +1,79 @@
 # ==============================================================
 # Linux Packaging Pipeline
-# Outputs: 
-#   1. .AppImage (Single executable file)
-#   2. .zip (Portable folder with scripts + JRE)
+# Outputs: AppImage & Portable Zip
 # ==============================================================
 
-trigger: none # Triggered automatically by the 'resources' below
+trigger: none
 
 pool:
   vmImage: 'ubuntu-latest'
 
 resources:
   pipelines:
+    # -----------------------------
+    # CORE PIPELINE CONFIG
+    # -----------------------------
     - pipeline: core_build
-      source: 'Java-Core-CI'   # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      source: 'Comm-Uni-Cator-SWE-2025.Java-Core-Communicator-SWE'   # <--- UPDATE THIS: Exact Name from Azure DevOps UI
       trigger: 
         branches:
           include:
-            - main             # <--- UPDATE THIS: The branch you build on
-    
+            - main
+
+    # -----------------------------
+    # FRONT PIPELINE CONFIG
+    # -----------------------------
     - pipeline: front_build
-      source: 'Java-Front-CI'  # <--- UPDATE THIS: Exact Name from Azure DevOps UI
+      source: 'Comm-Uni-Cator-SWE-2025.Java-front-Communicator-SWE'  # <--- UPDATE THIS: Exact Name from Azure DevOps UI
       trigger: 
         branches:
           include:
-            - main             # <--- UPDATE THIS
+            - main
 
 variables:
   APP_NAME: 'MyCombinedApp'
-  # JDK 24 Linux URL (Check https://jdk.java.net/24/ for latest hash/url)
+  # JDK 24 URL (Linux x64)
   JAVA_URL: 'https://download.java.net/java/GA/jdk24/35/GPL/openjdk-24_linux-x64_bin.tar.gz'
 
 steps:
   # -----------------------------
-  # 1. Download Artifacts
+  # 1. Download Core Artifacts
   # -----------------------------
   - download: core_build
-    artifact: core-artifact    # <--- UPDATE THIS: Must match upstream artifactName
-
-  - download: front_build
-    artifact: front-artifact   # <--- UPDATE THIS: Must match upstream artifactName
+    artifact: java-build-artifacts  # Matches your Core Pipeline YAML
 
   # -----------------------------
-  # 2. Prepare Directory & Smart Copy
+  # 2. Download Front Artifacts
+  # -----------------------------
+  - download: front_build
+    artifact: java-build-artifacts  # Matches your Front Pipeline YAML
+
+  # -----------------------------
+  # 3. Setup Directories & Smart Copy
   # -----------------------------
   - script: |
       echo "--- Setting up Directories ---"
-      # We create a folder named after the APP_NAME (instead of generic 'AppDir')
-      # This ensures the zip extracts into a nice folder.
+      # Create a named folder so the Zip extracts cleanly
       mkdir -p $(APP_NAME)/usr/bin
       mkdir -p $(APP_NAME)/usr/lib
       
-      echo "--- Smart Copying JARs ---"
-      # We use 'find' to ignore 'original-*.jar', 'sources.jar', etc.
-      
+      echo "--- Smart Copying Core JAR ---"
+      # Find valid JAR in core_build folder (ignoring sources/javadoc/original)
       CORE_JAR=$(find $(Pipeline.Workspace)/core_build -name "*.jar" | grep -v "original" | grep -v "sources" | grep -v "javadoc" | head -n 1)
-      echo "Selected Core: $CORE_JAR"
+      
+      echo "Found Core: $CORE_JAR"
       cp "$CORE_JAR" $(APP_NAME)/usr/lib/java-core.jar
 
+      echo "--- Smart Copying Front JAR ---"
+      # Find valid JAR in front_build folder
       FRONT_JAR=$(find $(Pipeline.Workspace)/front_build -name "*.jar" | grep -v "original" | grep -v "sources" | grep -v "javadoc" | head -n 1)
-      echo "Selected Front: $FRONT_JAR"
+      
+      echo "Found Front: $FRONT_JAR"
       cp "$FRONT_JAR" $(APP_NAME)/usr/lib/java-front.jar
     displayName: "Setup Directories & Copy Jars"
 
   # -----------------------------
-  # 3. Bundle Linux JDK 24
+  # 4. Bundle JDK 24
   # -----------------------------
   - script: |
       echo "Downloading JDK 24..."
@@ -77,16 +86,15 @@ steps:
     displayName: "Bundle Java Runtime"
 
   # -----------------------------
-  # 4. Create Launcher & Metadata
+  # 5. Create Launchers
   # -----------------------------
   - script: |
-      # --- Launcher Script ---
-      # This script works for AppImage AND the extracted Zip
+      # --- launcher.sh ---
       cat > $(APP_NAME)/usr/bin/launcher.sh <<EOF
       #!/bin/bash
       HERE="\$(dirname "\$(readlink -f "\${0}")")"
       
-      # Logic: If running in AppImage, root is ../../. 
+      # Logic: If running in AppImage/Zip, root is relative to bin/
       APPDIR_ROOT="\$HERE/../../"
       
       JAVA_EXEC="\$APPDIR_ROOT/usr/lib/jre/bin/java"
@@ -129,32 +137,32 @@ steps:
     displayName: "Create Scripts & Metadata"
 
   # -----------------------------
-  # 5. Build Portable ZIP
+  # 6. Build Portable ZIP
   # -----------------------------
   - script: |
       echo "Creating Portable Zip..."
-      # This zips the FOLDER $(APP_NAME). 
-      # When user unzips, they get a folder "MyCombinedApp/" containing the files.
+      # Zips the folder so user gets 'MyCombinedApp/' when extracting
       zip -r $(APP_NAME)-portable.zip $(APP_NAME)
     displayName: "Build .Zip"
 
   # -----------------------------
-  # 6. Build AppImage
+  # 7. Build AppImage
   # -----------------------------
   - script: |
+      echo "Downloading AppImageTool..."
       wget -q -O appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
       chmod +x appimagetool-x86_64.AppImage
       
+      echo "Building AppImage..."
       # ARCH=x86_64 is required for appimagetool
       ARCH=x86_64 ./appimagetool-x86_64.AppImage $(APP_NAME) $(APP_NAME).AppImage
     displayName: "Build .AppImage"
 
   # -----------------------------
-  # 7. Publish Artifacts
+  # 8. Publish Artifacts
   # -----------------------------
   - task: PublishBuildArtifacts@1
     inputs:
       pathToPublish: '$(System.DefaultWorkingDirectory)'
       artifactName: 'Linux-Release-Packages'
       publishLocation: 'Container'
-      # Publishes: MyCombinedApp-portable.zip AND MyCombinedApp.AppImage
