@@ -22,16 +22,12 @@ public class ChatManager implements IChatService { // Adapter for IChatService
 
     private final AbstractRPC rpc;
     private final IChatProcessor processor; // DIP: Message logic delegated
+    private final IAiAnalyticsService aiAnalyticsService;
 
     /**
      * CONSTRUCTOR: Injects all necessary services and wires events.
      * @param network The networking service.
      */
-    private final Map<String, FileCacheEntry> fileCache = new ConcurrentHashMap<>();
-
-    public final static List<ChatMessage> fullMessageHistory = Collections.synchronizedList(new ArrayList<>());
-    private int lastSummarizedIndex = 0;
-
     public ChatManager(Networking network) {
         Context context = Context.getInstance();
         this.rpc = context.rpc;
@@ -42,7 +38,7 @@ public class ChatManager implements IChatService { // Adapter for IChatService
         IChatFileCache fileCache = new InMemoryFileCache();
 
         // 2. Initialize the History/AI Service (Stateful Layer - SRP)
-        IAiAnalyticsService aiAnalyticsService = new AiAnalyticsService(this.rpc, network, aiService);
+        this.aiAnalyticsService = new AiAnalyticsService(this.rpc, network, aiService);
 
         // 3. Initialize the Core Processor (Execution Layer - SRP)
         this.processor = new ChatProcessor(this.rpc, network, fileHandler, fileCache, aiAnalyticsService);
@@ -53,119 +49,13 @@ public class ChatManager implements IChatService { // Adapter for IChatService
         this.rpc.subscribe("chat:delete-message", this::handleDeleteMessage);
         this.rpc.subscribe("chat:save-file-to-disk", this::handleSaveFileToDisk);
 
-        // Subscribe to network messages
-        this.network.subscribe(ModuleType.CHAT.ordinal(), this::handleNetworkMessage);
+        // Network events are routed to the Processor's handler
+        network.subscribe(ModuleType.CHAT.ordinal(), this::handleNetworkMessage);
     }
 
-    /**
-     * ⭐ AI FEATURE: Periodic Summarization
-     * Runs every 10 minutes.
-     */
-    private void startAiSummarizer() {
-        scheduler.scheduleAtFixedRate(() -> {
-            processIncrementalSummary();
-        }, 10, 10, TimeUnit.MINUTES); // 10 Minutes delay, 10 Minutes period
-    }
-
-    /**
-     * Helper to process only NEW messages since last run.
-     */
-    private void processIncrementalSummary() {
-        List<ChatMessage> newMessages = new ArrayList<>();
-
-        synchronized (fullMessageHistory) {
-            if (lastSummarizedIndex >= fullMessageHistory.size()) {
-                return; // No new messages
-            }
-            // Sublist from last index to current end
-            newMessages.addAll(fullMessageHistory.subList(lastSummarizedIndex, fullMessageHistory.size()));
-            // Update index so we don't summarize these again next time
-            lastSummarizedIndex = fullMessageHistory.size();
-        }
-
-        if (newMessages.isEmpty()) return;
-
-        try {
-            String historyJson = generateChatHistoryJson(newMessages);
-
-            System.out.println("[AI-Backend] Sending " + newMessages.size() + " new messages for summarization...");
-
-            aiService.summariseText(historyJson)
-                    .thenAccept(summary -> {
-                        System.out.println("[AI-Backend] Incremental Summary: " + summary);
-                    })
-                    .exceptionally(e -> {
-                        System.err.println("[AI-Backend] Summarization failed: " + e.getMessage());
-                        return null;
-                    });
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static List<ChatMessage> getFullMessageHistory() {
-        return fullMessageHistory;
-    }
-    /**
-     * ⭐ AI FEATURE: JSON Generator
-     * Generates JSON with correct 'from' and 'to' usernames.
-     */
-    public static String generateChatHistoryJson(List<ChatMessage> messages) {
-        StringBuilder json = new StringBuilder();
-        json.append("{\n  \"messages\": [\n");
-
-        // 1. Create a quick lookup map to find Reply Targets
-        // Map<MessageID, SenderName>
-        Map<String, String> messageIdToSender = new HashMap<>();
-        // We might need to look in full history for replies, not just the new batch
-        synchronized (fullMessageHistory) {
-            for (ChatMessage m : fullMessageHistory) {
-                messageIdToSender.put(m.getMessageId(), m.getSenderDisplayName());
-            }
-        }
-
-        Iterator<ChatMessage> it = messages.iterator();
-        while (it.hasNext()) {
-            ChatMessage msg = it.next();
-
-            // A. Resolve "FROM"
-            // Backend stores raw names (e.g. "Alice"), so this is safe. No "You" here.
-            String fromUser = escapeJson(msg.getSenderDisplayName());
-
-            // B. Resolve "TO"
-            String toUser = "ALL"; // Default broadcast
-            String replyId = msg.getReplyToMessageId();
-
-            if (replyId != null && !replyId.isEmpty()) {
-                // Look up the name of the person who sent the original message
-                String originalSender = messageIdToSender.get(replyId);
-                if (originalSender != null) {
-                    toUser = escapeJson(originalSender);
-                }
-            }
-
-            // C. Format Timestamp (ISO 8601 preferred by AI)
-            String time = msg.getTimestamp().toString(); // e.g., 2025-11-07T10:00:00
-
-            json.append("    {\n");
-            json.append("      \"from\": \"").append(fromUser).append("\",\n");
-            json.append("      \"to\": \"").append(toUser).append("\",\n");
-            json.append("      \"timestamp\": \"").append(time).append("\",\n");
-            json.append("      \"message\": \"").append(escapeJson(msg.getContent())).append("\"\n");
-            json.append("    }");
-
-            if (it.hasNext()) json.append(",\n");
-        }
-
-        json.append("\n  ]\n}");
-        return json.toString();
-    }
-
-    private static String escapeJson(String input) {
-        if (input == null) return "";
-        return input.replace("\"", "\\\"").replace("\n", " ");
-    }
+    // ============================================================================
+    // RPC HANDLERS (Simple Delegation)
+    // ============================================================================
 
     private byte[] handleFrontendTextMessage(byte[] messageBytes) {
         try {
@@ -245,5 +135,9 @@ public class ChatManager implements IChatService { // Adapter for IChatService
         } catch (Exception e) {
             System.err.println("[ChatService] Failed to send delete via RPC: " + e.getMessage());
         }
+    }
+
+    public IAiAnalyticsService getAnalyticsService() {
+        return this.aiAnalyticsService;
     }
 }

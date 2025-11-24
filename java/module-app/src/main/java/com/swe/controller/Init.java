@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 
 public class Init {
     static int indexAi = 0;
+    static ChatManager chatmanager;
 
     public static void main(String[] args) throws Exception {
 
@@ -54,7 +55,7 @@ public class Init {
         controllerServices.networking = networking;
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork());
+        chatmanager = new ChatManager(Networking.getNetwork());
         controllerServices.canvasManager = new CanvasManager(Networking.getNetwork());
 
         MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
@@ -196,9 +197,8 @@ public class Init {
         rpc.subscribe("core/AiSentiment", (byte[] data) -> {
             try {
                 System.out.println("Performing Sentiment Analysis");
-                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages);
-
+                List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode cachNode = mapper.readTree(cache);
                 System.out.println("Chat History JSON for Sentiment: " + cachNode.toString());
@@ -216,8 +216,8 @@ public class Init {
         rpc.subscribe("core/AiAction", (byte[] data) -> {
             try {
                 System.out.println("Generating Action Items");
-                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages);
+                List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
 
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode cachNode = mapper.readTree(cache);
