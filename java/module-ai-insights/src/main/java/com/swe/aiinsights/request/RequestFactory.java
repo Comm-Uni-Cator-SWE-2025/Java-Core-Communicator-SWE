@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.swe.aiinsights.data.WhiteBoardData;
 import com.swe.aiinsights.logging.CommonLogger;
 import org.slf4j.Logger;
-
+ 
 import java.io.IOException;
 
 /**
