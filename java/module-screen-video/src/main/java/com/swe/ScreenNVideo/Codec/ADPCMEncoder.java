@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.Codec;
@@ -226,7 +226,11 @@ public class ADPCMEncoder {
         return Math.max(min, Math.min(max, value));
     }
 
-    public int getPredictor() { return this.predictor; }
+    public int getPredictor() {
+        return this.predictor;
+    }
 
-    public int getIndex() { return this.index; }
+    public int getIndex() {
+        return this.index;
+    }
 }
