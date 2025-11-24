@@ -25,7 +25,7 @@
     </dependency>
     <dependency>
       <groupId>com.swe</groupId>
-      <artifactId>module-chat</artifactId>
+      <artifactId>module-chat2</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
