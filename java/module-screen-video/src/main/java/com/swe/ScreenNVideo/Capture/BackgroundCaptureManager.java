@@ -1,5 +1,5 @@
 /**
- * Contributed by @Sandeep-Kumar
+ * Contributed by @Sandeep-Kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;
@@ -15,6 +15,11 @@ import java.awt.AWTException;
  * Manages background screen and video capture on a dedicated daemon thread.
  */
 public final class BackgroundCaptureManager {
+
+    /**
+     * Thread Sleep Time.
+     */
+    private static final int THREAD_SLEEP_TIME = 500;
 
     /**
      * The dedicated background thread for performing captures.
@@ -85,10 +90,10 @@ public final class BackgroundCaptureManager {
                         // Overwrite the volatile variable with the latest frame
 //                        System.out.println("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-//                        System.out.println("Done Capturedd..");
+//                        System.out.println("Done Captured..");
                     } catch (AWTException e) {
                         System.err.println("Failed to capture screen: " + e.getMessage());
-                        Thread.sleep(500);
+                        Thread.sleep(THREAD_SLEEP_TIME);
                         screenCapture = new ScreenCapture();
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }

@@ -1,5 +1,5 @@
 /**
- * Contributed by @Devansh-Kesan
+ * Contributed by @Devansh-Kesan.
  */
 
 package com.swe.ScreenNVideo.PatchGenerator;
@@ -43,7 +43,7 @@ public class ImageStitcher {
     /**
      * Assigns new canvas.
      *
-     * @param initialCanvas to be assigned to canvas
+     * @param initialCanvas to be assigned to canvas.
      */
     public void setCanvas(final int[][] initialCanvas) {
         this.canvas = initialCanvas;
@@ -53,7 +53,7 @@ public class ImageStitcher {
     }
 
     /**
-     * Set Canvas Dimensions
+     * Set Canvas Dimensions.
      * @param newHeight height of the updated canvas
      * @param newWidth width of the updated canvas
      */
@@ -64,7 +64,7 @@ public class ImageStitcher {
     }
 
     /**
-     * Resets the canvas to a empty canvas.
+     * Resets the canvas to an empty canvas.
      */
     public void resetCanvas() {
         this.canvas = new int[0][0];

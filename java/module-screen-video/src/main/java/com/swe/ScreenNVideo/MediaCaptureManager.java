@@ -1,5 +1,5 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo;
@@ -131,8 +131,8 @@ public class MediaCaptureManager implements CaptureManager {
         if (imageSynchronizer == null) {
             return null;
         }
-        imageSynchronizer.reqCompression = val;
-        imageSynchronizer.waitingForFullImage = true;
+        imageSynchronizer.setReqCompression(val);
+        imageSynchronizer.setWaitingForFullImage(true);
         return null;
     }
 
@@ -316,7 +316,7 @@ public class MediaCaptureManager implements CaptureManager {
                         // reset expected feed number
                         imageSynchronizer.setExpectedFeedNumber(networkPackets.packetNumber());
 
-                        imageSynchronizer.waitingForFullImage = false;
+                        imageSynchronizer.setWaitingForFullImage(false);
 
                     }
 
@@ -325,8 +325,8 @@ public class MediaCaptureManager implements CaptureManager {
                     // if heap is growing too large, request a full frame to resync
                     if (imageSynchronizer.getHeap().size() >= Utils.MAX_HEAP_SIZE) {
                         System.out.println("Too Large");
-                        askForFullImage(networkPackets.ip(), imageSynchronizer.reqCompression);
-                        imageSynchronizer.waitingForFullImage = true;
+                        askForFullImage(networkPackets.ip(), imageSynchronizer.isReqCompression());
+                        imageSynchronizer.setWaitingForFullImage(true);
                         imageSynchronizer.getHeap().clear();
                         return;
                     }
@@ -375,7 +375,7 @@ public class MediaCaptureManager implements CaptureManager {
                             System.out.println(
                                 "-----------------------------=------------------------Exception " + e.getMessage());
                             e.printStackTrace();
-                            askForFullImage(networkPackets.ip(), imageSynchronizer.reqCompression);
+                            askForFullImage(networkPackets.ip(), imageSynchronizer.isReqCompression());
                             imageSynchronizer.getHeap().clear();
                             return;
                         }
@@ -396,7 +396,7 @@ public class MediaCaptureManager implements CaptureManager {
                         }
                         final boolean success = res[0] == 1;
                         if (!success) {
-                            addParticipant(networkPackets.ip(), imageSynchronizer.reqCompression);
+                            addParticipant(networkPackets.ip(), imageSynchronizer.isReqCompression());
                         }
                         System.out.println("Done");
                     } catch (InterruptedException | ExecutionException e) {

@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.Capture;
@@ -93,7 +93,7 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
 
     @Override
     public byte[] getChunk() {
-        if (running == false) {
+        if (!running) {
             init();
         }
         return audioQueue.poll(); // returns null if empty (non-blocking)
