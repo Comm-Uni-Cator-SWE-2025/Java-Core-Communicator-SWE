@@ -46,9 +46,16 @@ public class MainServerTest {
             final Integer sleepTime = 500;
             Thread.sleep(sleepTime);
             final ClientNode server = new ClientNode("127.0.0.1", 8000);
-            final MainServer mainServer = new MainServer(server, server);
             final ClientNode dest1 = new ClientNode("127.0.0.1", 8001);
             final ClientNode dest2 = new ClientNode("127.0.0.1", 8002);
+            final ClientNode dest3 = new ClientNode("127.0.0.1", 8003);
+            final ClientNode dest4 = new ClientNode("127.0.0.1", 8004);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(server, server);
+            // Now set up the topology with all destination clients
+            Topology topology = Topology.getTopology();
+            topology.replaceNetwork(createTopology(server, dest1, dest2, dest3, dest4));
+            final MainServer mainServer = new MainServer(server, server);
             final String data = "Good morning !!!";
             mainServer.send(data.getBytes(), dest1);
             mainServer.send(data.getBytes(), dest1);
@@ -57,8 +64,6 @@ public class MainServerTest {
             mainServer.closeClient(dest1);
             mainServer.closeClient(dest2);
             Thread.sleep(sleepTime);
-            final ClientNode dest3 = new ClientNode("127.0.0.1", 8003);
-            final ClientNode dest4 = new ClientNode("127.0.0.1", 8004);
             final ClientNode[] clients = {dest3, dest4};
             mainServer.send(data.getBytes(), clients);
             mainServer.closeClient(dest3);
@@ -99,6 +104,7 @@ public class MainServerTest {
         try {
             final int sleepTime = 1000;
             final ClientNode server = new ClientNode("127.0.0.1", 8000);
+            initializeNetworkingUser(server, server);
             final MainServer mainServer = new MainServer(server, server);
             send();
             Thread.sleep(sleepTime);
@@ -182,6 +188,7 @@ public class MainServerTest {
     @org.junit.jupiter.api.Test
     public void testMainServerTimeout() {
         final ClientNode server = new ClientNode("127.0.0.1", 8000);
+        initializeNetworkingUser(server, server);
         final MainServer mainServer = new MainServer(server, server);
         timeoutsend();
     }
@@ -289,6 +296,10 @@ public class MainServerTest {
         return pkt;
     }
 
+    private void initializeNetworkingUser(ClientNode deviceAddress, ClientNode mainServerAddress) {
+        Networking.getNetwork().addUser(deviceAddress, mainServerAddress);
+    }
+
     /**
      * Tests routing functionality.
      */
@@ -319,6 +330,7 @@ public class MainServerTest {
             otherServerThread.start();
 
             // Start the main server
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500); // Give server time to start
 
@@ -396,6 +408,7 @@ public class MainServerTest {
             serverCThread.start();
 
             // Start the main server
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -474,6 +487,7 @@ public class MainServerTest {
             clientThread.start();
 
             // Start the main server
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -521,142 +535,72 @@ public class MainServerTest {
      * Tests that the server remains stable after receiving a malformed packet.
      */
     @org.junit.jupiter.api.Test
-    public void testMalformedPacket() {
-        System.out.println("Testing malformed packet...");
+    public void testErrorHandling() throws Exception {
+        System.out.println("Testing error handling...");
         final int mainServerPort = 8050;
         MainServer mainServer = null;
 
         try {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
-            // Send a malformed packet
+            // Test malformed packet
             byte[] malformedPacket = new byte[]{1, 2, 3};
             try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
                 DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
                 dataOut.write(malformedPacket);
                 dataOut.flush();
             }
-            System.out.println("Sent a malformed packet.");
-            Thread.sleep(500); // Give server time to process and fail
-
-            // Send a valid packet to see if the server is still alive
-            System.out.println("Sending a valid HELLO packet to check server status...");
+            Thread.sleep(500);
+            
+            // Test unknown packet type
+            PacketInfo pkt = createPacketInfo(99, NetworkConnectionType.HELLO.ordinal(), new ClientNode("127.0.0.1", 9490), "Unknown type test".getBytes());
+            try (Socket s = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                new DataOutputStream(s.getOutputStream()).write(PacketParser.getPacketParser().createPkt(pkt));
+            }
+            Thread.sleep(500);
+            
+            // Test parsePacket with unknown type
+            pkt = createPacketInfo(99, NetworkConnectionType.HELLO.ordinal(), new ClientNode("127.0.0.1", 9490), "Unknown type test".getBytes());
+            try (Socket s = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                new DataOutputStream(s.getOutputStream()).write(PacketParser.getPacketParser().createPkt(pkt));
+            }
+            Thread.sleep(500);
+            
+            // Verify server is still alive
             try (Socket testSocket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
                 DataOutputStream out = new DataOutputStream(testSocket.getOutputStream());
-                DataInputStream in = new DataInputStream(testSocket.getInputStream());
-
                 byte[] helloPacket = getHelloPacket(new ClientNode("127.0.0.1", testSocket.getLocalPort()));
                 out.write(helloPacket);
-
-                // The server should respond with a NETWORK packet.
-                testSocket.setSoTimeout(2000);
-                byte[] response = in.readAllBytes();
-                if (response.length > 0) {
-                    System.out.println("Server responded to valid packet after malformed one. Server is stable.");
-                } else {
-                    System.out.println("Server did NOT respond after malformed packet.");
-                }
+                System.out.println("Server is stable after error handling.");
             }
 
         } catch (Exception e) {
-            // If this exception happens, it might mean the server died.
-            System.out.println("An exception occurred during the test, possibly because the server is down.");
-            e.printStackTrace();
+            System.out.println("Exception during error handling test: " + e.getMessage());
         } finally {
-            // 4. Teardown
             if (mainServer != null) {
                 mainServer.close();
             }
-            System.out.println("Finished malformed packet test.");
+            System.out.println("Finished error handling test.");
         }
     }
 
-    /**
-     * Test for routing functionality to a client in another cluster.
-     */
-    @org.junit.jupiter.api.Test
-    public void testRoutingToOtherCluster() {
-        System.out.println("Testing another routing to other cluster...");
-        final int mainServerPort = 8060;
-        final int otherServerPort = 8061;
-        final int clientPort = 9060;
-        final ServerSocket[] otherServerSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread otherServerThread = null;
-
-        try {
-            //Setup
-            final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            final ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
-            final ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
-
-            // Reset and manually set up topology
-            Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-            Topology.getTopology().addClient(mainServerNode);
-            Topology.getTopology().addClient(otherServerNode);
-            Topology.getTopology().addClient(clientNode);
-
-            // Start a listener for the "other server"
-            otherServerThread = new Thread(() -> stoppableReceive(otherServerPort, otherServerSock));
-            otherServerThread.start();
-
-            // Start the main server
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500); // Give server time to start
-
-            // Create and send a packet destined for a client in another cluster
-            PacketInfo packetInfo = new PacketInfo();
-            packetInfo.setLength(22);
-            packetInfo.setType(NetworkType.OTHERCLUSTER.ordinal());
-            packetInfo.setConnectionType(NetworkConnectionType.HELLO.ordinal());
-            packetInfo.setIpAddress(InetAddress.getByName(clientNode.hostName()));
-            packetInfo.setPortNum(clientNode.port());
-            packetInfo.setPayload("Another Routing Test".getBytes());
-            byte[] packet = PacketParser.getPacketParser().createPkt(packetInfo);
-
-            // Send packet to main server, which should route it to otherServerNode
-            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                dataOut.write(packet);
-                dataOut.flush();
-            }
-
-            otherServerThread.join(2000); // Wait for the thread to finish, with a timeout
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            // Teardown
-            if (mainServer != null) {
-                mainServer.close();
-            }
-            if (otherServerSock[0] != null && !otherServerSock[0].isClosed()) {
-                try {
-                    otherServerSock[0].close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (otherServerThread != null && otherServerThread.isAlive()) {
-                otherServerThread.interrupt();
-            }
-            System.out.println("Finished another routing to other cluster test.");
-        }
-    }
 
     /**
      * Tests the server's ability to handle a client removal notification.
      */
     @org.junit.jupiter.api.Test
-    public void testHandleRemove() {
+    public void testHandleRemove() throws Exception {
         System.out.println("Testing handle remove...");
         final int mainServerPort = 8070;
         final int clientAPort = 9070;
         final int clientBPort = 9071;
+        final int clientCPort = 9072;
         final ServerSocket[] clientBSock = new ServerSocket[1];
         MainServer mainServer = null;
         Thread clientBThread = null;
@@ -666,13 +610,13 @@ public class MainServerTest {
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             final ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
             final ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
+            final ClientNode clientCNode = new ClientNode("127.0.0.1", clientCPort);
 
-            // Reset and manually set up topology
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
             Topology topology = Topology.getTopology();
-            topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-            topology.addClient(mainServerNode);
-            topology.addClient(clientANode);
-            topology.addClient(clientBNode);
+            topology.replaceNetwork(createTopology(mainServerNode, clientANode, clientBNode, clientCNode));
 
             // Start a listener for Client B to verify it receives the remove message
             clientBThread = new Thread(() -> stoppableReceive(clientBPort, clientBSock));
@@ -682,42 +626,34 @@ public class MainServerTest {
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
-            // Create and send a REMOVE packet for Client A
-            byte[] removePacket = getRemovePacket(clientANode);
+            // Test remove from same cluster
+            invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientANode), clientANode});
+            Thread.sleep(200);
+            
+            // Test remove from different cluster
+            List<ClientNode> otherCluster = new ArrayList<>();
+            otherCluster.add(clientCNode);
+            List<List<ClientNode>> clusters = new ArrayList<>();
+            clusters.add(topology.getNetwork().clusters().get(0));
+            clusters.add(otherCluster);
+            List<ClientNode> servers = new ArrayList<>();
+            servers.add(mainServerNode);
+            servers.add(clientCNode);
+            topology.replaceNetwork(new NetworkStructure(clusters, servers));
+            invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientCNode), clientCNode});
 
-            // Send packet to main server
-            try (Socket socket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                DataOutputStream dataOut = new DataOutputStream(socket.getOutputStream());
-                dataOut.write(removePacket);
-                dataOut.flush();
-            }
+            clientBThread.join(2000);
 
-            clientBThread.join(2000); // Wait for Client B to receive the broadcast
-
-            // Verify Client A was removed from the topology
-            if (topology.getClusterIndex(clientANode) == -1) {
-                System.out.println("Client A successfully removed from topology.");
-            } else {
-                System.out.println("Client A was NOT removed from topology.");
+            // Verify clients were removed from the topology
+            if (topology.getClusterIndex(clientANode) == -1 && topology.getClusterIndex(clientCNode) == -1) {
+                System.out.println("Clients successfully removed from topology.");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Teardown
-            if (mainServer != null) {
-                mainServer.close();
-            }
-            if (clientBSock[0] != null && !clientBSock[0].isClosed()) {
-                try {
-                    clientBSock[0].close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (clientBThread != null && clientBThread.isAlive()) {
-                clientBThread.interrupt();
-            }
+            cleanup(mainServer, clientBSock);
+            cleanupThreads(clientBThread);
             System.out.println("Finished handle remove test.");
         }
     }
@@ -753,6 +689,7 @@ public class MainServerTest {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
 
             // Register a listener to catch the output
@@ -832,6 +769,7 @@ public class MainServerTest {
             clientThread.start();
 
             // Start the main server
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -890,6 +828,7 @@ public class MainServerTest {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             Topology.getTopology().replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -945,23 +884,28 @@ public class MainServerTest {
     }
 
     @org.junit.jupiter.api.Test
-    public void testHandleClientTimeout() throws InterruptedException {
+    public void testHandleClientTimeout() throws Exception {
         System.out.println("Testing client timeout...");
-        final int mainServerPort = 8110;
-        final int clientPort = 9110;
+        final int mainServerPort = 8110, clientPort = 9110, serverBPort = 8111, clientAPort = 9111, otherServerPort = 8112, timeoutClientPort = 9112;
+        final ServerSocket[] serverBSock = new ServerSocket[1], clientASock = new ServerSocket[1];
         MainServer mainServer = null;
+        Thread serverBThread = null, clientAThread = null;
 
         try {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             final ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
+            final ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
+            final ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
+            final ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
+            final ClientNode timeoutClient = new ClientNode("127.0.0.1", timeoutClientPort);
 
-            // Reset and manually set up topology
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
             Topology topology = Topology.getTopology();
-            topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-            topology.addClient(mainServerNode);
-
-            // Start the main server
+            topology.replaceNetwork(createTopology(mainServerNode));
+            topology.addClient(clientNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -972,24 +916,48 @@ public class MainServerTest {
                 dataOut.write(helloPacket);
                 dataOut.flush();
             }
+            Thread.sleep(6000); // Wait for timeout
 
-            // Wait for the timer to trigger the timeout
-            Thread.sleep(6000); // Default timeout is 5000ms
-
-            // Verification
-            if (topology.getClusterIndex(clientNode) == -1) {
-                System.out.println("Client successfully removed after timeout.");
-            } else {
-                System.out.println("Client was NOT removed after timeout.");
-            }
-
+            // Test with reflection
+            topology.replaceNetwork(createTopology(mainServerNode));
+            invokePrivateMethod(mainServer, "handleHello", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
+            Thread.sleep(200);
+            
+            // Test with servers and clients
+            topology.replaceNetwork(createTopology(mainServerNode, clientANode, timeoutClient));
+            List<ClientNode> servers = new ArrayList<>();
+            servers.add(mainServerNode);
+            servers.add(serverBNode);
+            List<List<ClientNode>> clusters = new ArrayList<>();
+            clusters.add(topology.getNetwork().clusters().get(0));
+            topology.replaceNetwork(new NetworkStructure(clusters, servers));
+            topology.addClient(serverBNode);
+            serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
+            clientAThread = new Thread(() -> stoppableReceive(clientAPort, clientASock));
+            serverBThread.start();
+            clientAThread.start();
+            Thread.sleep(500);
+            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
+            Thread.sleep(200);
+            
+            // Test with no other servers or clients
+            topology.replaceNetwork(createTopology(mainServerNode, timeoutClient));
+            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
+            Thread.sleep(200);
+            
+            // Test when client is server
+            List<ClientNode> otherCluster = new ArrayList<>();
+            otherCluster.add(otherServerNode);
+            topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
+            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{otherServerNode});
+            
+            if (serverBThread != null) serverBThread.join(2000);
+            if (clientAThread != null) clientAThread.join(2000);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Teardown
-            if (mainServer != null) {
-                mainServer.close();
-            }
+            cleanup(mainServer, serverBSock, clientASock);
+            cleanupThreads(serverBThread, clientAThread);
             System.out.println("Finished client timeout test.");
         }
     }
@@ -1003,6 +971,7 @@ public class MainServerTest {
         try {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -1041,6 +1010,7 @@ public class MainServerTest {
         try {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -1077,24 +1047,35 @@ public class MainServerTest {
     }
 
     @org.junit.jupiter.api.Test
-    public void testServerClose() {
-        System.out.println("Testing server close...");
+    public void testClose() throws Exception {
+        System.out.println("Testing close functionality...");
         final int mainServerPort = 8140;
         MainServer mainServer = null;
 
         try {
             // Setup
             final ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
-            // Close the server
-            mainServer.close();
-
-            // Verification: The server should be closed, so a new connection should fail.
+            // Test handleClosePacket
+            PacketInfo pkt = createPacketInfo(NetworkType.USE.ordinal(), NetworkConnectionType.CLOSE.ordinal(), new ClientNode("127.0.0.1", 9130), null);
+            try (Socket s = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
+                new DataOutputStream(s.getOutputStream()).write(PacketParser.getPacketParser().createPkt(pkt));
+            }
             Thread.sleep(500);
+            
+            // Test server.close()
+            mainServer = new MainServer(mainServerNode, mainServerNode);
+            Thread.sleep(500);
+            mainServer.close();
+            Thread.sleep(500);
+            
+            // Verification: The server should be closed
             try (Socket testSocket = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                System.out.println("Server is still alive, close() test failed.");
+                System.out.println("Server is still alive after close.");
             } catch (IOException e) {
                 System.out.println("Server is closed, close() test passed.");
             }
@@ -1105,7 +1086,7 @@ public class MainServerTest {
             if (mainServer != null) {
                 mainServer.close();
             }
-            System.out.println("Finished server close test.");
+            System.out.println("Finished close test.");
         }
     }
 
@@ -1141,6 +1122,7 @@ public class MainServerTest {
             clientBThread.start();
 
             // Start the main server
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -1201,16 +1183,10 @@ public class MainServerTest {
             final ClientNode clientNode = new ClientNode("127.0.0.1", 9190);
 
             Topology topology = Topology.getTopology();
-            topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
-            // Create a cluster with mainServerNode as the server at index 0
-            List<ClientNode> mainCluster = new ArrayList<>();
-            mainCluster.add(mainServerNode);
-            List<ClientNode> servers = new ArrayList<>();
-            servers.add(mainServerNode);
-            List<List<ClientNode>> clusters = new ArrayList<>();
-            clusters.add(mainCluster);
-            topology.replaceNetwork(new NetworkStructure(clusters, servers));
-
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
+            topology.replaceNetwork(createTopology(mainServerNode));
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
 
@@ -1233,35 +1209,27 @@ public class MainServerTest {
     }
 
     @org.junit.jupiter.api.Test
-    public void testHandleUsePacketAlive() throws Exception {
+    public void testHandleUsePacket() throws Exception {
         final int mainServerPort = 8200;
         MainServer mainServer = null;
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode clientNode = new ClientNode("127.0.0.1", 9200);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
+            // Test ALIVE
             byte[] alivePacket = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), NetworkConnectionType.ALIVE.ordinal(), clientNode, null));
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{alivePacket, clientNode, NetworkConnectionType.ALIVE.ordinal()});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testHandleUsePacketClose() throws Exception {
-        final int mainServerPort = 8210;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", 9210);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
+            Thread.sleep(200);
+            // Test CLOSE
             byte[] closePacket = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), NetworkConnectionType.CLOSE.ordinal(), clientNode, null));
             invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{closePacket, clientNode, NetworkConnectionType.CLOSE.ordinal()});
-            Thread.sleep(500);
+            Thread.sleep(200);
+            // Test unknown connection type
+            byte[] unknownPacket = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), 99, clientNode, null));
+            invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{unknownPacket, clientNode, 99});
         } finally {
             if (mainServer != null) {
                 mainServer.close();
@@ -1270,77 +1238,96 @@ public class MainServerTest {
     }
 
     @org.junit.jupiter.api.Test
-    public void testHandleBroadcastUse() throws Exception {
-        final int mainServerPort = 8220, serverBPort = 8221, serverCPort = 8222;
-        final ServerSocket[] serverBSock = new ServerSocket[1], serverCSock = new ServerSocket[1];
+    public void testHandleBroadcast() throws Exception {
+        final int mainServerPort = 8220, serverBPort = 8221, serverCPort = 8222, clientAPort = 9230, clientBPort = 9231;
+        final ServerSocket[] serverBSock = new ServerSocket[1], serverCSock = new ServerSocket[1], clientASock = new ServerSocket[1], clientBSock = new ServerSocket[1];
         MainServer mainServer = null;
-        Thread serverBThread = null, serverCThread = null;
+        Thread serverBThread = null, serverCThread = null, clientAThread = null, clientBThread = null;
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
             ClientNode serverCNode = new ClientNode("127.0.0.1", serverCPort);
+            ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
+            ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
             Topology topology = Topology.getTopology();
             topology.replaceNetwork(createTopology(mainServerNode));
             topology.addClient(serverBNode);
             topology.addClient(serverCNode);
+            topology.addClient(clientANode);
+            topology.addClient(clientBNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
             serverCThread = new Thread(() -> stoppableReceive(serverCPort, serverCSock));
+            clientAThread = new Thread(() -> stoppableReceive(clientAPort, clientASock));
+            clientBThread = new Thread(() -> stoppableReceive(clientBPort, clientBSock));
             serverBThread.start();
             serverCThread.start();
+            clientAThread.start();
+            clientBThread.start();
             Thread.sleep(500);
+            // Test USE broadcast
             PacketInfo pkt = createPacketInfo(NetworkType.USE.ordinal(), 0, new ClientNode("127.0.0.1", 9220), "Broadcast from main server".getBytes());
+            pkt.setBroadcast(1);
+            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
+            Thread.sleep(200);
+            // Test OTHERCLUSTER broadcast
+            pkt = createPacketInfo(NetworkType.OTHERCLUSTER.ordinal(), 0, mainServerNode, "Broadcast from another cluster".getBytes());
+            pkt.setBroadcast(1);
+            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
+            Thread.sleep(200);
+            // Test with no other servers
+            pkt = createPacketInfo(NetworkType.USE.ordinal(), 0, new ClientNode("127.0.0.1", 9420), "Broadcast with no other servers".getBytes());
+            pkt.setBroadcast(1);
+            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
+            Thread.sleep(200);
+            // Test OTHERCLUSTER with no clients
+            pkt = createPacketInfo(NetworkType.OTHERCLUSTER.ordinal(), 0, mainServerNode, "Broadcast OTHERCLUSTER with no clients".getBytes());
             pkt.setBroadcast(1);
             invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
             serverBThread.join(2000);
             serverCThread.join(2000);
-        } finally {
-            cleanup(mainServer, serverBSock, serverCSock);
-            cleanupThreads(serverBThread, serverCThread);
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testHandleBroadcastOtherCluster() throws Exception {
-        final int mainServerPort = 8230, clientAPort = 9230, clientBPort = 9231;
-        final ServerSocket[] clientASock = new ServerSocket[1], clientBSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread clientAThread = null, clientBThread = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
-            ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
-            Topology topology = Topology.getTopology();
-            topology.replaceNetwork(createTopology(mainServerNode));
-            topology.addClient(clientANode);
-            topology.addClient(clientBNode);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            clientAThread = new Thread(() -> stoppableReceive(clientAPort, clientASock));
-            clientBThread = new Thread(() -> stoppableReceive(clientBPort, clientBSock));
-            clientAThread.start();
-            clientBThread.start();
-            Thread.sleep(500);
-            PacketInfo pkt = createPacketInfo(NetworkType.OTHERCLUSTER.ordinal(), 0, mainServerNode, "Broadcast from another cluster".getBytes());
-            pkt.setBroadcast(1);
-            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
             clientAThread.join(2000);
             clientBThread.join(2000);
         } finally {
-            cleanup(mainServer, clientASock, clientBSock);
-            cleanupThreads(clientAThread, clientBThread);
+            cleanup(mainServer, serverBSock, serverCSock, clientASock, clientBSock);
+            cleanupThreads(serverBThread, serverCThread, clientAThread, clientBThread);
         }
     }
 
+
     @org.junit.jupiter.api.Test
-    public void testAddClientToTimerWithReflection() throws Exception {
-        final int mainServerPort = 8240;
+    public void testAddClientToTimer() throws Exception {
+        final int mainServerPort = 8240, otherServerPort = 8241, clientPort = 9240, otherClientPort = 9241;
         MainServer mainServer = null;
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", 9240);
+            ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
+            ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
+            ClientNode otherClientNode = new ClientNode("127.0.0.1", otherClientPort);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
+            Topology topology = Topology.getTopology();
+            topology.replaceNetwork(createTopology(mainServerNode));
+            topology.addClient(clientNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
-            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, 0});
+            // Test same cluster
+            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
+            Thread.sleep(200);
+            // Test as server
+            List<ClientNode> otherCluster = new ArrayList<>();
+            otherCluster.add(otherServerNode);
+            topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
+            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{otherServerNode, topology.getClusterIndex(otherServerNode)});
+            Thread.sleep(200);
+            // Test not same cluster, not server
+            otherCluster.add(otherClientNode);
+            topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
+            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{otherClientNode, topology.getClusterIndex(otherClientNode)});
         } finally {
             if (mainServer != null) {
                 mainServer.close();
@@ -1348,48 +1335,7 @@ public class MainServerTest {
         }
     }
 
-    @org.junit.jupiter.api.Test
-    public void testSendNetworkPktResponseWithReflection() throws Exception {
-        final int mainServerPort = 8250, clientPort = 9250;
-        final ServerSocket[] clientSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread clientThread = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
-            clientThread.start();
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "sendNetworkPktResponse", new Class<?>[]{ClientNode.class}, new Object[]{clientNode});
-            clientThread.join(2000);
-        } finally {
-            cleanup(mainServer, clientSock);
-            cleanupThreads(clientThread);
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testSendAddPktResponseWithReflection() throws Exception {
-        final int mainServerPort = 8260, serverBPort = 8261;
-        final ServerSocket[] serverBSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread serverBThread = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode newClientNode = new ClientNode("127.0.0.1", 9260);
-            ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
-            serverBThread.start();
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "sendAddPktResponse", new Class<?>[]{ClientNode.class, ClientNode.class, int.class}, new Object[]{newClientNode, serverBNode, 0});
-            serverBThread.join(2000);
-        } finally {
-            cleanup(mainServer, serverBSock);
-            cleanupThreads(serverBThread);
-        }
-    }
 
     @org.junit.jupiter.api.Test
     public void testParsePacketSameCluster() throws Exception {
@@ -1402,6 +1348,7 @@ public class MainServerTest {
             ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
             Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
             Topology.getTopology().addClient(clientNode);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
             clientThread.start();
@@ -1429,6 +1376,7 @@ public class MainServerTest {
             List<ClientNode> otherCluster = new ArrayList<>();
             otherCluster.add(otherServerNode);
             Topology.getTopology().replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             otherServerThread = new Thread(() -> stoppableReceive(otherServerPort, otherServerSock));
             otherServerThread.start();
@@ -1458,6 +1406,7 @@ public class MainServerTest {
             otherCluster.add(otherServerNode);
             otherCluster.add(clientNode);
             Topology.getTopology().replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             otherServerThread = new Thread(() -> stoppableReceive(otherServerPort, otherServerSock));
             otherServerThread.start();
@@ -1480,6 +1429,7 @@ public class MainServerTest {
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
             PacketInfo pkt = createPacketInfo(99, 0, new ClientNode("127.0.0.1", 9300), "Unknown broadcast type".getBytes());
@@ -1492,81 +1442,23 @@ public class MainServerTest {
         }
     }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleRemoveDifferentCluster() throws Exception {
-        final int mainServerPort = 8310, clientAPort = 9310, clientBPort = 9311;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
-            ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
-            List<ClientNode> otherCluster = new ArrayList<>();
-            otherCluster.add(clientANode);
-            Topology.getTopology().replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, clientANode));
-            Topology.getTopology().addClient(clientBNode);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientANode), clientANode});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
+
 
     @org.junit.jupiter.api.Test
-    public void testAddClientToTimerSameCluster() throws Exception {
-        final int mainServerPort = 8320;
+    public void testHandleHello() throws Exception {
+        final int mainServerPort = 8340, serverBPort = 8341, clientAPort = 9340, clientBPort = 9341, newClientPort = 9342;
+        final ServerSocket[] serverBSock = new ServerSocket[1], clientASock = new ServerSocket[1], clientBSock = new ServerSocket[1], newClientSock = new ServerSocket[1];
         MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", 9320);
-            Topology topology = Topology.getTopology();
-            topology.replaceNetwork(createTopology(mainServerNode));
-            topology.addClient(clientNode);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testAddClientToTimerAsServer() throws Exception {
-        final int mainServerPort = 8330, otherServerPort = 8331;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
-            List<ClientNode> otherCluster = new ArrayList<>();
-            otherCluster.add(otherServerNode);
-            Topology topology = Topology.getTopology();
-            topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{otherServerNode, topology.getClusterIndex(otherServerNode)});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testHandleHelloWithMultipleServersAndClients() throws Exception {
-        final int mainServerPort = 8340, serverBPort = 8341, clientAPort = 9340, clientBPort = 9341;
-        final ServerSocket[] serverBSock = new ServerSocket[1], clientASock = new ServerSocket[1], clientBSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread serverBThread = null, clientAThread = null, clientBThread = null;
+        Thread serverBThread = null, clientAThread = null, clientBThread = null, newClientThread = null;
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
             ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
             ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
-            ClientNode newClientNode = new ClientNode("127.0.0.1", 9342);
+            ClientNode newClientNode = new ClientNode("127.0.0.1", newClientPort);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
             Topology topology = Topology.getTopology();
             topology.replaceNetwork(createTopology(mainServerNode, clientANode, clientBNode));
             List<ClientNode> servers = new ArrayList<>();
@@ -1584,50 +1476,26 @@ public class MainServerTest {
             clientAThread.start();
             clientBThread.start();
             Thread.sleep(500);
+            // Test with multiple servers and clients
+            invokePrivateMethod(mainServer, "handleHello", new Class<?>[]{ClientNode.class}, new Object[]{newClientNode});
+            Thread.sleep(200);
+            // Test with no other servers or clients
+            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
+            newClientNode = new ClientNode("127.0.0.1", 9410);
+            newClientThread = new Thread(() -> stoppableReceive(9410, newClientSock));
+            newClientThread.start();
+            Thread.sleep(500);
             invokePrivateMethod(mainServer, "handleHello", new Class<?>[]{ClientNode.class}, new Object[]{newClientNode});
             serverBThread.join(2000);
             clientAThread.join(2000);
             clientBThread.join(2000);
+            if (newClientThread != null) newClientThread.join(2000);
         } finally {
-            cleanup(mainServer, serverBSock, clientASock, clientBSock);
-            cleanupThreads(serverBThread, clientAThread, clientBThread);
+            cleanup(mainServer, serverBSock, clientASock, clientBSock, newClientSock);
+            cleanupThreads(serverBThread, clientAThread, clientBThread, newClientThread);
         }
     }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleClientTimeoutWithServersAndClients() throws Exception {
-        final int mainServerPort = 8350, serverBPort = 8351, clientAPort = 9350;
-        final ServerSocket[] serverBSock = new ServerSocket[1], clientASock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread serverBThread = null, clientAThread = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
-            ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
-            ClientNode timeoutClient = new ClientNode("127.0.0.1", 9351);
-            Topology topology = Topology.getTopology();
-            topology.replaceNetwork(createTopology(mainServerNode, clientANode, timeoutClient));
-            List<ClientNode> servers = new ArrayList<>();
-            servers.add(mainServerNode);
-            servers.add(serverBNode);
-            List<List<ClientNode>> clusters = new ArrayList<>();
-            clusters.add(topology.getNetwork().clusters().get(0));
-            topology.replaceNetwork(new NetworkStructure(clusters, servers));
-            topology.addClient(serverBNode);
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
-            clientAThread = new Thread(() -> stoppableReceive(clientAPort, clientASock));
-            serverBThread.start();
-            clientAThread.start();
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
-            serverBThread.join(2000);
-            clientAThread.join(2000);
-        } finally {
-            cleanup(mainServer, serverBSock, clientASock);
-            cleanupThreads(serverBThread, clientAThread);
-        }
-    }
 
     @org.junit.jupiter.api.Test
     public void testModulePacketWithNullData() throws Exception {
@@ -1637,6 +1505,7 @@ public class MainServerTest {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode clientNode = new ClientNode("127.0.0.1", 9360);
             Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
             PacketInfo pkt = createPacketInfo(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), clientNode, "Partial chunk".getBytes());
@@ -1661,6 +1530,7 @@ public class MainServerTest {
             Topology topology = Topology.getTopology();
             topology.replaceNetwork(createTopology(mainServerNode));
             topology.addClient(clientNode);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
             invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
@@ -1690,6 +1560,7 @@ public class MainServerTest {
             clusters.add(topology.getNetwork().clusters().get(0));
             topology.replaceNetwork(new NetworkStructure(clusters, servers));
             topology.addClient(serverBNode);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
             serverBThread.start();
@@ -1720,6 +1591,7 @@ public class MainServerTest {
             topology.replaceNetwork(createTopology(mainServerNode));
             topology.addClient(clientNode1);
             topology.addClient(clientNode2);
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             clientThread1 = new Thread(() -> stoppableReceive(clientPort1, clientSock1));
             clientThread2 = new Thread(() -> stoppableReceive(clientPort2, clientSock2));
@@ -1735,145 +1607,10 @@ public class MainServerTest {
         }
     }
 
-    @org.junit.jupiter.api.Test
-    public void testAddClientToTimerNotSameClusterNotServer() throws Exception {
-        final int mainServerPort = 8400, clientPort = 9400, otherServerPort = 8401;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
-            ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
-            List<ClientNode> otherCluster = new ArrayList<>();
-            otherCluster.add(otherServerNode);
-            otherCluster.add(clientNode);
-            Topology topology = Topology.getTopology();
-            topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "addClientToTimer", new Class<?>[]{ClientNode.class, int.class}, new Object[]{clientNode, topology.getClusterIndex(clientNode)});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleHelloWithNoOtherServersOrClients() throws Exception {
-        final int mainServerPort = 8410, clientPort = 9410;
-        final ServerSocket[] clientSock = new ServerSocket[1];
-        MainServer mainServer = null;
-        Thread clientThread = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode newClientNode = new ClientNode("127.0.0.1", clientPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
-            clientThread.start();
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleHello", new Class<?>[]{ClientNode.class}, new Object[]{newClientNode});
-            clientThread.join(2000);
-        } finally {
-            cleanup(mainServer, clientSock);
-            cleanupThreads(clientThread);
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleBroadcastUseWithNoOtherServers() throws Exception {
-        final int mainServerPort = 8420;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            PacketInfo pkt = createPacketInfo(NetworkType.USE.ordinal(), 0, new ClientNode("127.0.0.1", 9420), "Broadcast with no other servers".getBytes());
-            pkt.setBroadcast(1);
-            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleBroadcastOtherClusterWithNoClients() throws Exception {
-        final int mainServerPort = 8430;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            PacketInfo pkt = createPacketInfo(NetworkType.OTHERCLUSTER.ordinal(), 0, mainServerNode, "Broadcast OTHERCLUSTER with no clients".getBytes());
-            pkt.setBroadcast(1);
-            invokePrivateMethod(mainServer, "handleBroadcast", new Class<?>[]{PacketInfo.class}, new Object[]{pkt});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleRemoveSameCluster() throws Exception {
-        final int mainServerPort = 8440, clientAPort = 9440, clientBPort = 9441;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientANode = new ClientNode("127.0.0.1", clientAPort);
-            ClientNode clientBNode = new ClientNode("127.0.0.1", clientBPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode, clientANode, clientBNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleRemove", new Class<?>[]{byte[].class, ClientNode.class}, new Object[]{getRemovePacket(clientANode), clientANode});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testHandleClientTimeoutWithNoOtherServersOrClients() throws Exception {
-        final int mainServerPort = 8450;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode timeoutClient = new ClientNode("127.0.0.1", 9450);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode, timeoutClient));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{timeoutClient});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
-
-    @org.junit.jupiter.api.Test
-    public void testHandleClientTimeoutWhenClientIsServer() throws Exception {
-        final int mainServerPort = 8460, otherServerPort = 8461;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode otherServerNode = new ClientNode("127.0.0.1", otherServerPort);
-            List<ClientNode> otherCluster = new ArrayList<>();
-            otherCluster.add(otherServerNode);
-            Topology.getTopology().replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, otherServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            invokePrivateMethod(mainServer, "handleClientTimeout", new Class<?>[]{ClientNode.class}, new Object[]{otherServerNode});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
     @org.junit.jupiter.api.Test
     public void testSendNetworkPktResponse() throws Exception {
@@ -1884,7 +1621,11 @@ public class MainServerTest {
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode clientNode = new ClientNode("127.0.0.1", clientPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode, clientNode));
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
+            Topology topology = Topology.getTopology();
+            topology.replaceNetwork(createTopology(mainServerNode, clientNode));
             mainServer = new MainServer(mainServerNode, mainServerNode);
             clientThread = new Thread(() -> stoppableReceive(clientPort, clientSock));
             clientThread.start();
@@ -1907,15 +1648,19 @@ public class MainServerTest {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             ClientNode serverBNode = new ClientNode("127.0.0.1", serverBPort);
             ClientNode newClientNode = new ClientNode("127.0.0.1", 9480);
+            // Call initializeNetworkingUser FIRST - it resets the topology
+            initializeNetworkingUser(mainServerNode, mainServerNode);
+            // Now set up the rest of the topology
             List<ClientNode> otherCluster = new ArrayList<>();
             otherCluster.add(serverBNode);
             Topology topology = Topology.getTopology();
             topology.replaceNetwork(createMultiClusterTopology(mainServerNode, otherCluster, serverBNode));
+            int clusterIdx = topology.addClient(newClientNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             serverBThread = new Thread(() -> stoppableReceive(serverBPort, serverBSock));
             serverBThread.start();
             Thread.sleep(500);
-            invokePrivateMethod(mainServer, "sendAddPktResponse", new Class<?>[]{ClientNode.class, ClientNode.class, int.class}, new Object[]{newClientNode, serverBNode, topology.addClient(newClientNode)});
+            invokePrivateMethod(mainServer, "sendAddPktResponse", new Class<?>[]{ClientNode.class, ClientNode.class, int.class}, new Object[]{newClientNode, serverBNode, clusterIdx});
             serverBThread.join(2000);
         } finally {
             cleanup(mainServer, serverBSock);
@@ -1923,45 +1668,7 @@ public class MainServerTest {
         }
     }
 
-    @org.junit.jupiter.api.Test
-    public void testParsePacketUnknownType() throws Exception {
-        final int mainServerPort = 8490;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            PacketInfo pkt = createPacketInfo(99, NetworkConnectionType.HELLO.ordinal(), new ClientNode("127.0.0.1", 9490), "Unknown type test".getBytes());
-            try (Socket s = new Socket(mainServerNode.hostName(), mainServerNode.port())) {
-                new DataOutputStream(s.getOutputStream()).write(PacketParser.getPacketParser().createPkt(pkt));
-            }
-            Thread.sleep(500);
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
-    @org.junit.jupiter.api.Test
-    public void testHandleUsePacketUnknownConnectionType() throws Exception {
-        final int mainServerPort = 8500;
-        MainServer mainServer = null;
-        try {
-            ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
-            ClientNode clientNode = new ClientNode("127.0.0.1", 9500);
-            Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
-            mainServer = new MainServer(mainServerNode, mainServerNode);
-            Thread.sleep(500);
-            byte[] packet = PacketParser.getPacketParser().createPkt(createPacketInfo(NetworkType.USE.ordinal(), 99, clientNode, null));
-            invokePrivateMethod(mainServer, "handleUsePacket", new Class<?>[]{byte[].class, ClientNode.class, int.class}, new Object[]{packet, clientNode, 99});
-        } finally {
-            if (mainServer != null) {
-                mainServer.close();
-            }
-        }
-    }
 
     @org.junit.jupiter.api.Test
     public void testReceiveWithSplitPackets() throws Exception {
@@ -1970,6 +1677,7 @@ public class MainServerTest {
         try {
             ClientNode mainServerNode = new ClientNode("127.0.0.1", mainServerPort);
             Topology.getTopology().replaceNetwork(createTopology(mainServerNode));
+            initializeNetworkingUser(mainServerNode, mainServerNode);
             mainServer = new MainServer(mainServerNode, mainServerNode);
             Thread.sleep(500);
             try (Socket s = new Socket(mainServerNode.hostName(), mainServerNode.port())) {

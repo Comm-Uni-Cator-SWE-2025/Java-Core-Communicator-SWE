@@ -1,3 +1,13 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: Client.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;

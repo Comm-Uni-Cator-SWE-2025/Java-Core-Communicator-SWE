@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -87,6 +89,87 @@ class PriorityQueueTest {
         String expectedMessage = "Invalid priority level: " + invalidLevel;
         assertTrue(exception.getMessage().contains(expectedMessage),
                 "The exception message should contain the invalid level.");
+    }
+
+    @Test
+    void testReverseConservation() throws UnknownHostException {
+        PacketParser parser = getParser();
+        for(int i = 0; i < 100; i++) {
+            byte[] high1Priority = createTestPkt(parser, 0, i, "high");
+            pq.addPacket(high1Priority);
+
+        }
+        int number = 0;
+        for(int i = 0; i < 200; i++){
+            byte[] p = pq.nextPacket();
+            if(p != null) {
+                number++;
+            }
+        }
+        assertEquals(100, number);
+    }
+
+    @Test
+    void testReverseConservation2() throws UnknownHostException {
+        PacketParser parser = getParser();
+        for(int i = 0; i < 100; i++){
+            byte[] midPriority = createTestPkt(parser, 5, i, "high");
+            pq.addPacket(midPriority);
+        }
+
+        int number = 0;
+        for(int i = 0; i < 200; i++){
+            byte[] p = pq.nextPacket();
+            if(p != null) {
+                number++;
+            }
+        }
+        assertEquals(100, number);
+    }
+
+    @Test
+    void testProcessLowPriority_ReturnsNull() throws Exception {
+
+        // Use reflection to call private processLowPriority() directly
+        Method method = PriorityQueue.class.getDeclaredMethod("processLowPriority");
+        method.setAccessible(true);
+
+        // State: Budgets initialized (100 total available)
+        // But MLFQ is empty (no packets added)
+
+        byte[] result = (byte[]) method.invoke(pq);
+
+        assertNull(result); // ← This WILL hit the final return null
+    }
+
+    @Test
+    void testTrySendNext_ReturnsNull_AllBudgetsExhausted() throws Exception {
+
+        PacketParser parser = getParser();
+
+        // Manually set budgets to 0 using reflection to prevent reset
+        Field budgetField = PriorityQueue.class.getDeclaredField("currentBudget");
+        budgetField.setAccessible(true);
+        Map<PriorityQueue.PacketPriority, Integer> budgets =
+                (Map<PriorityQueue.PacketPriority, Integer>) budgetField.get(pq);
+
+        budgets.put(PriorityQueue.PacketPriority.ZERO, 0);
+        budgets.put(PriorityQueue.PacketPriority.ONE, 0);
+        budgets.put(PriorityQueue.PacketPriority.TWO, 0);
+
+        // Also prevent time-based reset by setting lastEpochReset to now
+        Field lastEpochField = PriorityQueue.class.getDeclaredField("lastEpochReset");
+        lastEpochField.setAccessible(true);
+        lastEpochField.set(pq, System.currentTimeMillis());
+
+        // Now call trySendNext directly
+        Method method = PriorityQueue.class.getDeclaredMethod("trySendNext");
+        method.setAccessible(true);
+
+        byte[] result = (byte[]) method.invoke(pq);
+
+        // All budgets = 0, all process methods return null → final return null
+        assertNull(result);
     }
 
     @Test

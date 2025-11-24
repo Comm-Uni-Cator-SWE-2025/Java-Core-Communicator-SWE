@@ -1,3 +1,13 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: MeetingNetworkCoordinator.java
+ *  Owner: Kaushik Rawat
+ *  Roll Number : 112201015
+ *  Module : Controller/App
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.controller;
 
 import com.swe.controller.serializer.IamPacket;

@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: NetworkConnectionType.java
+ *  Owner: Shubham Yadav
+ *  Roll Number : 112201032
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
 import java.util.HashMap;
@@ -34,7 +43,7 @@ public enum NetworkConnectionType {
     /** NETWORK packet ID. */
     private static final int MODULEID = 5;
     /** CLOES packet ID. */
-    private static final int CLOSEID = 7;
+    private static final int CLOSEID = 6;
 
     /**
      * Hashmap storing the mapping from integer to NetworkConnectionType.
