@@ -109,7 +109,6 @@ public class Init {
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
-                rpc.call("canvas:getHostIp", DataSerializer.serialize(localClientNode)).get();
 
                 Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.cloud);
                 controllerServices.networking.addUser(localClientNode, localClientNode);
