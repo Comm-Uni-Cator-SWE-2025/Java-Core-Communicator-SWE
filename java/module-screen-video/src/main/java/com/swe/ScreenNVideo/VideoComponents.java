@@ -29,6 +29,9 @@ import java.util.concurrent.ArrayBlockingQueue;
  */
 public class VideoComponents {
 
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**

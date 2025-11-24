@@ -30,6 +30,7 @@ public class VideoCapture extends ICapture {
 
     /** Capture parameters. */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /** capture Area to capture video. */
     private Dimension captureArea;
     /** Capture parameters. */
     private Point captureLocation;
@@ -95,12 +96,17 @@ public class VideoCapture extends ICapture {
         this.captureArea = new Dimension(width, height);
     }
 
+    /** open the webcam feed.*/
     private void openWebcam() {
         try {
             this.webcam = Webcam.getDefault();
             if (this.webcam == null) {
+                if (IS_MAC) {
+                    throw new IllegalStateException("No webcam found. Check camera permissions"
+                            + " in System Preferences > Security & Privacy > Camera");
+                }
                 throw new IllegalStateException("No webcam found. Check camera permissions"
-                        + (IS_MAC ? " in System Preferences > Security & Privacy > Camera" : ""));
+                        + "");
             }
 
             // Use the captureArea set by the constructor
@@ -110,7 +116,7 @@ public class VideoCapture extends ICapture {
                 resolution = WebcamResolution.VGA.getSize();
             }
 
-            this.webcam.setCustomViewSizes(new Dimension[] { resolution });
+            this.webcam.setCustomViewSizes(new Dimension[] {resolution});
             this.webcam.setViewSize(resolution);
 
             // Mac-specific: Use async open with wait to avoid timeout issues

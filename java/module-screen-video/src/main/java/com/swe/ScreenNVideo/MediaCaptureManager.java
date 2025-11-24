@@ -85,6 +85,9 @@ public class MediaCaptureManager implements CaptureManager {
      * Audio Player object.
      */
     private final AudioPlayer audioPlayer;
+    /**
+     * Screen Video logger.
+     */
     private final SweLogger logger;
 
     /**
@@ -92,9 +95,10 @@ public class MediaCaptureManager implements CaptureManager {
      *
      * @param argNetworking Networking object
      * @param portArgs      Port for the server
+     * @param loggerArgs        Screen Video logger.
      */
-    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs, final SweLogger logger) {
-        this.logger = Objects.requireNonNull(logger, "logger");
+    public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs, final SweLogger loggerArgs) {
+        this.logger = Objects.requireNonNull(loggerArgs, "logger");
         final Context context = Context.getInstance();
         this.rpc = context.getRpc();
         this.port = portArgs;
@@ -454,7 +458,7 @@ public class MediaCaptureManager implements CaptureManager {
             final IPPacket subscribePacket = new IPPacket(localIp, reqCompress);
             final byte[] subscribeData = subscribePacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
             final ClientNode destNode = new ClientNode(ip, port);
-            networking.sendData(subscribeData, new ClientNode[] { destNode }, ModuleType.SCREENSHARING.ordinal(), 2);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
         }
 
         public void addUserNFullImageRequest(final String ip, final boolean reqCompression) {
@@ -477,7 +481,7 @@ public class MediaCaptureManager implements CaptureManager {
                 return;
             }
             logger.info("Sending Full Image");
-            networking.sendData(fullImageEncoded, new ClientNode[] { new ClientNode(ip, port) },
+            networking.sendData(fullImageEncoded, new ClientNode[] {new ClientNode(ip, port)},
                     ModuleType.SCREENSHARING.ordinal(), 2);
         }
     }

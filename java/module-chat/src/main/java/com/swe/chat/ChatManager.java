@@ -59,9 +59,6 @@ public class ChatManager implements IChatService {
     private final AiClientService aiService;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private final AiClientService aiService;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
     /**
      * FILE CACHE - Stores compressed files temporarily
      * Key: messageId

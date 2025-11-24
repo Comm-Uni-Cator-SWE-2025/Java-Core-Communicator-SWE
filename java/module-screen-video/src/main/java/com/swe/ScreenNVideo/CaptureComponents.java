@@ -26,6 +26,9 @@ import java.util.function.BiFunction;
  * Class containing Components to capture feed.
  */
 public class CaptureComponents {
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {

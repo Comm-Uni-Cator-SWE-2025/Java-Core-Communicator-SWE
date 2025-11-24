@@ -18,6 +18,9 @@ import java.util.PriorityQueue;
  * Synchronizer to synchronize the image from the patches.
  */
 public class ImageSynchronizer {
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * The previous image.

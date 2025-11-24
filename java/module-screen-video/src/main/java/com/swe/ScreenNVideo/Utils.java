@@ -19,6 +19,9 @@ import java.net.UnknownHostException;
  * Utility class for ScreenN Video.
  */
 public class Utils {
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * Hashing stride for the hashing algorithm.

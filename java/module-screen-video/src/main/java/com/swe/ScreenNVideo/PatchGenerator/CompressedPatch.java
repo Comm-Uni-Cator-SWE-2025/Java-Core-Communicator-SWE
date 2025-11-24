@@ -20,6 +20,9 @@ import java.nio.ByteBuffer;
  */
 public record CompressedPatch(int x, int y, int width, int height, byte[] data)  {
 
+    /**
+     * Logger screen-video.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**

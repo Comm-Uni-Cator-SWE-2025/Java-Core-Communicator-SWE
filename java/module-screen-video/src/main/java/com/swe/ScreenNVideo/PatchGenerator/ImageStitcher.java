@@ -14,7 +14,9 @@ import java.util.List;
  * Handles stitching multiple patches together into a single canvas.
  */
 public class ImageStitcher {
-
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**

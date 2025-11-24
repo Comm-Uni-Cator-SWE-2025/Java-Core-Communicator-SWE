@@ -35,6 +35,7 @@ public class ScreenCapture extends ICapture {
 
     /** The {@link Robot} used to capture the screen image. */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /** robot instance to capture screen. */
     private Robot robot;
 
     /** Cached screen rectangle to avoid repeated Toolkit calls. */

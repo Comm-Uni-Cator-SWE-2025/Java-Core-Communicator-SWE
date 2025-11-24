@@ -30,6 +30,9 @@ import java.util.List;
 public record CPackets(int packetNumber, String ip, boolean isFullImage, boolean compress, int height, int width,
                        List<CompressedPatch> packets) {
 
+    /**
+     * Screen Video logger.
+     */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**

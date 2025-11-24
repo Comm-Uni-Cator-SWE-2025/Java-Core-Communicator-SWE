@@ -24,6 +24,9 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
 
     /** The microphone input line capturing raw PCM audio. */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /**
+     * Microphone.
+     */
     private TargetDataLine microphone;
 
     /** The audio format specifying sample rate, size, and channel configuration. */
