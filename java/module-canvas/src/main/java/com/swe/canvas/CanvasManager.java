@@ -58,12 +58,14 @@ public class CanvasManager {
     private byte[] handleDescribe(byte[] data) {
         try {
             // Deserialize input using DataSerializer
-            String input = DataSerializer.deserialize(data, String.class);
+            String input = new String(data, StandardCharsets.UTF_8);
             System.out.println("[CanvasManager] Canvas Describe requested for: " + input);
 
             // In a real scenario: AiInstance.getInstance().describe(input);
-            
-            return DataSerializer.serialize("Canvas is Described");
+            String result = null;
+            String future = AiInstance.getInstance().describe(input).get();
+            result = future;    
+            return result.getBytes();
         } catch (Exception e) {
             e.printStackTrace();
             return new byte[0];
