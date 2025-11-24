@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: SplitPackets.java
+ *  Owner: Vishal
+ *  Roll Number : 112201049
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
 import java.nio.ByteBuffer;

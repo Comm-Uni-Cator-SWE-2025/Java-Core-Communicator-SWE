@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AbstractNetworking.java
+ *  Owner: Asaddudin Ahmed
+ *  Roll Number : 112201021
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 package com.swe.networking;
 
 import com.swe.core.ClientNode;

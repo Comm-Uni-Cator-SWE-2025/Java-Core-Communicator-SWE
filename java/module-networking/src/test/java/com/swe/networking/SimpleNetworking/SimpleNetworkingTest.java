@@ -7,15 +7,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 import com.swe.core.ClientNode;
+import com.swe.core.RPC;
+import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for simplenetworking class.
@@ -25,12 +24,13 @@ public class SimpleNetworkingTest {
     /**
      * Function to test the simpleNetwokring server receive.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void simpleNetworkingServerTestReceive() {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
+        SimpleNetworking.getSimpleNetwork().resetSimpleNetworking();
         try {
             final Integer sleepTime = 2000;
-            final String localAddress = "10.32.0.41";
+            final String localAddress = "127.0.0.1";
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
             final ClientNode device = new ClientNode(localAddress, 8000);
             final ClientNode mainServer = new ClientNode(localAddress, 8000);
@@ -61,7 +61,7 @@ public class SimpleNetworkingTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World";
             System.out.println("Sent data of size " + data.length());
-            final ClientNode dest = new ClientNode("10.32.0.41", 8000);
+            final ClientNode dest = new ClientNode("127.0.0.1", 8000);
             final byte[] packet = createTestPacket(data.getBytes(), dest, ModuleType.CHAT.ordinal());
             dataOut.write(packet);
             sendServer1(destSocket.getLocalPort());
@@ -85,7 +85,7 @@ public class SimpleNetworkingTest {
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World";
             System.out.println("Sent data of size " + data.length());
-            final ClientNode dest = new ClientNode("10.32.0.41", destPort);
+            final ClientNode dest = new ClientNode("127.0.0.1", destPort);
             final byte[] packet = createTestPacket(data.getBytes(), dest, ModuleType.CHAT.ordinal());
             dataOut.write(packet);
             destSocket.close();
@@ -96,13 +96,13 @@ public class SimpleNetworkingTest {
     /**
      * Function to test the simpleNetwokring client receive.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void simpleNetworkingClientTestReceive() {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
             final Integer sleepTime = 2000;
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-            final ClientNode device = new ClientNode("127.0.0.1", 9002);
+            final ClientNode device = new ClientNode("10.32.0.41", 9002);
             final ClientNode mainServer = new ClientNode("127.0.0.1", 9003);
             final Server server = new Server(mainServer);
             final Thread serverThread = new Thread(() -> {
@@ -141,7 +141,7 @@ public class SimpleNetworkingTest {
             destSocket.connect(new InetSocketAddress("127.0.0.1", port), timeout);
             final DataOutputStream dataOut = new DataOutputStream(destSocket.getOutputStream());
             final String data = "Hello World !!!";
-            final ClientNode dest = new ClientNode("10.32.0.41", 9002);
+            final ClientNode dest = new ClientNode("127.0.0.1", 9002);
             final byte[] packet = createTestPacket(data.getBytes(), dest, ModuleType.CHAT.ordinal());
             dataOut.write(packet);
             destSocket.close();
@@ -152,7 +152,7 @@ public class SimpleNetworkingTest {
     /**
      * Function to test subscribe in simplenetworking.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void simpleNetworkingSubscribeTest() {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
@@ -168,15 +168,15 @@ public class SimpleNetworkingTest {
     /**
      * Function to test simpleNetworking server send.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void simpleNetworkingServerSendTest() throws IOException {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         try {
-            final ClientNode cdevice = new ClientNode("10.32.0.41", 8005);
-            // final byte[] message = new byte[5 * 1024 * 1024];
-            final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
-            final byte[] message;
-            message = Files.readAllBytes(path);
+            final ClientNode cdevice = new ClientNode("127.0.0.1", 8005);
+             final byte[] message = new byte[5 * 1024 * 1024];
+//            final Path path = Paths.get("/home/logan/Downloads/apLogs.csv");
+//            final byte[] message;
+//            message = Files.readAllBytes(path);
             final Client client = new Client(cdevice);
             final Thread clientThread = new Thread(() -> {
                 try {
@@ -189,17 +189,20 @@ public class SimpleNetworkingTest {
             });
             clientThread.start();
             final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-            final ClientNode device = new ClientNode("10.32.0.41", 8100);
-            final ClientNode mainServer = new ClientNode("10.32.0.41", 8100);
+            final ClientNode device = new ClientNode("127.0.0.1", 8100);
+            final ClientNode mainServer = new ClientNode("127.0.0.1", 8100);
             network.addUser(device, mainServer);
+            final ClientNode[] destServer = {mainServer};
+            byte[] testPkt = createTestPacket(new byte[2], mainServer, ModuleType.CHAT.ordinal());
+            client.send(testPkt, destServer, mainServer, ModuleType.CHAT);
             final MessageListener func = (byte[] data) -> {
-                final Path newpath = Paths.get("/home/logan/Downloads/");
-                final byte[] newmessage;
-                try {
-                    newmessage = Files.readAllBytes(path);
-                    System.out.println(Arrays.equals(data, newmessage));
-                } catch (IOException e) {
-                }
+//                final Path newpath = Paths.get("/home/logan/Downloads/");
+//                final byte[] newmessage;
+//                try {
+//                    newmessage = Files.readAllBytes(path);
+//                    System.out.println(Arrays.equals(data, newmessage));
+//                } catch (IOException e) {
+//                }
                 System.out.println("Received data length : " + data.length / (1024 * 1024) + " MB");
             };
             network.subscribe(ModuleType.CHAT, func);
@@ -220,7 +223,7 @@ public class SimpleNetworkingTest {
     /**
      * Test to check socket exceptions.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void simpleNetworkingIOTest() {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         final ClientNode device = new ClientNode("127.0.0.1", 8100);
@@ -265,10 +268,10 @@ public class SimpleNetworkingTest {
     /**
      * Function to test the error in subscirbing.
      */
-    @org.junit.jupiter.api.Test
+    @Test
     public void testErrorSubscribe() {
         final SimpleNetworking network = SimpleNetworking.getSimpleNetwork();
-        final String localAddress = "10.32.0.41";
+        final String localAddress = "127.0.0.1";
         final ClientNode device = new ClientNode(localAddress, 8103);
         final ClientNode mainServer = new ClientNode(localAddress, 8103);
         network.addUser(device, mainServer);
@@ -278,5 +281,19 @@ public class SimpleNetworkingTest {
         network.subscribe(ModuleType.CHAT, func);
         network.subscribe(ModuleType.CHAT, func);
         network.closeNetworking();
+    }
+
+    @Test
+    public void testRPCConsume(){
+        final SimpleNetworking networking = SimpleNetworking.getSimpleNetwork();
+        AbstractRPC rpc = new RPC();
+        networking.consumeRPC(rpc);
+    }
+
+    @Test
+    public void testChunkMessageList(){
+        final int payloadSize = 15*1024;
+        final SimpleChunkManager chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
+        chunkManager.getMessageList();
     }
 }
