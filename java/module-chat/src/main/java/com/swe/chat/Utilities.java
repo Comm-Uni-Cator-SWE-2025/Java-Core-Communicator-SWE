@@ -1,5 +1,11 @@
 package com.swe.chat;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,7 +13,24 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
+
 public class Utilities {
+
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("CHAT");
+
+    /**
+     * Compresses bytes using GZIP with a default (balanced) compression level.
+     *
+     * @param uncompressedData The raw data to compress.
+     * @return The compressed data.
+     */
+    public static byte[] Compress(byte[] uncompressedData) {
+        // Calls the new, more advanced method with the "default" level.
+        // GZIP is just Deflate with a specific header/footer,
+        // so we use Deflater.DEFAULT_COMPRESSION.
+        return Compress(uncompressedData, Deflater.DEFAULT_COMPRESSION);
+    }
+
     /**
      * Compresses bytes using the Deflate algorithm with a specified level.
      * This gives you control over speed vs. size.
@@ -30,7 +53,7 @@ public class Utilities {
             return byteStream.toByteArray();
 
         } catch (IOException e) {
-            System.err.println("Error during compression: " + e.getMessage());
+            LOG.error("Error during compression", e);
             return null;
         }
     }
@@ -62,7 +85,7 @@ public class Utilities {
             return outStream.toByteArray();
 
         } catch (IOException e) {
-            System.err.println("Error during decompression: " + e.getMessage());
+            LOG.error("Error during decompression", e);
             // This may happen if the data is not compressed (e.g., not a GZIP format)
             // Or if it's corrupted.
             return null;

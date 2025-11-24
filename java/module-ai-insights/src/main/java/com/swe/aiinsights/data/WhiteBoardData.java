@@ -15,8 +15,9 @@
 
 package com.swe.aiinsights.data;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +32,8 @@ public class WhiteBoardData {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(WhiteBoardData.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * Stores the content of image file.
      */

@@ -1,5 +1,5 @@
 /**
- * Contributed by @chirag9528.
+ * Contributed by @BhupathiVarun.
  */
 
 package com.swe.ScreenNVideo.Model;
@@ -27,6 +27,12 @@ public class RImage {
      */
     private final long dataRate;
 
+    /**
+     * Constructor for the RImage class.
+     * @param imageArgs The image.
+     * @param ipArgs The IP address.
+     * @param dataRateArgs The data rate.
+     */
     public RImage(final int[][] imageArgs, final String ipArgs, final long dataRateArgs) {
         ip = ipArgs;
         image = imageArgs;
@@ -68,14 +74,26 @@ public class RImage {
         return buffer.array();
     }
 
+    /**
+     * Get the image.
+     * @return the image
+     */
     public int[][] getImage() {
         return image;
     }
 
+    /**
+     * Get the IP address.
+     * @return the IP address
+     */
     public String getIp() {
         return ip;
     }
 
+    /**
+     * Get the data rate.
+     * @return the data rate
+     */
     public long getDataRate() {
         return dataRate;
     }

@@ -10,11 +10,11 @@
 
 package com.swe.aiinsights.request;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.swe.aiinsights.data.WhiteBoardData;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
- 
 import java.io.IOException;
 
 /**
@@ -24,8 +24,8 @@ public class RequestFactory {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(RequestFactory.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Returns the AiRequestable corresponding to the type of request.

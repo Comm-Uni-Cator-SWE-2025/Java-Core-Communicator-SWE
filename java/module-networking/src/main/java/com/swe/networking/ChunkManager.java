@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +17,8 @@ public class ChunkManager {
     /**
      * Singleton chunkManger.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static ChunkManager chunkManager = null;
     /**
      * Payload Size.
@@ -82,7 +87,7 @@ public class ChunkManager {
         final String msgId = String.valueOf(info.getMessageId()) + ":" + info.getIpAddress().toString();
         final int maxNumChunks = info.getChunkLength();
         final int chunkId = info.getChunkNum();
-        System.out.println("Chunk id / total chunks " + chunkId + " / " + maxNumChunks);
+        LOG.info("Chunk id / total chunks " + chunkId + " / " + maxNumChunks);
         if (chunkListMap.containsKey(msgId)) {
             chunkListMap.get(msgId).add(chunk);
         } else {
@@ -147,14 +152,14 @@ public class ChunkManager {
 
         final byte[] data = info.getPayload();
         final int numChunks = (data.length + payloadSize - 1) / payloadSize;
-        System.out.println("chunk length " + numChunks);
+        LOG.info("chunk length " + numChunks);
         info.setChunkLength(numChunks);
         info.setMessageId(messageId);
         messageId++;
         // reset message id to zero once it exceed limit
         for (int i = 0; i < data.length; i += payloadSize) {
             final int pSize = Math.min(payloadSize, data.length - i);
-            System.out.println("payload size " + pSize);
+            LOG.info("payload size " + pSize);
             final byte[] payloadChunk = new byte[pSize];
             System.arraycopy(data, i, payloadChunk, 0, pSize);
             final int chunkNumber = i / payloadSize;
@@ -164,7 +169,7 @@ public class ChunkManager {
             final byte[] pkt = parser.createPkt(info);
             chunks.add(pkt);
         }
-        System.out.println("Chunk size : " + chunks.size());
+        LOG.info("Chunk size : " + chunks.size());
         return chunks;
     }
 

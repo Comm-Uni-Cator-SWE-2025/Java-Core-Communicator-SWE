@@ -13,17 +13,33 @@ import java.util.LinkedList;
  */
 public class Telemetry implements ScreenVideoTelemetry {
 
-    private Queue<ScreenVideoTelemetryModel> screenVideoTelemetryModels;
+    /**
+     * Queue of screen video telemetry models.
+     */
+    private final Queue<ScreenVideoTelemetryModel> screenVideoTelemetryModels;
 
+    /**
+     * Current screen video telemetry model.
+     */
     private ScreenVideoTelemetryModel currentScreenVideoTelemetryModel;
 
+    /**
+     * Telemetry instance.
+     */
     private static Telemetry telemetry;
 
+    /**
+     * Constructor for the Telemetry class.
+     */
     private Telemetry() {
         this.screenVideoTelemetryModels = new LinkedList<>();
         this.currentScreenVideoTelemetryModel = null;
     }
 
+    /**
+     * Get the Telemetry instance.
+     * @return The Telemetry instance.
+     */
     public static Telemetry getTelemetry() {
         if (telemetry == null) {
             telemetry = new Telemetry();
@@ -31,6 +47,9 @@ public class Telemetry implements ScreenVideoTelemetry {
         return telemetry;
     }
 
+    /**
+     * Close the current screen video telemetry model.
+     */
     public void closeModel() {
         if (currentScreenVideoTelemetryModel != null) {
             currentScreenVideoTelemetryModel.setEndTime(System.currentTimeMillis());
@@ -38,37 +57,57 @@ public class Telemetry implements ScreenVideoTelemetry {
         }
     }
 
+    /**
+     * Add a new screen video telemetry model.
+     */
     public void addNewModel() {
-        currentScreenVideoTelemetryModel = new ScreenVideoTelemetryModel(System.currentTimeMillis(), System.currentTimeMillis(), new ArrayList<>(), false, false);
+        currentScreenVideoTelemetryModel = new ScreenVideoTelemetryModel(System.currentTimeMillis(),
+                System.currentTimeMillis(), new ArrayList<>(), false, false);
         currentScreenVideoTelemetryModel.setWithCamera(false);
         currentScreenVideoTelemetryModel.setWithScreen(false);
         currentScreenVideoTelemetryModel.setStartTime(System.currentTimeMillis());
     }
 
-    public void addFps(Double fps) {
+    /**
+     * Add a new FPS to the current screen video telemetry model.
+     * @param fps The FPS to add.
+     */
+    public void addFps(final Double fps) {
         if (currentScreenVideoTelemetryModel == null) {
             addNewModel();
         }
         currentScreenVideoTelemetryModel.addFps(fps);
     }
 
-    public void setWithCamera(boolean withCamera) {
+    /**
+     * Set the with camera flag for the current screen video telemetry model.
+     * @param withCamera The with camera flag.
+     */
+    public void setWithCamera(final boolean withCamera) {
         if (currentScreenVideoTelemetryModel == null) {
             addNewModel();
         }
         currentScreenVideoTelemetryModel.setWithCamera(withCamera);
     }
 
-    public void setWithScreen(boolean withScreen) {
+    /**
+     * Set the with screen flag for the current screen video telemetry model.
+     * @param withScreen The with screen flag.
+     */
+    public void setWithScreen(final boolean withScreen) {
         if (currentScreenVideoTelemetryModel == null) {
             addNewModel();
         }
         currentScreenVideoTelemetryModel.setWithScreen(withScreen);
     }
 
+    /**
+     * Get all screen video telemetry models.
+     * @return List of all screen video telemetry models.
+     */
     @Override
     public List<ScreenVideoTelemetryModel> getAllScreenVideosTelemetry() {
-        ArrayList<ScreenVideoTelemetryModel> allScreenVideosTelemetry = new ArrayList<>();
+        final ArrayList<ScreenVideoTelemetryModel> allScreenVideosTelemetry = new ArrayList<>();
         while (!screenVideoTelemetryModels.isEmpty()) {
             allScreenVideosTelemetry.add(screenVideoTelemetryModels.poll());
         }

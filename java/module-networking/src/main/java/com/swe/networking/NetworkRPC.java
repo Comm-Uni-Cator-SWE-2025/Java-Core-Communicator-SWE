@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +20,8 @@ public class NetworkRPC {
     /**
      * Variable to log the module name.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "NETWORKRPC";
 
     /**
@@ -35,7 +40,7 @@ public class NetworkRPC {
     private static Networking networking;
 
     private NetworkRPC() {
-        System.out.println("Network RPC...");
+        LOG.info("Network RPC...");
     }
 
     /**
@@ -47,9 +52,9 @@ public class NetworkRPC {
         if (networkRPC == null) {
             networkRPC = new NetworkRPC();
             networking = Networking.getNetwork();
-            System.out.println("Instantiating new Network RPC...");
+            LOG.info("Instantiating new Network RPC...");
         }
-        System.out.println("Passing Network RPC...");
+        LOG.info("Passing Network RPC...");
         return networkRPC;
     }
 
@@ -76,7 +81,7 @@ public class NetworkRPC {
         final int serverPort = buffer.getInt();
         final ClientNode mainServerAddress = new ClientNode(serverHost, serverPort);
 
-        NetworkLogger.printInfo(MODULENAME, "Device " + deviceAddress + " Server " + mainServerAddress);
+        LOG.info("Device " + deviceAddress + " Server " + mainServerAddress);
         networking.addUser(deviceAddress, mainServerAddress);
         return null;
     }
@@ -92,7 +97,7 @@ public class NetworkRPC {
         final int module = buffer.getInt();
 
         networking.removeSubscription(module);
-        NetworkLogger.printInfo(MODULENAME, "Remove subscription for module " + module + " ...");
+        LOG.info("Remove subscription for module " + module + " ...");
         return null;
     }
 
@@ -115,7 +120,7 @@ public class NetworkRPC {
             rpc.call("networkFrontCallSubscriber", callBuffer.array());
         });
 
-        NetworkLogger.printInfo(MODULENAME, "Added subscription for module " + module + " ...");
+        LOG.info("Added subscription for module " + module + " ...");
         return null;
     }
 

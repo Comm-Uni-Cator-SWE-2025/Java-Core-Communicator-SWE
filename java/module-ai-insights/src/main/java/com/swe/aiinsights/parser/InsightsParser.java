@@ -19,15 +19,15 @@
 
 package com.swe.aiinsights.parser;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 /**
  * Method used to parse the output of insights generator.
  */
@@ -36,7 +36,7 @@ public class InsightsParser {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(InsightsParser.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Object mapper to map the output to the sentiments class.

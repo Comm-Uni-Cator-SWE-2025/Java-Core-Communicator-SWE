@@ -22,14 +22,14 @@
 
 package com.swe.aiinsights.aiservice;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.response.AiResponse;
 import java.io.IOException;
 import java.util.List;
 import com.swe.aiinsights.customexceptions.RateLimitException;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
-
 /**
  * Acts as an orchestrator to provide an LLM Service.
  */
@@ -47,7 +47,7 @@ public class LlmOrchestratorService implements LlmService {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(LlmOrchestratorService.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * This constructor takes a list of LlmService instances in the order of execution needed.
@@ -58,7 +58,7 @@ public class LlmOrchestratorService implements LlmService {
             throw new IllegalArgumentException("Provide a list of LLM Services !!!!");
         }
         this.llmServices = services;
-        LOG.info("LlmOrchestratorService initialized with {} services", services.size());
+        LOG.info("LlmOrchestratorService initialized with " + services.size() + " services");
     }
 
     /**
@@ -76,9 +76,9 @@ public class LlmOrchestratorService implements LlmService {
             final LlmService currentService = llmServices.get(i);
             final String serviceName = currentService.getClass().getSimpleName();
 
-//            System.out.println("INFO: Attempting service: "
+//            LOG.info("INFO: Attempting service: "
 //                    + serviceName + " for request: " + request.getReqType());
-            LOG.info("Attempting service: {} for request: {}", serviceName, request.getReqType());
+            LOG.info("Attempting service: " + serviceName + " for request: " + request.getReqType());
             
             try {
                 // process the request with the current service
@@ -88,16 +88,16 @@ public class LlmOrchestratorService implements LlmService {
                 if (i != startingIndex) {
                     // Switch was successful, permanently use this new service
                     activeServiceIndex = i; 
-//                    System.out.println("SUCCESS: Permanently switched to service: " + serviceName);
-                    LOG.info("Permanently switched to service: {}", serviceName);
+//                    LOG.info("SUCCESS: Permanently switched to service: " + serviceName);
+                    LOG.info("Permanently switched to service: " + serviceName);
                 }
                 return response;
 
             } catch (RateLimitException e) {
                 // Rate limit exception is hit, move to next service in the list.
-//                System.err.println("WARNING: Service " + serviceName +
+//                LOG.error("WARNING: Service " + serviceName +
 //                        " failed due to rate limit. Attempting next service.");
-                LOG.warn("Service {} failed due to rate limit. Attempting next service.", serviceName);
+                LOG.warn("Service " + serviceName + " failed due to rate limit. Attempting next service.");
 
                 // Here we set the last AI service to local LLM
                 // It will not throw Rate limit exception.

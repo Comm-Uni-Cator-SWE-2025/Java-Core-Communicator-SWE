@@ -34,6 +34,9 @@
 
 package com.swe.aiinsights.generaliser;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.aiinsights.logging.CommonLogger;
 import com.swe.aiinsights.parser.RegulariserParser;
@@ -46,7 +49,6 @@ import com.swe.aiinsights.response.SummariserResponse;
 import com.swe.aiinsights.response.InsightsResponse;
 import com.swe.aiinsights.response.ActionItemsResponse;
 import com.swe.aiinsights.response.QuestionAnswerResponse;
-import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -61,7 +63,7 @@ public class RequestGeneraliser {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG = CommonLogger.getLogger(RequestGeneraliser.class);
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * Holds the prompt of the request.
      */

@@ -16,6 +16,8 @@ import com.swe.ScreenNVideo.PatchGenerator.Patch;
 import com.swe.ScreenNVideo.Model.IPPacket;
 import com.swe.networking.ModuleType;
 import com.swe.networking.AbstractNetworking;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.util.function.BiFunction;
@@ -24,6 +26,10 @@ import java.util.function.BiFunction;
  * Class containing Components to capture feed.
  */
 public class CaptureComponents {
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     public void setLatestScreenFrame(final BufferedImage latestScreenFrameArgs) {
         this.latestScreenFrame = latestScreenFrameArgs;
@@ -222,7 +228,7 @@ public class CaptureComponents {
             final IPPacket dest = IPPacket.deserialize(args);
 
             if (dest.ip().equals(localIp)) {
-                System.out.println("------Not ----" + localIp);
+                LOG.info("------Not ----" + localIp);
                 return res;
             }
 

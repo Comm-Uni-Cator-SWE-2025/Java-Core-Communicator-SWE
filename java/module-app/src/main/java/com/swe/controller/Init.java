@@ -16,6 +16,8 @@ import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.RPC;
 import com.swe.core.serialize.DataSerializer;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 import com.swe.networking.Networking;
 import functionlibrary.CloudFunctionLibrary;
 
@@ -25,140 +27,198 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.Locale;
+import java.util.logging.Level;
 
+/**
+ * Initialization class for the controller application.
+ * Sets up networking, RPC, and various service managers.
+ */
+// CHECKSTYLE:OFF: ClassDataAbstractionCoupling
+// CHECKSTYLE:OFF: ClassFanOutComplexity
 public class Init {
-    static int indexAi = 0;
+        static ChatManager chatmanager;
 
-    public static void main(String[] args) throws Exception {
+    /**
+     * Default RPC port number.
+     */
+    private static final int DEFAULT_RPC_PORT = 6942;
 
-        int portNumber = 6942;
+    /**
+     * Default media capture port.
+     */
+    private static final int DEFAULT_MEDIA_PORT = 6943;
+
+    /**
+     * Default capture frame rate.
+     */
+    private static final int DEFAULT_CAPTURE_FPS = 10;
+
+    /**
+     * Index for AI operations.
+     */
+    private static int indexAi = 0;
+
+    /**
+     * Logger for initialization operations.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("CONTROLLER-APP");
+
+    /**
+     * Main entry point for the controller application.
+     *
+     * @param args Command line arguments (optional port number)
+     * @throws Exception If initialization fails
+     */
+    public static void main(final String[] args) throws Exception {
+
+        int portNumber = DEFAULT_RPC_PORT;
 
         if (args.length > 0) {
-            String port = args[0];
+            final String port = args[0];
             portNumber = Integer.parseInt(port);
         }
 
-        RPC rpc = new RPC();
-        CloudFunctionLibrary cloud = new CloudFunctionLibrary();
-        AiClientService service = AiInstance.getInstance();
+        final Level consoleLevel = resolveConsoleLevel();
+        SweLoggerFactory.setConsoleLevel(consoleLevel);
+        LOG.info("Console log level set to " + consoleLevel.getName());
 
-        ControllerServices controllerServices = ControllerServices.getInstance();
-        controllerServices.context.rpc = rpc;
-        controllerServices.cloud = cloud;
-        controllerServices.ai = service;
+        final SweLogger chatLogger = SweLoggerFactory.getLogger("CHAT");
+        final SweLogger canvasLogger = SweLoggerFactory.getLogger("CANVAS");
+        final SweLogger screenLogger = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+
+        final RPC rpc = new RPC();
+        final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+        final AiClientService service = AiInstance.getInstance();
+
+        final ControllerServices controllerServices = ControllerServices.getInstance();
+        controllerServices.getContext().setRpc(rpc);
+        controllerServices.setCloud(cloud);
+        controllerServices.setAi(service);
 
         // Provide RPC somehow here
-        NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
+        final NetworkingInterface networking = new NetworkingAdapter(Networking.getNetwork());
         networking.consumeRPC(rpc);
 
-        controllerServices.networking = networking;
+        controllerServices.setNetworking(networking);
         MeetingNetworkingCoordinator.initialize(networking);
 
-        new ChatManager(Networking.getNetwork());
-        controllerServices.canvasManager = new CanvasManager(Networking.getNetwork());
+        chatmanager = new ChatManager(Networking.getNetwork(), chatLogger);
+        controllerServices.setCanvasManager(new CanvasManager(Networking.getNetwork(), canvasLogger));
 
-        MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
-        Thread mediaCaptureManagerThread = new Thread(() -> {
+        final MediaCaptureManager mediaCaptureManager =
+            new MediaCaptureManager(Networking.getNetwork(), DEFAULT_MEDIA_PORT, screenLogger);
+        final Thread mediaCaptureManagerThread = new Thread(() -> {
             try {
-                mediaCaptureManager.startCapture(10);
+                mediaCaptureManager.startCapture(DEFAULT_CAPTURE_FPS);
             } catch (ExecutionException | InterruptedException e) {
+                LOG.error("Media capture manager stopped unexpectedly", e);
                 throw new RuntimeException(e);
             }
         });
         mediaCaptureManagerThread.start();
-        System.out.println("Media Capture Manager started.");
+        LOG.info("Media Capture Manager started.");
 
         addRPCSubscriptions(rpc);
 
         // We need to get all subscriptions from frontend to also finish before this
-        Thread rpcThread = rpc.connect(portNumber);
+        final Thread rpcThread = rpc.connect(portNumber);
 
         rpcThread.join();
         mediaCaptureManagerThread.join();
     }
 
-    private static void addRPCSubscriptions(RPC rpc) {
-        ControllerServices controllerServices = ControllerServices.getInstance();
+    /**
+     * Adds RPC subscriptions for core operations.
+     *
+     * @param rpc The RPC instance to subscribe to
+     */
+    // CHECKSTYLE:OFF: CyclomaticComplexity
+    // CHECKSTYLE:OFF: MethodLength
+    // CHECKSTYLE:OFF: JavaNCSS
+    // CHECKSTYLE:OFF: NPathComplexity
+    private static void addRPCSubscriptions(final RPC rpc) {
+        final ControllerServices controllerServices = ControllerServices.getInstance();
 
         rpc.subscribe("core/register", (byte[] userData) -> {
-            System.out.println("Registering user");
-            UserProfile RegisteredUser = null;
+            LOG.info("Registering user");
+            UserProfile registeredUser = null;
             try {
-                RegisteredUser = AuthService.register();
-                System.out.println("Registered user with emailId: " + RegisteredUser.getEmail());
+                registeredUser = AuthService.register();
+                LOG.info("Registered user with emailId: " + registeredUser.getEmail());
             } catch (GeneralSecurityException | IOException e) {
-                // throw new RuntimeException(e);
-                System.out.println("Error registering user: " + e.getMessage());
+                LOG.error("Error registering user", e);
                 return new byte[0];
             }
 
-            controllerServices.context.self = RegisteredUser;
+            controllerServices.getContext().setSelf(registeredUser);
 
             try {
-                return DataSerializer.serialize(RegisteredUser);
+                return DataSerializer.serialize(registeredUser);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
         });
 
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
-            System.out.println("[CONTROLLER] Creating meeting");
-            final MeetingSession meetingSession = MeetingServices.createMeeting(controllerServices.context.self,
-                    SessionMode.CLASS);
-            controllerServices.context.meetingSession = meetingSession;
+            LOG.info("[CONTROLLER] Creating meeting");
+            final MeetingSession meetingSession = MeetingServices.createMeeting(
+                controllerServices.getContext().getSelf(), SessionMode.CLASS);
+            controllerServices.getContext().setMeetingSession(meetingSession);
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
 
-                Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.cloud);
-                controllerServices.networking.addUser(localClientNode, localClientNode);
+                Utils.setServerClientNode(meetingSession.getMeetingId(), controllerServices.getCloud());
+                controllerServices.getNetworking().addUser(localClientNode, localClientNode);
 
                 // Initialize Canvas Manager for Host
-                controllerServices.canvasManager.setIsHost(true);
-                controllerServices.canvasManager.setHostClientNode(localClientNode);
+                controllerServices.getCanvasManager().setIsHost(true);
+                controllerServices.getCanvasManager().setHostClientNode(localClientNode);
 
                 MeetingNetworkingCoordinator.handleMeetingCreated(meetingSession);
             } catch (Exception e) {
-                System.out.println("Error initializing networking for meeting host: " + e.getMessage());
+                LOG.error("Error initializing networking for meeting host", e);
                 throw new RuntimeException(e);
             }
 
             try {
-                System.out.println("Returning meeting session");
-                byte[] serializedMeetingSession = DataSerializer.serialize(meetingSession);
-                System.out.println(
-                        "Serialized meeting session: " + new String(serializedMeetingSession, StandardCharsets.UTF_8));
+                LOG.info("Returning meeting session");
+                final byte[] serializedMeetingSession = DataSerializer.serialize(meetingSession);
+                LOG.debug("Serialized meeting session: "
+                    + new String(serializedMeetingSession, StandardCharsets.UTF_8));
                 return serializedMeetingSession;
             } catch (Exception e) {
-                System.out.println("Error serializing meeting session: " + e.getMessage());
+                LOG.error("Error serializing meeting session", e);
                 throw new RuntimeException(e);
             }
         });
 
         rpc.subscribe("core/joinMeeting", (byte[] meetId) -> {
-            String id;
+            final String id;
             try {
                 id = DataSerializer.deserialize(meetId, String.class);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
 
-            System.out.println("Joining meeting with id: " + id);
+            LOG.info("Joining meeting with id: " + id);
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
-                final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.cloud);
-                System.out.println("Server client node: " + serverClientNode);
+                final ClientNode serverClientNode =
+                    Utils.getServerClientNode(id, controllerServices.getCloud());
+                LOG.debug("Server client node: " + serverClientNode);
 
-                controllerServices.networking.addUser(localClientNode, serverClientNode);
+                controllerServices.getNetworking().addUser(localClientNode, serverClientNode);
 
                 // Initialize Canvas Manager for Client
-                controllerServices.canvasManager.setIsHost(false);
-                controllerServices.canvasManager.setHostClientNode(serverClientNode);
+                controllerServices.getCanvasManager().setIsHost(false);
+                controllerServices.getCanvasManager().setHostClientNode(serverClientNode);
 
                 MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
-                System.out.println("Error getting server client node: " + e.getMessage());
+                LOG.error("Error getting server client node", e);
                 throw new RuntimeException(e);
             }
 
@@ -166,76 +226,97 @@ public class Init {
         });
 
         rpc.subscribe("core/logout", (byte[] userData) -> {
-            System.out.println("Logging out user");
+            LOG.info("Logging out user");
             try {
                 AuthService.logout();
-                System.out.println("User logged out successfully");
+                LOG.info("User logged out successfully");
                 // Clear the current user profile from context
-                controllerServices.context.self = null;
+                controllerServices.getContext().setSelf(null);
                 return "Logged out successfully".getBytes(StandardCharsets.UTF_8);
             } catch (GeneralSecurityException | IOException e) {
-                System.out.println("Error logging out user: " + e.getMessage());
+                LOG.error("Error logging out user", e);
                 return ("Error logging out: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
         });
 
         rpc.subscribe("core/endMeeting", (byte[] data) -> {
-            System.out.println("Ending meeting");
+            LOG.info("Ending meeting");
             try {
                 Networking.getNetwork().closeNetworking();
-                System.out.println("Meeting ended successfully");
+                LOG.info("Meeting ended successfully");
                 // Clear the meeting session from context
-                controllerServices.context.meetingSession = null;
+                controllerServices.getContext().setMeetingSession(null);
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
-                System.out.println("Error ending meeting: " + e.getMessage());
+                LOG.error("Error ending meeting", e);
                 return ("Error ending meeting: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
             }
         });
 
         rpc.subscribe("core/AiSentiment", (byte[] data) -> {
             try {
-                System.out.println("Performing Sentiment Analysis");
-                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages);
+                LOG.info("Performing Sentiment Analysis");
+                final List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                final String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode cachNode = mapper.readTree(cache);
+                LOG.debug("Chat History JSON for Sentiment: " + cachNode);
+                final String val = cleanMarkdownJson(controllerServices.getAi().sentiment(cachNode).get());
 
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode cachNode = mapper.readTree(cache);
-                System.out.println("Chat History JSON for Sentiment: " + cachNode.toString());
-                String val = cleanMarkdownJson(controllerServices.ai.sentiment(cachNode).get());
-
-                System.out.println("Sentiment Analysis Result: " + val);
+                LOG.info("Sentiment Analysis Result: " + val);
                 indexAi = messages.size();
                 return DataSerializer.serialize(val);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error("Sentiment analysis failed", e);
                 return new byte[0];
             }
         });
 
         rpc.subscribe("core/AiAction", (byte[] data) -> {
             try {
-                System.out.println("Generating Action Items");
-                List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages);
+                LOG.info("Generating Action Items");
+                final List<ChatMessage> messages = chatmanager.getAnalyticsService().getFullMessageHistory();
+                final String cache = chatmanager.getAnalyticsService().generateChatHistoryJson(messages);
 
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode cachNode = mapper.readTree(cache);
-                System.out.println("Chat History JSON for Action: " + cachNode.toString());
-                String val = cleanMarkdownJson(controllerServices.ai.action(cachNode).get());
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode cachNode = mapper.readTree(cache);
+                LOG.debug("Chat History JSON for Action: " + cachNode);
+                final String val = cleanMarkdownJson(controllerServices.getAi().action(cachNode).get());
 
-                System.out.println("Action Analysis Result: " + val);
+                LOG.info("Action Analysis Result: " + val);
                 return DataSerializer.serialize(val);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error("Action item generation failed", e);
                 return new byte[0];
             }
         });
     }
+    // CHECKSTYLE:ON: CyclomaticComplexity
+    // CHECKSTYLE:ON: MethodLength
+    // CHECKSTYLE:ON: JavaNCSS
+    // CHECKSTYLE:ON: NPathComplexity
 
-    public static String cleanMarkdownJson(String raw) {
-        if (raw == null)
+    private static Level resolveConsoleLevel() {
+        final String configuredLevel = System.getProperty("swecomm.console.level", "INFO")
+                .toUpperCase(Locale.ROOT);
+        try {
+            return Level.parse(configuredLevel);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Unsupported console level '" + configuredLevel + "', defaulting to INFO");
+            return Level.INFO;
+        }
+    }
+
+    /**
+     * Cleans markdown formatting from JSON strings.
+     *
+     * @param raw The raw string to clean
+     * @return The cleaned string
+     */
+    public static String cleanMarkdownJson(final String raw) {
+        if (raw == null) {
             return "";
+        }
 
         String cleaned = raw.trim();
 

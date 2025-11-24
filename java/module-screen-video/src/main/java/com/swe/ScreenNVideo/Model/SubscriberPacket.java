@@ -1,13 +1,19 @@
 /**
- *  Contributed by @alonot.
+ *  Contributed by @BhupathiVarun.
  */
 
 package com.swe.ScreenNVideo.Model;
 
+
+/*import com.fasterxml.jackson.annotation.JsonProperty;*/
+
 import java.nio.ByteBuffer;
+/*import java.util.Arrays;*/
 
 /**
  * Subscribe Packet.
+ * @param email email of the subscriber
+ * @param reqCompression to compress or not
  */
 public record SubscriberPacket(String email, boolean reqCompression) {
 
@@ -27,12 +33,20 @@ public record SubscriberPacket(String email, boolean reqCompression) {
         return new SubscriberPacket(new String(emailBytes), reqCompression);
     }
 
+    /**
+     * Serializes the subscriber packet.
+     * @return serialized byte array
+     */
     public byte[] serialize() {
         final byte[] emailBytes = email.getBytes();
         final int len = emailBytes.length + 1;
         final ByteBuffer buffer = ByteBuffer.allocate(len);
 
-        buffer.put((byte) (reqCompression ? 1 : 0));
+        if (reqCompression) {
+            buffer.put((byte) 1);
+        } else {
+            buffer.put((byte) 0);
+        }
         buffer.put(emailBytes);
 
         return buffer.array();

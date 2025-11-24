@@ -15,6 +15,8 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.client.util.store.DataStore;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,6 +30,8 @@ import java.util.List;
  * Provides method to obtain OAuth2 credentials for the user.
  */
 public class GoogleAuthServices {
+
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("CORE");
 
     /** Port for the local server receiver used during OAuth flow. */
     private static final int LOCAL_RECEIVER_PORT = 8888;
@@ -59,7 +63,7 @@ public class GoogleAuthServices {
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
-        System.out.println("Found credentials file in classpath: " + CREDENTIALS_FILE_PATH);
+        LOG.info("Found credentials file in classpath: " + CREDENTIALS_FILE_PATH);
 
         final GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
                 JSON_FACTORY,
@@ -116,14 +120,14 @@ public class GoogleAuthServices {
                 .getCredentialDataStore();
         if (credentialDataStore != null) {
             credentialDataStore.delete("user");
-            System.out.println("Logged out: Stored credentials cleared");
+            LOG.info("Logged out: Stored credentials cleared");
         }
 
         // Optionally, delete the entire tokens directory to ensure complete cleanup
         final java.io.File tokensDir = new java.io.File(TOKENS_DIRECTORY_PATH);
         if (tokensDir.exists() && tokensDir.isDirectory()) {
             deleteDirectory(tokensDir);
-            System.out.println("Logged out: Tokens directory deleted");
+            LOG.info("Logged out: Tokens directory deleted");
         }
     }
 

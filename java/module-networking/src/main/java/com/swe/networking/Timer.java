@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.core.ClientNode;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +17,8 @@ public class Timer {
     /**
      * Timer duration for client timeouts in milliseconds.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private final long timeoutDuration;
 
     /**
@@ -70,7 +75,7 @@ public class Timer {
      * @param client the client to add
      */
     public void addClient(final ClientNode client) {
-        System.out.println("Adding client to timer monitoring: " + client);
+        LOG.info("Adding client to timer monitoring: " + client);
         clients.add(client);
         clientTimeouts.put(client, System.currentTimeMillis());
     }
@@ -92,7 +97,7 @@ public class Timer {
         final List<ClientNode> timedOutClients = new ArrayList<>();
         final long currentTime = System.currentTimeMillis();
         synchronized (clients) {
-            System.out.println("Timer clients " + clients);
+            LOG.info("Timer clients " + clients);
             for (ClientNode c : clients) {
                 if (currentTime - clientTimeouts.get(c) > timeoutDuration) {
                     timedOutClients.add(c);

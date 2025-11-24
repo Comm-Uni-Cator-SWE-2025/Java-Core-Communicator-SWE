@@ -18,6 +18,8 @@ import com.swe.ScreenNVideo.Model.FeedPatch;
 import com.swe.ScreenNVideo.Model.RImage;
 import com.swe.core.Context;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -26,6 +28,11 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Class containing Components to capture and process video.
  */
 public class VideoComponents {
+
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**
      * Max runs without diff.
@@ -114,7 +121,7 @@ public class VideoComponents {
 
     VideoComponents(final int fps, final int portArgs, final CaptureComponents captureComponentsArgs,
                     final BackgroundCaptureManager bgCapManagerArgs) {
-        this.rpc = Context.getInstance().rpc;
+        this.rpc = Context.getInstance().getRpc();
         this.port = portArgs;
         this.captureComponents = captureComponentsArgs;
         this.bgCapManager = bgCapManagerArgs;
@@ -145,7 +152,7 @@ public class VideoComponents {
         final CPackets compressedNetworkPackets =
             new CPackets(videoFeedNumber, localIp, true, true, feed.length, feed[0].length,
                 patches.compressedPatches());
-        System.out.println("Feed number : " + compressedNetworkPackets.packetNumber());
+        LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
         final CPackets unCompressedNetworkPackets =
@@ -171,18 +178,18 @@ public class VideoComponents {
                     if (serializedImage == null) {
                         continue;
                     }
-//                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
+//                    LOG.info("Time from previous send: " + (System.nanoTime() - prev)
 //                        / ((double) Utils.MSEC_IN_NS));
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage);
                     } catch (final Exception e) {
-                        e.printStackTrace();
+                        LOG.error("Video component failure", e);
                     }
-//                        System.out.println("UI RPC Time : "
+//                        LOG.info("UI RPC Time : "
 //                            + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
 //                        prev = System.nanoTime();
                 } catch (final Exception e) {
-                    e.printStackTrace();
+                    LOG.error("Video component failure", e);
                 }
             } catch (final InterruptedException ie) {
                 Thread.currentThread().interrupt();
@@ -218,7 +225,7 @@ public class VideoComponents {
         final boolean offered = uiQueue.offer(frame);
         if (!offered) {
             // drop the frame
-            System.err.println("UI queue full — dropping frame");
+            LOG.error("UI queue full — dropping frame");
         }
     }
 
@@ -243,7 +250,7 @@ public class VideoComponents {
                 encodedPacket = audioPacket.serializeAPackets();
                 break;
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Video component failure", e);
             }
         }
 
@@ -261,7 +268,7 @@ public class VideoComponents {
         if (diff < timeDelay) {
             return null;
         }
-//            System.out.println("Time Delay " + ((currTime - prev)
+//            LOG.info("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
         start = System.nanoTime();
 
@@ -278,10 +285,10 @@ public class VideoComponents {
 //        submitUIUpdate(newFeed);
 
 //        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
-        System.out.println("Server FPS : "
+        LOG.info("Server FPS : "
             + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
-//        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+//        LOG.info("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
         final long curr1 = System.nanoTime();
         videoCodec.setQuantTime(0);
@@ -298,7 +305,7 @@ public class VideoComponents {
         final CPackets compressedNetworkPackets =
             new CPackets(videoFeedNumber, localIp, false, true, feed.length, feed[0].length,
                 patches.compressedPatches());
-        System.out.println("Feed number : " + compressedNetworkPackets.packetNumber());
+        LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
         final CPackets unCompressedNetworkPackets =
@@ -309,7 +316,7 @@ public class VideoComponents {
         if (compressedEncodedPatches == null && unCompressedEncodedPatches == null) {
             // both are null
             if (runCount > MAX_RUNS_WITHOUT_DIFF) {
-                System.err.println("Reinit the Video and Screen");
+                LOG.error("Reinit the Video and Screen");
                 if (captureComponents.isVideoCaptureOn()) {
                     bgCapManager.reInitVideo();
                 }
@@ -343,7 +350,7 @@ public class VideoComponents {
     private byte[] serializeFeed(final CPackets networkPackets) {
         byte[] encodedPatches = null;
         if (networkPackets.packets().isEmpty()) {
-//            System.out.println("Empty");
+//            LOG.info("Empty");
             return null;
         }
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
@@ -353,12 +360,12 @@ public class VideoComponents {
                 encodedPatches = networkPackets.serializeCPackets();
                 break;
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Video component failure", e);
             }
         }
 
         if (tries < 0 || encodedPatches == null) {
-            System.err.println("Error: Unable to serialize compressed packets");
+            LOG.error("Error: Unable to serialize compressed packets");
             prev = System.nanoTime();
             return null;
         }

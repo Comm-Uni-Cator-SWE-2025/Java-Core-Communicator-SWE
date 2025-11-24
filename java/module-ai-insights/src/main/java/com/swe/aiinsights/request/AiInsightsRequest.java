@@ -33,9 +33,10 @@
 package com.swe.aiinsights.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class AiInsightsRequest implements AiRequestable<JsonNode> {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(AiInsightsRequest.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * metaDataInsight stores the prompt.
      * Also, other details of the request like the content.

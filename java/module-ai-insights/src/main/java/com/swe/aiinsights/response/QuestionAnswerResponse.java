@@ -13,8 +13,8 @@
 
 package com.swe.aiinsights.response;
 
-import com.swe.aiinsights.logging.CommonLogger;
-import org.slf4j.Logger;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Represents the AI's response to a Question & Answer request.
@@ -23,8 +23,8 @@ public class QuestionAnswerResponse implements AiResponse {
     /**
      * Get the log file path.
      */
-    private static final Logger LOG =
-            CommonLogger.getLogger(QuestionAnswerResponse.class);
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Stores the response text returned by the AI.

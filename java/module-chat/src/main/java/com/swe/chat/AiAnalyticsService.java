@@ -85,7 +85,7 @@ public class AiAnalyticsService implements IAiAnalyticsService {
         }
     }
 
-    private String generateChatHistoryJson(List<ChatMessage> messages) {
+    public String generateChatHistoryJson(List<ChatMessage> messages) {
         // JSON Generation logic migrated here
         StringBuilder json = new StringBuilder();
         json.append("{\n  \"messages\": [\n");
@@ -130,6 +130,13 @@ public class AiAnalyticsService implements IAiAnalyticsService {
     // ============================================================================
     // PUBLIC INTERFACE (IAiAnalyticsService)
     // ============================================================================
+
+    @Override
+    public List<ChatMessage> getFullMessageHistory() {
+        synchronized (fullMessageHistory) {
+            return new ArrayList<>(fullMessageHistory);
+        }
+    }
 
     @Override
     public void addMessageToHistory(ChatMessage message) {
