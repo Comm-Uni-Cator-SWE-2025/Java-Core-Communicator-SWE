@@ -4,22 +4,25 @@ import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class P2PClientTest {
 
@@ -33,8 +36,9 @@ public class P2PClientTest {
     final NetworkSerializer serializer = NetworkSerializer.getNetworkSerializer();
     final Topology topology = Topology.getTopology();
 //    final TCPCommunicator mockCommunicator = new TCPCommunicator(deviceNode.port());
+    private final ClientNode DUMMY_CLEANUP_NODE = new ClientNode("127.0.0.1", 1);
 
-    final Semaphore semt_t = new Semaphore(10);
+    final Semaphore semt_t = new Semaphore(1);
 
     private P2PClient testClient;
 
@@ -98,10 +102,20 @@ public class P2PClientTest {
     }
 
     @Before
-    public void setUp() {
-
+    public void setUp() throws Exception {
+        resetStaticSingleton(ChunkManager.class, "chunkManager", null);
         topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
         testClient = null;
+        ChunkManager.getChunkManager(22);
+    }
+
+    /**
+     * Helper to reset a private static field (like a Singleton instance).
+     */
+    private static void resetStaticSingleton(final Class<?> targetClass, final String fieldName, final Object value) throws Exception {
+        final Field field = targetClass.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(null, value);
     }
 
     @After
@@ -111,7 +125,6 @@ public class P2PClientTest {
             testClient.close();
             testClient = null;
         }
-
         System.out.println("test finished");
     }
 
@@ -168,6 +181,30 @@ public class P2PClientTest {
         assertEquals("Client should be in cluster 1", 1, topology.getClusterIndex(deviceNode));
         assertEquals("Client's server should be clusterServerNode", clusterServerNode, topology.getServer(deviceNode));
 
+    }
+
+    @Test
+    public void testExceptionCaughtInReceivesNetworkPacket() throws Exception {
+        System.out.println("Test for receiving network packet ...............");
+
+        ProtocolBase comm = new ProtocolBase() {
+            public byte[] receiveData() { throw new RuntimeException("test"); }
+            public void sendData(byte[] d, ClientNode c) {}
+            public void close() {}
+            public SocketChannel openSocket() { return null; }
+            public void printKeys() {}
+            public void closeSocket(ClientNode client) {}
+        };
+        deviceNode = new ClientNode("127.0.0.1", 9100);
+        final NetworkStructure network = getMockNetworkStructure();
+        network.clusters().get(1).add(deviceNode);
+
+        testClient = new P2PClient(deviceNode, mainServer, comm);
+        setPrivateField(testClient, "running", false);
+        setPrivateField(testClient, "clusterServerAddress", null);
+        Thread.sleep(200);
+        testClient.close();
+        Thread.sleep(200);
     }
 
     @Test
@@ -235,24 +272,60 @@ public class P2PClientTest {
         testClient = new P2PClient(deviceNode, mainServer, communicator);
         setPrivateField(testClient, "clusterServerAddress", clusterServerNode);
 
-        Thread.sleep(5000);
+        ScheduledExecutorService scheduler =
+                (ScheduledExecutorService) getPrivateField(testClient, "aliveScheduler");
+
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+            scheduler.awaitTermination(200, TimeUnit.MILLISECONDS);
+        }
+        setPrivateField(testClient, "aliveScheduler", null);
+
+        Method sendAlive = P2PClient.class.getDeclaredMethod("sendAlivePacket");
+        sendAlive.setAccessible(true);
+        sendAlive.invoke(testClient);
+        Thread.sleep(500);
 
         assertNotNull("Mock server did not receive any packet", receivedPacket.get());
         final PacketInfo info = packetParser.parsePacket(receivedPacket.get());
         assertEquals(NetworkType.USE.ordinal(), info.getType());
         assertEquals(NetworkConnectionType.ALIVE.ordinal(), info.getConnectionType());
 
+        //checking is dest is null
+        receivedPacket.set(null);
+        setPrivateField(testClient, "clusterServerAddress", null);
+        sendAlive.invoke(testClient);
+        Thread.sleep(500);
+        assertNull("Mock server should not receive any packet", receivedPacket.get());
         serverThread.join(100);
     }
 
     @Test
-    public void testALivePacketSendingtoNull() throws Exception {
-        System.out.println("Test for sending alive packet when cluster is none ...............");
-        deviceNode = new ClientNode("127.0.0.1", 9013);
+    public void testSendAlivePacketCatchingException() throws Exception {
+        System.out.println("Test for sending alive packet ...............");
 
-        final ProtocolBase communicator = new TCPCommunicator(9013);
-        testClient = new P2PClient(deviceNode, mainServer, communicator);
-        Thread.sleep(4000);
+        ClientNode badNode = new ClientNode("invalid-host-name!!!", 9122);
+        final ProtocolBase communicator = new TCPCommunicator(9122);
+        testClient = new P2PClient(badNode, mainServer, communicator);
+        ScheduledExecutorService scheduler =
+                (ScheduledExecutorService) getPrivateField(testClient, "aliveScheduler");
+
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+            scheduler.awaitTermination(200, TimeUnit.MILLISECONDS);
+        }
+        setPrivateField(testClient, "aliveScheduler", null);
+        setPrivateField(testClient, "clusterServerAddress", clusterServerNode);
+
+        Method sendAlive = P2PClient.class.getDeclaredMethod("sendAlivePacket");
+        sendAlive.setAccessible(true);
+        sendAlive.invoke(testClient);
+    }
+
+    private Object getPrivateField(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
     }
 
     @Test
@@ -293,8 +366,14 @@ public class P2PClientTest {
         final ClientNode newNode = new ClientNode("127.0.0.1", 7000);
         final ClientNetworkRecord addRecord = new ClientNetworkRecord(newNode, 1); // Add to cluster 1
         final byte[] addPayload = serializer.serializeClientNetworkRecord(addRecord);
-        final byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
-        sendPacket(addPacket, deviceNode);
+        System.out.println("payload: "+ Arrays.toString(addPayload));
+//        final byte[] addPacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
+        final byte[] basePacket = createTestPacket(NetworkType.USE.ordinal(), NetworkConnectionType.MODULE.ordinal(), addPayload);
+        final PacketInfo info = packetParser.parsePacket(basePacket);
+        info.setChunkNum(0);
+        info.setChunkLength(1);
+        final byte[] modulePacket = packetParser.createPkt(info);
+        sendPacket(modulePacket, deviceNode);
         Thread.sleep(500);
 
     }

@@ -242,4 +242,11 @@ public final class SimpleNetworking
         final MessageListener listener = listeners.get(module);
         listener.receiveData(data);
     }
+
+    /**
+     * Function to reset the networking module.
+     * */
+    public void resetSimpleNetworking(){
+        simpleNetwork = null;
+    }
 }

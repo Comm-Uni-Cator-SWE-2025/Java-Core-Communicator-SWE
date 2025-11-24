@@ -10,6 +10,8 @@
 package com.swe.networking;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +49,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     /**
      * The variable to store singleton priority queue.
      */
-    private PriorityQueue priorityQueue;
+    private NewPriorityQueue priorityQueue;
     /**
      * The variable to store singleton priority queue.
      */
@@ -69,20 +71,13 @@ public class Networking implements AbstractNetworking, AbstractController {
     private AbstractRPC moduleRPC = null;
 
     /**
-     * Variable to store the thread to start the send packets.
-     */
-    private final Thread sendThread;
-
-    /**
      * Private constructor for Netwroking class.
      */
     private Networking() {
         chunkManager = ChunkManager.getChunkManager(payloadSize);
-        priorityQueue = PriorityQueue.getPriorityQueue();
+        priorityQueue = NewPriorityQueue.getPriorityQueue();
         parser = PacketParser.getPacketParser();
         topology = Topology.getTopology();
-        sendThread = new Thread(this::start);
-        sendThread.start(); // TODO SHOULD THIS EXIST?? NOT IN INCOMING
     }
 
     /**
@@ -123,14 +118,13 @@ public class Networking implements AbstractNetworking, AbstractController {
                 final PacketInfo pktInfo = parser.parsePacket(chunk);
                 final InetAddress addr = pktInfo.getIpAddress();
                 final int port = pktInfo.getPortNum();
-                // long startTime = System.currentTimeMillis();
                 final ClientNode newdest = new ClientNode(addr.getHostAddress(), port);
-                // long endTime = System.currentTimeMillis();
                 // System.out.println("Time to create new dest: " + (endTime - startTime) + " ms");
                 System.out.println("Destination " + newdest);
-                // topology.sendPacket(chunk, newdest);
-                priorityQueue.addPacket(chunk);
+                topology.sendPacket(chunk, newdest);
+                // priorityQueue.addPacket(chunk);
             } catch (UnknownHostException ex) {
+                System.out.println("Unknown host exception: " + ex.getMessage());
             }
         }
     }
@@ -139,9 +133,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      * Function to continuously send data.
      */
     public void start() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             if (!priorityQueue.isEmpty()) {
-                final byte[] packet = priorityQueue.nextPacket();
+                final byte[] packet = priorityQueue.getPacket();
                 try {
                     final PacketInfo pktInfo = parser.parsePacket(packet);
                     final InetAddress addr = pktInfo.getIpAddress();
@@ -149,7 +143,7 @@ public class Networking implements AbstractNetworking, AbstractController {
                     final ClientNode dest = new ClientNode(addr.getHostAddress(), port);
                     topology.sendPacket(packet, dest);
                 } catch (UnknownHostException e) {
-                    e.printStackTrace();
+                    System.err.println("Unknown host exception: " + e.getMessage());
                 }
             }
         }
@@ -171,16 +165,16 @@ public class Networking implements AbstractNetworking, AbstractController {
         pkt.setModule(module);
         pkt.setPriority(priority);
         pkt.setBroadcast(broadcast);
-        pkt.setPayload(data);
         Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
+                pkt.setPayload(data);
                 final int type = topology.getNetworkType(user, client);
                 pkt.setType(type);
                 pkt.setIpAddress(InetAddress.getByName(client.hostName()));
                 pkt.setPortNum(client.port());
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());
-                chunks = chunkManager.chunk(pkt);
+                chunks.addAll(chunkManager.chunk(pkt));
             } catch (UnknownHostException ex) {
             }
         }
@@ -198,24 +192,27 @@ public class Networking implements AbstractNetworking, AbstractController {
     @Override
     public void broadcast(final byte[] data, final int module, final int priority) {
         // Get all the destinations to send the broadcast
-        final List<ClientNode> dest = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+        List<ClientNode> dest = new ArrayList<>();
+        final List<ClientNode> clientDests = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
+        System.out.println("Clientdest " + clientDests);
+        dest = clientDests;
+        System.out.println("dest " + dest + " user: "+ user + " server "+topology.getServer(user));
+        dest.remove(user);
 
         if (user == topology.getServer(user)) {
             final List<ClientNode> servers = new ArrayList<>(topology.getAllClusterServers());
             dest.addAll(servers);
             dest.remove(user);
+            System.out.println("Servers " + servers);
         }
-        dest.remove(user);
-        final ClientNode[] destArray = dest.toArray(new ClientNode[0]);
+
+        final ClientNode[] destArray = dest.toArray(ClientNode[]::new);
+        System.out.println("Broadcasting clients " + Arrays.toString(destArray));
         final Vector<byte[]> chunks = getChunks(data, destArray, module, priority, 1);
         for (byte[] chunk : chunks) {
             for (ClientNode client : dest) {
-                // topology.sendPacket(chunk, client);
-                try {
-                    priorityQueue.addPacket(chunk);
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                }
+                topology.sendPacket(chunk, client);
+                // priorityQueue.addPacket(chunk);
             }
         }
     }
@@ -265,7 +262,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public void callSubscriber(final int module, final byte[] data) {
         final MessageListener function = listeners.get(module);
-        if (function != null) {
+        if (function == null) {
+            System.out.println("No function found for module: " + module);
+        } else {
             function.receiveData(data);
         }
     }
@@ -277,7 +276,7 @@ public class Networking implements AbstractNetworking, AbstractController {
     public void closeNetworking() {
         System.out.println("Closing Networking module...");
         topology.closeTopology();
-        sendThread.interrupt();
+        // sendThread.interrupt();
     }
 
     /**
@@ -304,5 +303,49 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     public AbstractRPC getRPC() {
         return moduleRPC;
+    }
+
+    @Override
+    public boolean isClientAlive(final ClientNode client) {
+        return topology.checkClientPresent(client);
+    }
+
+    /**
+     * Function to check if the main server is live by attempting to connect to
+     * a high availability public DNS server (Google or Cloudflare). This serves
+     * as a network connectivity check to determine if the main server could
+     * potentially be reachable.
+     *
+     * @return true if connection fails (network appears down), false otherwise
+     */
+    @Override
+    public boolean isMainServerLive() {
+        final int timeout = 2000;
+        final String[] dnsServers = {
+            "8.8.8.8", // Google DNS
+            "8.8.4.4", // Google DNS secondary
+            "1.1.1.1", // Cloudflare DNS
+            "1.0.0.1", // Cloudflare DNS secondary
+        };
+        final int[] ports = {53, 80}; // DNS port and HTTP port
+
+        // Try to connect to each DNS server on each port
+        for (String dnsServer : dnsServers) {
+            for (int port : ports) {
+                try (Socket socket = new Socket()) {
+                    socket.connect(new InetSocketAddress(dnsServer, port), timeout);
+                    // Connection succeeded
+                    System.out.println("Successfully connected to " + dnsServer + ":" + port);
+                    return false; // Connection succeeded, return false
+                } catch (Exception e) {
+                    // Connection failed, continue to next server/port
+                    System.out.println("Failed to connect to " + dnsServer + ":" + port + " - " + e.getMessage());
+                }
+            }
+        }
+
+        // All connection attempts failed
+        System.out.println("All connection attempts to public DNS servers failed");
+        return true; // All connections failed, return true
     }
 }
