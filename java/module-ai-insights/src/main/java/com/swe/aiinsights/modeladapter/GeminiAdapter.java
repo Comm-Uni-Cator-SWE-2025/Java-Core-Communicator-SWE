@@ -1,3 +1,21 @@
+/**
+ * <p>
+ * The GeminiAdapter converts generalised request data into the JSON format.
+ * required by the Gemini API and extracts the textual response from the
+ * API output.
+ * </p>
+ *
+ * <p>
+ * References:
+ *     1. https://ai.google.dev/gemini-api/docs/api-key
+ *     2. https://ai.google.dev/gemini-api/docs#rest
+ * </p>
+ *
+ * @author Abhirami R Iyer
+ *
+ *
+ */
+
 package com.swe.aiinsights.modeladapter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,12 +28,21 @@ import okhttp3.Response;
 
 import java.io.IOException;
 
-public class GeminiAdapter implements ModelAdapter{
+/**
+ * Implements the ModelAdapter interface.
+ * Converts the generalised request to Json specific to Gemini.
+ * Also gets the AI response
+ */
+public class GeminiAdapter implements ModelAdapter {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String buildRequest(RequestGeneraliser request) throws JsonProcessingException {
+    public String buildRequest(final RequestGeneraliser request)
+            throws JsonProcessingException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = new ObjectMapper();
         final ObjectNode rootNode =
                 objectMapper.createObjectNode();
         final ArrayNode contentsArray =
@@ -35,7 +62,7 @@ public class GeminiAdapter implements ModelAdapter{
             // add the image into the request body
             inlineDataNode.put("mimeType", "image/png");
             inlineDataNode.put("data", request.getImgData());
-        } else {
+        } else if (request.getTextData() != null) {
             partsArray.addObject().put("text", request.getTextData());
         }
 
@@ -44,10 +71,14 @@ public class GeminiAdapter implements ModelAdapter{
         ).writeValueAsString(rootNode);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getResponse(Response response) throws IOException {
+    public String getResponse(final Response response)
+            throws IOException {
         assert response.body() != null;
-        ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode responseJson =
                 objectMapper.readTree(response.body().charStream());
         final JsonNode textNode =

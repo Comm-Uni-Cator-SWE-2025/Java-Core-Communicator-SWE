@@ -1,4 +1,11 @@
+/**
+ * Author Berelli Gouthami.
+ */
+
 package com.swe.aiinsights.request;
+
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +15,11 @@ import java.util.Map;
  * Contains both the user's question and the accumulated summary.
  */
 public class AiQuestionAnswerRequest implements AiRequestable<String> {
-
+    /**
+     * Get the log file path.
+     */
+    private static final Logger LOG =
+            CommonLogger.getLogger(AiQuestionAnswerRequest.class);
     /**
      * Stores metadata including question, summary and prompt.
      */
@@ -28,6 +39,8 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
     public AiQuestionAnswerRequest(
             final String question,
             final String accumulatedSummary) {
+
+        LOG.info("Creating Q&A request");
 
         this.metaData = new HashMap<>();
         this.metaData.put("Question", question);
@@ -58,6 +71,8 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
 
         this.metaData.put("RequestPrompt", prompt);
         this.type = "QNA";
+
+        LOG.info("Q&A request initialised successfully");
     }
 
     /**
@@ -67,6 +82,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getContext() {
+        LOG.info("Fetching Q&A prompt");
         return metaData.get("RequestPrompt");
     }
 
@@ -77,6 +93,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getInput() {
+        LOG.info("Fetching Q&A input question");
         return metaData.get("Question");
     }
 
@@ -87,6 +104,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getReqType() {
+        LOG.info("Returning request type: QNA");
         return type;
     }
 }

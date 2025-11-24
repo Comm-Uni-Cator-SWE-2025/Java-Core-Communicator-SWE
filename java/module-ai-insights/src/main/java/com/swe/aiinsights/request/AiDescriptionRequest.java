@@ -1,10 +1,14 @@
 /**
- * Author : Abhirami R Iyer
+ * Request model for Image interpretation.
+ *
+ * @author Abhirami R Iyer
+ *
+ *
  */
+
 package com.swe.aiinsights.request;
 
 import com.swe.aiinsights.data.WhiteBoardData;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +80,7 @@ public class AiDescriptionRequest implements AiRequestable {
         return metaData.get("InputData");
     }
 
-    /**x
+    /**
      * {@inheritDoc}
      */
     @Override

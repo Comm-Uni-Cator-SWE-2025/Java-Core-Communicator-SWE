@@ -1,10 +1,22 @@
 /**
-* <p>
- *     Reference:
- *      1. https://medium.com/@kapildevkhatik2/
+ *
+ * <p>
+ * The OllamaAdapter converts generalised request data into Ollama specific format.
+ * Converts it into format expected by
+ * local Ollama models (e.g., Gemma3) and extracts the
+ * plain-text response returned by the Ollama HTTP API.
+ * </p>
+ *
+ * <p>
+ * References:
+ *     1. https://github.com/ollama/ollama/blob/main/docs/api.md
+ *     2. https://www.ollama.com/library
+ *     3. https://medium.com/@kapildevkhatik2/
  *       how-to-run-and-call-local-llms-with-ollama-a-developers-
  *          guide-to-building-offline-ai-apps-1161d9f3a0f8
-        * </p>
+ * </p>
+ *
+ * @author Abhirami R Iyer
 */
 
 
@@ -17,25 +29,44 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import okhttp3.Response;
-
 import java.io.IOException;
 
-public class OllamaAdapter implements ModelAdapter{
+/**
+ * Implements the ModelAdapter interface.
+ * Converts the generalised request to Json specific to Ollama models.
+ * Also gets the AI response
+ */
+public class OllamaAdapter implements ModelAdapter {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String buildRequest(RequestGeneraliser request) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode root = objectMapper.createObjectNode();
+    public String buildRequest(final RequestGeneraliser request) throws JsonProcessingException {
+
+        final int maxPromptTokens = 16384;
+        final double modelTemperature = 0.2;
+        final double modelTop = 0.9;
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectNode root = objectMapper.createObjectNode();
         root.put("model", "gemma3");
-        root.put("prompt", request.getPrompt());
+        root.put("prompt", request.getPrompt() + request.getTextData());
+        final ObjectNode options = objectMapper.createObjectNode();
+        options.put("num_ctx", maxPromptTokens);
+        options.put("temperature", modelTemperature);
+        options.put("top_p", modelTop);
+
+        root.set("options", options);
+
         root.put("stream", false);
 
-        String imgData = request.getImgData();
-        if (imgData != null){
-            ArrayNode images = root.putArray("images");
+        final String imgData = request.getImgData();
+        if (imgData != null) {
+            final ArrayNode images = root.putArray("images");
             images.add(request.getImgData());
         } else {
-            ArrayNode input = root.putArray("inputData");
+            final ArrayNode input = root.putArray("inputData");
             input.add(request.getTextData());
         }
 
@@ -43,14 +74,17 @@ public class OllamaAdapter implements ModelAdapter{
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String getResponse(Response response) throws IOException {
+    public String getResponse(final Response response) throws IOException {
         assert response.body() != null;
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode responseJson =
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode responseJson =
                 objectMapper.readTree(response.body().charStream());
 
-        JsonNode textNode = responseJson.get("response");
+        final JsonNode textNode = responseJson.get("response");
 
         if (textNode == null || !textNode.isTextual()) {
             throw new IOException("Invalid Ollama response: "

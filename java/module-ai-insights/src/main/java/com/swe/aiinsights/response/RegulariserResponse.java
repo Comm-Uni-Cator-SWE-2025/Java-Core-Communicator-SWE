@@ -1,6 +1,11 @@
 /**
- * Author : Abhirami R Iyer
+ * Author : Abhirami R Iyer.
+ * <p>
+ *  Holds the AI output for regularisation requests.
+ *  Stores the processed content returned by the model.
+ *  </p>
  */
+
 package com.swe.aiinsights.response;
 
 import java.util.HashMap;

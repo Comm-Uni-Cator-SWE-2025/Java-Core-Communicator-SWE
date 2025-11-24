@@ -1,6 +1,10 @@
 /**
- * Author : Abhirami R Iyer
+ * Stores the AI request, for regularisation.
+ * prompt, and the input data of points are stored.
+ *
+ * @author Abhirami R Iyer
  */
+
 package com.swe.aiinsights.request;
 
 import java.util.HashMap;
@@ -26,66 +30,67 @@ public class AiRegularisationRequest implements AiRequestable {
      * initializes the metadata with a default prompt.
      * the default prompt corresponds to asking for
      * a regularising to the nearest shape.
+     *
      * @param points to store the string
      *               containing points of the curve for regularisation
      */
+
     public AiRegularisationRequest(final String points) {
         // constructor, initialised the metadata,
         // adding the prompt.
         metaData = new HashMap<>();
         metaData.put("InputData", points);
-        metaData.put("RequestPrompt",
-                "You are given a list of 2D points representing a freehand drawing.\n" +
-                        "\n" +
-                        "Your tasks:\n" +
-                        "1. Use ONLY the provided points.\n" +
-                        "2. Identify the geometric shape that best matches those points.\n" +
-                        "   Allowed values (case-sensitive): Ellipse, Square, Triangle, Rectangle, StraightLine.\n" +
-                        "3. Compute the axis-aligned bounding box of that shape.\n" +
-                        "4. Output EXACTLY TWO points:\n" +
-                        "   - First: the top-left coordinate\n" +
-                        "   - Second: the bottom-right coordinate\n" +
-                        "\n" +
-                        "You MUST output one JSON object ONLY.\n" +
-                        "You MUST use the EXACT schema below.\n" +
-                        "You MUST NOT add extra fields, remove fields, reorder fields, or rename fields.\n" +
-                        "You MUST NOT output more than two points under \"Points\".  \n" +
-                        "You MUST NOT invent additional points.\n" +
-                        "\n" +
-                        "Return ONLY a JSON object with the EXACT structure below:\n" +
-                        "\n" +
-                        "{\n" +
-                        "  \"ShapeId\": \"<ShapeId>\",\n" +
-                        "  \"type\": \"<OneOf: Ellipse | Square | Triangle | Rectangle | StraightLine>\",\n" +
-                        "  \"Points\": [\n" +
-                        "    { \"x\": <number>, \"y\": <number> },\n" +
-                        "    { \"x\": <number>, \"y\": <number> }\n" +
-                        "  ],\n" +
-                        "  \"Color\": \"<Color>\",\n" +
-                        "  \"Thickness\": \"<Thickness>\",\n" +
-                        "  \"CreatedBy\": \"<CreatedBy>\",\n" +
-                        "  \"LastModifiedBy\": \"<LastModifiedBy>\",\n" +
-                        "  \"IsDeleted\": <true|false>\n" +
-                        "}\n" +
-                        "\n" +
-                        "STRICT RULES:\n" +
-                        "- \"Points\" must contain EXACTLY 2 elements. No more, no less.\n" +
-                        "- Each element must contain ONLY {\"x\": <number>, \"y\": <number>}.\n" +
-                        "- Do not output 3 or 4 points. Do not output bounding box corners separately.\n" +
-                        "The following metadata fields MUST be copied EXACTLY as provided in the input:\n" +
-                        "- \"ShapeId\"\n" +
-                        "- \"Color\"\n" +
-                        "- \"Thickness\"\n" +
-                        "- \"CreatedBy\"\n" +
-                        "- \"LastModifiedBy\"\n" +
-                        "- \"IsDeleted\"\n" +
-                        "\n" +
-                        "You MUST NOT modify, rename, reinterpret, normalize, guess, or replace the values of these fields.\n" +
-                        "You MUST copy the exact input strings and numbers verbatim into the output JSON.\n" +
-                        "- Output must be valid JSON. No explanations. No additional text.\n" +
-                        "\n" +
-                        "Use only the points provided below.\n"
-        );
+        metaData.put("RequestPrompt", """
+        "You are given a list of 2D points representing a freehand drawing.
+       \s
+         Your tasks:
+        1. Use ONLY the provided points.
+        2. Identify the geometric shape that best matches those points.
+           Allowed values (case-sensitive): Ellipse, Square, Triangle, Rectangle, StraightLine.
+        3. Compute the axis-aligned bounding box of that shape.
+        4. Output EXACTLY TWO points:
+           - First: the top-left coordinate
+           - Second: the bottom-right coordinate
+       \s
+        You MUST output one JSON object ONLY.
+        You MUST use the EXACT schema below.
+        You MUST NOT add extra fields, remove fields, reorder fields, or rename fields.
+        You MUST NOT output more than two points under "Points". \s
+        You MUST NOT invent additional points.
+       \s
+        Return ONLY a JSON object with the EXACT structure below:
+       \s
+        {
+          "ShapeId": "<ShapeId>",
+          "type": "<OneOf: Ellipse | Square | Triangle | Rectangle | StraightLine>",
+          "Points": [
+            { "x": <number>, "y": <number> },
+            { "x": <number>, "y": <number> }
+          ],
+          "Color": "<Color>",
+          "Thickness": "<Thickness>",
+          "CreatedBy": "<CreatedBy>",
+          "LastModifiedBy": "<LastModifiedBy>",
+          "IsDeleted": <true|false>
+        }
+       \s
+        STRICT RULES:
+        - "Points" must contain EXACTLY 2 elements. No more, no less.
+        - Each element must contain ONLY {"x": <number>, "y": <number>}.
+        - Do not output 3 or 4 points. Do not output bounding box corners separately.
+        The following metadata fields MUST be copied EXACTLY as provided in the input:
+        - "ShapeId"
+        - "Color"
+        - "Thickness"
+        - "CreatedBy"
+        - "LastModifiedBy"
+        - "IsDeleted"
+       \s
+        You MUST NOT modify, rename, reinterpret, normalize, guess, or replace the values of these fields.
+        You MUST copy the exact input strings and numbers verbatim into the output JSON.
+        - Output must be valid JSON. No explanations. No additional text.
+       \s
+        Use only the points provided below.\s""");
 
         type = "REG";
     }

@@ -1,6 +1,7 @@
 /**
- * Author : Abhirami R Iyer
+ * Author : Abhirami R Iyer .
  */
+
 package com.swe.aiinsights.response;
 
 /**

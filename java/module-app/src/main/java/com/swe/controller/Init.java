@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 
 public class Init {
     static int indexAi = 0;
+
     public static void main(String[] args) throws Exception {
 
         int portNumber = 6942;
@@ -183,12 +184,12 @@ public class Init {
             try {
                 System.out.println("Performing Sentiment Analysis");
                 List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages.subList(indexAi, messages.size()));
+                String cache = ChatManager.generateChatHistoryJson(messages);
 
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode cachNode = mapper.readTree(cache);
                 System.out.println("Chat History JSON for Sentiment: " + cachNode.toString());
-                String val = controllerServices.ai.sentiment(cachNode).get();
+                String val = cleanMarkdownJson(controllerServices.ai.sentiment(cachNode).get());
 
                 System.out.println("Sentiment Analysis Result: " + val);
                 indexAi = messages.size();
@@ -203,12 +204,12 @@ public class Init {
             try {
                 System.out.println("Generating Action Items");
                 List<ChatMessage> messages = ChatManager.getFullMessageHistory();
-                String cache = ChatManager.generateChatHistoryJson(messages.subList(indexAi, messages.size()));
+                String cache = ChatManager.generateChatHistoryJson(messages);
 
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode cachNode = mapper.readTree(cache);
                 System.out.println("Chat History JSON for Action: " + cachNode.toString());
-                String val = controllerServices.ai.action(cachNode).get();
+                String val = cleanMarkdownJson(controllerServices.ai.action(cachNode).get());
 
                 System.out.println("Action Analysis Result: " + val);
                 return DataSerializer.serialize(val);
@@ -217,5 +218,22 @@ public class Init {
                 return new byte[0];
             }
         });
+    }
+
+    public static String cleanMarkdownJson(String raw) {
+        if (raw == null)
+            return "";
+
+        String cleaned = raw.trim();
+
+        // Remove leading/trailing quotes
+        if (cleaned.startsWith("\"") && cleaned.endsWith("\"")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+
+        // Remove ```json and ``` markers
+        cleaned = cleaned.replace("```json", "").replace("```", "").trim();
+
+        return cleaned;
     }
 }

@@ -1,6 +1,10 @@
 /**
- * Author : Abhirami R Iyer
+ * Interface for storing types of request.
+ *
+ * @author Abhirami R Iyer
+ * @editedby Nandhana Sunil
  */
+
 package com.swe.aiinsights.request;
 
 /**
@@ -26,9 +30,7 @@ public interface AiRequestable<T> {
     /**
      * Returns the type of request.
      *
-     * @return "REG" if regularization,
-     * "DESC" if interpretation
-     * "INS" if insights generation
+     * @return type of request
      */
     String getReqType();
 }

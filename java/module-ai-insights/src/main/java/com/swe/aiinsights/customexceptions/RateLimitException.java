@@ -18,7 +18,7 @@ import java.io.IOException;
  * RateLimitException is an inheritance of IOException.
  */
 public class RateLimitException extends IOException {
-    public RateLimitException(String message) {
+    public RateLimitException(final String message) {
         super(message);
     }
 }

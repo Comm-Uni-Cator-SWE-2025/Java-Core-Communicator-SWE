@@ -26,7 +26,7 @@ import java.io.IOException;
  * </p>
  */
 public class Main {
-    /**+
+    /**
      * Entry point of application.
      *
      * @param args  arguments of main
@@ -805,7 +805,7 @@ public class Main {
 
         String contextualQ = " What is Bob working on?";
         CompletableFuture<String> answer1 = service.answerQuestion(contextualQ);
-        answer1.thenAccept(System.out::println);
+//        answer1.thenAccept(System.out::println);
 
         String chatJson1 = "[\n"
                 + " {\"sender\": \"Alice\", \"message\": "
@@ -831,24 +831,26 @@ public class Main {
                 + "]";
         CompletableFuture<String> summary2 = service.summariseText(chatJson);
 
+
+
         String chatJson0 = "[\n"
-                + " {\"sender\": \"jayati\", \"message\": \"Hey, how are you?\"},\n"
-                + " {\"sender\": \"Bob\", \"message\": \"I'm good! Just working on the llm project.\"},\n"
-                + " {\"sender\": \"Alice\", \"message\": \"That's great! Need any help?\"},\n"
-                + " {\"sender\": \"Bob\", \"message\": \"I'm almost done, thanks!\"}\n"
+                + " {\"sender\": \"jayajynhbgvfcxti\", \"message\": \"Hey, how are you?\"},\n"
+                + " {\"sender\": \"Bofcfb\", \"message\": \"I'm good! Just working on the llm project.\"},\n"
+                + " {\"sender\": \"Alicrdcdce\", \"message\": \"That's great! Need any help?\"},\n"
+                + " {\"sender\": \"Bofdcerdfcb\", \"message\": \"I'm almost done, thanks!\"}\n"
                 + "]";
         CompletableFuture<String> summary5 = service.summariseText(chatJson0);
-        summary.thenAccept(System.out::println);
-        summary2.thenAccept(System.out::println);
-        summary5.thenAccept(System.out::println);
+//        summary.thenAccept(System.out::println);
+//        summary2.thenAccept(System.out::println);
+//        summary5.thenAccept(System.out::println);
 
 
 
         // 2. Generic Question (LLM should ignore the summary)
-        String genericQ = " is jayati in meeting?";
+        String genericQ = " who is working on llm project?";
         CompletableFuture<String> answer2 = service.answerQuestion(genericQ);
-        answer2.thenAccept(System.out::println);
-        reg.thenAccept(System.out::println);
+//        answer2.thenAccept(System.out::println);
+//        reg.thenAccept(System.out::println);
         ObjectMapper mapper = new ObjectMapper();
 
         JsonNode chat_data = mapper.readTree("""
@@ -923,7 +925,7 @@ public class Main {
         CompletableFuture<String> resp = service.sentiment(chat_data);
         resp.thenAccept(response -> {System.out.println(response);});
 
-        
+
         // CompletableFuture<String> reg = service.regularise(points);
         // reg.thenAccept(System.out::println);
         // resp.thenAccept(System.out::println);

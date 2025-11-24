@@ -1,6 +1,9 @@
 /**
- * Author : Abhirami R Iyer
+ * Holds the AI output for image description requests.
+ *
+ * @author Abhirami R Iyer
  */
+
 package com.swe.aiinsights.response;
 
 import java.util.HashMap;

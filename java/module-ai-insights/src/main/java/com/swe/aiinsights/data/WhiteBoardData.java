@@ -1,6 +1,11 @@
 /**
- * Author : Abhirami R Iyer
+ * To store the snapshot of whiteboard sent by the Canvas team.
+ *
+ * @author Abhirami R Iyer
+ *
+ *
  */
+
 package com.swe.aiinsights.data;
 
 import java.io.IOException;
