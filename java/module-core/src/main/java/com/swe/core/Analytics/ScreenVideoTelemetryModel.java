@@ -7,6 +7,7 @@ package com.swe.core.Analytics;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class ScreenVideoTelemetryModel {
     private Long startTime;
@@ -92,7 +93,19 @@ public class ScreenVideoTelemetryModel {
 
     // --- Helper method to calculate metrics ---
     private void calculateMetrics() {
-        if (fpsEvery3Seconds == null || fpsEvery3Seconds.isEmpty()) {
+        if (fpsEvery3Seconds == null) {
+            avgFps = maxFps = minFps = p95Fps = 0.0;
+            return;
+        }
+
+        final List<Double> sanitized = new ArrayList<>();
+        for (Double value : fpsEvery3Seconds) {
+            if (value != null) {
+                sanitized.add(value);
+            }
+        }
+
+        if (sanitized.isEmpty()) {
             avgFps = maxFps = minFps = p95Fps = 0.0;
             return;
         }
@@ -102,9 +115,7 @@ public class ScreenVideoTelemetryModel {
         double max = Double.NEGATIVE_INFINITY;
         double min = Double.POSITIVE_INFINITY;
 
-        for (Double fps : fpsEvery3Seconds) {
-            if (fps == null)
-                continue;
+        for (Double fps : sanitized) {
             sum += fps;
             if (fps > max)
                 max = fps;
@@ -117,7 +128,7 @@ public class ScreenVideoTelemetryModel {
         minFps = min;
 
         // Compute 95th percentile (worst 5%)
-        List<Double> sorted = new ArrayList<>(fpsEvery3Seconds);
+        List<Double> sorted = new ArrayList<>(sanitized);
         Collections.sort(sorted);
 
         // 95th percentile index → floor(0.05 * n)
