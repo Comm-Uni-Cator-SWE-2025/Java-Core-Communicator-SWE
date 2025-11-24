@@ -1,5 +1,7 @@
 package com.swe.chat;
 
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
@@ -36,12 +38,23 @@ public class AiAnalyticsService implements IAiAnalyticsService {
         this.network = network;
         this.aiService = aiService;
 
-        startAiSummarizer();
+        if (isMainServer()) {
+            startAiSummarizer();
+        } else {
+            System.out.println("[AI-Service] Client Mode detected. AI Summarizer disabled.");
+        }
     }
 
     // ============================================================================
     // SERVICE LIFECYCLE
     // ============================================================================
+
+    private boolean isMainServer() {
+        ClientNode selfIP = Context.getInstance().selfIP;
+        ClientNode mainServerIP = Context.getInstance().mainServerIP;
+        // Safety check for nulls, then compare
+        return selfIP != null && mainServerIP != null && selfIP.equals(mainServerIP);
+    }
 
     private void startAiSummarizer() {
         // AI Schedule logic migrated here
@@ -132,13 +145,15 @@ public class AiAnalyticsService implements IAiAnalyticsService {
     // ============================================================================
 
     @Override
-    public void addMessageToHistory(ChatMessage message) {
-        // Logic for adding message to history and updating context
+    public void addMessageToHistory(ChatMessage message, boolean isLocal) {
+        // 1. Always add to history (for context building)
         fullMessageHistory.add(message);
         messageIdToSender.put(message.getMessageId(), message.getSenderDisplayName());
 
-        // Check if message should trigger an immediate AI response
-        if (message.getContent().trim().startsWith("@AI")) {
+        // 2. ONLY trigger AI response if:
+        //    a) It is a Local message (sent by ME, not broadcasted back)
+        //    b) It starts with @AI
+        if (isLocal && message.getContent().trim().startsWith("@AI")) {
             // Trigger incremental summary for context BEFORE handling the question
             processIncrementalSummary();
             handleAiQuestion(message.getContent());

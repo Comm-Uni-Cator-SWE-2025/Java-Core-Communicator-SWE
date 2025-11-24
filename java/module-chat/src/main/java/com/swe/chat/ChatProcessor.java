@@ -1,5 +1,7 @@
 package com.swe.chat;
 
+import com.swe.core.ClientNode;
+import com.swe.core.Context;
 import com.swe.core.RPCinterface.AbstractRPC;
 import com.swe.networking.ModuleType;
 import com.swe.networking.Networking;
@@ -33,13 +35,23 @@ public class ChatProcessor implements IChatProcessor {
     // IChatProcessor Implementation (The Core Logic)
     // ============================================================================
 
+    private boolean isMainServer() {
+        ClientNode selfIP = Context.getInstance().selfIP;
+        ClientNode mainServerIP = Context.getInstance().mainServerIP;
+        // Safety check for nulls, then compare
+        return selfIP != null && mainServerIP != null && selfIP.equals(mainServerIP);
+    }
+
     @Override
     public byte[] processFrontendTextMessage(byte[] messageBytes) {
         try {
             ChatMessage message = ChatMessageSerializer.deserialize(messageBytes);
 
             // 1. DELEGATE History/AI Logic (SRP: Offload state/scheduling)
-            aiService.addMessageToHistory(message); // Handles history & AI check
+            if (isMainServer()) {
+                // It's a local message, so isLocal = true
+                aiService.addMessageToHistory(message, true);
+            } // Handles history & AI check
 
             // 2. Execution: Broadcast
             byte[] networkPacket = ChatProtocol.addProtocolFlag(messageBytes, ChatProtocol.FLAG_TEXT_MESSAGE);
@@ -141,7 +153,10 @@ public class ChatProcessor implements IChatProcessor {
             switch (flag) {
                 case ChatProtocol.FLAG_TEXT_MESSAGE:
                     ChatMessage msg = ChatMessageSerializer.deserialize(messageBytes);
-                    aiService.addMessageToHistory(msg); // DELEGATE: AI Service manages history for network messages too
+                    if (isMainServer()) {
+                        // It's a network message, so isLocal = false (Don't trigger double @AI response)
+                        aiService.addMessageToHistory(msg, false);
+                    } // DELEGATE: AI Service manages history for network messages too
                     this.rpc.call("chat:new-message", messageBytes);
                     break;
 

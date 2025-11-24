@@ -7,7 +7,7 @@ package com.swe.chat;
 public interface IAiAnalyticsService {
 
     /** Records a message into history for summarization/reply context. */
-    void addMessageToHistory(ChatMessage message);
+    void addMessageToHistory(ChatMessage message, boolean isLocal);
 
     /** Handles the logic for a user asking a question (e.g., "@AI what are the main points?"). */
     void handleAiQuestion(String fullText);
