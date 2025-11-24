@@ -21,7 +21,7 @@ import java.awt.image.BufferedImage;
 import java.util.function.BiFunction;
 
 /**
- * Class conatining Components to capture feed.
+ * Class containing Components to capture feed.
  */
 public class CaptureComponents {
 

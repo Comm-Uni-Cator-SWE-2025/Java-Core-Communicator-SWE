@@ -4,7 +4,6 @@
 
 package com.swe.ScreenNVideo;
 
-import com.google.gson.stream.JsonToken;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
@@ -87,7 +86,7 @@ public class VideoComponents {
     private int runCount = 0;
 
     /**
-     * Class conatining Components to capture feed.
+     * Class containing Components to capture feed.
      */
     private final CaptureComponents captureComponents;
 
@@ -97,7 +96,7 @@ public class VideoComponents {
     private final BackgroundCaptureManager bgCapManager;
 
     /**
-     *
+     * Port Number
      */
     private final int port;
 
