@@ -91,7 +91,7 @@ public class MediaCaptureManager implements CaptureManager {
      * @param portArgs      Port for the server
      */
     public MediaCaptureManager(final AbstractNetworking argNetworking, final int portArgs) {
-        Context context = Context.getInstance();
+        final Context context = Context.getInstance();
         this.rpc = context.rpc;
         this.port = portArgs;
         this.networking = argNetworking;
@@ -123,8 +123,14 @@ public class MediaCaptureManager implements CaptureManager {
         networking.subscribe(ModuleType.SCREENSHARING.ordinal(), clientHandler);
     }
 
-    public Void updateImage(String ip, boolean val) {
-        ImageSynchronizer imageSynchronizer = imageSynchronizers.get(ip);
+    /**
+     * Updates image and start waiting for extra data.
+     * @param ip ip of sender
+     * @param val to compress or not
+     * @return void
+     */
+    public Void updateImage(final String ip, final boolean val) {
+        final ImageSynchronizer imageSynchronizer = imageSynchronizers.get(ip);
         if (imageSynchronizer == null) {
             return null;
         }
@@ -176,10 +182,10 @@ public class MediaCaptureManager implements CaptureManager {
 
         System.out.println("Starting capture");
         int[][] feed = null;
-        double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
+        final double timePerFrame = (1.0 / sendFPS) * Utils.SEC_IN_MS;
         long prevSendAt = 0;
         while (true) {
-            long diff = System.currentTimeMillis() - prevSendAt;
+            final long diff = System.currentTimeMillis() - prevSendAt;
             // get audio Feed
             final byte[] encodedAudio = videoComponent.captureAudio();
             if (encodedAudio != null) {
@@ -207,7 +213,7 @@ public class MediaCaptureManager implements CaptureManager {
                 // send unCompressedFeed
                 // System.out.println("Sending to uncompress");
                 sendDataToViewers(encodedFeed.unCompressedFeed(), viewer -> !viewer.isRequireCompressed());
-                final double sendingFPS = ((double) (Utils.SEC_IN_MS) / (diff));
+                final double sendingFPS = (double) (Utils.SEC_IN_MS) / diff;
                 System.out.println("Sent Data at " + sendingFPS + " FPS");
                 Telemetry.getTelemetry().addFps(sendingFPS);
             }
@@ -270,8 +276,8 @@ public class MediaCaptureManager implements CaptureManager {
             if (data.length == 0) {
                 return;
             }
-              System.out.println("first 40 bytes:" +
-             (Arrays.toString(Arrays.copyOf(data, 40))));
+//              System.out.println("first 40 bytes:" +
+//             (Arrays.toString(Arrays.copyOf(data, 40))));
             final byte packetType = data[0];
             if (packetType > enumVals.length) {
                 final int printLen = 34;
@@ -298,7 +304,7 @@ public class MediaCaptureManager implements CaptureManager {
                     }
 
                     imageSynchronizer.setDataReceived(imageSynchronizer.getDataReceived() + data.length);
-                    double diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
+                    final double diff = System.currentTimeMillis() - imageSynchronizer.getPrevSend();
                     long dataPerSec = -1;
                     if (diff > Utils.SEC_IN_MS) {
                         dataPerSec = (long) ((imageSynchronizer.getDataReceived() / diff) * Utils.SEC_IN_MS);
@@ -443,7 +449,7 @@ public class MediaCaptureManager implements CaptureManager {
             final IPPacket subscribePacket = new IPPacket(localIp, reqCompress);
             final byte[] subscribeData = subscribePacket.serialize(NetworkPacketType.SUBSCRIBE_AS_VIEWER);
             final ClientNode destNode = new ClientNode(ip, port);
-            networking.sendData(subscribeData, new ClientNode[] { destNode }, ModuleType.SCREENSHARING.ordinal(), 2);
+            networking.sendData(subscribeData, new ClientNode[] {destNode}, ModuleType.SCREENSHARING.ordinal(), 2);
         }
 
         public void addUserNFullImageRequest(final String ip, final boolean reqCompression) {
@@ -466,7 +472,7 @@ public class MediaCaptureManager implements CaptureManager {
                 return;
             }
             System.out.println("Sending Full Image");
-            networking.sendData(fullImageEncoded, new ClientNode[] { new ClientNode(ip, port) },
+            networking.sendData(fullImageEncoded, new ClientNode[] {new ClientNode(ip, port)},
                     ModuleType.SCREENSHARING.ordinal(), 2);
         }
     }

@@ -20,6 +20,11 @@ import com.swe.ScreenNVideo.Telemetry.Telemetry;
  */
 public class VideoCapture extends ICapture {
 
+    /**
+     * Wait for opening the webcam.
+     */
+    private static final int WAIT_COUNT = 100;
+
     /** Capture parameters. */
     private Dimension captureArea;
     /** Capture parameters. */
@@ -47,10 +52,10 @@ public class VideoCapture extends ICapture {
 
     /**
      * Set the frame capture listener.
-     * @param listener The listener to set
+     * @param listenerArgs The listener to set
      */
-    public void setFrameCaptureListener(FrameCaptureListener listener) {
-        this.listener = listener;
+    public void setFrameCaptureListener(final FrameCaptureListener listenerArgs) {
+        this.listener = listenerArgs;
     }
 
     /**
@@ -70,25 +75,22 @@ public class VideoCapture extends ICapture {
         this.captureLocation = new Point(DEFAULT_X, DEFAULT_Y);
     }
 
-    /**
-     * Constructor with custom capture area.
-     * @param x X coordinate of capture area
-     * @param y Y coordinate of capture area
-     * @param width Width of capture area
-     * @param height Height of capture area
-     **/
-    /** public VideoCapture(final int x, final int y, final int width, final int height) {
-        this();
-        this.captureLocation = new Point(x, y);
-        this.captureArea = new Dimension(width, height);
-    } **/
 
+    /**
+     * Open the webcam.
+     * @throws IllegalStateException if the webcam is not found or the camera permissions are not granted
+     * @throws Exception if the webcam is not found or the camera permissions are not granted
+     */
     private void openWebcam() {
         try {
             this.webcam = Webcam.getDefault();
             if (this.webcam == null) {
+                if (IS_MAC) {
+                    throw new IllegalStateException("No webcam found. Check camera permissions"
+                            + " in System Preferences > Security & Privacy > Camera");
+                }
                 throw new IllegalStateException("No webcam found. Check camera permissions"
-                    + (IS_MAC ? " in System Preferences > Security & Privacy > Camera" : ""));
+                        + "");
             }
 
             // Use the captureArea set by the constructor
@@ -106,8 +108,8 @@ public class VideoCapture extends ICapture {
                 this.webcam.open(true); // async=true for Mac
                 // Wait for webcam to be ready (max 10 seconds)
                 int waitCount = 0;
-                while (!this.webcam.isOpen() && waitCount < 100) {
-                    Thread.sleep(100);
+                while (!this.webcam.isOpen() && waitCount < WAIT_COUNT) {
+                    Thread.sleep(WAIT_COUNT);
                     waitCount++;
                 }
                 if (!this.webcam.isOpen()) {
