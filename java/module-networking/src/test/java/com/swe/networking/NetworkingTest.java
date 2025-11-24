@@ -18,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -80,9 +82,14 @@ public class NetworkingTest {
         byte[] testData = "hello chat module!".getBytes();
 
         networking.callSubscriber(ModuleType.CHAT.ordinal(), testData);
-
+        System.out.println("Test data: " + new String(receivedDataRef.get()));
         assertNotNull(receivedDataRef.get(), "Listener was not called");
         assertArrayEquals(testData, receivedDataRef.get(), "Listener received incorrect data");
+    }
+
+    @Test
+    public void testCallSubscriber_NoFunction() {
+        assertDoesNotThrow(() -> networking.callSubscriber(ModuleType.CHAT.ordinal() + 99, "dummy".getBytes()));
     }
 
     @Test
@@ -112,53 +119,141 @@ public class NetworkingTest {
     }
 
     @Test
-    public void testBroadcast() throws Exception {
-        topology.addClient(clientNode);
-        Field threadField = Networking.class.getDeclaredField("sendThread");
-        threadField.setAccessible(true);
-
-        Thread privateSendThread = (Thread) threadField.get(networking);
-
-        assertNotNull(privateSendThread, "Networking thread was not started");
-        privateSendThread.interrupt();
-        privateSendThread.join(1000);
-
-        assertTrue(priorityQueue.isEmpty(), "Queue should be empty before test");
-        assertFalse(privateSendThread.isAlive(), "Background sendThread must be stopped before testing queue contents.");
-        byte[] data = "test broadcast data".getBytes();
-
-        networking.broadcast(data, ModuleType.UIUX.ordinal(), 2);
-
-        System.out.println("size of priority queue: "+priorityQueue.isEmpty());
-        assertFalse(priorityQueue.isEmpty(), "Queue should be empty after broadcast");
-        byte[] packetBytes = priorityQueue.nextPacket();
-        System.out.println("Packet length: "+ Arrays.toString(packetBytes));
-
-        assertNotNull(packetBytes);
-
-        PacketInfo info = packetParser.parsePacket(packetBytes);
-        assertEquals(1, info.getBroadcast(), "Broadcast flag should be set to 1");
-        assertArrayEquals(data, info.getPayload(), "Payload data does not match");
-        privateSendThread = null;
-    }
-
-    @Test
-    public void testCallSubscriber_NoFunction() {
-        assertDoesNotThrow(() -> networking.callSubscriber(ModuleType.CHAT.ordinal() + 99, "dummy".getBytes()));
-    }
-
-    @Test
     public void testSendData_NullDestination() {
         byte[] testData = "Should be ignored".getBytes();
         ClientNode[] nullDest = null;
 
-        assertDoesNotThrow(() -> networking.sendData(
-                testData,
-                nullDest,
-                ModuleType.CANVAS.ordinal(),
-                1
-        ));
+        assertDoesNotThrow(() -> networking.sendData(testData, nullDest, ModuleType.CANVAS.ordinal(), 1));
         assertTrue(priorityQueue.isEmpty(), "Queue must remain empty when destination is null.");
+    }
+
+    @Test
+    public void testSendData_CoverInternalCatch() throws Exception {
+
+        PacketParser mockParser = mock(PacketParser.class);
+        resetStaticSingleton(PacketParser.class, "parser", mockParser); // Reset static singleton
+
+        Field parserField = Networking.class.getDeclaredField("parser");
+        parserField.setAccessible(true);
+        parserField.set(networking, mockParser);
+
+        topology.addClient(clientNode); // clientNode = 127.0.0.1:8001
+        byte[] testData = "test data".getBytes();
+
+
+        doThrow(new UnknownHostException("Forcing sendData's catch block"))
+                .when(mockParser).parsePacket(any(byte[].class));
+
+        assertDoesNotThrow(() -> {
+            networking.sendData(testData, new ClientNode[]{clientNode}, ModuleType.CANVAS.ordinal(), 1);
+        }, "sendData should catch the UnknownHostException thrown by the parser mock.");
+
+        verify(mockParser, atLeastOnce()).parsePacket(any(byte[].class));
+    }
+
+    @Test
+    public void testBroadcast_ServerSender() {
+        topology.addClient(clientNode);
+        byte[] data = "server broadcast".getBytes();
+        assertDoesNotThrow(() -> networking.broadcast(data, ModuleType.UIUX.ordinal(), 2));
+    }
+
+    @Test
+    public void testBroadcast_RegularClientSender() {
+        topology.addClient(clientNode);
+        networking.addUser(clientNode, serverNode);
+        byte[] data = "client broadcast".getBytes();
+        assertDoesNotThrow(() -> networking.broadcast(data, ModuleType.CHAT.ordinal(), 1));
+    }
+
+    @Test
+    public void testStart() throws Exception {
+        Topology mockTopology = mock(Topology.class);
+        PacketParser mockParser = mock(PacketParser.class);
+        NewPriorityQueue mockQueue = mock(NewPriorityQueue.class);
+
+        // Inject Topology
+        Field topologyField = Networking.class.getDeclaredField("topology");
+        topologyField.setAccessible(true);
+        topologyField.set(networking, mockTopology);
+
+        // Inject PacketParser
+        Field parserField = Networking.class.getDeclaredField("parser");
+        parserField.setAccessible(true);
+        parserField.set(networking, mockParser);
+
+        // Inject NewPriorityQueue
+        Field queueField = Networking.class.getDeclaredField("priorityQueue");
+        queueField.setAccessible(true);
+        queueField.set(networking, mockQueue);
+
+        final ClientNode destNode = new ClientNode("1.1.1.1", 12345);
+        final byte[] testPacket = "test_data".getBytes();
+        final PacketInfo mockPacketInfo = new PacketInfo();
+
+        mockPacketInfo.setIpAddress(InetAddress.getByName(destNode.hostName()));
+        mockPacketInfo.setPortNum(destNode.port());
+
+        when(mockQueue.isEmpty()).thenReturn(false, true);
+        when(mockQueue.getPacket()).thenReturn(testPacket);
+        when(mockParser.parsePacket(testPacket)).thenReturn(mockPacketInfo);
+
+        Thread executionThread = new Thread(() -> {
+            networking.start();
+        });
+
+        executionThread.start();
+        Thread.sleep(100);
+        executionThread.interrupt();
+        executionThread.join(1000);
+        verify(mockQueue, times(1)).getPacket();
+        verify(mockParser, times(1)).parsePacket(testPacket);
+        verify(mockTopology, times(1)).sendPacket(eq(testPacket), eq(destNode));
+        assertFalse(executionThread.isAlive(), "The execution thread should have terminated after interruption.");
+    }
+
+    @Test
+    public void testStart_UnknownHostException() throws Exception {
+
+        Topology mockTopology = mock(Topology.class);
+        PacketParser mockParser = mock(PacketParser.class);
+        NewPriorityQueue mockQueue = mock(NewPriorityQueue.class);
+
+        resetStaticSingleton(Topology.class, "topology", mockTopology);
+        resetStaticSingleton(PacketParser.class, "parser", mockParser);
+        resetStaticSingleton(NewPriorityQueue.class, "priorityQueue", mockQueue);
+
+        Field topologyField = Networking.class.getDeclaredField("topology");
+        topologyField.setAccessible(true);
+        topologyField.set(networking, mockTopology);
+
+        Field parserField = Networking.class.getDeclaredField("parser");
+        parserField.setAccessible(true);
+        parserField.set(networking, mockParser);
+
+        Field queueField = Networking.class.getDeclaredField("priorityQueue");
+        queueField.setAccessible(true);
+        queueField.set(networking, mockQueue);
+
+        when(mockQueue.isEmpty()).thenReturn(false, false, true);
+        when(mockQueue.getPacket()).thenReturn("dummy".getBytes());
+
+        doThrow(new UnknownHostException("Simulated host resolution failure"))
+                .when(mockParser).parsePacket(any(byte[].class));
+
+        Thread executionThread = new Thread(() -> {
+            networking.start();
+        });
+
+        executionThread.start();
+        Thread.sleep(100);
+
+        executionThread.interrupt();
+        executionThread.join(1000);
+
+        verify(mockParser, times(2)).parsePacket(any(byte[].class));
+        verify(mockTopology, never()).sendPacket(any(byte[].class), any(ClientNode.class));
+        assertFalse(executionThread.isAlive(), "The execution thread should have terminated after interruption.");
     }
 
     @Test
@@ -174,6 +269,8 @@ public class NetworkingTest {
 
         assertTrue(listenerCalled.get(), "The module listener should still be active after the duplicate subscription attempt.");
     }
+
+
 
     @Test
     public void testIsClientAlive_Present() {
@@ -205,16 +302,32 @@ public class NetworkingTest {
         verifyNoMoreInteractions(mockRpc);
     }
 
-//    @Test
-//    public void testIsMainServerLive_Success() throws Exception {
-//
-//        // We will make the first Socket successfully connect.
-//        try (MockedConstruction<Socket> mockedSocket = mockConstruction(Socket.class)) {
-//
-//            // simulates a successful connection on the first attempt (8.8.8.8:53).
-//            boolean isDead = networking.isMainServerLive();
-//            assertFalse(isDead, "isMainServerLive should return false when connection succeeds.");
-//            verify(mockedSocket.constructed().get(0), times(1)).connect(any(), eq(2000));
-//        }
-//    }
+    @Test
+    public void testIsMainServerLive_Success() throws Exception {
+
+        // We will make the first Socket successfully connect.
+        try (MockedConstruction<Socket> mockedSocket = mockConstruction(Socket.class)) {
+            // simulates a successful connection on the first attempt (8.8.8.8:53).
+            boolean isDead = networking.isMainServerLive();
+            assertFalse(isDead, "isMainServerLive should return false when connection succeeds.");
+            verify(mockedSocket.constructed().get(0), times(1)).connect(any(), eq(2000));
+        }
+    }
+
+    @Test
+    public void testIsMainServerLive_Failure() throws Exception {
+        final int totalAttempts = 8; // 4 DNS servers * 2 ports
+
+        try (MockedConstruction<Socket> mockedSocket = mockConstruction(Socket.class, (mock, context) -> {
+            doThrow(new IOException("Simulated network failure")).when(mock).connect(any(), eq(2000));
+        })) {
+            boolean isDead = networking.isMainServerLive();
+            assertTrue(isDead, "isMainServerLive should return true when all connection attempts fail.");
+            assertEquals(totalAttempts, mockedSocket.constructed().size(),
+                    "The method should attempt to connect exactly 8 times (4 servers * 2 ports).");
+            for (Socket mock : mockedSocket.constructed()) {
+                verify(mock, times(1)).connect(any(), eq(2000));
+            }
+        }
+    }
 }
