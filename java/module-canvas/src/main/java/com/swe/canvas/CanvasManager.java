@@ -75,18 +75,14 @@ public class CanvasManager {
     private byte[] handleRegularize(byte[] data) {
         try {
             // Deserialize to JsonNode using DataSerializer
-            JsonNode rootNode = DataSerializer.deserialize(data, JsonNode.class);
-
-            // Find "Thickness" key and change value to 5
-            if (rootNode.isObject()) {
-                ObjectNode objectNode = (ObjectNode) rootNode;
-                if (objectNode.has("Thickness")) {
-                    objectNode.put("Thickness", 5);
-                }
-            }
-
+            String rootNode = DataSerializer.deserialize(data, String.class);
+            System.out.println("[CanvasManager] Regularizing canvas data. : " + rootNode);
+            String result = null;
+            String future = AiInstance.getInstance().regularise(rootNode).get();
+            result = future;
+            System.out.println("[CanvasManager] Modified: " + result);
             // Serialize back using DataSerializer
-            return DataSerializer.serialize(rootNode);
+            return DataSerializer.serialize(result);
 
         } catch (Exception e) {
             e.printStackTrace();
