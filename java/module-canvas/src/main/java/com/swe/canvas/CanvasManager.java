@@ -55,7 +55,7 @@ public class CanvasManager {
         rpc.subscribe("canvas:sendToHost", this::handleSendToHost);
         rpc.subscribe("canvas:sendToClient", this::handleSendToClient);
         rpc.subscribe("canvas:broadcast", this::handleBroadcast);
-        rpc.subscribe("canvas:whoamI", this::handleWhoAmI);
+        rpc.subscribe("canvas:whoami", this::handleWhoAmI);
     }
 
     private byte[] handleWhoAmI(byte[] data) {
