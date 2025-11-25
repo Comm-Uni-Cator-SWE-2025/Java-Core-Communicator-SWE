@@ -173,8 +173,8 @@ public class Init {
                 controllerServices.getNetworking().addUser(localClientNode, localClientNode);
 
                 // Initialize Canvas Manager for Host
-                controllerServices.getCanvasManager().setIsHost(true);
                 controllerServices.getCanvasManager().setHostClientNode(localClientNode);
+                controllerServices.getCanvasManager().setSelfClientNode(localClientNode);
 
                 MeetingNetworkingCoordinator.handleMeetingCreated(meetingSession);
             } catch (Exception e) {
@@ -213,7 +213,7 @@ public class Init {
                 controllerServices.getNetworking().addUser(localClientNode, serverClientNode);
 
                 // Initialize Canvas Manager for Client
-                controllerServices.getCanvasManager().setIsHost(false);
+                controllerServices.getCanvasManager().setSelfClientNode(localClientNode);
                 controllerServices.getCanvasManager().setHostClientNode(serverClientNode);
 
                 MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
