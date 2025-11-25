@@ -1,7 +1,13 @@
 package com.swe.controller;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.util.concurrent.ExecutionException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.canvas.CanvasManager;
 import com.swe.chat.ChatManager;
 import com.swe.core.Auth.AuthService;
 import com.swe.core.ClientNode;
@@ -11,14 +17,11 @@ import com.swe.core.Meeting.UserProfile;
 import com.swe.core.RPC;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.Networking;
+
 import functionlibrary.CloudFunctionLibrary;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.util.concurrent.ExecutionException;
-
 public class Init {
+
     public static void main(String[] args) throws Exception {
         int portNumber = 6942;
 
@@ -42,7 +45,6 @@ public class Init {
         MeetingNetworkingCoordinator.initialize(networking);
 
         new ChatManager(Networking.getNetwork());
-
         MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(), 6943);
         Thread mediaCaptureManagerThread = new Thread(() -> {
             try {
@@ -131,6 +133,8 @@ public class Init {
                 System.out.println("Server client node: " + serverClientNode);
 
                 controllerServices.networking.addUser(localClientNode, serverClientNode);
+                new CanvasManager(Networking.getNetwork(), serverClientNode);
+
                 MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
                 System.out.println("Error getting server client node: " + e.getMessage());
