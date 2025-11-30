@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Shreya.
+ */
+
 package com.swe.core.Auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +16,7 @@ import com.swe.core.Meeting.UserProfile;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Helper class to handle Google OAuth login.
@@ -35,7 +40,8 @@ public class AuthHelper {
      */
     public UserProfile handleGoogleLogin(final Credential credential) throws IOException {
 
-        final HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory(credential);
+        final Credential safeCredential = Objects.requireNonNull(credential, "credential");
+        final HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory(safeCredential);
 
         final GenericUrl url = new GenericUrl(GOOGLE_USERINFO_URL);
 

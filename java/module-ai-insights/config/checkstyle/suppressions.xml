@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--References-->
+<!--1. https://stackoverflow.com/questions/34850125/
+got-could-not-find-resource-src-checkstyle-checkstyle-suppressions-xml-when-u-->
+
+<suppressions>
+</suppressions>

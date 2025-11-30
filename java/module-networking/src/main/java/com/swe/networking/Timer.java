@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Timer class to monitor client timeouts.
@@ -25,6 +27,8 @@ public class Timer {
     /**
      * Timer duration for client timeouts in milliseconds.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private final long timeoutDuration;
 
     /**
@@ -81,7 +85,7 @@ public class Timer {
      * @param client the client to add
      */
     public void addClient(final ClientNode client) {
-        System.out.println("Adding client to timer monitoring: " + client);
+        LOG.info("Adding client to timer monitoring: " + client);
         clients.add(client);
         clientTimeouts.put(client, System.currentTimeMillis());
     }

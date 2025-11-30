@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The Client belonging to a certain cluster.
@@ -25,6 +27,8 @@ public class P2PClient implements P2PUser {
     /**
      * base Commumicator class to send , recieve and close.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private final ProtocolBase communicator;
     /**
      * get parser to decode packet.
@@ -138,7 +142,7 @@ public class P2PClient implements P2PUser {
     private void sendToSingleNode(final byte[] data, final ClientNode destNode) {
 
         final ClientNode sendDest = topology.getDestination(mainServerAddress, destNode);
-        System.out.println("p2pclient sending data to: " + sendDest);
+        LOG.info("p2pclient sending data to: " + sendDest);
         communicator.sendData(data, sendDest);
     }
 
@@ -166,12 +170,11 @@ public class P2PClient implements P2PUser {
      */
     private void sendAlivePacket() {
         if (clusterServerAddress == null) {
-            System.err.println("p2pclient: Cannot send ALIVE packet. Cluster server address is null.");
-            return;
+            LOG.info("cluster server address is null");
         }
 
         try {
-            System.out.println("p2pclient sending alive packet to: " + clusterServerAddress);
+            LOG.info("p2pclient sending alive packet to: " + clusterServerAddress);
             final InetAddress selfIp = InetAddress.getByName(deviceAddress.hostName());
             final byte[] emptyPayload = new byte[0];
 
@@ -193,7 +196,7 @@ public class P2PClient implements P2PUser {
             communicator.sendData(alivePacket, clusterServerAddress);
 
         } catch (UnknownHostException e) {
-            System.err.println("p2pclient failed to send alive packet");
+            LOG.error("p2pclient failed to send alive packet");
         }
     }
 
@@ -348,10 +351,10 @@ public class P2PClient implements P2PUser {
      * after changing network structure (add, remove, replace)
      */
     void updateClusterServer() {
-        System.out.println("p2pclient after updating server");
+        LOG.info("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
         if (this.clusterServerAddress == null) {
-            System.err.println("p2pclient: Not find my cluster server in topology.");
+            LOG.error("p2pclient: Not find my cluster server in topology.");
         }
         return;
     }
@@ -363,7 +366,7 @@ public class P2PClient implements P2PUser {
         }
         running = false;
 
-        System.out.println("p2pclient started closing");
+        LOG.info("p2pclient started closing");
 
         // Stop sending ALIVE packets
 //        if (aliveScheduler != null) {
@@ -381,7 +384,29 @@ public class P2PClient implements P2PUser {
         }
         final byte[] removePkt = createRemovePacket(deviceAddress);
         SplitPackets.getSplitPackets().emptyBuffer();
-        System.out.println("p2pclient closed");
+    }
+
+    /**
+     * Function to create a remove packet.
+     *
+     * @param client the client to remove
+     * @return the packet
+     */
+    public byte[] createRemovePacket(final ClientNode client) {
+        try {
+            final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(packetHeaderSize);
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+            packetInfo.setPayload(client.toString().getBytes());
+            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+            packetInfo.setPortNum(client.port());
+            packetInfo.setBroadcast(0);
+            final byte[] removePacket = parser.createPkt(packetInfo);
+            return removePacket;
+        } catch (UnknownHostException ex) {
+            return null;
+        }
     }
 
     /**

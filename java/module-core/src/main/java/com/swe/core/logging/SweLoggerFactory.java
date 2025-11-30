@@ -27,7 +27,9 @@ public final class SweLoggerFactory {
     private static final LogPathResolver RESOLVER = new LogPathResolver(APP_NAME);
     private static final long APP_START_MILLIS = System.currentTimeMillis();
     private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
+    private static final Logger BOOTSTRAP_LOGGER = Logger.getLogger(ROOT_NAMESPACE + ".bootstrap");
 
+    private static volatile ConsoleHandler consoleHandler;
     private static volatile Path activeLogFile;
 
     private SweLoggerFactory() {
@@ -79,7 +81,7 @@ public final class SweLoggerFactory {
     }
 
     private static void attachConsoleHandler(final Logger root) {
-        final ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler = new ConsoleHandler();
         consoleHandler.setLevel(Level.INFO);
         consoleHandler.setFormatter(FORMATTER);
         root.addHandler(consoleHandler);
@@ -96,8 +98,7 @@ public final class SweLoggerFactory {
             activeLogFile = logFile;
             root.addHandler(fileHandler);
         } catch (IOException ioException) {
-            System.err.println("Failed to set up file logging: " + ioException.getMessage());
-            ioException.printStackTrace(System.err);
+            BOOTSTRAP_LOGGER.log(Level.SEVERE, "Failed to set up file logging", ioException);
         }
     }
 
@@ -121,6 +122,21 @@ public final class SweLoggerFactory {
         final Logger root = Logger.getLogger(ROOT_NAMESPACE);
         for (Handler handler : root.getHandlers()) {
             handler.flush();
+        }
+    }
+
+    /**
+     * Adjusts the console handler log level at runtime.
+     * <p>
+     * All {@link SweLogger} instances delegate to the {@code com.swe.core} logger hierarchy
+     * and therefore share the same console handler. Updating the level here affects console
+     * output for every module (controller, networking, AI insights, etc.).
+     *
+     * @param level desired {@link Level}; ignored when {@code null}
+     */
+    public static void setConsoleLevel(final Level level) {
+        if (consoleHandler != null && level != null) {
+            consoleHandler.setLevel(level);
         }
     }
 }

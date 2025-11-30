@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Class for serializing network objects.
@@ -25,6 +27,8 @@ public class NetworkSerializer {
     /**
      * variable to store the singleton classobject.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static NetworkSerializer serializer = null;
 
     /**
@@ -41,11 +45,11 @@ public class NetworkSerializer {
      */
     public static NetworkSerializer getNetworkSerializer() {
         if (serializer == null) {
-            System.out.println("Creating new Network Serializer object...");
+            LOG.info("Creating new Network Serializer object...");
             serializer = new NetworkSerializer();
             return serializer;
         }
-        System.out.println("Passing already instantiated Network Serializer object...");
+        LOG.info("Passing already instantiated Network Serializer object...");
         return serializer;
     }
 

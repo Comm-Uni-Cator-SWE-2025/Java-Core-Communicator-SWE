@@ -1,8 +1,11 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.PatchGenerator;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -16,6 +19,11 @@ import java.nio.ByteBuffer;
  * @param data Compressed tile data as a string.
  */
 public record CompressedPatch(int x, int y, int width, int height, byte[] data)  {
+
+    /**
+     * Logger screen-video.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
 
     /**
      * Serializes this packet to be sent via network.
@@ -45,7 +53,8 @@ public record CompressedPatch(int x, int y, int width, int height, byte[] data) 
      */
     public static CompressedPatch deserializeCPacket(final byte[] packet) {
         final ByteBuffer buffer = ByteBuffer.wrap(packet);
-        return deserializeCPacket(buffer, packet.length);
+        final int patchLength = buffer.getInt();
+        return deserializeCPacket(buffer, patchLength);
     }
 
     /**
@@ -68,7 +77,8 @@ public record CompressedPatch(int x, int y, int width, int height, byte[] data) 
         try {
             packetBuffer.get(data, 0, dataLength);
         } catch (final Exception e) {
-            System.err.println("Buffer Overflow : Required " + dataLength + " Got : " + packetBuffer.remaining());
+            LOG.error("Buffer overflow: required " + dataLength + " bytes but only "
+                + packetBuffer.remaining() + " available", e);
             return null;
         }
         return new CompressedPatch(

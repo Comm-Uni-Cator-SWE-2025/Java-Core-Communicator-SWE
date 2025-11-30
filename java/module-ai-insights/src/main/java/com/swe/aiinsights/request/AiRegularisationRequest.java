@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiRegularisationRequest.java
+ *  Owner:Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Stores the AI request, for regularisation.
  * prompt, and the input data of points are stored.
@@ -7,6 +16,9 @@
 
 package com.swe.aiinsights.request;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +27,11 @@ import java.util.Map;
  * Stores the metadata of the request to be made to the AI.
  */
 public class AiRegularisationRequest implements AiRequestable {
+    /**
+     * Get the log file path.
+     */
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * metadata would store prompt, and other
      * details of the request like the content.
@@ -46,7 +63,7 @@ public class AiRegularisationRequest implements AiRequestable {
          Your tasks:
         1. Use ONLY the provided points.
         2. Identify the geometric shape that best matches those points.
-           Allowed values (case-sensitive): Ellipse, Square, Triangle, Rectangle, StraightLine.
+           Allowed values (case-sensitive): ELLIPSE, TRIANGLE, RECTANGLE, STRAIGHTLINE.
         3. Compute the axis-aligned bounding box of that shape.
         4. Output EXACTLY TWO points:
            - First: the top-left coordinate
@@ -62,10 +79,10 @@ public class AiRegularisationRequest implements AiRequestable {
        \s
         {
           "ShapeId": "<ShapeId>",
-          "type": "<OneOf: Ellipse | Square | Triangle | Rectangle | StraightLine>",
+          "type": "<OneOf: ELLIPSE | TRIANGLE | RECTANGLE | STRAIGHTLINE>",
           "Points": [
-            { "x": <number>, "y": <number> },
-            { "x": <number>, "y": <number> }
+            { "X": <number>, "Y": <number> },
+            { "X": <number>, "Y": <number> }
           ],
           "Color": "<Color>",
           "Thickness": "<Thickness>",
@@ -95,23 +112,23 @@ public class AiRegularisationRequest implements AiRequestable {
         type = "REG";
     }
 
-    /**
-     * Constructs an AIRegularisationRequest and
-     * initializes the metadata with a default prompt.
-     * the default prompt corresponds to asking for
-     * a regularising to the nearest shape.
-     * @param points to store the string
-     *               containing points of the curve for regularisation
-     * @param prompt to get the prompt if any
-     */
-    public AiRegularisationRequest(final String points, final String prompt) {
-        // constructor, initialised the metadata,
-        // adding the prompt.
-        metaData = new HashMap<>();
-        metaData.put("InputData", points);
-        metaData.put("RequestPrompt", prompt);
-        type = "REG";
-    }
+//    /**
+//     * Constructs an AIRegularisationRequest and
+//     * initializes the metadata with a default prompt.
+//     * the default prompt corresponds to asking for
+//     * a regularising to the nearest shape.
+//     * @param points to store the string
+//     *               containing points of the curve for regularisation
+//     * @param prompt to get the prompt if any
+//     */
+//    public AiRegularisationRequest(final String points, final String prompt) {
+//        // constructor, initialised the metadata,
+//        // adding the prompt.
+//        metaData = new HashMap<>();
+//        metaData.put("InputData", points);
+//        metaData.put("RequestPrompt", prompt);
+//        type = "REG";
+//    }
 
     /**
      * {@inheritDoc}
@@ -119,6 +136,7 @@ public class AiRegularisationRequest implements AiRequestable {
     @Override
     public String getContext() {
         // this function, returns the prompt.
+        LOG.info("Fetching regularisation prompt");
         return metaData.get("RequestPrompt");
     }
 
@@ -128,6 +146,7 @@ public class AiRegularisationRequest implements AiRequestable {
     @Override
     public String getInput() {
         // this function returns the input.
+        LOG.info("Fetching input json string containing points.");
         return metaData.get("InputData");
     }
 
@@ -138,6 +157,7 @@ public class AiRegularisationRequest implements AiRequestable {
     public String getReqType() {
         // this returns "REG" as this holds
         // the regularization request
+        LOG.info("Fetching Request type -- regularisation");
         return type;
     }
 }

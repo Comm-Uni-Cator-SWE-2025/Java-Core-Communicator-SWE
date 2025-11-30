@@ -1,10 +1,14 @@
 /**
- * Contributed by @Sandeep-Kumar
+ * Contributed by @Sandeep-Kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.ScreenNVideo.CaptureComponents;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 import com.swe.ScreenNVideo.Utils;
 
 import java.awt.AWTException;
@@ -14,6 +18,16 @@ import java.awt.AWTException;
  * Manages background screen and video capture on a dedicated daemon thread.
  */
 public final class BackgroundCaptureManager {
+
+    /**
+     * Logger for background capture manager.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+
+    /**
+     * Thread Sleep Time.
+     */
+    private static final int THREAD_SLEEP_TIME = 500;
 
     /**
      * The dedicated background thread for performing captures.
@@ -53,7 +67,7 @@ public final class BackgroundCaptureManager {
         captureThread = new Thread(this::captureLoop, "Background-Capture-Thread");
         captureThread.setDaemon(true); // Ensure thread doesn't block JVM shutdown
         captureThread.start();
-        System.out.println("Background Capture Thread started.");
+        LOG.info("Background Capture Thread started.");
     }
 
     public void reInitVideo() {
@@ -72,6 +86,7 @@ public final class BackgroundCaptureManager {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 if (!capCom.isScreenCaptureOn() && !capCom.isVideoCaptureOn()) {
+                    Telemetry.getTelemetry().closeModel();
                     videoCapture.stop();
                     screenCapture.stop();
                     Thread.sleep(Utils.SEC_IN_MS);
@@ -81,16 +96,18 @@ public final class BackgroundCaptureManager {
                 if (capCom.isScreenCaptureOn()) {
                     try {
                         // Overwrite the volatile variable with the latest frame
-//                        System.out.println("Capturing..");
+//                        LOG.info("Capturing..");
                         capCom.setLatestScreenFrame(screenCapture.capture());
-//                        System.out.println("Done Capturedd..");
+//                        LOG.info("Done Captured..");
                     } catch (AWTException e) {
-                        System.err.println("Failed to capture screen: " + e.getMessage());
-                        Thread.sleep(500);
+                        LOG.error("Failed to capture screen: " + e.getMessage());
+                        Thread.sleep(THREAD_SLEEP_TIME);
                         screenCapture = new ScreenCapture();
                         capCom.setLatestScreenFrame(null); // Clear frame on error
                     }
                 } else {
+                    // close the model if available
+                    Telemetry.getTelemetry().closeModel();
                     screenCapture.stop();
                     capCom.setLatestScreenFrame(null);
                 }
@@ -100,16 +117,18 @@ public final class BackgroundCaptureManager {
                         // Overwrite the volatile variable with the latest frame
                         capCom.setLatestVideoFrame(videoCapture.capture());
                     } catch (AWTException e) {
-                        System.err.println("Failed to capture video: " + e.getMessage());
+                        LOG.error("Failed to capture video: " + e.getMessage());
                         capCom.setLatestVideoFrame(null); // Clear frame on error
                     }
                 } else {
+                    // close the model if available
+                    Telemetry.getTelemetry().closeModel();  
                     videoCapture.stop();
                     capCom.setLatestVideoFrame(null);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // Preserve interrupt flag
-                System.out.println("Background capture thread interrupted. Stopping capture loop.");
+                LOG.info("Background capture thread interrupted. Stopping capture loop.");
                 break;
             }
 

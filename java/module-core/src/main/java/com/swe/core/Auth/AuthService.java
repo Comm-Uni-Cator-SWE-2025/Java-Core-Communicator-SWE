@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Pushti Vasoya.
+ */
+
 package com.swe.core.Auth;
 
 import com.google.api.client.auth.oauth2.Credential;

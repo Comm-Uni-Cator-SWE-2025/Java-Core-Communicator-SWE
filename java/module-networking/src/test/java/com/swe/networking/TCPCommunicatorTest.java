@@ -1,17 +1,15 @@
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
-import org.mockito.Mockito;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.SelectionKey;
 
 import static org.junit.Assert.assertEquals;
+
+import com.swe.core.ClientNode;
 
 /**
  * Test class to test TCPCommunicator class.

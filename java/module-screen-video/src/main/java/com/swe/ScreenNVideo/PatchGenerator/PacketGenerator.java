@@ -1,5 +1,5 @@
 /**
- * Contributed by @aman112201041
+ * Contributed by @aman112201041.
  */
 
 package com.swe.ScreenNVideo.PatchGenerator;
@@ -19,7 +19,7 @@ import java.util.List;
 public class PacketGenerator {
 
     /** Default size of each tile in pixels. */
-    private static final int TILE_SIZE = 64;
+    private static final int TILE_SIZE = 32;
 
     /** Compressor used to encode image patches. */
     private final Codec compressor;

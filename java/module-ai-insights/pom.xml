@@ -49,6 +49,23 @@
             <artifactId>google-genai</artifactId>
             <version>1.0.0</version>
         </dependency>
+<!--        <dependencies>-->
+            <!-- SLF4J API -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>2.0.9</version>
+            </dependency>
+
+            <!-- Logback Classic (includes logback-core) -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.4.11</version>
+            </dependency>
+<!--        </dependencies>-->
+
+
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
@@ -69,7 +86,18 @@
             <artifactId>dotenv-java</artifactId>
             <version>3.0.0</version>
         </dependency>
-<!--        <dependency>-->
+        <dependency>
+            <groupId>com.swe</groupId>
+            <artifactId>module-cloud</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.swe</groupId>
+            <artifactId>module-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--        <dependency>-->
 <!--            <groupId>com.swe</groupId>-->
 <!--            <artifactId>module-cloud</artifactId>-->
 <!--            <version>1.0-SNAPSHOT</version>-->

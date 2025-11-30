@@ -1,10 +1,9 @@
 /**
- * Contributed by @chirag9528
+ * Contributed by @chirag9528.
  */
 
 package com.swe.ScreenNVideo;
 
-import com.google.gson.stream.JsonToken;
 import com.swe.ScreenNVideo.Capture.BackgroundCaptureManager;
 import com.swe.ScreenNVideo.Codec.ADPCMEncoder;
 import com.swe.ScreenNVideo.Codec.Codec;
@@ -17,19 +16,29 @@ import com.swe.ScreenNVideo.Model.CPackets;
 import com.swe.ScreenNVideo.Model.Feed;
 import com.swe.ScreenNVideo.Model.FeedPatch;
 import com.swe.ScreenNVideo.Model.RImage;
-import com.swe.core.ClientNode;
 import com.swe.core.Context;
-import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Class containing Components to capture and process video.
  */
 public class VideoComponents {
+
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+
+    /**
+     * Max runs without diff.
+     */
+    private static final int MAX_RUNS_WITHOUT_DIFF = 500;
+
     /**
      * Video codec object.
      */
@@ -84,10 +93,11 @@ public class VideoComponents {
         return feed;
     }
 
+    /** Counts consecutive runs without detecting diff changes. */
     private int runCount = 0;
 
     /**
-     * Class conatining Components to capture feed.
+     * Class containing Components to capture feed.
      */
     private final CaptureComponents captureComponents;
 
@@ -97,7 +107,7 @@ public class VideoComponents {
     private final BackgroundCaptureManager bgCapManager;
 
     /**
-     *
+     * Port Number.
      */
     private final int port;
 
@@ -109,10 +119,9 @@ public class VideoComponents {
         return captureComponents.isScreenCaptureOn();
     }
 
-
     VideoComponents(final int fps, final int portArgs, final CaptureComponents captureComponentsArgs,
                     final BackgroundCaptureManager bgCapManagerArgs) {
-        this.rpc = Context.getInstance().rpc;
+        this.rpc = Context.getInstance().getRpc();
         this.port = portArgs;
         this.captureComponents = captureComponentsArgs;
         this.bgCapManager = bgCapManagerArgs;
@@ -143,7 +152,7 @@ public class VideoComponents {
         final CPackets compressedNetworkPackets =
             new CPackets(videoFeedNumber, localIp, true, true, feed.length, feed[0].length,
                 patches.compressedPatches());
-        System.out.println("Feed number : " + compressedNetworkPackets.packetNumber());
+        LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
         final CPackets unCompressedNetworkPackets =
@@ -163,24 +172,24 @@ public class VideoComponents {
                 try {
 
 
-                    final RImage rImage = new RImage(frame, localIp);
+                    final RImage rImage = new RImage(frame, localIp, 0);
                     final byte[] serializedImage = rImage.serialize();
 
                     if (serializedImage == null) {
                         continue;
                     }
-//                    System.out.println("Time from previous send: " + (System.nanoTime() - prev)
+//                    LOG.info("Time from previous send: " + (System.nanoTime() - prev)
 //                        / ((double) Utils.MSEC_IN_NS));
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage);
                     } catch (final Exception e) {
-                        e.printStackTrace();
+                        LOG.error("Video component failure", e);
                     }
-//                        System.out.println("UI RPC Time : "
+//                        LOG.info("UI RPC Time : "
 //                            + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
 //                        prev = System.nanoTime();
                 } catch (final Exception e) {
-                    e.printStackTrace();
+                    LOG.error("Video component failure", e);
                 }
             } catch (final InterruptedException ie) {
                 Thread.currentThread().interrupt();
@@ -216,20 +225,22 @@ public class VideoComponents {
         final boolean offered = uiQueue.offer(frame);
         if (!offered) {
             // drop the frame
-            System.err.println("UI queue full — dropping frame");
+            LOG.error("UI queue full — dropping frame");
         }
     }
 
     /**
      * Captures the Audio, encode it and return back the bytes.
+     * @return encoded audio packet, or null if audio is unavailable
      */
     protected byte[] captureAudio() {
         final byte[] audioFeed = captureComponents.getAudioFeed();
         if (audioFeed == null) {
             return null;
         }
-        final byte[] feed = audioEncoder.encode(audioFeed);
-        final APackets audioPacket = new APackets(audioFeedNumber, feed, localIp, audioEncoder.getPredictor(), audioEncoder.getIndex());
+        final byte[] encodedfeed = audioEncoder.encode(audioFeed);
+        final APackets audioPacket = new APackets(audioFeedNumber, encodedfeed, localIp,
+                audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
         byte[] encodedPacket = null;
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
@@ -239,7 +250,7 @@ public class VideoComponents {
                 encodedPacket = audioPacket.serializeAPackets();
                 break;
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Video component failure", e);
             }
         }
 
@@ -257,7 +268,7 @@ public class VideoComponents {
         if (diff < timeDelay) {
             return null;
         }
-//            System.out.println("Time Delay " + ((currTime - prev)
+//            LOG.info("Time Delay " + ((currTime - prev)
 //                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
         start = System.nanoTime();
 
@@ -274,15 +285,15 @@ public class VideoComponents {
 //        submitUIUpdate(newFeed);
 
 //        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
-        System.out.println("Server FPS : "
+        LOG.info("Server FPS : "
             + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
-//        System.out.println("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+//        LOG.info("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
 
-        long curr1 = System.nanoTime();
-        videoCodec.quantTime = 0;
-        videoCodec.dctTime = 0;
-        videoCodec.zigZagtime = 0;
+        final long curr1 = System.nanoTime();
+        videoCodec.setQuantTime(0);
+        videoCodec.setDctTime(0);
+        videoCodec.setZigZagTime(0);
 
         final FeedPatch patches = patchGenerator.generatePackets(newFeed);
         runCount++;
@@ -294,7 +305,7 @@ public class VideoComponents {
         final CPackets compressedNetworkPackets =
             new CPackets(videoFeedNumber, localIp, false, true, feed.length, feed[0].length,
                 patches.compressedPatches());
-        System.out.println("Feed number : " + compressedNetworkPackets.packetNumber());
+        LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
         final CPackets unCompressedNetworkPackets =
@@ -304,8 +315,8 @@ public class VideoComponents {
 
         if (compressedEncodedPatches == null && unCompressedEncodedPatches == null) {
             // both are null
-            if (runCount > 500) {
-                System.err.println("Reinit the Video and Screen");
+            if (runCount > MAX_RUNS_WITHOUT_DIFF) {
+                LOG.error("Reinit the Video and Screen");
                 if (captureComponents.isVideoCaptureOn()) {
                     bgCapManager.reInitVideo();
                 }
@@ -339,7 +350,7 @@ public class VideoComponents {
     private byte[] serializeFeed(final CPackets networkPackets) {
         byte[] encodedPatches = null;
         if (networkPackets.packets().isEmpty()) {
-//            System.out.println("Empty");
+//            LOG.info("Empty");
             return null;
         }
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
@@ -349,12 +360,12 @@ public class VideoComponents {
                 encodedPatches = networkPackets.serializeCPackets();
                 break;
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Video component failure", e);
             }
         }
 
         if (tries < 0 || encodedPatches == null) {
-            System.err.println("Error: Unable to serialize compressed packets");
+            LOG.error("Error: Unable to serialize compressed packets");
             prev = System.nanoTime();
             return null;
         }

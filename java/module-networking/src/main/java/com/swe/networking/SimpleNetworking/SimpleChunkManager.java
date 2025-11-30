@@ -10,6 +10,9 @@
 
 package com.swe.networking.SimpleNetworking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +30,8 @@ public class SimpleChunkManager {
     /**
      * Variable to store the name of the module.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[SIMPLECHUNKMANAGER]";
     /**
      * Singleton chunkManger.
@@ -50,7 +55,7 @@ public class SimpleChunkManager {
     private int messageId = 0;
 
     private SimpleChunkManager(final int payloadSize) {
-        SimpleNetworkLogger.printInfo(MODULENAME, "Simple Chunk manager initialized...");
+        LOG.info("Simple Chunk manager initialized...");
         defaultPayloadSize = payloadSize;
     }
 
@@ -65,7 +70,7 @@ public class SimpleChunkManager {
             chunkManager = new SimpleChunkManager(payloadSize);
             return chunkManager;
         }
-        SimpleNetworkLogger.printInfo(MODULENAME, "Passing already initialized Simple Chunk Manager...");
+        LOG.info("Passing already initialized Simple Chunk Manager...");
         return chunkManager;
     }
 
@@ -100,8 +105,8 @@ public class SimpleChunkManager {
         final int msgId = info.getMessageId();
         final int maxNumChunks = info.getChunkLength();
         final int chunkNum = info.getChunkNum();
-        System.out.println("Message ID: " + msgId);
-        System.out.println("Chunk num / Max chunks: " + chunkNum + " / " + maxNumChunks);
+        LOG.info("Message ID: " + msgId);
+        LOG.info("Chunk num / Max chunks: " + chunkNum + " / " + maxNumChunks);
         if (chunkListMap.containsKey(msgId)) {
             chunkListMap.get(msgId).add(chunk);
         } else {
@@ -110,7 +115,7 @@ public class SimpleChunkManager {
         }
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            System.out.println("Merged Message ID: " + msgId + " Size: " + messageChunk.length);
+            LOG.info("Merged Message ID: " + msgId + " Size: " + messageChunk.length);
             messageList.add(messageChunk);
             chunkListMap.remove(msgId);
             return messageChunk;

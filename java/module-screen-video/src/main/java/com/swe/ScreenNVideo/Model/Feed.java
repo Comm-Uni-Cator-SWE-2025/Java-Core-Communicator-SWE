@@ -1,8 +1,13 @@
 /**
- * Contributed by @alonot
+ * Contributed by @alonot.
  */
 
 package com.swe.ScreenNVideo.Model;
 
-public record Feed (byte[] compressedFeed, byte[] unCompressedFeed) {
+/**
+ * Feed model for the ScreenNVideo module.
+ * @param compressedFeed The compressed feed.
+ * @param unCompressedFeed The uncompressed feed.
+ */
+public record Feed(byte[] compressedFeed, byte[] unCompressedFeed) {
 }

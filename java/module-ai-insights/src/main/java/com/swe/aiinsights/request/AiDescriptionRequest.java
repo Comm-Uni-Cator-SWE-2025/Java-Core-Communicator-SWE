@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiDescriptionRequest.java
+ *  Owner: Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Request model for Image interpretation.
  *
@@ -8,7 +17,13 @@
 
 package com.swe.aiinsights.request;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import com.swe.aiinsights.data.WhiteBoardData;
+import com.swe.aiinsights.logging.CommonLogger;
+import org.slf4j.Logger;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +33,11 @@ import java.util.Map;
  * Stores the metadata of the request to be made to the AI.
  */
 public class AiDescriptionRequest implements AiRequestable {
+    /**
+     * Get the log file path.
+     */
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * metadata would store prompt.
      * Also, other details of the request like the content.
@@ -39,6 +59,7 @@ public class AiDescriptionRequest implements AiRequestable {
             final WhiteBoardData inputData) throws IOException {
         // constructor, initialised the metadata,
         // adding the prompt(default prompt for interpretation)
+        LOG.info("Creating Description Request..");
         metaData = new HashMap<>();
         metaData.put("InputData", inputData.getContent());
         metaData.put("RequestPrompt", "Describe this image in detail");
@@ -56,6 +77,7 @@ public class AiDescriptionRequest implements AiRequestable {
                                 final String prompt) throws IOException {
         // constructor, initialised the metadata,
         // adding the prompt (if given by the user).
+        LOG.info("Creating Description Request..");
         metaData = new HashMap<>();
         metaData.put("InputData", inputData.getContent());
         metaData.put("RequestPrompt", prompt);
@@ -68,6 +90,7 @@ public class AiDescriptionRequest implements AiRequestable {
     @Override
     public String getContext() {
         // this function, returns the prompt.
+        LOG.info("Fetching description request prompt..");
         return metaData.get("RequestPrompt");
     }
 
@@ -77,6 +100,7 @@ public class AiDescriptionRequest implements AiRequestable {
     @Override
     public String getInput() {
         // this function returns the input.
+        LOG.info("Fetching description request input data..");
         return metaData.get("InputData");
     }
 
@@ -85,6 +109,7 @@ public class AiDescriptionRequest implements AiRequestable {
      */
     @Override
     public String getReqType() {
+        LOG.info("Fetching description request type..");
         // returns "DESC" as this holds the description request
         return type;
     }

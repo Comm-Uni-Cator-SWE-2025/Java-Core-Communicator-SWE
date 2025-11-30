@@ -1,3 +1,12 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: RegulariserParser.java
+ *  Owner: Abhirami R Iyer
+ *  Roll Number : 112201001
+ *  Module : com.swe.aiinsights.parser
+ * -----------------------------------------------------------------------------
+ */
+
 /**
  * Parses, validates, and post-processes AI-generated regularisation output.
  *
@@ -7,21 +16,33 @@
  * It ensures fallback behaviour when the AI response is incomplete or invalid.
  * </p>
  *
+ * <p>
+ * References:
+ *     1. Internal Regularisation Specification (AI → Canvas)
+ *     2. JSON Validation/Recovery Patterns — Jackson Databind
+ * </p>
  * @author Abhirami R Iyer
  */
 
 package com.swe.aiinsights.parser;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 /**
  * This parser cleans AI output, validates JSON structure.
  */
 public class RegulariserParser {
+    /**
+     * Get the log file path.
+     */
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
 
     /**
      * Cleans and validates the AI response.
@@ -37,9 +58,9 @@ public class RegulariserParser {
     public String parseInput(final String inputJsonString, final String aiResponse)
             throws JsonProcessingException {
 
+        LOG.info("Starting regularisation output parsing");
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode input = mapper.readTree(inputJsonString);
-
         final String shapeId = input.get("ShapeId").asText();
         final String color = input.get("Color").asText();
         final int thickness = input.get("Thickness").asInt();
@@ -51,13 +72,15 @@ public class RegulariserParser {
 
         final JsonNode aiNode = parseJsonSafely(mapper, cleanedAI);
         if (aiNode == null || !aiNode.has("Points")) {
+            LOG.info("Inconsistent AI response for regularisation");
             return inputJsonString;
         }
 
         final String newType = extractType(aiNode, input);
 
         final ArrayNode aiPoints = (ArrayNode) aiNode.get("Points");
-        if (aiPoints == null || aiPoints.isEmpty()) {
+        if (aiPoints == null || aiPoints.isEmpty() || aiPoints.size() <= 1) {
+            LOG.info("Response output has no points in the points field -- inconsistent AI output");
             return inputJsonString;
         }
 
@@ -112,12 +135,15 @@ public class RegulariserParser {
         try {
             final JsonNode aiNode = mapper.readTree(cleanedAI);
             if (aiNode.isObject()) {
+                LOG.info("Parsing the jsonNode for regularisation request");
                 return aiNode;
             } else {
+                LOG.info("Response not in json format for regularisation request");
                 return null;
             }
 
         } catch (Exception ex) {
+            LOG.error("Error in parsing AI output", ex);
             return null;
         }
     }
@@ -150,15 +176,12 @@ public class RegulariserParser {
         final ArrayNode finalPoints = mapper.createArrayNode();
 
         if (aiPoints.size() >= 2) {
+            LOG.info("Regularisation points output size >= 2");
             finalPoints.add(aiPoints.get(0));
             finalPoints.add(aiPoints.get(1));
-        } else {
-            finalPoints.add(aiPoints.get(0));
-            finalPoints.add(aiPoints.get(0));
         }
 
         return finalPoints;
     }
-
 
 }

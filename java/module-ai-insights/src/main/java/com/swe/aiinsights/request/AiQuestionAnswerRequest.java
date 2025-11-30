@@ -1,4 +1,20 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: AiQuestionAnswerRequest.java
+ *  Owner: Berelli Gouthami
+ *  Roll Number : 112201003
+ *  Module : com.swe.aiinsights.request
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * Author Berelli Gouthami.
+ */
+
 package com.swe.aiinsights.request;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +24,11 @@ import java.util.Map;
  * Contains both the user's question and the accumulated summary.
  */
 public class AiQuestionAnswerRequest implements AiRequestable<String> {
-
+    /**
+     * Get the log file path.
+     */
+    private static final SweLogger LOG =
+            SweLoggerFactory.getLogger("AI-INSIGHTS");
     /**
      * Stores metadata including question, summary and prompt.
      */
@@ -28,6 +48,8 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
     public AiQuestionAnswerRequest(
             final String question,
             final String accumulatedSummary) {
+
+        LOG.info("Creating Q&A request");
 
         this.metaData = new HashMap<>();
         this.metaData.put("Question", question);
@@ -58,6 +80,8 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
 
         this.metaData.put("RequestPrompt", prompt);
         this.type = "QNA";
+
+        LOG.info("Q&A request initialised successfully");
     }
 
     /**
@@ -67,6 +91,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getContext() {
+        LOG.info("Fetching Q&A prompt");
         return metaData.get("RequestPrompt");
     }
 
@@ -77,6 +102,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getInput() {
+        LOG.info("Fetching Q&A input question");
         return metaData.get("Question");
     }
 
@@ -87,6 +113,7 @@ public class AiQuestionAnswerRequest implements AiRequestable<String> {
      */
     @Override
     public String getReqType() {
+        LOG.info("Returning request type: QNA");
         return type;
     }
 }

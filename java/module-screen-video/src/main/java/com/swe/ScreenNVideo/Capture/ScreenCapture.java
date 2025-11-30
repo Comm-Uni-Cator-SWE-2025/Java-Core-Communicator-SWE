@@ -1,8 +1,13 @@
 /**
- * Contributed by @sandeep-kumar
+ * Contributed by @sandeep-kumar.
  */
 
 package com.swe.ScreenNVideo.Capture;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 
 import java.awt.AWTException;
 import java.awt.Dimension;
@@ -29,14 +34,16 @@ import java.util.concurrent.TimeoutException;
 public class ScreenCapture extends ICapture {
 
     /** The {@link Robot} used to capture the screen image. */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /** robot instance to capture screen. */
     private Robot robot;
 
     /** Cached screen rectangle to avoid repeated Toolkit calls. */
     private Rectangle screenRect;
 
     /** Executor for timeout protection. */
-    private static final ExecutorService timeoutExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "ScreenCapture-Timeout-Thread");
+    private static final ExecutorService TIMEOUT_EXECUTOR = Executors.newCachedThreadPool(r -> {
+        final Thread t = new Thread(r, "ScreenCapture-Timeout-Thread");
         t.setDaemon(true);
         return t;
     });
@@ -45,7 +52,6 @@ public class ScreenCapture extends ICapture {
     private static final int CAPTURE_TIMEOUT_SECONDS = 5;
 
     public ScreenCapture() {
-        reInit();
     }
 
     /**
@@ -56,7 +62,7 @@ public class ScreenCapture extends ICapture {
      */
     @Override
     public BufferedImage capture() throws AWTException {
-
+        Telemetry.getTelemetry().setWithScreen(true);
         if (robot == null) {
             reInit();
         }
@@ -75,13 +81,13 @@ public class ScreenCapture extends ICapture {
      * @return The result of the task
      * @throws AWTException if the operation times out, is interrupted, or fails
      */
-    private <T> T executeWithTimeout(Callable<T> task) throws AWTException {
+    private <T> T executeWithTimeout(final Callable<T> task) throws AWTException {
         try {
-            Future<T> future = timeoutExecutor.submit(task);
+            final Future<T> future = TIMEOUT_EXECUTOR.submit(task);
             return future.get(CAPTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
-            String message = "Screen capture" + " timed out after " + CAPTURE_TIMEOUT_SECONDS + " seconds";
-            System.err.println(message);
+            final String message = "Screen capture" + " timed out after " + CAPTURE_TIMEOUT_SECONDS + " seconds";
+            LOG.error(message);
             reInit();
             throw new AWTException(message);
         } catch (InterruptedException e) {
@@ -95,11 +101,11 @@ public class ScreenCapture extends ICapture {
     @Override
     public void reInit() {
         try {
-            GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+            final GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
             robot = new Robot(screens[0]);
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             screenRect = new Rectangle(screenSize);
-            System.out.println("Reinitialized");
+            LOG.info("Reinitialized");
         } catch (AWTException e) {
             throw new RuntimeException(e);
         }
