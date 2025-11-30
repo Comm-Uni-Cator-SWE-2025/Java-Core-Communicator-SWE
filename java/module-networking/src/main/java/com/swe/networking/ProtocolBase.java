@@ -51,7 +51,7 @@ public interface ProtocolBase {
      *
      * @return the received data
      */
-    byte[] receiveData();
+    ReceivePacket receiveData();
 
     /**
      * Function to handle socket closing at termination.

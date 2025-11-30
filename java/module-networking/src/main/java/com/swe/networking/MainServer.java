@@ -147,7 +147,7 @@ public class MainServer implements P2PUser {
     @Override
     public void receive() {
         while (true) {
-            final byte[] packet = communicator.receiveData();
+            final ReceivePacket packet = communicator.receiveData();
             if (packet != null) {
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {

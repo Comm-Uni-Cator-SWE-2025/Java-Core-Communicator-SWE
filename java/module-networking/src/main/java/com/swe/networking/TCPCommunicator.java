@@ -95,7 +95,7 @@ public final class TCPCommunicator implements ProtocolBase {
     }
 
     @Override
-    public byte[] receiveData() {
+    public ReceivePacket receiveData() {
         try {
             final int timeout = 1000;
             selector.select(timeout);
@@ -110,7 +110,11 @@ public final class TCPCommunicator implements ProtocolBase {
                     acceptConnection(key);
                 } else if (key.isReadable()) {
                     final byte[] data = readData(key);
-                    return data;
+                    final String clientIp = ((SocketChannel) key.channel()).getRemoteAddress().toString();
+                    final int clientPort = ((InetSocketAddress) ((SocketChannel) key.channel())
+                            .getRemoteAddress()).getPort();
+                    final ClientNode client = new ClientNode(clientIp, clientPort);
+                    return new ReceivePacket(client, data);
                 }
             }
             return null;

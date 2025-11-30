@@ -153,7 +153,7 @@ public class P2PClient implements P2PUser {
     public void receive() {
         while (running) {
             try {
-                final byte[] packet = communicator.receiveData();
+                final ReceivePacket packet = communicator.receiveData();
                 if (packet == null) {
                     continue;
                 }

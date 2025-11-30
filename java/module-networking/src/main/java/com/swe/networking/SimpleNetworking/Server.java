@@ -23,6 +23,7 @@ import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
 import com.swe.networking.ProtocolBase;
+import com.swe.networking.ReceivePacket;
 import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
@@ -113,7 +114,7 @@ public class Server implements IUser {
     @Override
     public void receive() throws IOException {
         while (true) {
-            final byte[] packet = communicator.receiveData();
+            final ReceivePacket packet = communicator.receiveData();
             if (packet != null) {
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {

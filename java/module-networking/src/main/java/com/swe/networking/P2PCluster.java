@@ -163,11 +163,12 @@ public class P2PCluster implements P2PUser {
     @Override
     public void receive() {
         while (true) {
-            final byte[] packet = tcpCommunicator.receiveData();
-            if (packet == null) {
+            final ReceivePacket receivePacket = tcpCommunicator.receiveData();
+            if (receivePacket == null) {
                 continue;
             } else {
                 try {
+                    final byte[] packet = receivePacket.data();
                     final PacketInfo packetInfo = packetParser.parsePacket(packet);
                     final NetworkStructure networkStructure = NetworkSerializer.getNetworkSerializer()
                             .deserializeNetworkStructure(packetInfo.getPayload());
