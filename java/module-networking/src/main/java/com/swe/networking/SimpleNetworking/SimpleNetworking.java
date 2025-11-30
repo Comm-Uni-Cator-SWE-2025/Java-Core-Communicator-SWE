@@ -7,10 +7,8 @@
  *
  * -----------------------------------------------------------------------------
  */
-package com.swe.networking.SimpleNetworking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
+package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,6 +18,8 @@ import java.util.Vector;
 
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 import com.swe.networking.ModuleType;
 import com.swe.networking.NetworkConnectionType;
 import com.swe.networking.PacketInfo;
@@ -36,6 +36,9 @@ public final class SimpleNetworking
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SIMPLENETWORKING]";
     /**
      * The singeton variable to store the class object.
@@ -250,8 +253,9 @@ public final class SimpleNetworking
 
     /**
      * Function to reset the networking module.
-     * */
-    public void resetSimpleNetworking(){
+     *
+     */
+    public void resetSimpleNetworking() {
         simpleNetwork = null;
     }
 }

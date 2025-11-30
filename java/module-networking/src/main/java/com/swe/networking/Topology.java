@@ -29,6 +29,9 @@ public final class Topology implements AbstractTopology {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[TOPOLOGY]";
 
     /**

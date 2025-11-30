@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.io.IOException;
@@ -35,6 +36,9 @@ public final class TCPCommunicator implements ProtocolBase {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[TCPCOMMUNICATOR]";
     /**
      * The server socket used to receive client connections.

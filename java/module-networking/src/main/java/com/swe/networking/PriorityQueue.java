@@ -7,15 +7,18 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.net.UnknownHostException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
@@ -31,6 +34,9 @@ public class PriorityQueue {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[PRIORITY QUEUE]";
     /**
      * The static class object for the priority queue.
@@ -55,15 +61,15 @@ public class PriorityQueue {
     /**
      * Queue for video packet (highest priority).
      */
-    private final Deque<byte[]> highestPriorityQueue = new ArrayDeque<>();
+    private final Deque<byte[]> highestPriorityQueue = new ConcurrentLinkedDeque<>();
     /**
      * Queue for screen share packet (mid-priority).
      */
-    private final Deque<byte[]> midPriorityQueue = new ArrayDeque<>();
+    private final Deque<byte[]> midPriorityQueue = new ConcurrentLinkedDeque<>();
     /**
      * Multilevel Feedback Queue (MLFQ) for other packets (low priority).
      */
-    private final List<Deque<byte[]>> mlfq = new ArrayList<>();
+    private final List<Deque<byte[]>> mlfq = Collections.synchronizedList(new ArrayList<>());
     /**
      * Current bandwidth tokens.
      */

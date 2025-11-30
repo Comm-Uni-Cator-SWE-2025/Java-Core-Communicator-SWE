@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking.SimpleNetworking;
 
 import java.util.logging.Level;

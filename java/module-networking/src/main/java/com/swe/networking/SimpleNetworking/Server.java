@@ -10,9 +10,6 @@
 
 package com.swe.networking.SimpleNetworking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -20,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
@@ -37,7 +36,9 @@ public class Server implements IUser {
      * Variable to store the name of the module.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SERVER]";
     /**
      * The variable to store the device IP address.

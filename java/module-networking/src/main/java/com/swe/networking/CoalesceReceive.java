@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.nio.ByteBuffer;

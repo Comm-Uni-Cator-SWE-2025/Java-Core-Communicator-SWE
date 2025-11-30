@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.net.InetAddress;
@@ -28,7 +29,9 @@ public class P2PClient implements P2PUser {
      * base Commumicator class to send , recieve and close.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The singleton variable to store the class object.
+     */
     private final ProtocolBase communicator;
     /**
      * get parser to decode packet.
@@ -136,7 +139,7 @@ public class P2PClient implements P2PUser {
     /**
      * Helper method to send data to a single destination node.
      *
-     * @param data     The raw byte data to send.
+     * @param data The raw byte data to send.
      * @param destNode The intended final destination node.
      */
     private void sendToSingleNode(final byte[] data, final ClientNode destNode) {
@@ -158,8 +161,7 @@ public class P2PClient implements P2PUser {
                 for (byte[] p : packets) {
                     packetHandler.packetRedirection(p);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 System.err.println("p2pclient received exception while processing packet");
             }
         }
@@ -201,24 +203,39 @@ public class P2PClient implements P2PUser {
     }
 
     /**
-     * Dedicated handler for parsing and redirecting incoming packets.
-     * This handles complex application logic.
+     * Dedicated handler for parsing and redirecting incoming packets. This
+     * handles complex application logic.
      */
     private static class PacketHandler {
 
+        /**
+         * Packet parser to parse the packet.
+         */
         private final PacketParser parser;
+        /**
+         * Topology to get the network structure.
+         */
         private final Topology topology;
+        /**
+         * Serializer to serialize and deserialize network records.
+         */
         private final NetworkSerializer serializer;
+        /**
+         * Chunk manager to manage the chunks of data.
+         */
         private final ChunkManager chunkManager;
+        /**
+         * The client context to access the P2PClient methods.
+         */
         private final P2PClient clientContext;
 
-        public PacketHandler(final PacketParser parser, final Topology topology, final NetworkSerializer serializer,
-                             final ChunkManager chunkManager, final P2PClient clientContext) {
-            this.parser = parser;
-            this.topology = topology;
-            this.serializer = serializer;
-            this.chunkManager = chunkManager;
-            this.clientContext = clientContext;
+        PacketHandler(final PacketParser parserArg, final Topology topologyArg, final NetworkSerializer serializerArg,
+                final ChunkManager chunkManagerArg, final P2PClient clientContextArg) {
+            this.parser = parserArg;
+            this.topology = topologyArg;
+            this.serializer = serializerArg;
+            this.chunkManager = chunkManagerArg;
+            this.clientContext = clientContextArg;
         }
 
         /**
@@ -254,7 +271,7 @@ public class P2PClient implements P2PUser {
         /**
          * Handles Type 11 (USE) packets based on the connection type.
          *
-         * @param info   The raw packet data.
+         * @param info The raw packet data.
          * @param packet The raw packet data.
          */
         private void parseUsePacket(final PacketInfo info, final byte[] packet) throws UnknownHostException {
@@ -296,7 +313,8 @@ public class P2PClient implements P2PUser {
         }
 
         /**
-         * Helper function to handle add packet
+         * Helper function to handle add packet.
+         *
          * @param info received packet info
          */
         private void handleUpdateNetwork(final PacketInfo info) {
@@ -307,7 +325,8 @@ public class P2PClient implements P2PUser {
         }
 
         /**
-         * Helper function to handle remove packet
+         * Helper function to handle remove packet.
+         *
          * @param info received packet info
          */
         private void handleRemoveClient(final PacketInfo info) {
@@ -319,7 +338,8 @@ public class P2PClient implements P2PUser {
         }
 
         /**
-         * Helper function to handle Network packet
+         * Helper function to handle Network packet.
+         *
          * @param info received packet info
          */
         private void handleReplaceNetwork(final PacketInfo info) {
@@ -330,7 +350,8 @@ public class P2PClient implements P2PUser {
         }
 
         /**
-         * Helper function to handle Module packet
+         * Helper function to handle Module packet.
+         *
          * @param packet received packet
          */
         private void handleModulePacket(final byte[] packet) throws UnknownHostException {
@@ -372,7 +393,6 @@ public class P2PClient implements P2PUser {
 //        if (aliveScheduler != null) {
 //            aliveScheduler.shutdownNow();
 //        }
-
         // Close all network sockets
         if (communicator != null) {
             communicator.close();

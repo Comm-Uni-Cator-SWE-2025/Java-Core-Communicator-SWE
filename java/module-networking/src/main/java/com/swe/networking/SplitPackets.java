@@ -7,15 +7,16 @@
  *
  * -----------------------------------------------------------------------------
  */
-package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
+package com.swe.networking;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Classs to split the received data into packets.
@@ -27,6 +28,9 @@ public class SplitPackets {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SPLITPACKETS]";
 
     /**

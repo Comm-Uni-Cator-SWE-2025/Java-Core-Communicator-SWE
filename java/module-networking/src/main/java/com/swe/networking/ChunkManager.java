@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import com.swe.core.logging.SweLogger;
@@ -22,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import com.swe.core.ClientNode;
-
 /**
  * Code for Chunk Manager.
  */
@@ -33,7 +32,9 @@ public class ChunkManager {
      * Singleton chunkManger.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * Singleton chunkManager.
+     */
     private static ChunkManager chunkManager = null;
     /**
      * Payload Size.

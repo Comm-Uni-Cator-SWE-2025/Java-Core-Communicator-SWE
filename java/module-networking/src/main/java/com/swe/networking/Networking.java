@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.net.InetAddress;
@@ -34,6 +35,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The singleton object.
+     */
     private static Networking networking;
     /**
      * The variable to store all the listeners subscribed to the module.
@@ -169,7 +173,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         pkt.setModule(module);
         pkt.setPriority(priority);
         pkt.setBroadcast(broadcast);
-        Vector<byte[]> chunks = new Vector<>();
+        final Vector<byte[]> chunks = new Vector<>();
         for (ClientNode client : dest) {
             try {
                 pkt.setPayload(data);
@@ -200,7 +204,7 @@ public class Networking implements AbstractNetworking, AbstractController {
         final List<ClientNode> clientDests = new ArrayList<>(topology.getClients(topology.getClusterIndex(user)));
         System.out.println("Clientdest " + clientDests);
         dest = clientDests;
-        System.out.println("dest " + dest + " user: "+ user + " server "+topology.getServer(user));
+        System.out.println("dest " + dest + " user: " + user + " server " + topology.getServer(user));
         dest.remove(user);
 
         if (user == topology.getServer(user)) {

@@ -27,7 +27,9 @@ public class MainServer implements P2PUser {
      * Communicator object to send and receive data.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The communicator object.
+     */
     private final ProtocolBase communicator;
 
     /**

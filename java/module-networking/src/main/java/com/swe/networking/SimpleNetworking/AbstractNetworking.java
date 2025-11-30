@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking.SimpleNetworking;
 
 import com.swe.core.ClientNode;

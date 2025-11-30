@@ -30,6 +30,9 @@ public class P2PCluster implements P2PUser {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The list of clients.
+     */
     private List<ClientNode> clients;
 
     /**

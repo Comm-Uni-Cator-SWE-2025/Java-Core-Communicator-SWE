@@ -28,7 +28,9 @@ public class NetworkSerializer {
      * variable to store the singleton classobject.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The singleton object for network serializer.
+     */
     private static NetworkSerializer serializer = null;
 
     /**

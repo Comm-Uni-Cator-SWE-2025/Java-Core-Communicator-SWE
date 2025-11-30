@@ -7,10 +7,8 @@
  *
  * -----------------------------------------------------------------------------
  */
-package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
+package com.swe.networking;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -18,6 +16,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The class implementing coalescing before data is sent.
@@ -29,6 +30,9 @@ public class CoalesceSend {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[COALESCESEND]";
     /**
      * Map which stores a list of packets corresponding to the same destination.

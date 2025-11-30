@@ -29,6 +29,9 @@ public class Timer {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * Timeout duration in milliseconds.
+     */
     private final long timeoutDuration;
 
     /**
