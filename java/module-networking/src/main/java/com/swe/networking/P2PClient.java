@@ -408,27 +408,4 @@ public class P2PClient implements P2PUser {
             return null;
         }
     }
-
-    /**
-     * Function to create a remove packet.
-     *
-     * @param client the client to remove
-     * @return the packet
-     */
-    public byte[] createRemovePacket(final ClientNode client) {
-        try {
-            final PacketInfo packetInfo = new PacketInfo();
-            packetInfo.setLength(packetHeaderSize);
-            packetInfo.setType(NetworkType.USE.ordinal());
-            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
-            packetInfo.setPayload(client.toString().getBytes());
-            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
-            packetInfo.setPortNum(client.port());
-            packetInfo.setBroadcast(0);
-            final byte[] removePacket = parser.createPkt(packetInfo);
-            return removePacket;
-        } catch (UnknownHostException ex) {
-            return null;
-        }
-    }
 }
