@@ -21,6 +21,8 @@ import java.util.Vector;
 
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The main class of the networking module.

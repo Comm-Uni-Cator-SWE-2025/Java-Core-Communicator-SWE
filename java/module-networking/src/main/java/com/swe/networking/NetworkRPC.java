@@ -16,6 +16,8 @@ import java.util.Map;
 
 import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 //File owned by Loganath
 /**
