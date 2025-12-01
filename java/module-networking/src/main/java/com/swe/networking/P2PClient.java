@@ -1,11 +1,13 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The Client belonging to a certain cluster.
@@ -15,6 +17,8 @@ public class P2PClient implements P2PUser {
     /**
      * base Commumicator class to send , recieve and close.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private final ProtocolBase communicator;
     /**
      * get parser to decode packet.
@@ -49,7 +53,7 @@ public class P2PClient implements P2PUser {
     /**
      * alive thread manager.
      */
-    private final ScheduledExecutorService aliveScheduler;
+    private final ScheduledExecutorService aliveScheduler = null;
 
     /**
      * time interval gap to send alive packet.
@@ -72,12 +76,13 @@ public class P2PClient implements P2PUser {
      *
      * @param device The ClientNode info for this device.
      * @param server The ClientNode info for the mainServer.
+     * @param tcpCommunicator the communicator for the communication.
      */
-    public P2PClient(final ClientNode device, final ClientNode server) {
+    public P2PClient(final ClientNode device, final ClientNode server, final ProtocolBase tcpCommunicator) {
         this.deviceAddress = device;
         this.mainServerAddress = server;
 
-        this.communicator = new TCPCommunicator(device.port());
+        this.communicator = tcpCommunicator;
         chunkManager = ChunkManager.getChunkManager(packetHeaderSize);
 
         updateClusterServer();
@@ -87,9 +92,9 @@ public class P2PClient implements P2PUser {
         this.receiveThread.start();
 
         // start a scheduled ALIVE packets to the cluster server
-        this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
-        this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
-                ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        // this.aliveScheduler = Executors.newSingleThreadScheduledExecutor();
+        // this.aliveScheduler.scheduleAtFixedRate(this::sendAlivePacket,
+        //         ALIVE_INTERVAL_SECONDS, ALIVE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override
@@ -97,7 +102,7 @@ public class P2PClient implements P2PUser {
         for (ClientNode dest : destIp) {
 
             final ClientNode sendDest = topology.getDestination(mainServerAddress, dest);
-            System.out.println("p2pclient sending data to: " + sendDest);
+            LOG.info("p2pclient sending data to: " + sendDest);
             communicator.sendData(data, sendDest);
         }
         return;
@@ -107,7 +112,7 @@ public class P2PClient implements P2PUser {
     public void send(final byte[] data, final ClientNode destIp) {
 
         final ClientNode sendDest = topology.getDestination(mainServerAddress, destIp);
-        System.out.println("p2pclient sending data to: " + sendDest);
+        LOG.info("p2pclient sending data to: " + sendDest);
         communicator.sendData(data, sendDest);
         return;
     }
@@ -117,11 +122,11 @@ public class P2PClient implements P2PUser {
      */
     private void sendAlivePacket() {
         if (clusterServerAddress == null) {
-            System.out.println("cluster server address is null");
+            LOG.info("cluster server address is null");
         }
 
         try {
-            System.out.println("p2pclient sending alive packet to: " + clusterServerAddress);
+            LOG.info("p2pclient sending alive packet to: " + clusterServerAddress);
             final InetAddress selfIp = InetAddress.getByName(deviceAddress.hostName());
             final byte[] emptyPayload = new byte[0];
 
@@ -144,7 +149,7 @@ public class P2PClient implements P2PUser {
             communicator.sendData(alivePacket, clusterServerAddress);
 
         } catch (UnknownHostException e) {
-            System.err.println("p2pclient failed to send alive packet");
+            LOG.error("p2pclient failed to send alive packet");
         }
     }
 
@@ -162,7 +167,7 @@ public class P2PClient implements P2PUser {
                 }
 
             } catch (Exception e) {
-                System.err.println("p2pclient received exception while processing packet");
+                LOG.error("p2pclient received exception while processing packet");
             }
         }
     }
@@ -173,16 +178,9 @@ public class P2PClient implements P2PUser {
      * @param packet The raw packet data.
      */
     private void packetRedirection(final byte[] packet) {
-        System.out.println("p2pclient received packet from: " + deviceAddress.hostName());
+        LOG.info("p2pclient received packet from: " + deviceAddress.hostName());
         try {
             final PacketInfo info = parser.parsePacket(packet);
-            if (info.getBroadcast() == 1) {
-                info.setIpAddress(InetAddress.getByName(deviceAddress.hostName()));
-                info.setPortNum(deviceAddress.port());
-                final byte[] modifiedPacket = parser.createPkt(info);
-                communicator.sendData(modifiedPacket, clusterServerAddress);
-                return;
-            }
             final int typeInt = info.getType();
             final NetworkType type = NetworkType.getType(typeInt);
 
@@ -191,7 +189,7 @@ public class P2PClient implements P2PUser {
                 case SAMECLUSTER:
                 case OTHERCLUSTER:
                     // dropping the packet
-                    System.out.println("p2pclient received packet and dropping of type :" + type);
+                    LOG.info("p2pclient received packet and dropping of type :" + type);
                     break;
 
                 case USE:
@@ -201,7 +199,7 @@ public class P2PClient implements P2PUser {
                     break;
             }
         } catch (UnknownHostException e) {
-            System.err.println("p2pclient failed to parse packet IP: " + e.getMessage());
+            LOG.error("p2pclient failed to parse packet IP: " + e.getMessage());
         }
     }
 
@@ -215,16 +213,16 @@ public class P2PClient implements P2PUser {
         final int connType = info.getConnectionType();
         final NetworkConnectionType connection = NetworkConnectionType.getType(connType);
 
-        System.out.println("p2pclient received connection type: " + connection);
+        LOG.info("p2pclient received connection type: " + connection);
         switch (connection) {
             case HELLO: // 000 drop it only to be received by main server
             case ALIVE: // 001 drop it only to received by cluster server and main server
 
-                System.out.println("p2pclient received HELLO or ALIVE packet");
+                LOG.info("p2pclient received HELLO or ALIVE packet");
                 break;
 
             case ADD: // 010 : update the current network
-                System.out.println("p2pclient received ADD packet : updating network structure");
+                LOG.info("p2pclient received ADD packet : updating network structure");
 
                 final ClientNetworkRecord newClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.updateNetwork(newClient);
@@ -233,7 +231,7 @@ public class P2PClient implements P2PUser {
                 break;
             case REMOVE: // 011 : update the current network
 
-                System.out.println("p2pclient received ADD or REMOVE packet");
+                LOG.info("p2pclient received ADD or REMOVE packet");
                 final ClientNetworkRecord oldClient = serializer.deserializeClientNetworkRecord(info.getPayload());
                 topology.removeClient(oldClient);
 
@@ -242,7 +240,7 @@ public class P2PClient implements P2PUser {
 
             case NETWORK: // 100 : replace the current network
 
-                System.out.println("p2pclient received NETWORK packet");
+                LOG.info("p2pclient received NETWORK packet");
                 final NetworkStructure newNetwork = serializer.deserializeNetworkStructure(info.getPayload());
                 topology.replaceNetwork(newNetwork);
 
@@ -250,18 +248,24 @@ public class P2PClient implements P2PUser {
                 break;
 
             case MODULE:
-                System.out.println("p2pclient received MODULE packet");
-                chunkManager.addChunk(packet);
+                LOG.info("MODULE packet received");
+                final int module = parser.parsePacket(packet).getModule();
+                final byte[] data = chunkManager.addChunk(packet);
+                final Networking networking = Networking.getNetwork();
+                if (data != null) {
+                    final PacketInfo destpktInfo = parser.parsePacket(data);
+                    networking.callSubscriber(module, destpktInfo.getPayload());
+                }
                 break;
 
             case CLOSE: // 111 : close the client terminate
 
-                System.out.println("p2pclient received CLOSE packet");
+                LOG.info("p2pclient received CLOSE packet");
                 close();
                 break;
 
             default:
-                System.err.println("p2pclient received unknown packet type");
+                LOG.error("p2pclient received unknown packet type");
         }
     }
 
@@ -271,10 +275,10 @@ public class P2PClient implements P2PUser {
      */
 
     void updateClusterServer() {
-        System.out.println("p2pclient after updating server");
+        LOG.info("p2pclient after updating server");
         this.clusterServerAddress = topology.getServer(this.deviceAddress);
         if (this.clusterServerAddress == null) {
-            System.err.println("p2pclient: Not find my cluster server in topology.");
+            LOG.error("p2pclient: Not find my cluster server in topology.");
         }
         return;
     }
@@ -286,7 +290,7 @@ public class P2PClient implements P2PUser {
         }
         running = false;
 
-        System.out.println("p2pclient started closing");
+        LOG.info("p2pclient started closing");
 
         // Stop sending ALIVE packets
         if (aliveScheduler != null) {
@@ -303,7 +307,7 @@ public class P2PClient implements P2PUser {
         if (receiveThread != null) {
             receiveThread.interrupt();
         }
-
-        System.out.println("p2pclient closed");
+        SplitPackets.getSplitPackets().emptyBuffer();
+        LOG.info("p2pclient closed");
     }
 }

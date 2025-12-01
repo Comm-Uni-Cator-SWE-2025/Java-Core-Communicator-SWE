@@ -1,29 +1,46 @@
-//File owned by Loganath
-
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.swe.core.RPCinterface.AbstractRPC;
+
+//File owned by Loganath
 /**
  * Class object for the Network RPC.
  */
 public class NetworkRPC {
-    /** Private constructor for networkRPC. */
+
+    /**
+     * Variable to log the module name.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
+    private static final String MODULENAME = "NETWORKRPC";
+
+    /**
+     * Private constructor for networkRPC.
+     */
     private static NetworkRPC networkRPC = null;
 
     /**
-     * Variable to store the listener functions to run.
+     * Private constructor for networkRPC.
      */
     private final Map<Integer, MessageListener> listeners = new HashMap<>();
 
-    /** Variable to store the networking. */
-    private Networking networking;
+    /**
+     * Variable to store the networking.
+     */
+    private static Networking networking;
 
     private NetworkRPC() {
-        System.out.println("Network RPC...");
+        LOG.info("Network RPC...");
     }
 
     /**
@@ -31,13 +48,13 @@ public class NetworkRPC {
      *
      * @return the singleton object
      */
-    public NetworkRPC getNetWorkRPC() {
+    public static NetworkRPC getNetworkRPC() {
         if (networkRPC == null) {
             networkRPC = new NetworkRPC();
             networking = Networking.getNetwork();
-            System.out.println("Instantiating new Network RPC...");
+            LOG.info("Instantiating new Network RPC...");
         }
-        System.out.println("Passing Network RPC...");
+        LOG.info("Passing Network RPC...");
         return networkRPC;
     }
 
@@ -45,8 +62,9 @@ public class NetworkRPC {
      * Network RPC function equal to addUser.
      *
      * @param args the data received
+     * @return null for matchin rpc arguments.
      */
-    public void networkRPCAddUser(final byte[] args) {
+    public byte[] networkRPCAddUser(final byte[] args) {
         final ByteBuffer buffer = ByteBuffer.wrap(args);
 
         final byte deviceHostLen = buffer.get();
@@ -63,27 +81,33 @@ public class NetworkRPC {
         final int serverPort = buffer.getInt();
         final ClientNode mainServerAddress = new ClientNode(serverHost, serverPort);
 
+        LOG.info("Device " + deviceAddress + " Server " + mainServerAddress);
         networking.addUser(deviceAddress, mainServerAddress);
+        return null;
     }
 
     /**
      * Network RPC function equal to removeSubscription.
      *
      * @param args the data received
+     * @return null for matchin rpc arguments.
      */
-    public void networkRPCRemoveSubscription(final byte[] args) {
+    public byte[] networkRPCRemoveSubscription(final byte[] args) {
         final ByteBuffer buffer = ByteBuffer.wrap(args);
         final int module = buffer.getInt();
 
         networking.removeSubscription(module);
+        LOG.info("Remove subscription for module " + module + " ...");
+        return null;
     }
 
     /**
      * Network RPC function equal to Subscribe.
      *
      * @param args the data received
+     * @return null for matchin rpc arguments.
      */
-    public void networkRPCSubscribe(final byte[] args) {
+    public byte[] networkRPCSubscribe(final byte[] args) {
         final ByteBuffer buffer = ByteBuffer.wrap(args);
         final int module = buffer.getInt();
 
@@ -92,17 +116,21 @@ public class NetworkRPC {
             final ByteBuffer callBuffer = ByteBuffer.allocate(bufferSize);
             callBuffer.putInt(module);
             callBuffer.put(data);
-            // call rpc our callSubscriber function in Frontend
-            // networkFrontCallSubscriber(int module,byte[] data)
+            final AbstractRPC rpc = networking.getRPC();
+            rpc.call("networkFrontCallSubscriber", callBuffer.array());
         });
+
+        LOG.info("Added subscription for module " + module + " ...");
+        return null;
     }
 
     /**
      * Network RPC function equal to Broadcast.
      *
      * @param args the data received
+     * @return null for matchin rpc arguments.
      */
-    public void networkRPCBroadcast(final byte[] args) {
+    public byte[] networkRPCBroadcast(final byte[] args) {
         final ByteBuffer buffer = ByteBuffer.wrap(args);
         final int dataLength = buffer.getInt();
 
@@ -111,14 +139,16 @@ public class NetworkRPC {
         final int module = buffer.getInt();
         final int priority = buffer.getInt();
         networking.broadcast(data, module, priority);
+        return null;
     }
 
     /**
      * Network RPC function equal to SendData.
      *
      * @param args the data received
+     * @return null for matchin rpc arguments.
      */
-    public void networkRPCSendData(final byte[] args) {
+    public byte[] networkRPCSendData(final byte[] args) {
         final ByteBuffer buffer = ByteBuffer.wrap(args);
 
         final int destCount = buffer.getInt();
@@ -139,19 +169,18 @@ public class NetworkRPC {
         final int priority = buffer.getInt();
 
         networking.sendData(data, dest, module, priority);
+        return null;
     }
 
     /**
-     * function to call back in the frontend.
+     * Function to close the networking module.
      *
-     * @param module the module to call
-     * @param data   the data to be passed
+     * @param args the arguments passed
+     * @return null for matching rpc arguments
      */
-    public void networkRPCCallSubscriber(final int module, final byte[] data) {
-        final MessageListener function = listeners.get(module);
-        if (function != null) {
-            function.receiveData(data);
-        }
+    public byte[] networkRPCCloseNetworking(final byte[] args) {
+        networking.closeNetworking();
+        return null;
     }
 
 }

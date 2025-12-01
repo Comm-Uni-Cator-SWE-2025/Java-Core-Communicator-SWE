@@ -1,6 +1,10 @@
+/**
+ * Contributed by @chirag9528.
+ */
+
 package com.swe.ScreenNVideo.Synchronizer;
 
-import com.swe.ScreenNVideo.Serializer.CPackets;
+import com.swe.ScreenNVideo.Model.CPackets;
 
 
 /**
@@ -19,14 +23,15 @@ public class FeedData {
      * Creates a FeedData entry with its feed number and packet content.
      *
      * @param feedNum the sequence/feed number for ordering
-     * @param packets the compressed packets associated with this sequence
+     * @param packetData the compressed packets associated with this sequence
      */
-    public FeedData(int feedNum, CPackets packets) {
+    public FeedData(final int feedNum, final CPackets packetData) {
         this.feedNumber = feedNum;
-        this.packets = packets;
+        this.packets = packetData;
     }
 
     /**
+     * Returns the feed/sequence number of this packet.
      * @return the feed/sequence number of this packet
      */
     public int getFeedNumber() {
@@ -34,6 +39,7 @@ public class FeedData {
     }
 
     /**
+     * Returns the compressed packet data associated with this entry.
      * @return the compressed Packet data
      */
     public CPackets getFeedPackets() {

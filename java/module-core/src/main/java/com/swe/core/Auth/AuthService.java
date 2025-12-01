@@ -1,3 +1,7 @@
+/**
+ *  Contributed by Pushti Vasoya.
+ */
+
 package com.swe.core.Auth;
 
 import com.google.api.client.auth.oauth2.Credential;
@@ -25,5 +29,17 @@ public class AuthService {
 
 //        dataStore.users.put(googleStudent.getUserId(), googleStudent);
         return authHelper.handleGoogleLogin(credential);
+    }
+
+    /**
+     * Logs out the current user by clearing stored OAuth2 tokens.
+     * This will force a new login prompt on the next authentication attempt.
+     *
+     * @throws IOException              if logout fails
+     * @throws GeneralSecurityException if logout fails
+     */
+    public static void logout() throws GeneralSecurityException, IOException {
+        final GoogleAuthServices googleAuthService = new GoogleAuthServices();
+        googleAuthService.logout();
     }
 }

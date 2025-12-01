@@ -1,3 +1,7 @@
+/**
+ * Contributed by @aman112201041.
+ */
+
 package com.swe.ScreenNVideo.Playback;
 
 import javax.sound.sampled.AudioFormat;
@@ -57,6 +61,14 @@ public class AudioPlayer {
 
     public void play(final byte[] pcmBytes) {
         if (line != null) {
+            final int free = line.available();   // number of bytes currently free in internal buffer
+
+            // If not enough space, drop audio
+            if (free < pcmBytes.length) {
+                // drop the chunk
+                return;
+            }
+
             line.write(pcmBytes, 0, pcmBytes.length);
         }
     }

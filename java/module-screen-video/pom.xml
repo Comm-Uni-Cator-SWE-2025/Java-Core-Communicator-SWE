@@ -14,7 +14,7 @@
   </parent>
 
     <properties>
-        <mockito.version>5.0.0</mockito.version>
+        <mockito.version>5.14.2</mockito.version>
     </properties>
 
     <artifactId>module-screen-video</artifactId>
@@ -33,8 +33,13 @@
     <dependencies>
         <!-- Internal dependencies-->
         <dependency>
-            <groupId>com.swe</groupId>
+            <groupId>com.swe.networking</groupId>
             <artifactId>module-networking</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swe</groupId>
+            <artifactId>module-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -72,12 +77,28 @@
         <dependency>
             <groupId>com.github.sarxos</groupId>
             <artifactId>webcam-capture</artifactId>
-            <version>0.3.12</version> <!-- Use the latest stable version -->
+            <version>0.3.12</version>
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+        </dependency>
+
+        <!-- JUnit 5 API -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit 5 Engine (required to run tests) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -105,6 +126,14 @@
                     <source>24</source>
                     <target>24</target>
                     <compilerArgs>--enable-preview</compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
             <plugin>

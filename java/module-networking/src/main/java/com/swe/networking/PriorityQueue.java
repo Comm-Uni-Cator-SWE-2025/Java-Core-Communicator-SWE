@@ -1,5 +1,8 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.net.UnknownHostException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -8,11 +11,19 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+// File owned by Vishwaa.
+
 /**
  * Priority Queue with simple Multi-Level Feedback Queue (MLFQ).
  */
 public class PriorityQueue {
 
+    /**
+     * Variable to store the name of the module.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
+    private static final String MODULENAME = "[PRIORITY QUEUE]";
     /**
      * The static class object for the priority queue.
      */
@@ -24,7 +35,7 @@ public class PriorityQueue {
     /**
      * Time for each epoch (budget reset).
      */
-    private static final int EPOCH_MS = 10;
+    private static final int EPOCH_MS = 100;
     /**
      * Total number of packets to be sent in one epoch.
      */
@@ -70,7 +81,7 @@ public class PriorityQueue {
      * Creates a priority queue and initializes budgets and queues.
      */
     private PriorityQueue() {
-        // System.out.println("MLFQ has been created");
+        // LOG.info("Networking][Priority Queue] MLFQ has been created");
         for (int i = 0; i < MLFQ_LEVELS; i++) {
             mlfq.add(new ArrayDeque<>());
         }
@@ -87,10 +98,10 @@ public class PriorityQueue {
     public static PriorityQueue getPriorityQueue() {
         if (priorityQueue == null) {
             priorityQueue = new PriorityQueue();
-            System.out.println("Instantated a new priority Queue...");
+            LOG.info("Instantiated a new priority Queue...");
             return priorityQueue;
         }
-        System.out.println("Passing already instantiated priority Queue...");
+        LOG.info("Passing already instantiated priority Queue...");
         return priorityQueue;
     }
 
@@ -147,7 +158,7 @@ public class PriorityQueue {
             final int tokens = (TOTAL_BUDGET * p.getShare()) / TOTAL_BUDGET;
             currentBudget.put(p, tokens);
         }
-        // System.out.println("Reset Initiated...");
+        LOG.info("Reset Initiated...");
         lastEpochReset = System.currentTimeMillis();
     }
 
@@ -158,7 +169,7 @@ public class PriorityQueue {
     public void rotateQueues() {
         final long now = System.currentTimeMillis();
         if (now - lastRotation >= ROTATION_TIME) {
-            // System.out.println("Rotating MLFQ levels...");
+            LOG.info("Rotating MLFQ levels...");
             final Deque<byte[]> level2 = mlfq.get(2);
             final Deque<byte[]> level1 = mlfq.get(1);
             final Deque<byte[]> level0 = mlfq.get(0);
@@ -205,16 +216,16 @@ public class PriorityQueue {
         switch (priority) {
             case ZERO, ONE, TWO:
                 highestPriorityQueue.add(data);
-                // System.out.println("Packet added to highest priority queue");
+                LOG.info("Packet added to the Highest priority queue");
                 break;
             case THREE, FOUR, FIVE, SIX:
                 midPriorityQueue.add(data);
-                // System.out.println("Packet added to mid priority queue");
+                LOG.info("Packet added to mid priority queue");
                 break;
             default:
                 // All low-priority packets start at level 0
                 mlfq.get(0).add(data);
-                // System.out.println("Packet added to MLFQ level 0");
+                LOG.info("Packet added to MLFQ level 0");
                 break;
         }
     }
@@ -229,7 +240,7 @@ public class PriorityQueue {
                 && currentBudget.get(PacketPriority.ZERO) > 0) {
             currentBudget.put(PacketPriority.ZERO,
                     currentBudget.get(PacketPriority.ZERO) - 1);
-            // System.out.println("Highest Priority Packet sent ");
+            LOG.info("Highest Priority Packet sent");
             return highestPriorityQueue.pollFirst();
         }
         return null;
@@ -252,13 +263,12 @@ public class PriorityQueue {
             if (p2Current > 0) {
                 // Use P2's own budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
-                // System.out.println(("mid priority sent from p2"));
+                LOG.info("Mid-priority sent from p2 budget");
             } else if (p1Current > 0) {
                 // Use P1's unused budget
                 currentBudget.put(PacketPriority.ZERO, p1Current - 1);
-                // System.out.println(("Mid priority sent from p1"));
+                LOG.info("Mid-priority sent from p1 budget");
             }
-            // System.out.println("Mid Priority Packet sent");
             return midPriorityQueue.pollFirst();
         }
         return null;
@@ -284,11 +294,14 @@ public class PriorityQueue {
                     // Decrement the budget in order: P3 -> P2 -> P1
                     if (p3Current > 0) {
                         currentBudget.put(PacketPriority.TWO, p3Current - 1);
+                        LOG.info("Low Priority Packet sent from p3 budget");
                     } else if (p2Current > 0) {
                         currentBudget.put(PacketPriority.ONE, p2Current - 1);
+                        LOG.info("Low Priority Packet sent from p2 budget");
                     } else if (p1Current > 0) { // Use P1's budget
                         currentBudget.put(PacketPriority.ZERO,
                                 p1Current - 1);
+                        LOG.info("Low Priority Packet sent from p1 budget");
                     } else {
                         // This case should be covered by
                         // the totalP3Budget > 0 check,
@@ -297,8 +310,7 @@ public class PriorityQueue {
                         continue;
                     }
 
-                    // System.out.println(
-                    // "Low Priority Packet sent from MLFQ level " + i);
+                    LOG.info("Low Priority Packet sent from MLFQ level " + i);
                     return q.pollFirst();
                 }
             }
@@ -355,7 +367,7 @@ public class PriorityQueue {
      */
     public synchronized byte[] nextPacket() {
         byte[] packet;
-        final int maxRetryCount = 10;
+        // final int maxRetryCount = 10;
         int retryCount = 0;
 
         while (true) {
@@ -373,15 +385,17 @@ public class PriorityQueue {
 
             // If the packet is null it makes the thread wait and they retry.
             try {
+                LOG.info("No packets has been received, Thread going to sleep");
                 Thread.sleep(1);
             } catch (InterruptedException ignored) {
             }
 
             retryCount++;
             // optional safety escape
-            if (retryCount > maxRetryCount) {
-                return null;
-            }
+            // if (retryCount > maxRetryCount) {
+            //     LOG.info("Max number of retires has been reached, Returning null.");
+            //     return null;
+            // }
         }
 
     }

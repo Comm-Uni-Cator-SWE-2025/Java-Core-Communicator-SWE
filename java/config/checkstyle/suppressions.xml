@@ -3,5 +3,40 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <!-- Currently no suppressions -->
+    <!-- Suppress complexity checks for deserialization methods -->
+    <suppress checks="CyclomaticComplexity" files=".*IamPacket\.java" lines="148"/>
+    <suppress checks="NPathComplexity" files=".*IamPacket\.java" lines="148"/>
+    <suppress checks="CyclomaticComplexity" files=".*JoinAckPacket\.java" lines="169"/>
+    <suppress checks="NPathComplexity" files=".*JoinAckPacket\.java" lines="169"/>
+    <suppress checks="JavaNCSS" files=".*JoinAckPacket\.java" lines="169"/>
+    
+    <!-- Suppress complexity checks for Init class -->
+    <suppress checks="ClassDataAbstractionCoupling" files=".*Init\.java" lines="38"/>
+    <suppress checks="ClassFanOutComplexity" files=".*Init\.java" lines="38"/>
+    <suppress checks="CyclomaticComplexity" files=".*Init\.java" lines="137"/>
+    <suppress checks="MethodLength" files=".*Init\.java" lines="137"/>
+    <suppress checks="JavaNCSS" files=".*Init\.java" lines="137"/>
+    <suppress checks="NPathComplexity" files=".*Init\.java" lines="137"/>
+    <!-- Cyclomatic Complexity suppressions -->
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Capture/VideoCapture.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLEHuffman.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/Codec/EncodeDecodeRLE.java" />
+    <suppress checks="CyclomaticComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+
+    <!-- Fan out Complexities -->
+    <suppress checks="ClassFanOutComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- Class Data Abstraction Coupling suppressions -->
+    <suppress checks="ClassDataAbstractionCoupling" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/VideoComponents.java" />
+    
+    <!-- Method Length suppressions -->
+    <suppress checks="MethodLength" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- JavaNCSS suppressions -->
+    <suppress checks="JavaNCSS" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+    
+    <!-- NPath Complexity suppressions -->
+    <suppress checks="NPathComplexity" files="module-screen-video/src/main/java/com/swe/ScreenNVideo/MediaCaptureManager.java" />
+
 </suppressions>

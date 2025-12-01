@@ -1,5 +1,9 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -20,6 +24,8 @@ public final class TCPCommunicator implements ProtocolBase {
     /**
      * Variable to store the name of the module.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[TCPCOMMUNICATOR]";
     /**
      * The server socket used to receive client connections.
@@ -30,6 +36,7 @@ public final class TCPCommunicator implements ProtocolBase {
      * The selector for the sockets.
      */
     private Selector selector;
+
     /**
      * The list of all connected clients and their sockets.
      *
@@ -56,20 +63,29 @@ public final class TCPCommunicator implements ProtocolBase {
      */
     public TCPCommunicator(final int serverPort) {
         try {
-            NetworkLogger.printInfo(MODULENAME, "TCP communicator initialized...");
+            LOG.info("TCP communicator initialized...");
             selector = Selector.open();
             deviceServerPort = serverPort;
             setServerPort();
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Unable to initialize TCP comunicator...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Unable to initialize TCP comunicator...");
+            LOG.error("Error : " + ex.getMessage());
         }
+    }
+
+    /**
+     * Function to print all keys in the selector.
+     */
+    @Override
+    public void printKeys() {
+        selector.keys().stream().forEach(kay -> LOG.info("Selector channel: " + kay.channel()));
     }
 
     @Override
     public byte[] receiveData() {
         try {
-            selector.select();
+            final int timeout = 1000;
+            selector.select(timeout);
             final Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
             while (iter.hasNext()) {
                 final SelectionKey key = iter.next();
@@ -86,8 +102,8 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             return null;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error while using the selector...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error while using the selector...");
+            LOG.error("Error : " + ex.getMessage());
             return null;
         }
     }
@@ -101,10 +117,10 @@ public final class TCPCommunicator implements ProtocolBase {
             receiveSocket.bind(new InetSocketAddress(deviceServerPort));
             receiveSocket.configureBlocking(false);
             receiveSocket.register(selector, SelectionKey.OP_ACCEPT);
-            NetworkLogger.printInfo(MODULENAME, "Creating new server port at " + deviceServerPort);
+            LOG.info("Creating new server port at " + deviceServerPort);
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error connecting to port : " + deviceServerPort);
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error connecting to port : " + deviceServerPort);
+            LOG.error("Error : " + ex.getMessage());
         }
     }
 
@@ -112,11 +128,10 @@ public final class TCPCommunicator implements ProtocolBase {
     public SocketChannel openSocket() {
         try {
             final SocketChannel socket = SocketChannel.open();
-            NetworkLogger.printInfo(MODULENAME, "Opening new socket at port " + socket.socket().getPort() + "...");
             return socket;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occurred while opening socket...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error occurred while opening socket...");
+            LOG.error("Error : " + ex.getMessage());
         }
         return null;
     }
@@ -131,11 +146,11 @@ public final class TCPCommunicator implements ProtocolBase {
                     key.cancel();
                     clientSocket.close();
                     clientSockets.remove(client);
-                    NetworkLogger.printInfo(MODULENAME, "Closing socket for client " + client + " ...");
+                    LOG.info("Closing socket for client " + client + " ...");
                 }
             } catch (IOException ex) {
-                NetworkLogger.printError(MODULENAME, "Error occurred while closing socket...");
-                NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+                LOG.error("Error occurred while closing socket...");
+                LOG.error("Error : " + ex.getMessage());
             }
         }
     }
@@ -144,20 +159,20 @@ public final class TCPCommunicator implements ProtocolBase {
     public void sendData(final byte[] data, final ClientNode dest) {
         final String destIp = dest.hostName();
         final Integer destPort = dest.port();
-        System.out.println("sending to "+destIp + destPort);
         try {
             final SocketChannel destSocket;
             if (clientSockets.containsKey(dest)) {
-                NetworkLogger.printInfo(MODULENAME, "Connection to " + dest + " exists already...");
+                LOG.info("Connection to " + dest + " exists already...");
                 destSocket = clientSockets.get(dest);
             } else {
                 destSocket = openSocket();
                 destSocket.configureBlocking(true);
-                NetworkLogger.printInfo(MODULENAME, "Client : " + dest + " ...");
+                LOG.info("Client : " + dest + " ...");
                 destSocket.connect(new InetSocketAddress(destIp, destPort));
                 destSocket.configureBlocking(false);
+                LOG.info("Opening new socket at port " + destSocket.socket().getLocalPort());
                 destSocket.register(selector, SelectionKey.OP_READ);
-                NetworkLogger.printInfo(MODULENAME, "New connection created successfully...");
+                LOG.info("New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
             final ByteBuffer buffer = ByteBuffer.wrap(data);
@@ -166,8 +181,8 @@ public final class TCPCommunicator implements ProtocolBase {
             }
             printIpAddr(destIp, destPort);
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error while sending data...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error while sending data...");
+            LOG.error("Error : " + ex.getMessage());
         }
     }
 
@@ -178,7 +193,7 @@ public final class TCPCommunicator implements ProtocolBase {
      */
     public void acceptConnection(final SelectionKey key) {
         try {
-            NetworkLogger.printInfo(MODULENAME, "Accepting new connection...");
+            LOG.info("Accepting new connection...");
             final ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
             final SocketChannel clientChannel = serverSocketChannel.accept();
             clientChannel.configureBlocking(false);
@@ -187,11 +202,11 @@ public final class TCPCommunicator implements ProtocolBase {
             final int port = ((InetSocketAddress) clientChannel.getRemoteAddress()).getPort();
             final ClientNode client = new ClientNode(ip, port);
             clientSockets.put(client, clientChannel);
-            NetworkLogger.printInfo(MODULENAME, "New connection esthablished...");
-            NetworkLogger.printInfo(MODULENAME, "Client " + client + " ...");
+            LOG.info("New connection esthablished...");
+            LOG.info("Client " + client + " ...");
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while accepting connection...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error occured while accepting connection...");
+            LOG.error("Error : " + ex.getMessage());
         }
     }
 
@@ -209,14 +224,14 @@ public final class TCPCommunicator implements ProtocolBase {
             if (bytesRead == -1) {
                 return null;
             }
-            NetworkLogger.printError(MODULENAME, "Bytes read : " + bytesRead);
+            LOG.error("Bytes read : " + bytesRead);
             buffer.flip();
             final byte[] data = new byte[bytesRead];
             buffer.get(data);
             return data;
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while reading data...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error occured while reading data...");
+            LOG.error("Error : " + ex.getMessage());
             return null;
         }
     }
@@ -227,19 +242,19 @@ public final class TCPCommunicator implements ProtocolBase {
     @Override
     public void close() {
         try {
-            NetworkLogger.printInfo(MODULENAME, "Closing TCP communicator...");
+            LOG.info("Closing TCP communicator...");
             receiveSocket.close();
             for (SocketChannel socket : clientSockets.values()) {
-                NetworkLogger.printInfo(MODULENAME, "Closing socket of " + socket.getRemoteAddress() + "...");
+                LOG.info("Closing socket of " + socket.getRemoteAddress() + "...");
                 socket.close();
             }
         } catch (IOException ex) {
-            NetworkLogger.printError(MODULENAME, "Error occured while closing socket...");
-            NetworkLogger.printError(MODULENAME, "Error : " + ex.getMessage());
+            LOG.error("Error occured while closing socket...");
+            LOG.error("Error : " + ex.getMessage());
         }
     }
 
     private void printIpAddr(final String ipAddr, final Integer port) {
-        NetworkLogger.printInfo(MODULENAME, "Client: " + ipAddr + ":" + port);
+        LOG.info("Client: " + ipAddr + ":" + port);
     }
 }

@@ -1,5 +1,7 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
+
 /**
  * Interface used between topology and Cluster to add clients.
  *

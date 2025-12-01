@@ -1,5 +1,9 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -14,6 +18,8 @@ public class P2PCluster implements P2PUser {
     /**
      * List of all clients belonging to the same cluster.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private List<ClientNode> clients;
 
     /**
@@ -48,7 +54,7 @@ public class P2PCluster implements P2PUser {
     private ProtocolBase tcpCommunicator;
 
     public P2PCluster() {
-        System.out.println("Creating a new P2P Cluster...");
+        LOG.info("Creating a new P2P Cluster...");
         clients = new ArrayList<>();
     }
 
@@ -59,7 +65,7 @@ public class P2PCluster implements P2PUser {
      * @param server details of the mainserver
      */
     public void addUser(final ClientNode client, final ClientNode server) throws UnknownHostException {
-        System.out.println("Adding new user to the network...");
+        LOG.info("Adding new user to the network...");
         // send hello to server
         final PacketInfo packetInfo = new PacketInfo();
         packetInfo.setLength(PacketParser.getHeaderSize());
@@ -79,9 +85,9 @@ public class P2PCluster implements P2PUser {
         try {
             receiveThread.join();
         } catch (InterruptedException ex) {
-            ex.printStackTrace();
+            LOG.error("Exception", ex);
         }
-        System.out.println("User added to the network...");
+        LOG.info("User added to the network...");
         final NetworkStructure networkStructure = Topology.getTopology().getNetwork();
         for (int i = 0; i < networkStructure.servers().size(); i++) {
             if (networkStructure.servers().get(i).equals(client)) {
@@ -98,7 +104,7 @@ public class P2PCluster implements P2PUser {
             if (networkStructure.clusters().get(i).contains(client)) {
                 clusterServer = networkStructure.servers().get(i);
                 this.isServer = false;
-                user = new P2PClient(client, server);
+                user = new P2PClient(client, server, tcpCommunicator);
                 break;
             }
         }
@@ -111,7 +117,7 @@ public class P2PCluster implements P2PUser {
      */
     public void resizeCluster(final Integer size) {
         if (clients.size() < size - 1) {
-            System.out.println("Cannot resize cluster...");
+            LOG.info("Cannot resize cluster...");
         }
     }
 
@@ -134,6 +140,7 @@ public class P2PCluster implements P2PUser {
      */
     @Override
     public void send(final byte[] data, final ClientNode destIp) {
+//        LOG.info("P2pCluster send to " + destIp.hostName());
         this.user.send(data, destIp);
     }
 
@@ -153,8 +160,8 @@ public class P2PCluster implements P2PUser {
                             .deserializeNetworkStructure(packetInfo.getPayload());
                     Topology.getTopology().replaceNetwork(networkStructure);
                     break;
-                } catch (Exception e) {
-                    System.out.println("Error while receiving data in P2P Cluster...");
+                } catch (UnknownHostException e) {
+                    LOG.info("Error while receiving data in P2P Cluster" + e.getMessage() + "...");
                 }
             }
         }

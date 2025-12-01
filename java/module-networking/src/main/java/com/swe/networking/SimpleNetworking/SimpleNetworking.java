@@ -1,5 +1,8 @@
 package com.swe.networking.SimpleNetworking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -7,7 +10,7 @@ import java.util.HashMap;
 import java.util.Vector;
 
 import com.swe.core.RPCinterface.AbstractRPC;
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.NetworkConnectionType;
 import com.swe.networking.PacketInfo;
@@ -22,6 +25,8 @@ public final class SimpleNetworking
     /**
      * Variable to store the name of the module.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[SIMPLENETWORKING]";
     /**
      * The singeton variable to store the class object.
@@ -63,7 +68,7 @@ public final class SimpleNetworking
 
     private SimpleNetworking() {
         chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
-        SimpleNetworkLogger.printInfo(MODULENAME, "SimpleNetworking initialized...");
+        LOG.info("SimpleNetworking initialized...");
     }
 
     /**
@@ -73,7 +78,7 @@ public final class SimpleNetworking
     public void closeNetworking() {
         exit = true;
         user.closeUser();
-        SimpleNetworkLogger.printInfo(MODULENAME, "Closing Networking module...");
+        LOG.info("Closing Networking module...");
     }
 
     /**
@@ -86,7 +91,7 @@ public final class SimpleNetworking
             simpleNetwork = new SimpleNetworking();
             return simpleNetwork;
         }
-        SimpleNetworkLogger.printInfo(MODULENAME, "Passing already instantiated SimpleNetworking module...");
+        LOG.info("Passing already instantiated SimpleNetworking module...");
         return simpleNetwork;
     }
 
@@ -101,14 +106,14 @@ public final class SimpleNetworking
     public void addUser(final ClientNode deviceAddress,
             final ClientNode mainServerAddress) {
         serverAddr = mainServerAddress;
-        SimpleNetworkLogger.printInfo(MODULENAME, "Device details : " + deviceAddress);
-        SimpleNetworkLogger.printInfo(MODULENAME, "Server details : " + mainServerAddress);
+        LOG.info("Device details : " + deviceAddress);
+        LOG.info("Server details : " + mainServerAddress);
         if (deviceAddress.equals(mainServerAddress)) {
             user = new Server(deviceAddress);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Device initialized as a server...");
+            LOG.info("Device initialized as a server...");
         } else {
             user = new Client(deviceAddress);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Device initialized as a client...");
+            LOG.info("Device initialized as a client...");
         }
         receiveThread = new Thread(() -> receiveData());
         receiveThread.start();
@@ -122,7 +127,7 @@ public final class SimpleNetworking
     @Override
     public void consumeRPC(final AbstractRPC rpcInstance) {
         this.rpc = rpcInstance;
-        System.out.println("RPC consumed by SimpleNetworking...");
+        LOG.info("RPC consumed by SimpleNetworking...");
     }
 
     /**
@@ -151,7 +156,7 @@ public final class SimpleNetworking
                 pkt.setConnectionType(NetworkConnectionType.MODULE.ordinal());
                 chunks = chunkManager.chunk(pkt);
             } catch (UnknownHostException ex) {
-                SimpleNetworkLogger.printError(MODULENAME, "Error on chunking data...");
+                LOG.error("Error on chunking data...");
             }
         }
         return chunks;
@@ -182,10 +187,10 @@ public final class SimpleNetworking
             try {
                 user.receive();
             } catch (IOException e) {
-                SimpleNetworkLogger.printError(MODULENAME, "Error on receiving data...");
+                LOG.error("Error on receiving data...");
             }
         }
-        SimpleNetworkLogger.printInfo(MODULENAME, "Thread exited from receiving data...");
+        LOG.warn("Thread exited from receiving data...");
     }
 
     /**
@@ -198,10 +203,10 @@ public final class SimpleNetworking
     public void subscribe(final ModuleType name, final MessageListener func) {
         if (!listeners.containsKey(name)) {
             listeners.put(name, func);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Added new subscriber : " + name.toString() + " ...");
+            LOG.info("Added new subscriber : " + name.toString() + " ...");
             return;
         }
-        SimpleNetworkLogger.printInfo(MODULENAME, "The name " + name.toString() + " already exists...");
+        LOG.error("The name " + name.toString() + " already exists...");
     }
 
     /**
@@ -213,10 +218,10 @@ public final class SimpleNetworking
     public void removeSubscription(final ModuleType name) {
         if (listeners.containsKey(name)) {
             listeners.remove(name);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Removed Subsrciber : " + name.toString() + " ...");
+            LOG.info("Removed Subsrciber : " + name.toString() + " ...");
             return;
         }
-        SimpleNetworkLogger.printInfo(MODULENAME, "The name " + name.toString() + " doesnot exists...");
+        LOG.info("The name " + name.toString() + " doesnot exists...");
     }
 
     /**
@@ -226,8 +231,8 @@ public final class SimpleNetworking
      * @param module the module to be called
      */
     public void callSubscriber(final byte[] data, final ModuleType module) {
-        SimpleNetworkLogger.printInfo(MODULENAME, "Size of message received : " + data.length);
-        SimpleNetworkLogger.printInfo(MODULENAME, "Calling subscriber : " + module.toString());
+        LOG.info("Size of message received : " + data.length);
+        LOG.info("Calling subscriber : " + module.toString());
         final MessageListener listener = listeners.get(module);
         listener.receiveData(data);
     }

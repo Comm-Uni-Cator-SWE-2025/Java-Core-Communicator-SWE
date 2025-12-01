@@ -1,6 +1,12 @@
+/**
+ * Contributed by @chirag9528.
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides functionality for encoding and decoding images in the JPEG format.
@@ -159,50 +165,59 @@ public class JpegCodec implements Codec {
     /**
      * Time taken for ZigZag operations.
      */
-    public long zigZagtime = 0;
+    private long zigZagtime = 0;
     /**
      * Time taken for DCT operations.
      */
-    public long dctTime = 0;
+    private long dctTime = 0;
     /**
      * Time taken for quantization operations.
      */
-    public long quantTime = 0;
+    private long quantTime = 0;
 
+    /**
+     * Compressor instance for performing DCT and quantization.
+     */
     private final Compressor compressor = new Compressor();
+
+    /**
+     * Decompressor instance for performing dequantization and inverse DCT.
+     */
     private final IDeCompressor decompressor = new DeCompressor();
+
+    /**
+     * RLE encoder/decoder instance for entropy coding.
+     */
     private final IRLE enDeRLE = EncodeDecodeRLEHuffman.getInstance();
 
     /**
-     * Buffer for RLE results.
+     * Buffer for RLE results with compression On.
      */
-    private final ByteBuffer resRLEBuffer;
+    private final ByteBuffer resCompressedRLEBuffer;
+
+    /**
+     * Buffer for RLE results with compression OFF.
+     */
+    private final ByteBuffer resUnCompressedRLEBuffer;
 
     /**
      * Creates a JpegCode instance.
      */
     public JpegCodec() {
-        int maxLen = (int) ((1200 * 800 * 1.5 * 4) + (4 * 3) + 0.5);
-        resRLEBuffer = ByteBuffer.allocate(maxLen);
+        final int hight = 1200;
+        final int width = 800;
+        final double ycbcrMatrixfactor = 1.5;
+        final int cbcrMatrixCount = 4;
+        final double makeRound = 0.5;
+        final int maxLen = (int) ((hight * width * ycbcrMatrixfactor * cbcrMatrixCount)
+                + (cbcrMatrixCount * NUM_MATRICES) + makeRound);
+        resCompressedRLEBuffer = ByteBuffer.allocate(maxLen);
+        resUnCompressedRLEBuffer = ByteBuffer.allocate(maxLen);
     }
 
-    /**
-     * Encodes a portion of the screenshot into JPEG format.
-     *
-     * <p>The encoding process includes:
-     * <ul>
-     * <li>Converting the RGB pixel data of the screenshot into YCbCr color space.</li>
-     * <li>Applying 4:2:0 chroma sampling to reduce color resolution.</li>
-     * </ul>
-     *
-     * @param topLeftX starting X coordinate
-     * @param topLeftY starting Y coordinate
-     * @param height height of the region to encode
-     * @param width width of the region to encode
-     * @return encoded byte array
-     */
     @Override
-    public byte[] encode(final int[][] screenshot,final int topLeftX, final int topLeftY, final int height, final int width, final boolean compress) {
+    public List<byte[]> encode(final int[][] screenshot, final int topLeftX, final int topLeftY,
+                               final int height, final int width) {
 
         if (height % BLOCK_SIDE == 1 || width % BLOCK_SIDE == 1) {
             throw new RuntimeException("Invalid Matrix for encoding");
@@ -257,39 +272,56 @@ public class JpegCodec implements Codec {
             }
         }
 
-        resRLEBuffer.clear();
-        compressor.zigZagTime = 0;
-        compressor.quantTime = 0;
-        compressor.dctTime = 0;
+        return encodePixel(yMatrix, cbMatrix, crMatrix);
+    }
+
+    /**
+     * Encoding the YCbCr sampled pixels from image.
+     * @param yMatrix Ymatrix
+     * @param cbMatrix cbMatrix
+     * @param crMatrix crMatrix
+     * @return byte array of compressed and uncompressed pixel.
+     */
+    public List<byte[]> encodePixel(final short[][] yMatrix, final short[][] cbMatrix, final short[][] crMatrix) {
+        final int height = yMatrix.length;
+        final int width  = yMatrix[0].length;
+        final int cbHeight = cbMatrix.length;
+        final int cbWidth = cbMatrix[0].length;
+
+        resCompressedRLEBuffer.clear();
+        resUnCompressedRLEBuffer.clear();
+
+        // add the uncompressed versions first
+        enDeRLE.zigZagRLE(yMatrix, resUnCompressedRLEBuffer);
+        enDeRLE.zigZagRLE(cbMatrix, resUnCompressedRLEBuffer);
+        enDeRLE.zigZagRLE(crMatrix, resUnCompressedRLEBuffer);
+
 
         // YMatrix;
-        if (compress) {
+        compressor.compressLumin(yMatrix, (short) height, (short) width);
 
-        compressor.compressLumin(yMatrix, (short) height, (short) width, resRLEBuffer);
-        }
-//        System.out.println("Compression Y : " + resRLEBuffer.position());
-        enDeRLE.zigZagRLE(yMatrix,resRLEBuffer);
         // CbMatrix;
-        if (compress) {
+        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth);
 
-        compressor.compressChrome(cbMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
-        }
-//        System.out.println("Compression Cb : " + resRLEBuffer.position());
-        enDeRLE.zigZagRLE(cbMatrix,resRLEBuffer);
         // CyMatrix
-        if (compress) {
+        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth);
 
-        compressor.compressChrome(crMatrix, (short) cbHeight, (short) cbWidth, resRLEBuffer);
-        }
-//        System.out.println("Compression Cr : " + resRLEBuffer.position());
-        enDeRLE.zigZagRLE(crMatrix,resRLEBuffer);
+        // add the compressed patches
+        enDeRLE.zigZagRLE(yMatrix, resCompressedRLEBuffer);
+        enDeRLE.zigZagRLE(cbMatrix, resCompressedRLEBuffer);
+        enDeRLE.zigZagRLE(crMatrix, resCompressedRLEBuffer);
 
-        zigZagtime += compressor.zigZagTime;
-        dctTime += compressor.dctTime;
-        quantTime += compressor.quantTime;
-        final byte[] res = new byte[resRLEBuffer.position()];
-        resRLEBuffer.rewind();
-        resRLEBuffer.get(res);
+        final byte[] compressedData = new byte[resCompressedRLEBuffer.position()];
+        resCompressedRLEBuffer.rewind();
+        resCompressedRLEBuffer.get(compressedData);
+
+        final byte[] unCompressedData = new byte[resUnCompressedRLEBuffer.position()];
+        resUnCompressedRLEBuffer.rewind();
+        resUnCompressedRLEBuffer.get(unCompressedData);
+
+        final ArrayList<byte[]> res = new ArrayList<>();
+        res.add(compressedData);
+        res.add(unCompressedData);
         return res;
     }
 
@@ -385,5 +417,28 @@ public class JpegCodec implements Codec {
         return rgb;
     }
 
+    /**
+     * Sets the time taken for ZigZag operations.
+     * @param zigZagTimeArgs the time in nanoseconds
+     */
+    public void setZigZagTime(final long zigZagTimeArgs) {
+        this.zigZagtime = zigZagTimeArgs;
+    }
+
+    /**
+     * Sets the time taken for DCT operations.
+     * @param dctTimeArgs the time in nanoseconds
+     */
+    public void setDctTime(final long dctTimeArgs) {
+        this.dctTime = dctTimeArgs;
+    }
+
+    /**
+     * Sets the time taken for quantization operations.
+     * @param quantTimeArgs the time in nanoseconds
+     */
+    public void setQuantTime(final long quantTimeArgs) {
+        this.quantTime = quantTimeArgs;
+    }
 
 }

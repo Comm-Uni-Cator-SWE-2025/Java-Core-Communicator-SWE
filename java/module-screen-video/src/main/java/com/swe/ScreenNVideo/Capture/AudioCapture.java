@@ -1,4 +1,11 @@
+/**
+ * Contributed by @aman112201041.
+ */
+
 package com.swe.ScreenNVideo.Capture;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -16,6 +23,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture, Runnable {
 
     /** The microphone input line capturing raw PCM audio. */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
+    /**
+     * Microphone.
+     */
     private TargetDataLine microphone;
 
     /** The audio format specifying sample rate, size, and channel configuration. */
@@ -44,7 +55,7 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             (int) (SAMPLE_RATE * FRAME_DURATION_MS / 1000 * (SAMPLE_SIZE / 8) * CHANNELS);
 
     /** Queue storing captured audio chunks for downstream consumers (e.g., encoder, sender). */
-    private final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>(50);
+    private final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>(500);
 
     /**
      * Constructs an AudioCapture instance with the default format.
@@ -65,10 +76,10 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             captureThread = new Thread(this, "AudioCaptureThread");
             captureThread.start();
 
-            System.out.println("Audio capture started at " + SAMPLE_RATE + " Hz");
+            LOG.info("Audio capture started at " + SAMPLE_RATE + " Hz");
             return true;
         } catch (LineUnavailableException e) {
-            e.printStackTrace();
+            LOG.error("Exception", e);
             return false;
         }
     }
@@ -84,10 +95,14 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
                 audioQueue.offer(chunk); // non-blocking insert
             }
         }
+        LOG.info("AudioCapture thread stopped. Total chunks captured: ");
     }
 
     @Override
     public byte[] getChunk() {
+        if (!running) {
+            init();
+        }
         return audioQueue.poll(); // returns null if empty (non-blocking)
     }
 
@@ -115,9 +130,8 @@ public class AudioCapture implements com.swe.ScreenNVideo.Capture.IAudioCapture,
             if (captureThread != null) {
                 captureThread.join();
             }
-            System.out.println("Audio capture stopped.");
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception", e);
         }
     }
 

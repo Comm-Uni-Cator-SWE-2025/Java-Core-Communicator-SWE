@@ -5,6 +5,9 @@
 # intellij java specific files
 Networking/.idea/
 Networking/.mvn/
+**/.idea/
+**/.mvn/
+**/.vscode/
 
 # For java class files
 **/*.class

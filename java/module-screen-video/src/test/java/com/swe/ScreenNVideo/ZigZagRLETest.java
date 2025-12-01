@@ -1,3 +1,7 @@
+/**
+ * Contributed by @Devansh-Kesan
+ */
+
 package com.swe.ScreenNVideo;
 
 import com.swe.ScreenNVideo.Codec.EncodeDecodeRLE;

@@ -1,4 +1,6 @@
-// contributed by Anup Kumar
+/**
+ * Contributed by @chirag9528.
+ */
 
 package com.swe.ScreenNVideo.Codec;
 

@@ -1,3 +1,7 @@
+/**
+ * contributed by @anup.
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Test class for QuantisationUtil.
- * <p>
- * NOTE: This class tests a singleton with mutable static state.
- * The order of tests is critical to ensure predictable behavior.
- * Tests that modify the state (setCompressonResulation) are run last.
  */
 public class QuantisationUtilTest {
 
@@ -43,9 +43,23 @@ public class QuantisationUtilTest {
         for(int i = 0;i < BLOCK_SIZE; ++i ) {
             for(int j = 0; j < BLOCK_SIZE; ++j) {
                 inputMatrix[i][j] = (short) (TEST_VALUE / (i+j+1));
-//                System.out.println(inputMatrix[i][j]);
             }
         }
+    }
+
+    /**
+     *
+     * @return the copy of initial matrix
+     */
+    private short[][] getCopyofInputMatrix(){
+
+        short[][] copyInitMatrix = new short[BLOCK_SIZE][BLOCK_SIZE];
+
+        for(int i = 0; i < BLOCK_SIZE; ++i) {
+            System.arraycopy(inputMatrix[i], 0, copyInitMatrix[i], 0, BLOCK_SIZE);
+        }
+
+        return copyInitMatrix;
     }
 
     /**
@@ -76,9 +90,6 @@ public class QuantisationUtilTest {
         // Test that the singleton pattern works
         assertSame(quantUtil, instance2, "getInstance() should always return the same instance");
 
-        // The constructor calls setCompressonResulation(50)
-        // We just need to assert that it exists. The quant/dequant tests
-        // will implicitly test if this initialization was successful.
     }
 
     @Test
@@ -86,22 +97,37 @@ public class QuantisationUtilTest {
         intitMatrix();
         // Get the internal scaled table to predict the result
         final float[][] scaledLumin = (float[][]) getPrivateField(quantUtil, "scaledQuantLumin");
-        final short expectedVal = (short) Math.round(TEST_VALUE / scaledLumin[0][0]);
+
+        // copy the input matrix to test
+        final short[][] initialMatrix = getCopyofInputMatrix();
 
         // 1. Test quantisationLumin
         quantUtil.quantisationLumin(inputMatrix, (short) 0, (short) 0);
 
         // Check that the target 8x8 block was modified
-        assertEquals(expectedVal, inputMatrix[0][0],
-                "quantisationLumin did not produce expected value");
+        for(int i = 0; i < BLOCK_SIZE; ++i) {
+            for(int j = 0; j < BLOCK_SIZE; ++j) {
+                assertEquals((short) Math.round(initialMatrix[i][j]/scaledLumin[i][j]), inputMatrix[i][j],
+                        "quantisationLumin did not produce expected value at row : + " + i + " and col : "  + j);
+            }
+        }
+
+
 
         // 2. Test deQuantisationLumin
+        // After quantisation, many coefficients become zero due to division by the
+        // quantisation table values. Once a coefficient becomes zero, dequantisation
+        // cannot recover the original value — that information is permanently lost.
+        // The DC coefficient, however, is usually much larger and is divided by a
+        // small quantisation value, so it typically survives quantisation and can be
+        // accurately reconstructed during dequantisation.
+
+        final short dcquantVal = (short) Math.round((TEST_VALUE/scaledLumin[0][0]));
+        final short dcdequantVal = (short) Math.round(dcquantVal * scaledLumin[0][0]);
+
         quantUtil.deQuantisationLumin(inputMatrix, (short) 0, (short) 0);
-        final short dequantVal = (short) Math.round(expectedVal * scaledLumin[0][0]);
 
-        assertEquals(dequantVal, inputMatrix[0][0],
-                "deQuantisationLumin did not produce expected value");
-
+        assertEquals(dcdequantVal , inputMatrix[0][0],"deQuantisationLumin is not producing correct dc value ");
     }
 
     @Test
@@ -109,21 +135,36 @@ public class QuantisationUtilTest {
         intitMatrix();
         // Get the internal scaled table to predict the result
         final float[][] scaledChrome = (float[][]) getPrivateField(quantUtil, "scaledQuantChrome");
-        final short expectedVal = (short) Math.round(TEST_VALUE / scaledChrome[0][0]);
+
+        // copy the input matrix to test
+        final short[][] initialMatrix = getCopyofInputMatrix();
 
         // 1. Test quantisationChrome
         quantUtil.quantisationChrome(inputMatrix, (short) 0, (short) 0);
 
         // Check that the target 8x8 block was modified
-        assertEquals(expectedVal, inputMatrix[0][0],
-                "quantisationChrome did not produce expected value");
+        for(int i = 0; i < BLOCK_SIZE; ++i) {
+            for(int j = 0; j < BLOCK_SIZE; ++j) {
+                assertEquals((short) Math.round(initialMatrix[i][j]/scaledChrome[i][j]), inputMatrix[i][j],
+                        "quantisationChrome did not produce expected value at row : + " + i + " and col : "  + j);
+            }
+        }
 
         // 2. Test deQuantisationChrome
-        quantUtil.deQuantisationChrome(inputMatrix, (short) 0, (short) 0);
-        final short dequantVal = (short) Math.round(expectedVal * scaledChrome[0][0]);
+        // After quantisation, many coefficients become zero due to division by the
+        // quantisation table values. Once a coefficient becomes zero, dequantisation
+        // cannot recover the original value — that information is permanently lost.
+        // The DC coefficient, however, is usually much larger and is divided by a
+        // small quantisation value, so it typically survives quantisation and can be
+        // accurately reconstructed during dequantisation.
 
-        assertEquals(dequantVal, inputMatrix[0][0],
-                "deQuantisationChrome did not produce expected value");
+        final short dcquantVal = (short) Math.round((TEST_VALUE/scaledChrome[0][0]));
+        final short dcdequantVal = (short) Math.round(dcquantVal * scaledChrome[0][0]);
+
+        quantUtil.deQuantisationChrome(inputMatrix, (short) 0, (short) 0);
+
+        assertEquals(dcdequantVal , inputMatrix[0][0],"deQuantisationChrome is not producing correct dc value ");
+
     }
 
     private static final int[] QUALITY_VALUES = {1, 49, 50, 55, 99, 100};

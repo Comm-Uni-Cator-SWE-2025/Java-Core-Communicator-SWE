@@ -1,4 +1,11 @@
+/**
+ * Contributed by @alonot.
+ */
+
 package com.swe.ScreenNVideo;
+
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -12,6 +19,10 @@ import java.net.UnknownHostException;
  * Utility class for ScreenN Video.
  */
 public class Utils {
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * Hashing stride for the hashing algorithm.
      */
@@ -45,6 +56,10 @@ public class Utils {
      */
     public static final String SUBSCRIBE_AS_VIEWER = "subscribeAsViewer";
     /**
+     * Key constant for unSubscribe_as_viewer.
+     */
+    public static final String UNSUBSCRIBE_AS_VIEWER = "unSubscribeAsViewer";
+    /**
      * Key constant for Updating UI.
      */
     public static final String UPDATE_UI = "updateUI";
@@ -61,8 +76,11 @@ public class Utils {
      */
     public static final int BUFFER_SIZE = 1024 * 10; // 10 kb
 
+    /** Sample rate in Hz for audio capture (48 kHz). */
     public static final float DEFAULT_SAMPLE_RATE = 48000f;
+    /** Bit depth per audio sample (16-bit PCM). */
     public static final int DEFAULT_CHANNELS = 1;
+    /** Number of audio channels (1 for mono). */
     public static final int DEFAULT_SAMPLE_SIZE = 16;
 
     /**
@@ -168,7 +186,7 @@ public class Utils {
         for (int y = 0; y < height; y++) {
             System.arraycopy(data, y * width, matrix[y], 0, width);
         }
-//        System.out.println("Image to RGB Matrix Conversion Time: "
+//        LOG.info("Image to RGB Matrix Conversion Time: "
 //                + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
         return matrix;
     }
@@ -190,15 +208,25 @@ public class Utils {
     }
 
     /**
-     * Fills dstMatrix with the srcMatrix
+     * Fills dstMatrix with the srcMatrix.
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
-    public static void copyMatrix(int[][] srcMatrix, int[][] dstMatrix) {
+    public static void copyMatrix(final int[][] srcMatrix, final int[][] dstMatrix) {
 
         final int height = Math.min(srcMatrix.length, dstMatrix.length);
-        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
-        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int srcWidth;
+        if ((srcMatrix.length) > 0) {
+            srcWidth = srcMatrix[0].length;
+        } else {
+            srcWidth = 0;
+        }
+        final int dstWidth;
+        if ((dstMatrix.length) > 0) {
+            dstWidth = dstMatrix[0].length;
+        } else {
+            dstWidth = 0;
+        }
         final int width = Math.min(srcWidth, dstWidth);
 
         for (int i = 0; i < height; i++) {
@@ -207,15 +235,25 @@ public class Utils {
     }
 
     /**
-     * Fills dstMatrix with the srcMatrix
+     * Fills dstMatrix with the srcMatrix.
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
-    public static void copyMatrix(long[][] srcMatrix, long[][] dstMatrix) {
+    public static void copyMatrix(final long[][] srcMatrix, final long[][] dstMatrix) {
 
         final int height = Math.min(srcMatrix.length, dstMatrix.length);
-        final int srcWidth = (srcMatrix.length) > 0 ? srcMatrix[0].length : 0;
-        final int dstWidth = (dstMatrix.length) > 0 ? dstMatrix[0].length : 0;
+        final int srcWidth;
+        if ((srcMatrix.length) > 0) {
+            srcWidth = srcMatrix[0].length;
+        } else {
+            srcWidth = 0;
+        }
+        final int dstWidth;
+        if ((dstMatrix.length) > 0) {
+            dstWidth = dstMatrix[0].length;
+        } else {
+            dstWidth = 0;
+        }
         final int width = Math.min(srcWidth, dstWidth);
 
         for (int i = 0; i < height; i++) {

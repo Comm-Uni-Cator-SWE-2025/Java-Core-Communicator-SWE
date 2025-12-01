@@ -11,7 +11,6 @@ package com.swe.ScreenNVideo.Codec;
  *
  * <p>This class follows the Singleton pattern.
  */
-@SuppressWarnings("checkstyle:MissingJavadocType")
 public class QuantisationUtil {
     /**
      * Annex K, Table K.1 of the JPEG Standard (ITU-T T.81 / ISO 10918-1, 1992)
@@ -42,7 +41,7 @@ public class QuantisationUtil {
         {18, 22, 37, 56, 68, 109, 103, 77},
         {24, 35, 55, 64, 81, 104, 113, 92},
         {49, 64, 78, 87, 103, 121, 120, 101},
-        {72, 92, 95, 98, 112, 100, 103, 99}
+        {72, 92, 95, 98, 112, 100, 103, 99},
     };
 
     /**
@@ -99,10 +98,6 @@ public class QuantisationUtil {
      * Maximum allowed value for a quantized table entry.
      */
     private static final int JPEG_CLAMP_MAX = 255;
-    /**
-     * Rounding offset for double-to-int conversion.
-     */
-    private static final double ROUNDING_OFFSET_DOUBLE = 0.5;
 
     /**
      * used for scaling.
@@ -136,7 +131,8 @@ public class QuantisationUtil {
         }
 
         // Initialize the scaled tables when created
-        setCompressonResolution(90);
+        final int qualityResolution = 99;
+        setCompressonResolution(qualityResolution);
     }
 
     /**
@@ -183,6 +179,7 @@ public class QuantisationUtil {
 
 
     }
+
     /**
      * Applies quantization to a Chrominance block of DCT coefficients.
      *

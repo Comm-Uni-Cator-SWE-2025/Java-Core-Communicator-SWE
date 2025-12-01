@@ -1,9 +1,15 @@
+/**
+ * Contributed by @chirag9528.
+ */
+
 package com.swe.ScreenNVideo.Synchronizer;
 
 import com.swe.ScreenNVideo.Codec.Codec;
 import com.swe.ScreenNVideo.PatchGenerator.CompressedPatch;
 import com.swe.ScreenNVideo.PatchGenerator.ImageStitcher;
 import com.swe.ScreenNVideo.PatchGenerator.Patch;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 import java.util.List;
 import java.util.PriorityQueue;
@@ -12,6 +18,10 @@ import java.util.PriorityQueue;
  * Synchronizer to synchronize the image from the patches.
  */
 public class ImageSynchronizer {
+    /**
+     * Screen Video logger.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("SCREEN-VIDEO");
     /**
      * The previous image.
      * The new patch will be stitched on this image.
@@ -27,13 +37,83 @@ public class ImageSynchronizer {
     private final ImageStitcher imageStitcher;
 
     /**
+     * Time in ms when previous packets were sent.
+     */
+    private long prevSend = 0;
+
+    /**
+     * Returns the last send timestamp.
+     * @return time in milliseconds
+     */
+    public long getPrevSend() {
+        return prevSend;
+    }
+
+    /**
+     * Data recieved from prevSend.
+     */
+    private long dataReceived = 0;
+
+    public long getDataReceived() {
+        return dataReceived;
+    }
+
+    public void setDataReceived(final long receivedTimestamp) {
+        this.dataReceived = receivedTimestamp;
+    }
+
+    /**
+     * Setter for prevSend.
+     */
+    public void setPrevSend() {
+        prevSend = System.currentTimeMillis();
+    }
+
+    /**
      * The next feed number we expect to recieve in correct order.
      * Used to ensure patches are applied sequentially.
      */
     private int expectedFeedNumber;
 
+    /**
+     * Indicates if the synchronizer is currently waiting for a full image.
+     */
+    private boolean waitingForFullImage = false;
+
+    /**
+     * Sets whether a full image is being awaited.
+     *
+     * @param waiting status flag
+     */
+    public void setWaitingForFullImage(final boolean waiting) {
+        this.waitingForFullImage = waiting;
+    }
+
     public int getExpectedFeedNumber() {
         return expectedFeedNumber;
+    }
+
+    /**
+     * If true, compression is requested for upcoming patches.
+     */
+    private boolean reqCompression = false;
+
+    /**
+     * Returns whether compression is requested.
+     *
+     * @return true if compression is required
+     */
+    public boolean isReqCompression() {
+        return reqCompression;
+    }
+
+    /**
+     * Sets the compression request status.
+     *
+     * @param required true if compression is needed
+     */
+    public void setReqCompression(final boolean required) {
+        this.reqCompression = required;
     }
 
     /**
@@ -50,6 +130,7 @@ public class ImageSynchronizer {
     private final PriorityQueue<FeedData> heap;
 
     /**
+     * Returns the priority queue used for storing reordered feed packets.
      * @return the min-heap of {@link FeedData} items used for ordering incoming packets.
      */
     public PriorityQueue<FeedData> getHeap() {
@@ -93,6 +174,9 @@ public class ImageSynchronizer {
 //            break;
         }
         previousImage = imageStitcher.getCanvas();
+        if (previousImage == null) {
+            LOG.warn("ImageSynchronizer produced null canvas");
+        }
         return previousImage;
     }
 

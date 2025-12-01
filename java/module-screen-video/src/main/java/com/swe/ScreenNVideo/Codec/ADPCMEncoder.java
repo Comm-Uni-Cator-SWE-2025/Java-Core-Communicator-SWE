@@ -1,3 +1,7 @@
+/**
+ * Contributed by @aman112201041.
+ */
+
 package com.swe.ScreenNVideo.Codec;
 
 /**
@@ -7,6 +11,12 @@ package com.swe.ScreenNVideo.Codec;
  * allow continuous encoding of streaming PCM data.
  */
 public class ADPCMEncoder {
+
+    /** Mask for extracting the lower 8 bits of a byte (0xFF). */
+    private static final int BYTE_MASK = 0xFF;
+
+    /** Number of bits to shift the high byte when forming a 16-bit sample. */
+    private static final int BYTE_SHIFT = 8;
 
     /** Sign bit used in a 4-bit ADPCM code to indicate negative values. */
     private static final int SIGN_BIT = 8;
@@ -121,8 +131,8 @@ public class ADPCMEncoder {
      * @return the decoded 16-bit signed PCM sample
      */
     private int bytesToSample(final byte[] pcmBytes, final int sampleIndex) {
-        final int lo = pcmBytes[2 * sampleIndex] & 0xFF;
-        final int hi = pcmBytes[2 * sampleIndex + 1] << 8;
+        final int lo = pcmBytes[2 * sampleIndex] & BYTE_MASK;
+        final int hi = pcmBytes[2 * sampleIndex + 1] << BYTE_SHIFT;
         return (short) (hi | lo);
     }
 
@@ -220,5 +230,13 @@ public class ADPCMEncoder {
      */
     private int clamp(final int value, final int min, final int max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    public int getPredictor() {
+        return this.predictor;
+    }
+
+    public int getIndex() {
+        return this.index;
     }
 }

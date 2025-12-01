@@ -1,17 +1,14 @@
+/**
+ * Contributed by @anup.
+ */
+
 package com.swe.ScreenNVideo.Codec;
-
-import java.nio.ByteBuffer;
-
-// Contributed by Anup Kumar
 
 /**
  * Implements the ICompressor interface to provide JPEG-like compression logic.
  * This class orchestrates the various steps:
  * 1. Forward Discrete Cosine Transform (FDCT)
  * 2. Quantization
- * 3. Run-Length Encoding (RLE) with ZigZag scan
- * <p>
- * It is package-private and intended to be used within the Codec package.
  */
 class Compressor implements ICompressor {
     /**
@@ -26,49 +23,47 @@ class Compressor implements ICompressor {
     /**
      * Unit Matrix Dimension (8x8).
      */
-    private final int MATRIX_DIM = 8;
+    private final int matrixDim = 8;
 
     /**
      * Time taken for ZigZag operations.
      */
-    public long zigZagTime = 0;
+    private long zigZagTime = 0;
     /**
      * Time taken for DCT operations.
      */
-    public long dctTime = 0;
+    private long dctTime = 0;
     /**
      * Time taken for quantization operations.
      */
-    public long quantTime = 0;
+    private long quantTime = 0;
 
 
     /**
      * Package-private constructor.
      * Initializes the compressor by obtaining singleton instances of the
-     * DCT, Quantization, and RLE modules.
+     * DCT, Quantization .
      */
     Compressor() {
         dctmodule = AANdct.getInstance();
         quantmodule = QuantisationUtil.getInstance();
-
     }
 
     /**
      * Doing the Compression of Chrominance (Cb,Cr) Matrix of Dimension height X width
      * both height and width are divisible by 8
      * steps :
-     * DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
+     * DCT transformation -> Quantisation.
      *
      * @param matrix    : input matrix to be compressed
      * @param height    : height of matrix
      * @param width     : width of matrix
-     * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressChrome(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
+    public void compressChrome(final short[][] matrix, final short height, final short width) {
 
-        for (short i = 0; i < height; i += MATRIX_DIM) {
-            for (short j = 0; j < width; j += MATRIX_DIM) {
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
                 dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
 //                curr = System.nanoTime();
@@ -83,18 +78,17 @@ class Compressor implements ICompressor {
      * Doing the Compression of Luminance Matrix (Y) of Dimension height X width
      * both height and width are divisibel by 8
      * steps :
-     * DCT transformation -> Quantisation -> ZigzagScan -> Run Length Encoding .
+     * DCT transformation -> Quantisation.
      *
      * @param matrix    : input matrix to be compressed
      * @param height    : height of matrix
      * @param width     : width of matrix
-     * @param resBuffer : The Resultant buffer where encoded matrix will be stored
      */
     @Override
-    public void compressLumin(final short[][] matrix, final short height, final short width, final ByteBuffer resBuffer) {
+    public void compressLumin(final short[][] matrix, final short height, final short width) {
 
-        for (short i = 0; i < height; i += MATRIX_DIM) {
-            for (short j = 0; j < width; j += MATRIX_DIM) {
+        for (short i = 0; i < height; i += matrixDim) {
+            for (short j = 0; j < width; j += matrixDim) {
                 dctmodule.fdct(matrix, i, j);
 //                dctTime += System.nanoTime() - curr;
 //                curr = System.nanoTime();

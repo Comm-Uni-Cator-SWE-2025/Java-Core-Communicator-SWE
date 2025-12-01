@@ -1,11 +1,14 @@
 package com.swe.networking.SimpleNetworking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.swe.networking.ClientNode;
+import com.swe.core.ClientNode;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
@@ -22,6 +25,8 @@ public class Client implements IUser {
     /**
      * Variable to store the name of the module.
      */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
     private static final String MODULENAME = "[CLIENT]";
     /**
      * The variable to store the device IP address.
@@ -69,7 +74,7 @@ public class Client implements IUser {
         simpleNetworking = SimpleNetworking.getSimpleNetwork();
         communicator = new TCPCommunicator(devicePort);
         chunkManager = SimpleChunkManager.getChunkManager(payloadSize);
-        SimpleNetworkLogger.printInfo(MODULENAME, "Client initialized...");
+        LOG.info("Client initialized...");
     }
 
     /**
@@ -83,9 +88,9 @@ public class Client implements IUser {
     @Override
     public void send(final byte[] data, final ClientNode[] destIp, final ClientNode serverIp, final ModuleType module) {
         for (ClientNode client : destIp) {
-            SimpleNetworkLogger.printInfo(MODULENAME, "Data size sent : " + data.length);
+            LOG.info("Data size sent : " + data.length);
             communicator.sendData(data, serverIp);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Data sent successfully...");
+            LOG.info("Data sent successfully...");
         }
     }
 
@@ -114,8 +119,8 @@ public class Client implements IUser {
             final int module = pktInfo.getModule();
             final ModuleType type = moduleType.getType(module);
             final String data = new String(pktInfo.getPayload(), StandardCharsets.UTF_8);
-            SimpleNetworkLogger.printInfo(MODULENAME, "Client data size received : " + data.length());
-            SimpleNetworkLogger.printInfo(MODULENAME, "Client module received : " + type.toString());
+            LOG.info("Client data size received : " + data.length());
+            LOG.info("Client module received : " + type.toString());
             byte[] message = chunkManager.addChunk(packet);
             if (message != null) {
                 final PacketInfo newpktInfo = parser.parsePacket(message);
@@ -123,7 +128,7 @@ public class Client implements IUser {
                 simpleNetworking.callSubscriber(message, type);
             }
         } catch (UnknownHostException ex) {
-            SimpleNetworkLogger.printError(MODULENAME, "Client Could not parse packet succesfully...");
+            LOG.error("Client Could not parse packet succesfully...");
         }
     }
 
@@ -132,7 +137,7 @@ public class Client implements IUser {
      */
     @Override
     public void closeUser() {
-        SimpleNetworkLogger.printInfo(MODULENAME, "Closing the receving socket...");
+        LOG.info("Closing the receving socket...");
         communicator.close();
     }
 }

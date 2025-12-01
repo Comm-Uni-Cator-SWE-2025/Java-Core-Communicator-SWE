@@ -1,5 +1,7 @@
 package com.swe.networking;
 
+import com.swe.core.ClientNode;
+
 /**
  * Record to store a client details in a network.
  * 

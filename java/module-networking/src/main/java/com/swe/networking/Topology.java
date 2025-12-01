@@ -1,5 +1,9 @@
 package com.swe.networking;
 
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+
+import com.swe.core.ClientNode;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,17 +12,24 @@ import java.util.List;
  * The main architecture of the networking module. Implements the cluster
  * networks
  */
-public final class Topology implements AbstractTopology, AbstractController {
+public final class Topology implements AbstractTopology {
+
+    /**
+     * The module name for logging.
+     */
+    private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
+
+    private static final String MODULENAME = "[TOPOLOGY]";
 
     /**
      * The List of all cluster clients.
      *
      */
-    private final List<List<ClientNode>> clusters;
+    private List<List<ClientNode>> clusters;
     /**
      * The List of all servers of all clusters.
      */
-    private final List<ClientNode> clusterServers;
+    private List<ClientNode> clusterServers;
     /**
      * The total number of clusters.
      *
@@ -30,9 +41,9 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     private int numClients;
     /**
-     * The maximum of clusters.
+     * The maximum size of a cluster.
      */
-    private final int maxClusters = 2;
+    private final int singleClusterSize = 6;
     /**
      * The variable to iterate through the clusters.
      */
@@ -61,10 +72,10 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public static Topology getTopology() {
         if (topology == null) {
-            System.out.println("Creating new Topology object...");
+            LOG.info("Creating new Topology object...");
             topology = new Topology();
         }
-        System.out.println("Passing already instantiated Topology object...");
+        LOG.info("Passing already instantiated Topology object...");
         return topology;
     }
 
@@ -97,12 +108,11 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @param deviceAddress Ip address of the current device
      * @param mainServerAddress Ip address of the server device
      */
-    @Override
     public void addUser(final ClientNode deviceAddress,
             final ClientNode mainServerAddress) {
         // update the network and add the client
         if (deviceAddress.equals(mainServerAddress)) {
-            System.out.println("This device is considered as the main Server");
+            LOG.info("Device " + deviceAddress + " is considered as the main Server");
             user = new MainServer(deviceAddress, mainServerAddress);
             final List<ClientNode> cluster = new ArrayList<>();
             cluster.add(deviceAddress);
@@ -112,10 +122,12 @@ public final class Topology implements AbstractTopology, AbstractController {
             numClients = 1;
         } else {
             try {
+                LOG.info("Device " + deviceAddress + " is considered as a P2P Cluster node");
                 user = new P2PCluster();
                 ((P2PCluster) user).addUser(deviceAddress, mainServerAddress);
             } catch (UnknownHostException ex) {
-                System.out.println("Error while adding user to the P2P cluster...");
+                LOG.error("Error while adding user "
+                        + deviceAddress + " to the P2P cluster: " + ex.getMessage());
             }
         }
     }
@@ -129,8 +141,8 @@ public final class Topology implements AbstractTopology, AbstractController {
         final List<List<ClientNode>> clients = new ArrayList<>();
         final List<ClientNode> servers = new ArrayList<>();
         final NetworkStructure structure = new NetworkStructure(clients, servers);
-        System.out.println(clusters);
-        System.out.println(clusterServers);
+        LOG.info("Clusters: " + clusters);
+        LOG.info("Cluster servers: " + clusterServers);
         for (int i = 0; i < clusters.size(); i++) {
             structure.clusters().add(clusters.get(i));
             structure.servers().add(clusterServers.get(i));
@@ -143,7 +155,9 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public void closeTopology() {
         user.close();
-        System.out.println("Closing topology...");
+        clusters = new ArrayList<>();
+        clusterServers = new ArrayList<>();
+        LOG.info("Closing topology...");
     }
 
     /**
@@ -155,28 +169,20 @@ public final class Topology implements AbstractTopology, AbstractController {
      */
     public int addClient(final ClientNode clientAddress) {
         numClients += 1;
-        // System.out.println(numClients + " " + numClusters);
-        // System.out.println(clusters + "\n" + clusterServers);
-        if (numClusters < maxClusters) {
-            numClusters += 1;
+
+        final List<ClientNode> lastCluster = clusters.get(clusters.size() - 1);
+        if (lastCluster.size() < singleClusterSize) {
+            lastCluster.add(clientAddress);
+            LOG.info("Added to cluster " + (numClusters - 1) + " ...");
+            return numClusters - 1;
+        } else {
             final List<ClientNode> cluster = new ArrayList<>();
             cluster.add(clientAddress);
             clusters.add(cluster);
             clusterServers.add(clientAddress);
-            System.out.println("Adding to a new cluster...");
-            return cluster.size() - 1;
-        } else {
-            clusters.get(clusterIndex).add(clientAddress);
-            if (clusters.get(clusterIndex).size() == 1) {
-                System.out.println("Adding to a new cluster...");
-                clusterServers.add(clientAddress);
-                // System.out.println(numClients + " " + numClusters);
-                // System.out.println(clusters + "\n" + clusterServers);
-            }
-            final int idx = clusterIndex;
-            clusterIndex = (clusterIndex + 1) % maxClusters;
-            System.out.println("Added to cluster " + clusterIndex + " ...");
-            return idx;
+            numClusters++;
+            LOG.info("Adding to a new cluster...");
+            return numClusters - 1;
         }
     }
 
@@ -189,6 +195,7 @@ public final class Topology implements AbstractTopology, AbstractController {
         final int idx = client.clusterIndex();
         final ClientNode newClient = client.client();
         clusters.get(idx).add(newClient);
+        LOG.info("Updated network by adding client " + newClient + " to cluster " + idx);
     }
 
     /**
@@ -205,12 +212,12 @@ public final class Topology implements AbstractTopology, AbstractController {
             if (!clusters.get(idx).isEmpty()) {
                 final ClientNode newServer = clusters.get(idx).get(0);
                 clusterServers.set(idx, newServer);
-                System.out.println("A new server has been decided\n");
+                LOG.info("A new server has been decided\n");
                 return;
             }
             clusters.remove(idx);
             clusterServers.remove(removeClient);
-            System.out.println("Removed " + removeClient + "from the server list...");
+            LOG.info("Removed " + removeClient + "from the server list...");
             // numClusters -= 1;
         }
     }
@@ -232,6 +239,8 @@ public final class Topology implements AbstractTopology, AbstractController {
         for (List<ClientNode> cluster : clusters) {
             numClients += cluster.size();
         }
+        LOG.info("Replaced network structure. New number of clusters: "
+                + numClusters + ", New number of clients: " + numClients);
     }
 
     /**
@@ -256,6 +265,9 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @return list of all clients in the cluster
      */
     public List<ClientNode> getClients(final int index) {
+        if (index >= clusters.size() || index < 0) {
+            return null;
+        }
         return clusters.get(index);
     }
 
@@ -310,7 +322,7 @@ public final class Topology implements AbstractTopology, AbstractController {
     public ClientNode getDestination(final ClientNode source, final ClientNode dest) {
         final int srcClusterIdx = getClusterIndex(source);
         final int destClusterIdx = getClusterIndex(dest);
-        System.out.println("Netowkr "+topology.getNetwork());
+        LOG.info("Netowkr " + topology.getNetwork());
         if (srcClusterIdx == destClusterIdx) {
             return dest;
         } else {
@@ -326,6 +338,10 @@ public final class Topology implements AbstractTopology, AbstractController {
      * @param dest the destination to send
      */
     public void sendPacket(final byte[] packet, final ClientNode dest) {
-        user.send(packet, dest);
+        try {
+            user.send(packet, dest);
+        } catch (Exception e) {
+            LOG.info("Exception occured: " + e.getMessage() + " Closing topology...");
+        }
     }
 }
