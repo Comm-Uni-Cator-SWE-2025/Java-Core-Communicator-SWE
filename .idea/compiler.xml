@@ -11,10 +11,12 @@
         <module name="module-networking" />
         <module name="module-screen-video" />
         <module name="module-chat" />
-        <module name="module-cloud" />
         <module name="module-integration-tests" />
         <module name="module-ai-insights" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="module-cloud" target="24" />
+    </bytecodeTargetLevel>
   </component>
 </project>

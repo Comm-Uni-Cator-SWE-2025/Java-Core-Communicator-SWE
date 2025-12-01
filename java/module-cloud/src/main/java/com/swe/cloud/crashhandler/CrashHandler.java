@@ -6,7 +6,6 @@ import datastructures.Entity;
 import functionlibrary.CloudFunctionLibrary;
 import interfaces.ICrashHandler;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -36,11 +35,14 @@ public class CrashHandler implements ICrashHandler {
 
         final CloudFunctionLibrary cloudFunctionLibrary = new CloudFunctionLibrary();
 
-        try {
-            cloudFunctionLibrary.cloudCreate(new Entity(null, "ExceptionLogs", null, null, -1, null, null));
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        cloudFunctionLibrary.cloudCreate(new Entity(null, "ExceptionLogs", null, null, -1, null, null))
+                .thenAccept(cloudResponse -> {
+                    System.out.println("Log created successfully");
+                })
+                .exceptionally(ex -> {
+                    throw new RuntimeException(ex);
+                });
+
 
         Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
             final String exceptionName = exception.getClass().getName();
@@ -62,11 +64,13 @@ public class CrashHandler implements ICrashHandler {
             );
             System.out.println("Inside def...");
             new Thread(() -> {
-                try {
-                    cloudFunctionLibrary.cloudPost(exceptionEntity);
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                    cloudFunctionLibrary.cloudPost(exceptionEntity).thenAccept(cloudResponse -> {
+                        System.out.println("Log created successfully");
+                    })
+                            .exceptionally(e -> {
+                                throw new RuntimeException(e);
+                            });
+
             }, "WorkerThreadStoreException").start();
         });
     }
