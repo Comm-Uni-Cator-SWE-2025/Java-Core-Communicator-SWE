@@ -1,15 +1,24 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: NetwrokRPC.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.swe.core.ClientNode;
 import com.swe.core.RPCinterface.AbstractRPC;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 //File owned by Loganath
 /**
@@ -22,6 +31,9 @@ public class NetworkRPC {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "NETWORKRPC";
 
     /**

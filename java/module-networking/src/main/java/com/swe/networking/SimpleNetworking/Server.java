@@ -1,7 +1,14 @@
-package com.swe.networking.SimpleNetworking;
+/*
+ * -----------------------------------------------------------------------------
+ *  File: Server.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
+package com.swe.networking.SimpleNetworking;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -10,10 +17,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 import com.swe.networking.ModuleType;
 import com.swe.networking.PacketInfo;
 import com.swe.networking.PacketParser;
 import com.swe.networking.ProtocolBase;
+import com.swe.networking.ReceivePacket;
 import com.swe.networking.SplitPackets;
 import com.swe.networking.TCPCommunicator;
 
@@ -27,7 +37,9 @@ public class Server implements IUser {
      * Variable to store the name of the module.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SERVER]";
     /**
      * The variable to store the device IP address.
@@ -102,7 +114,7 @@ public class Server implements IUser {
     @Override
     public void receive() throws IOException {
         while (true) {
-            final byte[] packet = communicator.receiveData();
+            final ReceivePacket packet = communicator.receiveData();
             if (packet != null) {
                 final List<byte[]> packets = SplitPackets.getSplitPackets().split(packet);
                 for (byte[] p : packets) {

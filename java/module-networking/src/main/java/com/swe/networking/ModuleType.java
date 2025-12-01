@@ -1,3 +1,13 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: ModuleType.java
+ *  Owner: Udith
+ *  Roll Number : 142201012
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
 import java.util.HashMap;

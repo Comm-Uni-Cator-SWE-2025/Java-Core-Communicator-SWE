@@ -1,7 +1,18 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: ProtocolBase.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.ClientNode;
 import java.nio.channels.SocketChannel;
+
+import com.swe.core.ClientNode;
 
 /**
  * Common interface to send data using various protocols.
@@ -40,7 +51,7 @@ public interface ProtocolBase {
      *
      * @return the received data
      */
-    byte[] receiveData();
+    ReceivePacket receiveData();
 
     /**
      * Function to handle socket closing at termination.

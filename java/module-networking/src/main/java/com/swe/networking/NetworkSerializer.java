@@ -1,14 +1,24 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: NetworkSerializer.java
+ *  Owner: Shubham Yadav
+ *  Roll Number : 112201032
+ *  Module : Metworking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Class for serializing network objects.
@@ -18,7 +28,9 @@ public class NetworkSerializer {
      * variable to store the singleton classobject.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The singleton object for network serializer.
+     */
     private static NetworkSerializer serializer = null;
 
     /**

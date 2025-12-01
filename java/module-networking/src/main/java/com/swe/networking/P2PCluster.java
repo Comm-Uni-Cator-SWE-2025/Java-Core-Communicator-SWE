@@ -1,13 +1,23 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: P2PCluster.java
+ *  Owner: Asaduddin ahmed
+ *  Roll Number : 112201021
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The Cluster class to store details of a given cluster.
@@ -20,6 +30,9 @@ public class P2PCluster implements P2PUser {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The list of clients.
+     */
     private List<ClientNode> clients;
 
     /**
@@ -150,11 +163,12 @@ public class P2PCluster implements P2PUser {
     @Override
     public void receive() {
         while (true) {
-            final byte[] packet = tcpCommunicator.receiveData();
-            if (packet == null) {
+            final ReceivePacket receivePacket = tcpCommunicator.receiveData();
+            if (receivePacket == null) {
                 continue;
             } else {
                 try {
+                    final byte[] packet = receivePacket.data();
                     final PacketInfo packetInfo = packetParser.parsePacket(packet);
                     final NetworkStructure networkStructure = NetworkSerializer.getNetworkSerializer()
                             .deserializeNetworkStructure(packetInfo.getPayload());

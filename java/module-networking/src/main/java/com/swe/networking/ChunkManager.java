@@ -1,11 +1,25 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: ChunkManager.java
+ *  Owner: Udith
+ *  Roll Number : 142201012
+ *  Module : Metworking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
+import com.swe.core.ClientNode;
+
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
@@ -18,7 +32,9 @@ public class ChunkManager {
      * Singleton chunkManger.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * Singleton chunkManager.
+     */
     private static ChunkManager chunkManager = null;
     /**
      * Payload Size.
@@ -60,20 +76,6 @@ public class ChunkManager {
      * chunkListMap maps message id to list of chunks.
      */
     private final Map<String, Vector<byte[]>> chunkListMap = new HashMap<>();
-    /**
-     * messageList gets the list of merged chunks.
-     */
-    private final Vector<byte[]> messageList = new Vector<>();
-
-    /**
-     * Temporary function used to get the messageList. Used only for testing and
-     * to be replaced with some other function later.
-     *
-     * @return messageList. All the messages recorded till now.
-     */
-    Vector<byte[]> getMessageList() {
-        return messageList;
-    }
 
     /**
      * Add chunk function.
@@ -96,8 +98,6 @@ public class ChunkManager {
         }
         if (chunkListMap.get(msgId).size() == maxNumChunks) {
             final byte[] messageChunk = mergeChunks(chunkListMap.get(msgId));
-            // TOD use appropriate function once the message is ready
-            messageList.add(messageChunk);
             chunkListMap.remove(msgId);
             return messageChunk;
         }
@@ -184,5 +184,35 @@ public class ChunkManager {
      */
     public int getLastMessageId() {
         return messageId - 1;
+    }
+
+    /**
+     * Function to clean removed chunks from client.
+     *
+     * @param client the client to remove
+     */
+    public void cleanChunk(final ClientNode client) {
+        final String targetIp = client.hostName();
+
+        final List<String> keysToRemove = new ArrayList<>();
+
+        for (String key : chunkListMap.keySet()) {
+            final int idx = key.lastIndexOf(':');
+            if (idx != -1) {
+                final String ip = key.substring(idx + 1);
+
+                if (ip.equals(targetIp)) {
+                    keysToRemove.add(key);
+                }
+            }
+        }
+
+        for (String key : keysToRemove) {
+            chunkListMap.remove(key);
+        }
+    }
+
+    public Vector<byte[]> getMessageList() {
+        return null;
     }
 }

@@ -1,12 +1,22 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: Topology.java
+ *  Owner: Vishal
+ *  Roll Number : 112201049
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The main architecture of the networking module. Implements the cluster
@@ -19,6 +29,9 @@ public final class Topology implements AbstractTopology {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[TOPOLOGY]";
 
     /**
@@ -343,5 +356,20 @@ public final class Topology implements AbstractTopology {
         } catch (Exception e) {
             LOG.info("Exception occured: " + e.getMessage() + " Closing topology...");
         }
+    }
+
+    /**
+     * Function to check if a client is present in the topology (any cluster).
+     *
+     * @param client the input client to check
+     * @return true if client present, false otherwise
+     */
+    boolean checkClientPresent(final ClientNode client) {
+        for (List<ClientNode> cluster : clusters) {
+            if (cluster.contains(client)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

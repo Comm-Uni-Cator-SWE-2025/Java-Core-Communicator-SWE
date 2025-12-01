@@ -1,9 +1,15 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: TCPCommunicator.java
+ *  Owner: Loganath
+ *  Roll Number : 112201016
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -13,6 +19,10 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 //File owned by Loganath
 /**
@@ -26,6 +36,9 @@ public final class TCPCommunicator implements ProtocolBase {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[TCPCOMMUNICATOR]";
     /**
      * The server socket used to receive client connections.
@@ -82,7 +95,7 @@ public final class TCPCommunicator implements ProtocolBase {
     }
 
     @Override
-    public byte[] receiveData() {
+    public ReceivePacket receiveData() {
         try {
             final int timeout = 1000;
             selector.select(timeout);
@@ -97,7 +110,11 @@ public final class TCPCommunicator implements ProtocolBase {
                     acceptConnection(key);
                 } else if (key.isReadable()) {
                     final byte[] data = readData(key);
-                    return data;
+                    final String clientIp = ((SocketChannel) key.channel()).getRemoteAddress().toString();
+                    final int clientPort = ((InetSocketAddress) ((SocketChannel) key.channel())
+                            .getRemoteAddress()).getPort();
+                    final ClientNode client = new ClientNode(clientIp, clientPort);
+                    return new ReceivePacket(client, data);
                 }
             }
             return null;
@@ -175,9 +192,11 @@ public final class TCPCommunicator implements ProtocolBase {
                 LOG.info("New connection created successfully...");
                 clientSockets.put(new ClientNode(destIp, destPort), destSocket);
             }
-            final ByteBuffer buffer = ByteBuffer.wrap(data);
-            while (buffer.hasRemaining()) {
-                destSocket.write(buffer);
+            synchronized (destSocket) {
+                final ByteBuffer buffer = ByteBuffer.wrap(data);
+                while (buffer.hasRemaining()) {
+                    destSocket.write(buffer);
+                }
             }
             printIpAddr(destIp, destPort);
         } catch (IOException ex) {

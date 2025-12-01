@@ -1,3 +1,13 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: SimpleChunkManager.java
+ *  Owner: Udith
+ *  Roll Number : 142201012
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking.SimpleNetworking;
 
 import com.swe.core.logging.SweLogger;
@@ -22,6 +32,9 @@ public class SimpleChunkManager {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SIMPLECHUNKMANAGER]";
     /**
      * Singleton chunkManger.

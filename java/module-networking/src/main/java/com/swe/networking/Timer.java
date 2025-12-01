@@ -1,13 +1,23 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: Timer.java
+ *  Owner: Asaduddin ahmed
+ *  Roll Number : 112201021
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Timer class to monitor client timeouts.
@@ -19,6 +29,9 @@ public class Timer {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * Timeout duration in milliseconds.
+     */
     private final long timeoutDuration;
 
     /**
@@ -97,7 +110,7 @@ public class Timer {
         final List<ClientNode> timedOutClients = new ArrayList<>();
         final long currentTime = System.currentTimeMillis();
         synchronized (clients) {
-            LOG.info("Timer clients " + clients);
+            // LOG.info("Timer clients " + clients);
             for (ClientNode c : clients) {
                 if (currentTime - clientTimeouts.get(c) > timeoutDuration) {
                     timedOutClients.add(c);

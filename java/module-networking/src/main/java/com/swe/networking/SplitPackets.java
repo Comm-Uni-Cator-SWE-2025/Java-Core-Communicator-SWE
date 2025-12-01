@@ -1,12 +1,24 @@
-package com.swe.networking;
+/*
+ * -----------------------------------------------------------------------------
+ *  File: SplitPackets.java
+ *  Owner: Vishal
+ *  Roll Number : 112201049
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
+package com.swe.networking;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * Classs to split the received data into packets.
@@ -18,6 +30,9 @@ public class SplitPackets {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
 
+    /**
+     * The module name.
+     */
     private static final String MODULENAME = "[SPLITPACKETS]";
 
     /**
@@ -34,7 +49,8 @@ public class SplitPackets {
     /**
      * Buffer to store the incomplete packets from the data.
      */
-    private final ByteBuffer incompleteBuffer = ByteBuffer.allocate(bufferSize);
+    // private final ByteBuffer incompleteBuffer = ByteBuffer.allocate(bufferSize);
+    private final HashMap<ClientNode, ByteBuffer> clientBuffers = new HashMap<>();
 
     /**
      * Variable to store maximuum packet length size.
@@ -64,10 +80,15 @@ public class SplitPackets {
      * @param data the data to be split
      * @return the list of packets
      */
-    public List<byte[]> split(final byte[] data) {
+    public List<byte[]> split(final ReceivePacket receiveData) {
+        final byte[] data = receiveData.data();
+        final ClientNode sender = receiveData.sender();
         final List<byte[]> packets = new ArrayList<>();
         final ByteBuffer buffer;
-
+        if (!clientBuffers.containsKey(sender)) {
+            clientBuffers.put(sender, ByteBuffer.allocate(bufferSize));
+        }
+        final ByteBuffer incompleteBuffer = clientBuffers.get(sender);
         if (incompleteBuffer.position() > 0) {
             incompleteBuffer.flip();
             LOG.info("Remaining data from previous read");
@@ -116,6 +137,8 @@ public class SplitPackets {
      * Function to clean the buffer.
      */
     public void emptyBuffer() {
-        incompleteBuffer.clear();
+        for (ClientNode client : clientBuffers.keySet()) {
+            clientBuffers.get(client).clear();
+        }
     }
 }

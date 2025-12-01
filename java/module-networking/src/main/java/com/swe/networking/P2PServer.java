@@ -1,12 +1,22 @@
+/*
+ * -----------------------------------------------------------------------------
+ *  File: P2PServer.java
+ *  Owner: Asaduddin ahmed
+ *  Roll Number : 112201021
+ *  Module : Networking
+ *
+ * -----------------------------------------------------------------------------
+ */
+
 package com.swe.networking;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
-import com.swe.core.ClientNode;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import com.swe.core.ClientNode;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
 
 /**
  * The server of a particular P2P Cluster.
@@ -17,7 +27,9 @@ public class P2PServer implements P2PUser {
      * Communicator object to send and receive data.
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("NETWORKING");
-
+    /**
+     * The communicator object.
+     */
     private final ProtocolBase communicator;
 
     /**
@@ -53,7 +65,7 @@ public class P2PServer implements P2PUser {
     /**
      * The thread to send ALIVE.
      */
-    private final Thread sendThread = null;
+    private Thread sendThread = null;
 
     /**
      * The thread to monitor client timeouts.
@@ -103,10 +115,10 @@ public class P2PServer implements P2PUser {
         this.mainServer = mainServerAddress;
 
         this.timer = new Timer(timerTimeout, this::handleClientTimeout);
-//        sendThread = new Thread(this::sendAliveToMainServer);
+        // sendThread = new Thread(this::sendAliveToMainServer);
         receiveThread = new Thread(this::receive);
 
-//        sendThread.start();
+        // sendThread.start();
         receiveThread.start();
 
         LOG.info("P2PServer");
@@ -148,7 +160,7 @@ public class P2PServer implements P2PUser {
     @Override
     public void receive() {
         while (true) {
-            final byte[] packet = communicator.receiveData();
+            final ReceivePacket packet = communicator.receiveData();
             if (packet == null) {
                 continue;
             }
@@ -319,6 +331,7 @@ public class P2PServer implements P2PUser {
         final PacketInfo packetInfo = parser.parsePacket(packet);
         final ClientNetworkRecord remClient = serializer.deserializeClientNetworkRecord(packetInfo.getPayload());
         topology.removeClient(remClient);
+        chunkManager.cleanChunk(remClient.client());
         if (remClient.clusterIndex() == topology.getClusterIndex(deviceNode)) {
             timer.removeClient(dest);
         }
@@ -411,10 +424,35 @@ public class P2PServer implements P2PUser {
     @Override
     public void close() {
         SplitPackets.getSplitPackets().emptyBuffer();
+        final byte[] removePkt = createRemovePacket(deviceNode);
+        Networking.getNetwork().broadcast(removePkt, 0, 0);
         communicator.close();
         receiveThread.interrupt();
-        sendThread.interrupt();
+        // sendThread.interrupt();
         timer.close();
+    }
+
+    /**
+     * Function to create a remove packet.
+     *
+     * @param client the client to remove
+     * @return the packet
+     */
+    public byte[] createRemovePacket(final ClientNode client) {
+        try {
+            final PacketInfo packetInfo = new PacketInfo();
+            packetInfo.setLength(packetHeaderSize);
+            packetInfo.setType(NetworkType.USE.ordinal());
+            packetInfo.setConnectionType(NetworkConnectionType.REMOVE.ordinal());
+            packetInfo.setPayload(client.toString().getBytes());
+            packetInfo.setIpAddress(InetAddress.getByName(client.hostName()));
+            packetInfo.setPortNum(client.port());
+            packetInfo.setBroadcast(1);
+            final byte[] removePacket = parser.createPkt(packetInfo);
+            return removePacket;
+        } catch (UnknownHostException ex) {
+            return null;
+        }
     }
 
 }
