@@ -56,7 +56,6 @@ public class CanvasManager {
         rpc.subscribe("canvas:sendToClient", this::handleSendToClient);
         rpc.subscribe("canvas:broadcast", this::handleBroadcast);
         rpc.subscribe("canvas:whoami", this::handleWhoAmI);
-        rpc.subscribe("canvas:sendAnalytics", this::handleAnalytics);
     }
 
     private byte[] handleWhoAmI(byte[] data) {
@@ -178,14 +177,5 @@ public class CanvasManager {
             return new byte[0];
         }
     }
-    private byte[] handleAnalytics(byte data[]) {
-        try {
-            rpc.call("controller:canvasAnalytics", data);
-        } catch (Exception e) {
-            logger.error("Failed to handle analytics request", e);
-        }
-        return new byte[0];
-    }
-
 
 }
