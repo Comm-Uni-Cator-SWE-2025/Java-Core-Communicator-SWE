@@ -20,16 +20,14 @@ public class CanvasManager {
 
     private final Networking networking;
     private final AbstractRPC rpc;
-    private final List<byte[]> canvasHistory;
     private ClientNode hostClientNode;
-    private boolean isHost = false;
+    private ClientNode selfClientNode;
     private final SweLogger logger;
 
     public CanvasManager(Networking networking, SweLogger logger) {
         this.logger = logger;
         this.networking = networking;
         this.rpc = networking.getRPC();
-        this.canvasHistory = new ArrayList<>();
         
         registerRPCMethods();
         
@@ -41,8 +39,9 @@ public class CanvasManager {
         logger.info("Host client node set to " + hostClientNode);
     }
 
-    public void setIsHost(boolean isHost) {
-        this.isHost = isHost;
+    public void setSelfClientNode(ClientNode selfClientNode) {
+        this.selfClientNode = selfClientNode;
+        logger.info("Self client node set to " + selfClientNode);
     }
 
     private void registerRPCMethods() {
@@ -54,19 +53,35 @@ public class CanvasManager {
         rpc.subscribe("canvas:describe", this::handleDescribe);
         rpc.subscribe("canvas:regularize", this::handleRegularize);
         rpc.subscribe("canvas:sendToHost", this::handleSendToHost);
+        rpc.subscribe("canvas:sendToClient", this::handleSendToClient);
         rpc.subscribe("canvas:broadcast", this::handleBroadcast);
-        rpc.subscribe("canvas:getHistory", this::handleGetHistory);
+        rpc.subscribe("canvas:whoami", this::handleWhoAmI);
+    }
+
+    private byte[] handleWhoAmI(byte[] data) {
+        try {
+            if (selfClientNode == null) {
+                logger.warn("Self client node is not set.");
+                return new byte[0];
+            }
+            return DataSerializer.serialize(selfClientNode);
+        } catch (Exception e) {
+            logger.error("Failed to handle whoami request", e);
+            return new byte[0];
+        }
     }
 
     private byte[] handleDescribe(byte[] data) {
         try {
             // Deserialize input using DataSerializer
-            String input = DataSerializer.deserialize(data, String.class);
-            logger.info("Canvas describe requested for: " + input);
+            String input = new String(data, StandardCharsets.UTF_8);
+            System.out.println("[CanvasManager] Canvas Describe requested for: " + input);
 
             // In a real scenario: AiInstance.getInstance().describe(input);
-            
-            return DataSerializer.serialize("Canvas is Described");
+            String result = null;
+            String future = AiInstance.getInstance().describe(input).get();
+            result = future;    
+            return result.getBytes();
         } catch (Exception e) {
             logger.error("Failed to handle describe request", e);
             return new byte[0];
@@ -76,18 +91,14 @@ public class CanvasManager {
     private byte[] handleRegularize(byte[] data) {
         try {
             // Deserialize to JsonNode using DataSerializer
-            JsonNode rootNode = DataSerializer.deserialize(data, JsonNode.class);
-
-            // Find "Thickness" key and change value to 5
-            if (rootNode.isObject()) {
-                ObjectNode objectNode = (ObjectNode) rootNode;
-                if (objectNode.has("Thickness")) {
-                    objectNode.put("Thickness", 5);
-                }
-            }
-
+            String rootNode = DataSerializer.deserialize(data, String.class);
+            System.out.println("[CanvasManager] Regularizing canvas data. : " + rootNode);
+            String result = null;
+            String future = AiInstance.getInstance().regularise(rootNode).get();
+            result = future;
+            System.out.println("[CanvasManager] Modified: " + result);
             // Serialize back using DataSerializer
-            return DataSerializer.serialize(rootNode);
+            return DataSerializer.serialize(result);
 
         } catch (Exception e) {
             logger.error("Failed to regularize canvas payload", e);
@@ -116,24 +127,8 @@ public class CanvasManager {
 
     private void handleNetworkMessage(byte[] data) {
         try {
-            if (isHost) {
-                // Host Logic:
-                // Received data from a Client.
-                // DO NOT broadcast yet. Send to Frontend for verification.
-                logger.debug("Host received data from client for verification");
-                rpc.call("canvas:update", data);
-            } else {
-                // Client Logic:
-                // Received broadcast from Host.
-                // Update Frontend.
-                logger.debug("Client received broadcast from host");
-                rpc.call("canvas:update", data);
-                
-                // Store in local history
-                synchronized (canvasHistory) {
-                    canvasHistory.add(data);
-                }
-            }
+            logger.debug("Everyone received broadcast from host");
+            rpc.call("canvas:update", data);
         } catch (Exception e) {
             logger.error("Failed to handle network message", e);
         }
@@ -146,11 +141,6 @@ public class CanvasManager {
             logger.info("Host broadcasting verified data to all clients");
             networking.broadcast(data, ModuleType.CANVAS.ordinal(), 1);
             
-            // Store in Host history
-            synchronized (canvasHistory) {
-                canvasHistory.add(data);
-            }
-            
             return new byte[0];
         } catch (Exception e) {
             logger.error("Failed to broadcast canvas update", e);
@@ -158,14 +148,34 @@ public class CanvasManager {
         }
     }
 
-    private byte[] handleGetHistory(byte[] data) {
+    private byte[] handleSendToClient(byte[] data) {
         try {
-            synchronized (canvasHistory) {
-                return DataSerializer.serialize(canvasHistory);
+            JsonNode node = DataSerializer.deserialize(data, JsonNode.class);
+            
+            if (node == null || !node.has("target") || !node.has("data")) {
+                logger.warn("Invalid unicast request received.");
+                return new byte[0];
             }
+
+            // Extract target ClientNode
+            JsonNode targetNode = node.get("target");
+            String hostName = targetNode.get("hostName").asText();
+            int port = targetNode.get("port").asInt();
+            ClientNode target = new ClientNode(hostName, port);
+
+            // Extract data string
+            String payloadData = node.get("data").asText();
+
+            logger.info("Sending unicast data to " + target);
+            byte[] payload = DataSerializer.serialize(payloadData);
+            
+            networking.sendData(payload, new ClientNode[]{target}, ModuleType.CANVAS.ordinal(), 1);
+            
+            return new byte[0];
         } catch (Exception e) {
-            logger.error("Failed to retrieve canvas history", e);
+            logger.error("Failed to send unicast data to client", e);
             return new byte[0];
         }
     }
+
 }
