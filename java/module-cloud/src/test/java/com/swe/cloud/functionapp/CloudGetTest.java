@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Filename    = CloudGetTest.java
+ * Author      = Nikhil S Thomas
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Unit tests for CloudGet Function Endpoint.
+ *****************************************************************************/
+
 package functionapp;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +28,11 @@ import interfaces.IdbConnector;
 
 import java.util.Optional;
 
+/**
+ * Tests for the CloudGet Azure Function endpoint.
+ */
 class CloudGetTest extends CloudTestBase {
+    /** Reset factory before each test. */
     @BeforeEach
     void resetFactory() {
         // This clears the factory's singleton,
@@ -28,6 +40,7 @@ class CloudGetTest extends CloudTestBase {
         DbConnectorFactory.resetInstance();
     }
 
+    /** Verifies successful CloudGet execution. */
     @Test
     void runCloudGetTest() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("{\"module\":\"testModule\",\"table\":\"testTable\",\"id\":\"testId\"}");
@@ -37,9 +50,11 @@ class CloudGetTest extends CloudTestBase {
         CloudResponse mockCloudResponse = new CloudResponse(200, "success", null);
 
         try (MockedStatic<DbConnectorFactory> factoryMock = Mockito.mockStatic(DbConnectorFactory.class)) {
+            // Factory returns mocked connector
             factoryMock.when(() -> DbConnectorFactory.getDbConnector(any())).thenReturn(mockConnector);
             when(mockConnector.getData(any(Entity.class))).thenReturn(mockCloudResponse);
 
+            // Mock getData() behavior
             CloudGet cloudGet = new CloudGet();
             var response = cloudGet.runCloudGet(request, context);
 
@@ -48,6 +63,7 @@ class CloudGetTest extends CloudTestBase {
         }
     }
 
+    /** Verifies BAD_REQUEST is returned for invalid JSON. */
     @Test
     void runCloudGetTestException() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("invalid json");

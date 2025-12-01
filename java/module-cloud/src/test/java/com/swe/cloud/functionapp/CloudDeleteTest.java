@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Filename    = CloudDeleteTest.java
+ * Author      = Nikhil S Thomas
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Unit tests for CloudDelete Function Endpoint.
+ *****************************************************************************/
+
 package functionapp;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +28,11 @@ import interfaces.IdbConnector;
 
 import java.util.Optional;
 
+/**
+ * Tests for the CloudDelete Azure Function endpoint.
+ */
 class CloudDeleteTest extends CloudTestBase {
+    /** Reset factory before each test. */
     @BeforeEach
     void resetFactory() {
         // This clears the factory's singleton,
@@ -28,6 +40,7 @@ class CloudDeleteTest extends CloudTestBase {
         DbConnectorFactory.resetInstance();
     }
 
+    /** Verifies successful CloudDelete execution. */
     @Test
     void runCloudDeleteTest() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("{\"module\":\"testModule\",\"table\":\"testTable\",\"id\":\"testId\"}");
@@ -37,9 +50,11 @@ class CloudDeleteTest extends CloudTestBase {
         CloudResponse mockCloudResponse = new CloudResponse(200, "success", null);
 
         try (MockedStatic<DbConnectorFactory> factoryMock = Mockito.mockStatic(DbConnectorFactory.class)) {
+            // Factory returns mocked connector
             factoryMock.when(() -> DbConnectorFactory.getDbConnector(any())).thenReturn(mockConnector);
             when(mockConnector.deleteData(any(Entity.class))).thenReturn(mockCloudResponse);
 
+            // Mock deleteData() behavior
             CloudDelete cloudDelete = new CloudDelete();
             var response = cloudDelete.runCloudDelete(request, context);
 
@@ -48,6 +63,7 @@ class CloudDeleteTest extends CloudTestBase {
         }
     }
 
+    /** Verifies BAD_REQUEST is returned for invalid JSON. */
     @Test
     void runCloudDeleteTestException() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("invalid json");

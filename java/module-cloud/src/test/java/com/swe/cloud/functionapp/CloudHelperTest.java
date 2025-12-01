@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Filename    = CloudHelperTest.java
+ * Author      = Nikhil S Thomas
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Unit tests for CloudHelper.java
+ *****************************************************************************/
+
 package functionapp;
 
 import static org.mockito.Mockito.*;
@@ -12,10 +20,14 @@ import org.junit.jupiter.api.Test;
 
 import datastructures.CloudResponse;
 
+/**
+ * Tests for CloudHelper utility methods.
+ */
 class CloudHelperTest {
 
     private final CloudHelper testHelper = new CloudHelper();
 
+    /** Creates a mock request with a FakeResponseBuilder for responses. */
     private HttpRequestMessage<Optional<String>> mockRequest() {
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
         doAnswer(invocation -> {
@@ -25,6 +37,7 @@ class CloudHelperTest {
         return request;
     }
 
+    /** Verifies successful serialization and response creation. */
     @Test
     void handleResponseTest() {
         HttpRequestMessage<Optional<String>> request = mockRequest();
@@ -36,6 +49,7 @@ class CloudHelperTest {
         assertEquals(HttpStatus.OK, response.getStatus());
     }
 
+    /** Ensures handleResponse() returns BAD_REQUEST on serialization failure. */
     @Test
     void handleResponseExceptionTest() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest();
@@ -43,6 +57,7 @@ class CloudHelperTest {
         ObjectMapper mockMapper = mock(ObjectMapper.class);
         when(mockMapper.writeValueAsString(any())).thenThrow(new RuntimeException("forced exception"));
 
+        // Inject mocked ObjectMapper into private field
         Field f = CloudHelper.class.getDeclaredField("objectMapper");
         f.setAccessible(true);
         f.set(testHelper, mockMapper);
@@ -54,6 +69,7 @@ class CloudHelperTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
     }
 
+    /** Verifies handleError() returns BAD_REQUEST. */
     @Test
     void handleErrorTest() {
         HttpRequestMessage<Optional<String>> request = mockRequest();
@@ -64,6 +80,7 @@ class CloudHelperTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
     }
 
+    /** Ensures handleError() handles serialization exceptions gracefully. */
     @Test
     void handleErrorExceptionTest() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest();
@@ -71,6 +88,7 @@ class CloudHelperTest {
         ObjectMapper mockMapper = mock(ObjectMapper.class);
         when(mockMapper.writeValueAsString(any())).thenThrow(new RuntimeException("forced exception"));
 
+        // Replace objectMapper with mocked one
         Field f = CloudHelper.class.getDeclaredField("objectMapper");
         f.setAccessible(true);
         f.set(testHelper, mockMapper);

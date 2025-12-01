@@ -39,17 +39,21 @@ public class CloudUpdate extends CloudHelper {
      */
     @FunctionName("CloudUpdate")
     public HttpResponseMessage runCloudUpdate(
-            @HttpTrigger(name = "req", methods = HttpMethod.PUT, authLevel = AuthorizationLevel.ANONYMOUS) final HttpRequestMessage<Optional<String>> request,
+            @HttpTrigger(name = "req", methods = HttpMethod.PUT, authLevel = AuthorizationLevel.ANONYMOUS)
+            final HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) throws JsonProcessingException {
         context.getLogger().info("Java HTTP trigger processed a request.");
         try {
+            // Read the Entity from the request
             final String jsonBody = request.getBody().orElse("");
             final Entity entityRequest = getObjectMapper().readValue(jsonBody, Entity.class);
 
+            // Initialize the DB Connector using the factory and pass the Entity to the appropriate function
             final IdbConnector dbConnector = DbConnectorFactory.getDbConnector("cosmo");
             context.getLogger().info("Initialized DB Connector");
             final CloudResponse cloudResponse = dbConnector.updateData(entityRequest);
-            context.getLogger().info("Received Update CloudResponse: [" + cloudResponse.status_code() + "] " + cloudResponse.message());
+            context.getLogger().info("Received Update CloudResponse: ["
+                    + cloudResponse.status_code() + "] " + cloudResponse.message());
 
             return handleResponse(cloudResponse, request);
 

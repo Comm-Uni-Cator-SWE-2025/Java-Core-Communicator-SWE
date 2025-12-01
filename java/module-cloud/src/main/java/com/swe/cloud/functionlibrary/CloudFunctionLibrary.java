@@ -1,6 +1,6 @@
 /******************************************************************************
  * Filename    = CloudFunctionLibrary.java
- * Author      = Kallepally sai kiran
+ * Author      = kallepally sai kiran
  * Product     = cloud-function-app
  * Project     = Comm-Uni-Cator
  * Description = ASYNC Function Library for calling Azure Function APIs
@@ -18,10 +18,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
-
+import java.util.HashMap;
+import java.util.Map;
 /**
  * Function Library for calling Azure Cloud Function APIs asynchronously.
  */
+
 public class CloudFunctionLibrary {
 
     /** Base URL of the Cloud Functions. */
@@ -171,5 +173,35 @@ public class CloudFunctionLibrary {
             return future;
         }
     }
+
+    /**
+     * Sends a telemetry log to the cloud asynchronously.
+     *
+     * @param moduleName The name of the module sending the log.
+     * @param severity   The severity level of the log (e.g., INFO, ERROR).
+     * @param message    The log message.
+     * @return A CompletableFuture that completes when the log is sent.
+     */
+    public CompletableFuture<Void> sendLog(final String moduleName, final String severity, final String message) {
+        try {
+            final Map<String, String> logData = new HashMap<>();
+            logData.put("moduleName", moduleName);
+            logData.put("severity", severity);
+            logData.put("message", message);
+
+            final String payload = objectMapper.writeValueAsString(logData);
+
+            return callAPIAsync("/telemetry/log", "POST", payload)
+                    .thenAccept(response -> {
+                        // Optionally handle response or log success
+                    });
+
+        } catch (final Exception e) {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
+        }
+    }
+
 
 }

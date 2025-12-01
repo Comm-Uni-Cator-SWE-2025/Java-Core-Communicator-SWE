@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Filename    = CloudPostTest.java
+ * Author      = Nikhil S Thomas
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Unit tests for CloudPost Function Endpoint.
+ *****************************************************************************/
+
 package functionapp;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +28,11 @@ import interfaces.IdbConnector;
 
 import java.util.Optional;
 
+/**
+ * Tests for the CloudGet Azure Function endpoint.
+ */
 class CloudPostTest extends CloudTestBase {
+    /** Reset factory before each test. */
     @BeforeEach
     void resetFactory() {
         // This clears the factory's singleton,
@@ -28,6 +40,7 @@ class CloudPostTest extends CloudTestBase {
         DbConnectorFactory.resetInstance();
     }
 
+    /** Verifies successful CloudPost execution. */
     @Test
     void runCloudPostTest() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("{\"module\":\"testModule\",\"table\":\"testTable\",\"id\":\"testId\"}");
@@ -37,9 +50,11 @@ class CloudPostTest extends CloudTestBase {
         CloudResponse mockCloudResponse = new CloudResponse(200, "success", null);
 
         try (MockedStatic<DbConnectorFactory> factoryMock = Mockito.mockStatic(DbConnectorFactory.class)) {
+            // Factory returns mocked connector
             factoryMock.when(() -> DbConnectorFactory.getDbConnector(any())).thenReturn(mockConnector);
             when(mockConnector.postData(any(Entity.class))).thenReturn(mockCloudResponse);
 
+            // Mock postData() behavior
             CloudPost cloudPost = new CloudPost();
             var response = cloudPost.runCloudPost(request, context);
 
@@ -48,6 +63,7 @@ class CloudPostTest extends CloudTestBase {
         }
     }
 
+    /** Verifies BAD_REQUEST is returned for invalid JSON. */
     @Test
     void runCloudPostTestException() throws Exception {
         HttpRequestMessage<Optional<String>> request = mockRequest("invalid json");

@@ -33,7 +33,7 @@ public class DbConnectorFactory {
     public static IdbConnector getDbConnector(final String provider) {
         if (dbConnector == null) {
             if (Objects.equals(provider, "cosmo")) {
-                dbConnector = new CosmosOperations();  // Change to CosmoDB Connector once implemented
+                dbConnector = new CosmosOperations();  // Instantiate CosmosDB Connector
             } else {
                 dbConnector = new MockDbConnector();  // Default to mock dbConnector
             }

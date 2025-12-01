@@ -1,3 +1,11 @@
+/******************************************************************************
+ * Filename    = MockDbConnectorTest.java
+ * Author      = Nikhil S Thomas
+ * Product     = cloud-function-app
+ * Project     = Comm-Uni-Cator
+ * Description = Unit tests for MockDbConnector
+ *****************************************************************************/
+
 package cosmosoperations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,15 +18,26 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link MockDbConnector}. Ensures that all CRUD operations
+ * return the correct {@link CloudResponse} data-structure expected from the mock implementation.
+ */
 class MockDbConnectorTest {
 
     private final IdbConnector mockDbConnector = new MockDbConnector();
     private Entity testEntity;
 
+    /**
+     * Creates a reusable test entity before each test.
+     */
     @BeforeEach
     void createTestEntity() {
-        testEntity  = new Entity("TestModule", "TestTable", "TestId", null, -1, null, null);
+        testEntity = new Entity("TestModule", "TestTable", "TestId", null, -1, null, null);
     }
+
+    /**
+     * Verifies that init() is invoked exactly once using a Mockito spy.
+     */
     @Test
     void initTest() {
         MockDbConnector spyConnector = org.mockito.Mockito.spy(new MockDbConnector());
@@ -26,6 +45,9 @@ class MockDbConnectorTest {
         org.mockito.Mockito.verify(spyConnector, org.mockito.Mockito.times(1)).init();
     }
 
+    /**
+     * Tests getData() to confirm the mock returns the correct CloudResponse payload.
+     */
     @Test
     void getDataTest() {
         CloudResponse testCloudResponse = mockDbConnector.getData(testEntity);
@@ -42,6 +64,9 @@ class MockDbConnectorTest {
         assertEquals(testObject, testCloudResponse.data());
     }
 
+    /**
+     * Tests postData() to confirm the mock returns the correct CloudResponse payload.
+     */
     @Test
     void postDataTest() {
 
@@ -59,6 +84,9 @@ class MockDbConnectorTest {
         assertEquals(testObject, testCloudResponse.data());
     }
 
+    /**
+     * Tests createData() to confirm the mock returns the correct CloudResponse payload.
+     */
     @Test
     void createDataTest() {
 
@@ -76,6 +104,9 @@ class MockDbConnectorTest {
         assertEquals(testObject, testCloudResponse.data());
     }
 
+    /**
+     * Tests deleteData() to confirm the mock returns the correct CloudResponse payload.
+     */
     @Test
     void deleteDataTest() {
 
@@ -93,6 +124,9 @@ class MockDbConnectorTest {
         assertEquals(testObject, testCloudResponse.data());
     }
 
+    /**
+     * Tests updateData() to confirm the mock returns the correct CloudResponse payload.
+     */
     @Test
     void updateDataTest() {
 

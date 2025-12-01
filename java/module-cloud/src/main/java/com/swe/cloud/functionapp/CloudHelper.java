@@ -45,7 +45,8 @@ public class CloudHelper {
         }
     }
 
-    protected HttpResponseMessage handleResponse(final CloudResponse cloudResponse, final HttpRequestMessage<Optional<String>> request) {
+    protected HttpResponseMessage handleResponse(final CloudResponse cloudResponse,
+                                                 final HttpRequestMessage<Optional<String>> request) {
         try {
             return request.createResponseBuilder(HttpStatus.OK)
                     .body(objectMapper.writeValueAsString(cloudResponse))
