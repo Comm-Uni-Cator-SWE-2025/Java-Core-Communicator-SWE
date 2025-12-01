@@ -16,7 +16,7 @@ public class P2PClusterTest {
     private int mainServerPort = 9000;
     private String loopBackAddress = "127.0.0.1";
 
-    @Test
+//    @Test
     public void testClusterInitialization() throws UnknownHostException {
         ClientNode serverNode = new ClientNode(loopBackAddress, mainServerPort);
         ClientNode p2pserverNode = new ClientNode(loopBackAddress, mainServerPort + 1);

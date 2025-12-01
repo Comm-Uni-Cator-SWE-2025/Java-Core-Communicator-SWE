@@ -77,7 +77,7 @@ public class SplitPackets {
     /**
      * Function to split the packet received.
      *
-     * @param data the data to be split
+     * @param receiveData the data to be split
      * @return the list of packets
      */
     public List<byte[]> split(final ReceivePacket receiveData) {

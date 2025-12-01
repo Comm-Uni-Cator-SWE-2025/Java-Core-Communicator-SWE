@@ -78,6 +78,9 @@ public class Networking implements AbstractNetworking, AbstractController {
      */
     private AbstractRPC moduleRPC = null;
 
+    /**
+     * The thread to send data continuously.
+     */
     private Thread sendThread;
 
     /**

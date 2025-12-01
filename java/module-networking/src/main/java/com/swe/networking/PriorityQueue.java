@@ -7,6 +7,7 @@
  *
  * -----------------------------------------------------------------------------
  */
+
 package com.swe.networking;
 
 import java.net.UnknownHostException;
@@ -159,7 +160,9 @@ public class PriorityQueue {
 
         final long currTime = System.currentTimeMillis();
         final long timeTaken = currTime - startTime;
-        if (timeTaken == 0) return 0;
+        if (timeTaken == 0) {
+            return 0;
+        }
         final int packetLength = 1000;
 
         return (packetLength * numPacketsSent) / timeTaken;
@@ -205,27 +208,33 @@ public class PriorityQueue {
         if (highestPriorityQueue.isEmpty()) {
             return null;
         }
+        final byte[] packet = selectHighestPriority();
+        return packet;
+    }
+
+    /**
+     * Selects a packet from the Highest Priority Queue (P1/ZERO) based on
+     * budget.
+     *
+     * @return The packet data, or null if budget exhausted
+     */
+    private byte[] selectHighestPriority() {
         if (currentBudget.get(PacketPriority.ZERO) > 0) {
-            currentBudget.put(PacketPriority.ZERO,
-                    currentBudget.get(PacketPriority.ZERO) - 1);
+            currentBudget.put(PacketPriority.ZERO, currentBudget.get(PacketPriority.ZERO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from High Priority Budget");
             return highestPriorityQueue.pollFirst();
         } else if (midPriorityQueue.isEmpty() && currentBudget.get(PacketPriority.ONE) > 0) {
-            currentBudget.put(PacketPriority.ONE,
-                    currentBudget.get(PacketPriority.ONE) - 1);
+            currentBudget.put(PacketPriority.ONE, currentBudget.get(PacketPriority.ONE) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Mid Priority Budget");
             return highestPriorityQueue.pollFirst();
         } else if (midPriorityQueue.size() < highestPriorityQueue.size()
                 && lowPriorityQueue.isEmpty() && currentBudget.get(PacketPriority.TWO) > 0) {
-            currentBudget.put(PacketPriority.TWO,
-                    currentBudget.get(PacketPriority.TWO) - 1);
+            currentBudget.put(PacketPriority.TWO, currentBudget.get(PacketPriority.TWO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Low Priority Budget");
             return highestPriorityQueue.pollFirst();
-        } else if(chatQueue.isEmpty() && currentBudget.get(PacketPriority.THREE) > 0
-                    && highestPriorityQueue.size() > midPriorityQueue.size()
-                    && highestPriorityQueue.size() > lowPriorityQueue.size()){
-            currentBudget.put(PacketPriority.THREE,
-                    currentBudget.get(PacketPriority.THREE) - 1);
+        } else if (chatQueue.isEmpty() && currentBudget.get(PacketPriority.THREE) > 0
+                && highestPriorityQueue.size() > Math.max(midPriorityQueue.size(), lowPriorityQueue.size())) {
+            currentBudget.put(PacketPriority.THREE, currentBudget.get(PacketPriority.THREE) - 1);
             NetworkLogger.printInfo(MODULENAME, "Highest Priority Packet sent from Chat budget");
             return highestPriorityQueue.pollFirst();
         }
@@ -263,8 +272,8 @@ public class PriorityQueue {
             currentBudget.put(PacketPriority.TWO, currentBudget.get(PacketPriority.TWO) - 1);
             NetworkLogger.printInfo(MODULENAME, "Mid-prioity sent from Low Priority budget");
             return midPriorityQueue.pollFirst();
-        } else if(chatQueue.isEmpty() && currentBudget.get(PacketPriority.THREE) > 0
-                    && midPriorityQueue.size() > lowPriorityQueue.size()){
+        } else if (chatQueue.isEmpty() && currentBudget.get(PacketPriority.THREE) > 0
+                && midPriorityQueue.size() > lowPriorityQueue.size()) {
             currentBudget.put(PacketPriority.THREE, currentBudget.get(PacketPriority.THREE) - 1);
             NetworkLogger.printInfo(MODULENAME, "Mid-Priority Packet Sent from chat budget");
             return midPriorityQueue.pollFirst();
@@ -299,9 +308,9 @@ public class PriorityQueue {
                 // Use P2's unused budget
                 currentBudget.put(PacketPriority.ONE, p2Current - 1);
                 NetworkLogger.printInfo(MODULENAME, "Low priority packet sent from Mid Priority budget");
-            } else if(p1Current > 0){
+            } else if (p1Current > 0) {
                 // Use P1's unused budget
-                currentBudget.put(PacketPriority.ZERO, p1Current -1);
+                currentBudget.put(PacketPriority.ZERO, p1Current - 1);
                 NetworkLogger.printInfo(MODULENAME, "Low priority packet sent from High Priority budget");
             }
             return lowPriorityQueue.pollFirst();
@@ -332,7 +341,7 @@ public class PriorityQueue {
 
         if (totalP4Budget > 0) {
             // Check current tokens again
-            if(p4Current > 0){
+            if (p4Current > 0) {
                 // Use P4's own budget
                 currentBudget.put(PacketPriority.THREE, p4Current - 1);
                 NetworkLogger.printInfo(MODULENAME, "Chat packet sent from Chat Budget");
@@ -340,9 +349,9 @@ public class PriorityQueue {
                 // Use P3's unused budget
                 currentBudget.put(PacketPriority.TWO, p3Current - 1);
                 NetworkLogger.printInfo(MODULENAME, "Chat priority packet sent from Low Priority budget");
-            } else if(p2Current > 0){
+            } else if (p2Current > 0) {
                 // Use P2's unused budget
-                currentBudget.put(PacketPriority.ONE, p2Current -1);
+                currentBudget.put(PacketPriority.ONE, p2Current - 1);
                 NetworkLogger.printInfo(MODULENAME, "Chat priority packet sent from Mid-Priority budget");
             } else if (p1Current > 0) {
                 // Use P1's unused budget
@@ -374,7 +383,6 @@ public class PriorityQueue {
             NetworkLogger.printInfo(MODULENAME, "Reset initiated due to Time");
         }
 
-
         // 3. Process priorities in order: P1 > P2 > P3
         // Highest Priority (P1/ZERO)
         byte[] packet = processHighestPriority();
@@ -396,7 +404,7 @@ public class PriorityQueue {
 
         //Chat Packets (P4/THREE)
         packet = processChat();
-        if(packet != null){
+        if (packet != null) {
             return packet;
         }
         return null;
