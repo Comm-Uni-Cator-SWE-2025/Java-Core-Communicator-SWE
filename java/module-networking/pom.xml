@@ -52,6 +52,7 @@
                     <configLocation>checkstyle.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
+                    <excludes>module-info.java</excludes>
                 </configuration>
             </plugin>
             <plugin>
