@@ -1,9 +1,0 @@
-GEMINI_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=
-
-GEMINI_API_KEY=AIzaSyCbJDB8B2IP0dVUzNIadYGXNL3UA0sR_Hk,AIzaSyCbJDB8B2IP0dVUzNIadYGXNL3UA0sR_Hk
-
-CLOUD_BASE_URL=https://cloud-function-app.azurewebsites.net/api/
-
-OLLAMA_URL=http://10.32.5.43:11434/api/generate
-
-GEMINI_API_KEY_LIST=AIzaSyCbJDB8B2IP0dVUzNIadYGXNL3UA0sR_Hk
