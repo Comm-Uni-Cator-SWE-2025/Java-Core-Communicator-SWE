@@ -9,7 +9,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
 
 public class P2PClusterTest {
  

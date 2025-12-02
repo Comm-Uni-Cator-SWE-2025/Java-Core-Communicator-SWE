@@ -1,7 +1,6 @@
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
-import org.junit.Test;
 
 public class BroadCastTests {
 
