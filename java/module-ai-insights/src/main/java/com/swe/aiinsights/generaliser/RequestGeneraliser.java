@@ -38,7 +38,6 @@ import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.swe.aiinsights.logging.CommonLogger;
 import com.swe.aiinsights.parser.RegulariserParser;
 import com.swe.aiinsights.parser.InsightsParser;
 import com.swe.aiinsights.request.AiRequestable;

@@ -45,7 +45,7 @@ public class AsyncConfig {
         final int maxPoolSize = 10;
         final int queueCapacity = 50;
 
-        LOG.info("Initializing AI Executor: core=" + corePoolSize + ", max=" + maxPoolSize + ", queueCap=" + queueCapacity);
+        LOG.info("AI Executor begins: core=" + corePoolSize + ", max=" + maxPoolSize + ", queueCap=" + queueCapacity);
 
         final ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 corePoolSize,

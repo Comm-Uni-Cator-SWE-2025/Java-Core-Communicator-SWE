@@ -48,6 +48,7 @@ import com.swe.aiinsights.apiendpoints.AiClientService;
  * THis class is used ot create a singleton instance of AI.
  * Across requests, it will remain same in a client.
  */
+
 public class AiInstance {
     /**
      * Get the log file path.

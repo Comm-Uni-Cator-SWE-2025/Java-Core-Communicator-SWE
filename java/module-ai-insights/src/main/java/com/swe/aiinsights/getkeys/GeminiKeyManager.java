@@ -101,11 +101,11 @@ public final class GeminiKeyManager {
         try {
             final Response response = cloud.cloudGet(req);
 
-                final ObjectMapper objectMapper = new ObjectMapper();
-                keyList.set(objectMapper.convertValue(
-                        response.data(),
-                        new TypeReference<List<String>>() { }
-                ));
+            final ObjectMapper objectMapper = new ObjectMapper();
+            keyList.set(objectMapper.convertValue(
+                    response.data(),
+                    new TypeReference<List<String>>() { }
+            ));
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
