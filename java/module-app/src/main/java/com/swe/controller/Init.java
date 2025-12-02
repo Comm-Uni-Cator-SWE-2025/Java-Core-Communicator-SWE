@@ -89,6 +89,10 @@ public class Init {
 
         final RPC rpc = new RPC();
         final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+
+        // CrashHandler crashHandler = new CrashHandler(cloud);
+        // crashHandler.startCrashHandler();
+
         final AiClientService service = AiInstance.getInstance();
 
         final ControllerServices controllerServices = ControllerServices.getInstance();
@@ -251,6 +255,7 @@ public class Init {
                 final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
 
                 MeetingNetworkingCoordinator.handleMeetingLeave(id, serverClientNode);
+                
                 Networking.getNetwork().closeNetworking();
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {

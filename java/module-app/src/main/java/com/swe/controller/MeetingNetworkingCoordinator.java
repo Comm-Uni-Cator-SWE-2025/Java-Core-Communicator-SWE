@@ -291,12 +291,10 @@ public final class MeetingNetworkingCoordinator {
         final ClientNode localNode = getLocalClientNode();
 
         if (services.getContext().getSelf() != null) {
-            session.upsertParticipantNode(services.getContext().getSelf().getEmail(),
-                    services.getContext().getSelf().getDisplayName(),
-                    localNode);
+            session.removeParticipantByEmail(services.getContext().getSelf().getEmail());
         }
 
-        System.out.println("handeling meeting join and leave");
+        System.out.println("handeling meeting leave");
         sendILeavePacket(serverNode, localNode);
     }
 
@@ -307,7 +305,7 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
 
-        System.out.println("sending IAM packet");
+        System.out.println("sending ILeave packet");
         final ILeavePacket iLeavePacket = new ILeavePacket(services.getContext().getSelf().getEmail(),
                 services.getContext().getSelf().getDisplayName(),
                 localNode);
@@ -349,7 +347,6 @@ public final class MeetingNetworkingCoordinator {
                 }
 
                 broadcastILeave(recipients);
-                return;
             }
             LOG.info("Received ILeave (leave request) from " + packet.getEmail()
                     + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
@@ -390,9 +387,8 @@ public final class MeetingNetworkingCoordinator {
                 System.out.println("handleIncoming ILeave client leave");
                 meeting.removeParticipantByNode(packet.getClientNode());
 
-                
                 LOG.info("Received delete (announcement) from " + packet.getEmail()
-                + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+                        + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
             }
         }
         try {
