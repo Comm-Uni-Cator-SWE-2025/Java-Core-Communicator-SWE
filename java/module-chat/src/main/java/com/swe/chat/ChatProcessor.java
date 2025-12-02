@@ -17,11 +17,11 @@ public class ChatProcessor implements IChatProcessor {
     private final Networking network;
     private final IChatFileHandler fileHandler;
     private final IChatFileCache fileCache;
-    private final IAiAnalyticsService aiService; // DIP: Specialized AI service
+    private final IAiAnalyticsService aiService;
 
     public ChatProcessor(AbstractRPC rpc, Networking network,
-                                IChatFileHandler fileHandler, IChatFileCache fileCache,
-                                IAiAnalyticsService aiService) {
+                         IChatFileHandler fileHandler, IChatFileCache fileCache,
+                         IAiAnalyticsService aiService) {
         this.rpc = rpc;
         this.network = network;
         this.fileHandler = fileHandler;
@@ -38,8 +38,8 @@ public class ChatProcessor implements IChatProcessor {
         try {
             ChatMessage message = ChatMessageSerializer.deserialize(messageBytes);
 
-            // 1. DELEGATE History/AI Logic (SRP: Offload state/scheduling)
-            aiService.addMessageToHistory(message); // Handles history & AI check
+            // 1. DELEGATE History (AI Trigger is now handled in ChatManager)
+            aiService.addMessageToHistory(message);
 
             // 2. Execution: Broadcast
             byte[] networkPacket = ChatProtocol.addProtocolFlag(messageBytes, ChatProtocol.FLAG_TEXT_MESSAGE);
@@ -60,7 +60,7 @@ public class ChatProcessor implements IChatProcessor {
             IChatFileHandler.FileResult result = fileHandler.processFileForSending(pathModeMsg.getFilePath());
             byte[] compressedData = result.compressedData();
 
-            // 2. Cache the compressed file (DIP: FileCache)
+            // 2. Cache the compressed file (DIP: FileCache - Writes to Disk internally)
             fileCache.put(pathModeMsg.getMessageId(), pathModeMsg.getFileName(), compressedData);
 
             // 3. Prepare Metadata for local UI (Coordinator/Adapter)
@@ -69,7 +69,9 @@ public class ChatProcessor implements IChatProcessor {
                     pathModeMsg.getCaption(), pathModeMsg.getFileName(), null, pathModeMsg.getReplyToMessageId());
             byte[] metadataBytes = FileMessageSerializer.serialize(metadataMsg);
 
-            // 4. Prepare Content for network peers (Coordinator/Adapter)
+            // 4. Prepare Content for network peers
+            // Note: We still use the byte[] here to send over network, which is unavoidable.
+            // But the local storage is safely on disk now.
             FileMessage contentModeMsg = new FileMessage(
                     pathModeMsg.getMessageId(), pathModeMsg.getUserId(), pathModeMsg.getSenderDisplayName(),
                     pathModeMsg.getCaption(), pathModeMsg.getFileName(), compressedData,
@@ -93,12 +95,14 @@ public class ChatProcessor implements IChatProcessor {
         String messageId = new String(messageIdBytes, StandardCharsets.UTF_8).trim();
 
         try {
-            // 1. Retrieve from injected cache (DIP: FileCache)
+            // 1. Retrieve from injected cache
+            // UPDATED: Now returns a cacheEntry containing a Path, not bytes
             IChatFileCache.FileCacheEntry cacheEntry = fileCache.get(messageId)
-                    .orElseThrow(() -> new Exception("File not found in cache: " + messageId));
+                    .orElseThrow(() -> new Exception("File not found in cache (expired or missing): " + messageId));
 
-            // 2. DELEGATE Decompression and File Write (DIP: FileHandler)
-            fileHandler.decompressAndSaveFile(messageId, cacheEntry.fileName(), cacheEntry.compressedData());
+            // 2. DELEGATE Decompression and File Write
+            // UPDATED: Passes the Path (tempFilePath) instead of compressedData()
+            fileHandler.decompressAndSaveFile(messageId, cacheEntry.fileName(), cacheEntry.tempFilePath());
 
             String successMsg = "File saved successfully!";
             this.rpc.call("chat:file-saved-success", successMsg.getBytes(StandardCharsets.UTF_8));
@@ -116,7 +120,7 @@ public class ChatProcessor implements IChatProcessor {
     public byte[] processFrontendDelete(byte[] messageIdBytes) {
         String messageId = new String(messageIdBytes, StandardCharsets.UTF_8).trim();
 
-        // 1. Clean up: Remove from local file cache
+        // 1. Clean up: Remove from local file cache (also deletes temp file on disk)
         fileCache.remove(messageId);
 
         // 2. Coordinate: Broadcast to network
@@ -141,12 +145,14 @@ public class ChatProcessor implements IChatProcessor {
             switch (flag) {
                 case ChatProtocol.FLAG_TEXT_MESSAGE:
                     ChatMessage msg = ChatMessageSerializer.deserialize(messageBytes);
-                    aiService.addMessageToHistory(msg); // DELEGATE: AI Service manages history for network messages too
+                    aiService.addMessageToHistory(msg);
                     this.rpc.call("chat:new-message", messageBytes);
                     break;
 
                 case ChatProtocol.FLAG_FILE_MESSAGE:
                     FileMessage fileMsg = FileMessageSerializer.deserialize(messageBytes);
+
+                    // Writes received bytes to Disk immediately via Cache Implementation
                     fileCache.put(fileMsg.getMessageId(), fileMsg.getFileName(), fileMsg.getFileContent());
 
                     // Send ONLY metadata to frontend (Coordinator/Adapter)
@@ -159,7 +165,7 @@ public class ChatProcessor implements IChatProcessor {
 
                 case ChatProtocol.FLAG_DELETE_MESSAGE:
                     String remoteId = new String(messageBytes, StandardCharsets.UTF_8).trim();
-                    fileCache.remove(remoteId);
+                    fileCache.remove(remoteId); // Deletes temp file
                     this.rpc.call("chat:message-deleted", remoteId.getBytes(StandardCharsets.UTF_8));
                     break;
 
