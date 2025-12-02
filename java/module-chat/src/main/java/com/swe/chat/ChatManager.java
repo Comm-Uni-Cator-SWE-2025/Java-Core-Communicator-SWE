@@ -81,7 +81,21 @@ public class ChatManager implements IChatService { // Adapter for IChatService
 
     private byte[] handleFrontendTextMessage(byte[] messageBytes) {
         try {
-            return processor.processFrontendTextMessage(messageBytes);
+            // 1. Standard processing (Broadcast, Persistence, History)
+            byte[] response = processor.processFrontendTextMessage(messageBytes);
+
+            try {
+                ChatMessage sentMsg = ChatMessageSerializer.deserialize(messageBytes);
+                if (sentMsg != null && sentMsg.getContent() != null && sentMsg.getContent().trim().startsWith("@AI")) {
+                    // Trigger the AI service explicitly
+                    aiAnalyticsService.handleAiQuestion(sentMsg.getContent());
+                }
+            } catch (Exception ex) {
+                // Log but don't fail the message send if AI trigger fails
+                logger.error("Failed to check for AI trigger: " + ex.getMessage());
+            }
+
+            return response;
         } catch (Exception e) {
             logger.error("Error sending text message", e);
             return ("ERROR: " + e.getMessage()).getBytes(StandardCharsets.UTF_8);
@@ -139,6 +153,7 @@ public class ChatManager implements IChatService { // Adapter for IChatService
         // Adapter: Ensures external API is satisfied by wrapping and calling RPC
         try {
             byte[] messageBytes = ChatMessageSerializer.serialize(message);
+            System.out.println("\n\n\n\n"+message.getTimestamp()+"\n\n\n\n\n");
             this.rpc.call("chat:send-text", messageBytes);
         } catch (Exception e) {
             System.err.println("[ChatService] Failed to send message via RPC: " + e.getMessage());
