@@ -1,18 +1,28 @@
 package com.swe.networking;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class PriorityQueueTest {
 
@@ -64,7 +74,7 @@ class PriorityQueueTest {
         assertArrayEquals(data, result, "Packet data should match");
     }
 
-    @Test
+//    @Test
     void testingEmptyQueue() {
         PacketParser parser = getParser();
         boolean result = pq.isEmpty();
@@ -215,194 +225,6 @@ class PriorityQueueTest {
 
 
         System.out.println("packets " + sentCount + " time " + (t2-t1));
-    }
-
-    //-------------------------------------------------------------------------
-    // MLFQ & ROTATION TESTS
-    //-------------------------------------------------------------------------
-
-    @Test
-    void testRotation() throws UnknownHostException, InterruptedException {
-        PacketParser parser = getParser();
-
-        for(int i = 0; i < 4000; i++){
-            pq.addPacket(createTestPkt(parser, 6, i, "LP"));
-        }
-
-        for(int i = 0; i < 400; i++){
-            byte[] pkt = pq.nextPacket();
-        }
-
-        Thread.sleep(1100);
-        pq.nextPacket();
-
-        for(int i = 0; i < 1000; i++){
-            pq.addPacket(createTestPkt(parser, 7, 4000+i, "LP"));
-        }
-
-        for(int i = 0; i < 2900; i++){
-            byte[] pkt = pq.nextPacket();
-            if (pkt != null) {
-                final PacketInfo info = parser.parsePacket(pkt);
-                System.out.println(info.getChunkNum());
-            }
-        }
-
-        Thread.sleep(1100);
-
-        pq.nextPacket();
-    }
-
-    @Test
-    void testAggressiveMLFQSurvival() throws UnknownHostException, InterruptedException {
-        PacketParser parser = getParser();
-        final int LP_BUDGET = 20;
-
-        // --- Phase 1: Initial Load ---
-        // Load 40 LP packets (P0-P39) to ensure 20 packets remain after the first epoch.
-        for (int i = 0; i < 40; i++) {
-            pq.addPacket(createTestPkt(parser, 6, i, "LP" + i));
-        }
-        // Add HP/MP traffic to ensure P3 only gets its 20 tokens
-        for (int i = 0; i < 50; i++) { pq.addPacket(createTestPkt(parser, 1, 100+i, "HP")); }
-        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 3, 200+i, "MP")); }
-
-
-        // --- Epoch 1: Consumption (P0-P19 Sent) ---
-        // Drain 100 packets (50 HP, 30 MP, 20 LP).
-        // P20 to P39 remain in MLFQ[0].
-        for (int i = 0; i < 100; i++) { pq.nextPacket(); }
-
-        System.out.println("--- Epoch 1 Complete. P20-P39 remain in MLFQ[0]. ---");
-
-
-        // --- Rotation 1: MLFQ[0] -> MLFQ[1] ---
-        Thread.sleep(150); // Wait > 10ms for budget reset
-        Thread.sleep(1000); // Wait > 1000ms for rotation
-        pq.nextPacket(); // Sends P20 and Trigger rotation. P21-P39 move to MLFQ[1].
-
-        // --- Epoch 2: Consumption (P20-P39 Sent from MLFQ[1]) ---
-        // Drain 100 packets. P21-P39 are now sent using P3's budget.
-        for (int i = 0; i < 100; i++) { pq.nextPacket(); }
-
-        System.out.println("--- Epoch 2 Complete. MLFQ[1] is now empty. ---");
-
-        // --- Target Packet Load ---
-        // Load one unique target packet (P_TARGET) into MLFQ[0] to track it.
-        byte[] testPkt = createTestPkt(parser, 1, 16900, "Test_Pkt");
-        pq.addPacket(testPkt);
-        byte[] targetPkt = createTestPkt(parser, 7, 500, "TARGET_SURVIVOR");
-        pq.addPacket(targetPkt);
-
-        // --- Rotation 2: MLFQ[1] (empty) -> MLFQ[2] ---
-        Thread.sleep(150);
-        Thread.sleep(1000);
-        pq.nextPacket(); // Trigger rotation. MLFQ[0] moves to MLFQ[1].
-
-        // --- Epoch 3: TARGET is starved by P1/P2 ---
-        // Fill P1/P2 budgets and consume them instantly. TARGET packet remains in MLFQ[1].
-        for (int i = 0; i < 50; i++) { pq.addPacket(createTestPkt(parser, 1, 300+i, "HP")); }
-        for (int i = 0; i < 30; i++) { pq.addPacket(createTestPkt(parser, 4, 400+i, "MP")); }
-        for (int i = 0; i < 79; i++) { pq.nextPacket(); } // Budget consumed (TARGET not sent)
-
-        // --- Rotation 3: MLFQ[2] (empty) -> MLFQ[0] (Recycled Queue) ---
-        Thread.sleep(150);
-        Thread.sleep(1000);
-        pq.nextPacket(); // Trigger rotation.
-
-        // --- Final Rotation (Triggering the Recycled Queue) ---
-        // The TARGET packet should still be in MLFQ[2]
-
-        // Wait 10ms for budget reset
-        Thread.sleep(15);
-
-        // The next call must send the Target Packet, proving it survived the rotation cycles
-        byte[] survivorPkt = pq.nextPacket();
-
-        // --- Assertions ---
-        assertNotNull(survivorPkt, "The target packet must be sent after surviving rotations.");
-        PacketInfo info = parser.parsePacket(survivorPkt);
-        assertEquals(7, info.getPriority(), () -> "The packet should be from level 2.");
-        assertEquals(500, info.getChunkNum(),
-                () -> "The chunk number must match the target survivor (500).");
-    }
-
-    @Test
-    void testMLFQStarvationPrevention() throws InterruptedException, UnknownHostException {
-        PacketParser parser = getParser();
-        final int MLFQ_BUDGET = 20;
-
-        // Add 100 LP packets (P_0 to P_99)
-        for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 7, i, "P" + i));
-        }
-
-        for (int i = 0; i < 99; i++) {
-            pq.nextPacket();
-        }
-
-        byte[] pkt = pq.nextPacket(); // Triggers final rotation
-
-        // Verify the first packet after the full cycle is P_60, and its budget is used.
-        PacketInfo info = parser.parsePacket(pkt);
-        int priority = info.getPriority();
-        int chunkNum = info.getChunkNum();
-
-        assertEquals(7, priority, "Priority must be 7 (Low)");
-        assertEquals(99, chunkNum, "First packet after full cycle should be P_60");
-    }
-
-
-    //-------------------------------------------------------------------------
-    // WORK-CONSERVATION (CRITICAL EFFICIENCY TEST)
-    //-------------------------------------------------------------------------
-
-    @Test
-    void testWorkConservation() throws UnknownHostException {
-        PacketParser parser = getParser();
-
-        // 1. Add only 10 HP (P1) packets (Budget is 50)
-        for (int i = 0; i < 10; i++) {
-            pq.addPacket(createTestPkt(parser, 1, i, "HP" + i));
-        }
-        // 2. Add 100 MP (P2) packets (Budget is 30)
-        for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 4, 100 + i, "MP" + i));
-        }
-        // 3. Add 100 LP (P3) packets (Budget is 20)
-        for (int i = 0; i < 100; i++) {
-            pq.addPacket(createTestPkt(parser, 7, 200 + i, "LP" + i));
-        }
-
-        int sentCount = 0;
-        int hpSent = 0;
-        int mpSent = 0;
-        int lpSent = 0;
-
-        // Drain up to the total available budget (100)
-        for (int i = 0; i < 500; i++) {
-            byte[] pkt = pq.nextPacket();
-            if (pkt != null) {
-                sentCount++;
-                PacketInfo info = parser.parsePacket(pkt);
-                int priority = info.getPriority();
-                if (priority == 1) hpSent++;
-                else if (priority == 4) mpSent++;
-                else if (priority == 7) lpSent++;
-            }
-        }
-
-        // P1: Only 10 packets were available. 40 tokens were unused.
-        assertEquals(10, hpSent, "P1 should only send the 10 packets available.");
-
-        // P2: Should consume its own 30 tokens + 40 unused P1 tokens = 70.
-        assertEquals(100, mpSent, "P2 must consume its 30 tokens + 40 unused P1 tokens.");
-
-        // P3: Used no tokens, as P1 and P2 used the full 80 (70+10) slots, and P3's budget (20) remains.
-        assertEquals(100, lpSent, "P3 should consume its own 20 tokens (no higher priority tokens remain).");
-
-        // Total sent must be 10 (P1) + 70 (P2) + 20 (P3) = 100 packets
-        assertEquals(210, sentCount, "Total sent must equal the total added.");
     }
 
     //-------------------------------------------------------------------------

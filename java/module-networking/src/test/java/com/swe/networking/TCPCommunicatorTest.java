@@ -77,21 +77,21 @@ public class TCPCommunicatorTest {
             final int serverPort = 9900;
             final ProtocolBase tcp = new TCPCommunicator(serverPort);
             final Thread receiveThread = new Thread(() -> {
-                byte[] data = new byte[100];
+                ReceivePacket data = new ReceivePacket(null, new byte[100]);
                 data = tcp.receiveData();
                 if (data != null) {
-                    System.out.println("Received : " + new String(data));
-                    assertEquals(new String(data), "Hello World !!!");
+                    System.out.println("Received : " + new String(data.data()));
+                    assertEquals(new String(data.data()), "Hello World !!!");
                 }
                 data = tcp.receiveData();
                 if (data != null) {
-                    System.out.println("Received : " + new String(data));
-                    assertEquals(new String(data), "Hello World !!!");
+                    System.out.println("Received : " + new String(data.data()));
+                    assertEquals(new String(data.data()), "Hello World !!!");
                 }
                 data = tcp.receiveData();
                 if (data != null) {
-                    System.out.println("Received : " + new String(data));
-                    assertEquals(new String(data), "Hello World !!!");
+                    System.out.println("Received : " + new String(data.data()));
+                    assertEquals(new String(data.data()), "Hello World !!!");
                 }
             });
             receiveThread.start();
