@@ -21,13 +21,14 @@ import com.swe.core.logging.SweLoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import datastructures.Entity;
-import datastructures.Response;
-import datastructures.TimeRange;
-import functionlibrary.CloudFunctionLibrary;
+import com.swe.cloud.datastructures.Entity;
+import com.swe.cloud.datastructures.Response;
+import com.swe.cloud.datastructures.TimeRange;
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -74,6 +75,23 @@ public final class GeminiKeyManager {
     }
 
     /**
+     * get ollama url from cloud.
+     * @return ollama url as a string.
+     */
+    public static String getOllamaUrl() {
+        LOG.info("Fetching Ollama URL from cloud\n");
+        final Entity req = new Entity("AI_INSIGHT", "url", "ollama_url", "ollama",
+                -1, new TimeRange(0, 0), null
+        );
+        try {
+            final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+            return  cloud.cloudGet(req).thenAccept(response -> response.data()).get().toString();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Using compare and swap, get the currently used keys index.
      * @param expiredKey the expired key - max token count reached
      */
@@ -101,11 +119,11 @@ public final class GeminiKeyManager {
         try {
             final Response response = cloud.cloudGet(req);
 
-                final ObjectMapper objectMapper = new ObjectMapper();
-                keyList.set(objectMapper.convertValue(
-                        response.data(),
-                        new TypeReference<List<String>>() { }
-                ));
+            final ObjectMapper objectMapper = new ObjectMapper();
+            keyList.set(objectMapper.convertValue(
+                    response.data(),
+                    new TypeReference<List<String>>() { }
+            ));
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }

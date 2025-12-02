@@ -32,6 +32,7 @@ import com.swe.core.logging.SweLoggerFactory;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.GeminiAdapter;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
+import com.swe.aiinsights.getkeys.EncryptKeys;
 import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.Request;
@@ -40,12 +41,11 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import com.swe.aiinsights.response.AiResponse;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import com.swe.aiinsights.customexceptions.RateLimitException;
+
 /**
  * Gemini Service builds the request and calls the AI api.
  * Receives the AI response.
@@ -121,7 +121,7 @@ public final class GeminiService implements LlmService {
      */
     @Override
     public AiResponse runProcess(final RequestGeneraliser aiRequest)
-            throws IOException {
+            throws Exception {
 
         final ModelAdapter adapter = new GeminiAdapter();
 
@@ -133,7 +133,7 @@ public final class GeminiService implements LlmService {
         while (attempt < maxRetries) {
 //            LOG.info("Attempt");
 //            LOG.info(attempt);
-            final String currentKey = keyManager.getCurrentKey();
+            final String currentKey = EncryptKeys.decrypt(keyManager.getCurrentKey());
             final String apiUrl = GEMINI_API_URL_TEMPLATE + currentKey;
 
             final Request request = new Request.Builder()
