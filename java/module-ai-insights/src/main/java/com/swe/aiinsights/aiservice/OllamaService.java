@@ -23,13 +23,12 @@
 
 package com.swe.aiinsights.aiservice;
 
+import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
-
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
 import com.swe.aiinsights.modeladapter.OllamaAdapter;
-import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.Request;
@@ -51,14 +50,11 @@ public class OllamaService implements LlmService {
      */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
 
-    /**
-     * Loads environment variables from the .env file.
-     */
-    private static Dotenv dotenv = Dotenv.load();
+
     /**
      * gets the OLLAMA_URL from the .env file.
      */
-    private static final String OLLAMA_URL = dotenv.get("OLLAMA_URL");
+    private static final String OLLAMA_URL = GeminiKeyManager.getOllamaUrl();
     /**
      * Sets the Media type used for JSON requests.
      */

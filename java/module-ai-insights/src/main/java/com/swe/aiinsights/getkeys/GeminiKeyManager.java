@@ -28,6 +28,7 @@ import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,6 +72,23 @@ public final class GeminiKeyManager {
         LOG.info("Fetching current key");
         final int index = apiKeyIndex.get();
         return apiKeys.get(Math.abs(index));
+    }
+
+    /**
+     * get ollama url from cloud.
+     * @return ollama url as a string.
+     */
+    public static String getOllamaUrl() {
+        LOG.info("Fetching Ollama URL from cloud\n");
+        final Entity req = new Entity("AI_INSIGHT", "url", "ollama_url", "ollama",
+                -1, new TimeRange(0, 0), null
+        );
+        try {
+            CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+            return  cloud.cloudGet(req).thenAccept(response -> response.data()).get().toString();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

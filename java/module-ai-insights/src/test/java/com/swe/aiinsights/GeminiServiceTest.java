@@ -18,7 +18,6 @@ package com.swe.aiinsights;
 import com.swe.aiinsights.aiservice.GeminiService;
 import com.swe.aiinsights.customexceptions.RateLimitException;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
-import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import com.swe.aiinsights.modeladapter.GeminiAdapter;
 import com.swe.aiinsights.response.AiResponse;
 import io.github.cdimascio.dotenv.Dotenv;
