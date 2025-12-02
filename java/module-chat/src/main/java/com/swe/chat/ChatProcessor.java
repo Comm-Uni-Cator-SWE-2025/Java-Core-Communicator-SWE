@@ -81,7 +81,7 @@ public class ChatProcessor implements IChatProcessor {
 
             // 5. Route Messages
             this.rpc.call("chat:file-metadata-received", metadataBytes);
-            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
+            this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 3);
 
             return new byte[0];
 
