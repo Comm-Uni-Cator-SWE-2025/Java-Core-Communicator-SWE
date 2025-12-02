@@ -1,12 +1,12 @@
 package com.swe.controller.serializer;
 
-import com.swe.core.ClientNode;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
+
+import com.swe.core.ClientNode;
 
 /**
  * Packet sent by participants to announce their presence in a meeting.
@@ -87,6 +87,7 @@ public class ILeavePacket {
      * @return client node details
      */
     public ClientNode getClientNode() {
+        System.out.println("Getting client node: " + clientNode);
         return clientNode;
     }
 

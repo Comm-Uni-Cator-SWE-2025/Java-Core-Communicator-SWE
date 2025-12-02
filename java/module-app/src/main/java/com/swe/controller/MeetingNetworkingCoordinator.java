@@ -10,6 +10,15 @@
 
 package com.swe.controller;
 
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.controller.serializer.ILeavePacket;
 import com.swe.controller.serializer.IamPacket;
@@ -19,19 +28,10 @@ import com.swe.core.ClientNode;
 import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
-import com.swe.core.serialize.DataSerializer;
-import com.swe.networking.ModuleType;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
-
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import com.swe.core.serialize.DataSerializer;
+import com.swe.networking.ModuleType;
 
 /**
  * Coordinates networking responsibilities for meeting lifecycle messages.
@@ -327,24 +327,37 @@ public final class MeetingNetworkingCoordinator {
         if (isServer) {
             // Server receives IAM as a join request
             System.out.println("handleIncoming Iam server");
+            System.out.println("handleIncoming ILeave server leave");
+            System.out.println("handleIncoming ILeave server checking node"+ packet.getClientNode());
+            System.out.println("handleIncoming ILeave server checking node"+ meeting.getParticipants().keySet());
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
-                LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
+                System.out.println("handleIncoming ILeave server leave");
+                // LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
                 // Convert participants map to the two separate maps for leaveBrodcast
+                System.out.println("broadcasting leave packet server");
                 meeting.removeParticipantByNode(packet.getClientNode());
+                System.out.println("broadcasting leave packet server");
                 final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
                 for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
+                    System.out.println("broadcasting leave packet server inside");
                     final UserProfile profile = entry.getValue();
                     if (profile.getEmail() != null) {
+                        System.out.println("broadcasting leave packet server inside email not null");
                         nodeToEmailMap.put(entry.getKey(), profile.getEmail());
                     }
                 }
                 final ClientNode localNode = getLocalClientNode();
+                System.out.println("broadcasting leave packet server after get local node");
                 final List<ClientNode> recipients = new ArrayList<>();
                 for (ClientNode node : nodeToEmailMap.keySet()) {
+                    System.out.println("broadcasting leave packet server inside for");
                     if (!node.equals(localNode)) {
+                        System.out.println("broadcasting leave packet server inside for not equal");
                         recipients.add(node);
                     }
                 }
+
+                System.out.println("broadcasting leave packet :" + recipients.size());
 
                 broadcastILeave(recipients);
             }
