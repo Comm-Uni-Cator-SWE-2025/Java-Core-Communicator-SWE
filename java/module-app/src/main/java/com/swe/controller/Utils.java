@@ -1,8 +1,8 @@
 package com.swe.controller;
 
-import datastructures.Entity;
-import datastructures.Response;
-import functionlibrary.CloudFunctionLibrary;
+import com.swe.cloud.datastructures.Entity;
+import com.swe.cloud.datastructures.CloudResponse;
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +15,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Utility class for controller operations.
@@ -71,7 +73,8 @@ public class Utils {
             LOG.debug("Request to cloud: " + request);
 
             // Post to cloud
-            final Response response = cloud.cloudGet(request);
+            final CompletableFuture<CloudResponse> responseFuture = cloud.cloudGet(request);
+            final CloudResponse response = responseFuture.join();
             final JsonNode node = response.data();
 
             LOG.debug("Data from cloud: " + node);
@@ -116,11 +119,14 @@ public class Utils {
 
             LOG.debug("Request to cloud: " + request);
 
-            final Response responseCreate = cloud.cloudCreate(request);
+
+            final CompletableFuture<CloudResponse> createFuture = cloud.cloudCreate(request);
+            final CloudResponse responseCreate = createFuture.join();
             LOG.debug("Response from cloud create: " + responseCreate.message());
 
-            // Post to cloud
-            final Response response = cloud.cloudPost(request);
+
+            final CompletableFuture<CloudResponse> postFuture = cloud.cloudPost(request);
+            final CloudResponse response = postFuture.join();
             LOG.debug("Response from cloud: " + response.message());
         } catch (Exception e) {
             throw new RuntimeException(e);

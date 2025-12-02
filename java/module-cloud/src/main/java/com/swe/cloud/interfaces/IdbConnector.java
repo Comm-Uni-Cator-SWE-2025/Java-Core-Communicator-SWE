@@ -6,10 +6,10 @@
  * Description = Defines an interface for database operations in the cloud module.
  *****************************************************************************/
 
-package interfaces;
+package com.swe.interfaces;
 
-import datastructures.Entity;
-import datastructures.Response;
+import com.swe.cloud.datastructures.CloudResponse;
+import com.swe.cloud.datastructures.Entity;
 
 /**
  * Interface for performing CRUD operations on cloud database entities.
@@ -18,13 +18,13 @@ public interface IdbConnector {
 
     void init();
 
-    Response getData(Entity request);
+    CloudResponse getData(Entity request);
 
-    Response postData(Entity request);
+    CloudResponse postData(Entity request);
 
-    Response createData(Entity request);
+    CloudResponse createData(Entity request);
 
-    Response deleteData(Entity request);
+    CloudResponse deleteData(Entity request);
 
-    Response updateData(Entity request);
+    CloudResponse updateData(Entity request);
 }

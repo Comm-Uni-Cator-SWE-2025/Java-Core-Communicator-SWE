@@ -16,16 +16,14 @@
 
 package com.swe.aiinsights.getkeys;
 
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import datastructures.Entity;
-import datastructures.Response;
-import datastructures.TimeRange;
-import functionlibrary.CloudFunctionLibrary;
-import java.io.IOException;
+import com.swe.aiinsights.logging.CommonLogger;
+import com.swe.cloud.datastructures.Entity;
+import com.swe.cloud.datastructures.TimeRange;
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
+import org.slf4j.Logger;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +36,7 @@ public final class GeminiKeyManager {
     /**
      * Get the log file path.
      */
-    private static final SweLogger LOG = SweLoggerFactory.getLogger("AI-INSIGHTS");
+    private static final Logger LOG = CommonLogger.getLogger(GeminiKeyManager.class);
     /**
      * THe cloud function library which will fetch the keys.
      */
@@ -82,13 +80,13 @@ public final class GeminiKeyManager {
         final int currentIndex = apiKeyIndex.get();
         final String currentKey = apiKeys.get(Math.abs(currentIndex));
         if (currentKey.equals(expiredKey)) {
-            apiKeyIndex.compareAndSet(currentIndex, currentIndex + 1);
-            LOG.info("API key index: " + apiKeyIndex);
+            apiKeyIndex.compareAndSet(currentIndex, (currentIndex + 1) % apiKeys.size());
+            // System.out.println(apiKeyIndex);
         }
     }
 
     /**
-            * This method is used to get the list of API Keys.
+     * This method is used to get the list of API Keys.
      * @return list of Gemini API KEYS
      */
     private List<String> getKeyList() {
@@ -98,17 +96,13 @@ public final class GeminiKeyManager {
 
         final AtomicReference<Object> keyList = new AtomicReference<>();
         LOG.debug("Getting key list from Cloud");
-        try {
-            final Response response = cloud.cloudGet(req);
-
-                final ObjectMapper objectMapper = new ObjectMapper();
-                keyList.set(objectMapper.convertValue(
-                        response.data(),
-                        new TypeReference<List<String>>() { }
-                ));
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        cloud.cloudGet(req).thenAccept(response -> {
+            final ObjectMapper objectMapper = new ObjectMapper();
+            keyList.set(objectMapper.convertValue(
+                    response.data(),
+                    new TypeReference<List<String>>() { }
+            ));
+        }).join();
         return (List<String>) keyList.get();
     }
 

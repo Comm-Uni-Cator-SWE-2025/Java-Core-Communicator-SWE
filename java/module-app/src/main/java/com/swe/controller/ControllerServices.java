@@ -1,6 +1,6 @@
 package com.swe.controller;
 
-import functionlibrary.CloudFunctionLibrary;
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
 
 import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.core.Context;
