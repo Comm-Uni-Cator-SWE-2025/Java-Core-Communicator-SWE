@@ -92,6 +92,7 @@ public final class MeetingNetworkingCoordinator {
                     localNode);
         }
 
+        System.out.println("handeling meeting join and leave");
         sendIamPacket(serverNode, localNode);
     }
 
@@ -140,6 +141,7 @@ public final class MeetingNetworkingCoordinator {
 
         if (isServer) {
             // Server receives IAM as a join request
+            System.out.println("handleIncoming Iam server");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
                 LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
                 // Convert participants map to the two separate maps for leaveBrodcast
@@ -182,7 +184,9 @@ public final class MeetingNetworkingCoordinator {
             final JoinAckPacket ackPacket = new JoinAckPacket(nodeToEmailMap, emailToDisplayNameMap);
             sendBytes(ackPacket.serialize(), new ClientNode[] { packet.getClientNode() });
         } else {
+            System.out.println("handleIncoming Iam client");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
+                System.out.println("handleIncoming Iam client leave");
                 meeting.removeParticipantByNode(packet.getClientNode());
 
                 try {
@@ -240,6 +244,7 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
 
+        System.out.println("sending IAM packet");
         final IamPacket iamPacket = new IamPacket(services.getContext().getSelf().getEmail(),
                 services.getContext().getSelf().getDisplayName(),
                 localNode);
