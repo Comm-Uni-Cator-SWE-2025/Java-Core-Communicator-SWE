@@ -21,10 +21,10 @@ import com.swe.core.logging.SweLoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import datastructures.Entity;
-import datastructures.Response;
-import datastructures.TimeRange;
-import functionlibrary.CloudFunctionLibrary;
+import com.swe.cloud.datastructures.Entity;
+import com.swe.cloud.datastructures.Response;
+import com.swe.cloud.datastructures.TimeRange;
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -101,11 +101,11 @@ public final class GeminiKeyManager {
         try {
             final Response response = cloud.cloudGet(req);
 
-                final ObjectMapper objectMapper = new ObjectMapper();
-                keyList.set(objectMapper.convertValue(
-                        response.data(),
-                        new TypeReference<List<String>>() { }
-                ));
+            final ObjectMapper objectMapper = new ObjectMapper();
+            keyList.set(objectMapper.convertValue(
+                    response.data(),
+                    new TypeReference<List<String>>() { }
+            ));
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }

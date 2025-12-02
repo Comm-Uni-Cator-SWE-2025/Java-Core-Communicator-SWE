@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.type.CollectionType;
+
 /**
  * Method used to parse the output of insights generator.
  */

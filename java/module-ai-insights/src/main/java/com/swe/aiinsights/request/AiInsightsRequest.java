@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

@@ -43,6 +43,7 @@ import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 
 import com.swe.aiinsights.apiendpoints.AiClientService;
+
 /**
  * THis class is used ot create a singleton instance of AI.
  * Across requests, it will remain same in a client.

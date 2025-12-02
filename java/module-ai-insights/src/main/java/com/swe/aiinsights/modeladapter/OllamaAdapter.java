@@ -40,7 +40,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
-import com.swe.aiinsights.logging.CommonLogger;
 import okhttp3.Response;
 import java.io.IOException;
 
