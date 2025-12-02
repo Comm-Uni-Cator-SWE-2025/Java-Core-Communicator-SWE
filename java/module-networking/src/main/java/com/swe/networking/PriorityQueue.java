@@ -289,7 +289,7 @@ public class PriorityQueue {
      */
     private byte[] processLowPriority() {
         if (lowPriorityQueue.isEmpty()) {
-//            NetworkLogger.printInfo(MODULENAME, "low is accessed");
+            // NetworkLogger.printInfo(MODULENAME, "low is accessed");
             return null;
         }
         final int p3Current = currentBudget.get(PacketPriority.TWO);
@@ -330,7 +330,7 @@ public class PriorityQueue {
      */
     private byte[] processChat() {
         if (chatQueue.isEmpty()) {
-//            NetworkLogger.printInfo(MODULENAME, "chat is accessed");
+            // NetworkLogger.printInfo(MODULENAME, "chat is accessed");
             return null;
         }
         final int p4Current = currentBudget.get(PacketPriority.THREE);
@@ -402,7 +402,7 @@ public class PriorityQueue {
             return packet;
         }
 
-        //Chat Packets (P4/THREE)
+        // Chat Packets (P4/THREE)
         packet = processChat();
         if (packet != null) {
             return packet;
@@ -448,19 +448,19 @@ public class PriorityQueue {
         /**
          * Highest priority packet (50% budget share).
          */
-        ZERO(0, 50),
+        ZERO(0, 10),
         /**
          * High priority packet (30% budget share).
          */
-        ONE(1, 20),
+        ONE(1, 10),
         /**
          * Low priority packets handled by MLFQ (20% budget share).
          */
-        TWO(2, 10),
+        TWO(2, 70),
         /**
          * Future extension: low priority.
          */
-        THREE(3, 20),
+        THREE(3, 10),
         /**
          * Future extension: very low priority.
          */

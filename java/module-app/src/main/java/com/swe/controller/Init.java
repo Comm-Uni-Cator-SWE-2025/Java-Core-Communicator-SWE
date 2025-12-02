@@ -261,7 +261,7 @@ public class Init {
                         LOG.error("Error in sleep");
                     }
                     Networking.getNetwork().closeNetworking();
-                });
+                }).start();
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOG.error("Error ending meeting", e);

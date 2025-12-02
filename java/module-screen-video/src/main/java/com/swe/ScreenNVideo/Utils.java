@@ -103,11 +103,11 @@ public class Utils {
     /**
      * Width of the server.
      */
-    public static final int SERVER_WIDTH = 800;
+    public static final int SERVER_WIDTH = 64;
     /**
      * Height of the server.
      */
-    public static final int SERVER_HEIGHT = 600;
+    public static final int SERVER_HEIGHT = 64;
     /**
      * Width of the client.
      */
@@ -159,10 +159,11 @@ public class Utils {
 
     /**
      * Writes the given int to the buffer in little endian.
+     * 
      * @param bufferOut the buffer to write to
-     * @param data the data to write
+     * @param data      the data to write
      */
-    public  static void writeInt(final ByteArrayOutputStream bufferOut, final int data) {
+    public static void writeInt(final ByteArrayOutputStream bufferOut, final int data) {
         bufferOut.write((data >> INT_MASK_24) & Utils.BYTE_MASK);
         bufferOut.write((data >> INT_MASK_16) & Utils.BYTE_MASK);
         bufferOut.write((data >> INT_MASK_8) & Utils.BYTE_MASK);
@@ -171,6 +172,7 @@ public class Utils {
 
     /**
      * Converts the given image to its rgb form.
+     * 
      * @param img the image
      * @return int[][] : RGB matrix 0xAARRGGBB / 0x00RRGGBB
      */
@@ -178,7 +180,7 @@ public class Utils {
         final int width = img.getWidth();
         final int height = img.getHeight();
 
-//        long startTime = System.nanoTime();
+        // long startTime = System.nanoTime();
         // Direct buffer access (zero per-pixel overhead)
         final int[] data = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
 
@@ -186,14 +188,14 @@ public class Utils {
         for (int y = 0; y < height; y++) {
             System.arraycopy(data, y * width, matrix[y], 0, width);
         }
-//        LOG.info("Image to RGB Matrix Conversion Time: "
-//                + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
+        // LOG.info("Image to RGB Matrix Conversion Time: "
+        // + (System.nanoTime() - startTime) / ((double) MSEC_IN_NS) + " ms");
         return matrix;
     }
 
-
     /**
      * Gives the IP address of self machine.
+     * 
      * @return IP address of self machine
      */
     public static String getSelfIP() {
@@ -209,6 +211,7 @@ public class Utils {
 
     /**
      * Fills dstMatrix with the srcMatrix.
+     * 
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
@@ -236,6 +239,7 @@ public class Utils {
 
     /**
      * Fills dstMatrix with the srcMatrix.
+     * 
      * @param srcMatrix matrix
      * @param dstMatrix matrix
      */
