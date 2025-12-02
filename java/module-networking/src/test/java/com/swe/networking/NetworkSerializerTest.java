@@ -1,14 +1,16 @@
 package com.swe.networking;
 
 import com.swe.core.ClientNode;
+
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 /** Test class for serializers. */
 public class NetworkSerializerTest {

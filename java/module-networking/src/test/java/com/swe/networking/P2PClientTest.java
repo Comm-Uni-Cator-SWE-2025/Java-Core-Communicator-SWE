@@ -1,5 +1,11 @@
 package com.swe.networking;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
@@ -17,14 +23,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.swe.core.ClientNode;
 
@@ -105,7 +105,7 @@ public class P2PClientTest {
         return packetParser.createPkt(info);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         resetStaticSingleton(ChunkManager.class, "chunkManager", null);
         topology.replaceNetwork(new NetworkStructure(new ArrayList<>(), new ArrayList<>()));
@@ -122,7 +122,7 @@ public class P2PClientTest {
         field.set(null, value);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws InterruptedException {
 
         if (testClient != null) {
@@ -182,8 +182,8 @@ public class P2PClientTest {
 
         Thread.sleep(500);
 
-        assertEquals("Client should be in cluster 1", 1, topology.getClusterIndex(deviceNode));
-        assertEquals("Client's server should be clusterServerNode", clusterServerNode, topology.getServer(deviceNode));
+        assertEquals( 1, topology.getClusterIndex(deviceNode),"Client should be in cluster 1");
+        assertEquals( clusterServerNode, topology.getServer(deviceNode),"Client's server should be clusterServerNode");
 
     }
 
@@ -290,7 +290,7 @@ public class P2PClientTest {
         sendAlive.invoke(testClient);
         Thread.sleep(500);
 
-        assertNotNull("Mock server did not receive any packet", receivedPacket.get());
+        assertNotNull(receivedPacket.get(),"Mock server did not receive any packet");
         final PacketInfo info = packetParser.parsePacket(receivedPacket.get());
         assertEquals(NetworkType.USE.ordinal(), info.getType());
         assertEquals(NetworkConnectionType.ALIVE.ordinal(), info.getConnectionType());
@@ -300,7 +300,7 @@ public class P2PClientTest {
         setPrivateField(testClient, "clusterServerAddress", null);
         sendAlive.invoke(testClient);
         Thread.sleep(500);
-        assertNull("Mock server should not receive any packet", receivedPacket.get());
+        assertNull( receivedPacket.get(),"Mock server should not receive any packet");
         serverThread.join(100);
     }
 
@@ -352,7 +352,7 @@ public class P2PClientTest {
         sendPacket(addPacket, deviceNode);
         Thread.sleep(500);
 
-        assertEquals("new node should be in cluster 1", 1, topology.getClusterIndex(newNode));
+        assertEquals( 1, topology.getClusterIndex(newNode),"new node should be in cluster 1");
     }
 
     @Test
@@ -397,7 +397,7 @@ public class P2PClientTest {
         sendPacket(networkPacket, deviceNode);
         Thread.sleep(1000);
 
-        assertEquals("otherClientNode should be in cluster 1", 1, topology.getClusterIndex(otherClientNode));
+        assertEquals( 1, topology.getClusterIndex(otherClientNode),"otherClientNode should be in cluster 1");
 
         final ClientNetworkRecord removeRecord = new ClientNetworkRecord(otherClientNode, 1);
         final byte[] removePayload = serializer.serializeClientNetworkRecord(removeRecord);
@@ -406,7 +406,7 @@ public class P2PClientTest {
         sendPacket(removePacket, deviceNode);
         Thread.sleep(1000);
 
-        assertEquals("otherClientNode should be removed", -1, topology.getClusterIndex(otherClientNode));
+        assertEquals( -1, topology.getClusterIndex(otherClientNode),"otherClientNode should be removed");
     }
 
     @Test
