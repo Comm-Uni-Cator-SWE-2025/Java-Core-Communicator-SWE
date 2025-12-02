@@ -242,7 +242,6 @@ public class Init {
             LOG.info("Ending meeting");
             try {
 
-                Networking.getNetwork().closeNetworking();
                 LOG.info("Meeting ended successfully");
                 // Clear the meeting session from context
                 controllerServices.getContext().setMeetingSession(null);
@@ -252,6 +251,7 @@ public class Init {
                 final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
 
                 MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
+                Networking.getNetwork().closeNetworking();
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOG.error("Error ending meeting", e);
