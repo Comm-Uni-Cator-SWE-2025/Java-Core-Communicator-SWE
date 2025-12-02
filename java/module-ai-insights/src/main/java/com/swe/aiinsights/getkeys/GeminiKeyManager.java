@@ -19,16 +19,15 @@ package com.swe.aiinsights.getkeys;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swe.aiinsights.logging.CommonLogger;
-import com.swe.cloud.datastructures.Entity;
-import com.swe.cloud.datastructures.TimeRange;
-import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
+import datastructures.Entity;
+import datastructures.TimeRange;
+import functionlibrary.CloudFunctionLibrary;
+import datastructures.Response;
 import org.slf4j.Logger;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The key manager class to get Gemini Key from cloud.
@@ -96,12 +95,13 @@ public final class GeminiKeyManager {
         );
         try {
             final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
-            return cloud.cloudGet(req)
-                .thenApply(response -> response.data())  
-                .thenApply(Object::toString)            
-                .get();  
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            final Response response = cloud.cloudGet(req);
+            return response.data() == null ? null : response.data().asText();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while fetching Ollama URL", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to fetch Ollama URL", e);
         }
     }
     /**
@@ -113,16 +113,20 @@ public final class GeminiKeyManager {
                 -1, new TimeRange(0, 0), null
         );
 
-        final AtomicReference<Object> keyList = new AtomicReference<>();
         LOG.debug("Getting key list from Cloud");
-        cloud.cloudGet(req).thenAccept(response -> {
+        try {
+            final Response response = cloud.cloudGet(req);
             final ObjectMapper objectMapper = new ObjectMapper();
-            keyList.set(objectMapper.convertValue(
+            return objectMapper.convertValue(
                     response.data(),
                     new TypeReference<List<String>>() { }
-            ));
-        }).join();
-        return (List<String>) keyList.get();
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while fetching Gemini API keys", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to fetch Gemini API keys", e);
+        }
     }
 
     /**
