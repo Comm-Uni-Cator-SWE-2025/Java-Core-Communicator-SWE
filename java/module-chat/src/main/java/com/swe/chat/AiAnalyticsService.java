@@ -30,6 +30,7 @@ public class AiAnalyticsService implements IAiAnalyticsService {
 
     // Map to hold sender names for reply lookup
     private final Map<String, String> messageIdToSender = new ConcurrentHashMap<>();
+    private final Set<String> processedQuestions = Collections.synchronizedSet(new HashSet<>());
 
     public AiAnalyticsService(AbstractRPC rpc, Networking network, AiClientService aiService) {
         this.rpc = rpc;
@@ -143,23 +144,33 @@ public class AiAnalyticsService implements IAiAnalyticsService {
         // Logic for adding message to history and updating context
         fullMessageHistory.add(message);
         messageIdToSender.put(message.getMessageId(), message.getSenderDisplayName());
-
-        // Check if message should trigger an immediate AI response
-        if (message.getContent().trim().startsWith("@AI")) {
-            // Trigger incremental summary for context BEFORE handling the question
-            processIncrementalSummary();
-            handleAiQuestion(message.getContent());
-        }
     }
 
     @Override
     public void handleAiQuestion(String fullText) {
-        String question = fullText.substring(3).trim();
-        if (question.isEmpty()) return;
+        String question = fullText.trim();
+        if (!question.startsWith("@AI")) return;
 
-        System.out.println("[Core] Processing AI Question: " + question);
+        // Dedup: Prevent answering the exact same query text multiple times rapidly
+        // (Simple hash check, or ideally MessageID if passed)
+        if (processedQuestions.contains(question)) {
+            System.out.println("[AI-Backend] Skipping duplicate AI request: " + question);
+            return;
+        }
+        processedQuestions.add(question);
 
-        aiService.answerQuestion(question)
+        // Remove from cache after 1 minute to allow re-asking later
+        scheduler.schedule(() -> processedQuestions.remove(question), 1, TimeUnit.MINUTES);
+
+        // Logic migrated: Update summary context BEFORE answering
+        processIncrementalSummary();
+
+        String actualQuestion = question.substring(3).trim();
+        if (actualQuestion.isEmpty()) return;
+
+        System.out.println("[Core] Processing AI Question: " + actualQuestion);
+
+        aiService.answerQuestion(actualQuestion)
                 .thenAccept(this::broadcastAiResponse)
                 .exceptionally(e -> {
                     broadcastAiResponse("I'm sorry, I couldn't process that request.");
@@ -168,13 +179,12 @@ public class AiAnalyticsService implements IAiAnalyticsService {
     }
 
     private void broadcastAiResponse(String answer) {
-        // AI response broadcast logic migrated here
         try {
             String aiMsgId = UUID.randomUUID().toString();
             ChatMessage aiMsg = new ChatMessage(aiMsgId, "AI-SYSTEM-ID", "AI_Bot", answer, null);
 
             // Add AI response to history too (for context)
-            fullMessageHistory.add(aiMsg);
+            addMessageToHistory(aiMsg);
 
             byte[] aiBytes = ChatMessageSerializer.serialize(aiMsg);
             byte[] networkPacket = ChatProtocol.addProtocolFlag(aiBytes, ChatProtocol.FLAG_TEXT_MESSAGE);
@@ -182,7 +192,6 @@ public class AiAnalyticsService implements IAiAnalyticsService {
             // Broadcast to peers AND update local UI via RPC
             this.network.broadcast(networkPacket, ModuleType.CHAT.ordinal(), 0);
             this.rpc.call("chat:new-message", aiBytes);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
