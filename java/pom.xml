@@ -74,14 +74,16 @@
       <plugins>
 
         <!-- Maven Compiler -->
+
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.13.0</version>
-           <configuration>
-             <source>24</source>
-             <target>24</target>
-           </configuration>
+          <configuration>
+            <source>24</source>
+            <target>24</target>
+            <useModulePath>false</useModulePath>
+          </configuration>
         </plugin>
 
         <!-- Checkstyle Plugin -->
