@@ -393,6 +393,17 @@ public final class MeetingNetworkingCoordinator {
         } else {
             System.out.println("handleIncoming ILeave client");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
+                if (packet.getClientNode().hostName() == ControllerServices.getInstance().getContext().getMainServerIP()
+                        .hostName()) {
+                    try {
+                        services.getContext().getRpc().call("core/LeaveMeeting",
+                                new byte[0])
+                                .get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
                 System.out.println("handleIncoming ILeave client leave");
                 meeting.removeParticipantByNode(packet.getClientNode());
 
