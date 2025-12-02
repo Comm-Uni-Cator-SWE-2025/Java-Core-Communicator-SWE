@@ -358,39 +358,6 @@ public final class MeetingNetworkingCoordinator {
 
                 broadcastILeave(recipients);
             }
-            LOG.info("Received ILeave (leave request) from " + packet.getEmail()
-                    + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
-
-            // Convert participants map to the two separate maps for JoinAckPacket
-            final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
-            final Map<String, String> emailToDisplayNameMap = new HashMap<>();
-            for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
-                final UserProfile profile = entry.getValue();
-                if (profile.getEmail() != null) {
-                    nodeToEmailMap.put(entry.getKey(), profile.getEmail());
-                    if (profile.getDisplayName() != null) {
-                        emailToDisplayNameMap.put(profile.getEmail(), profile.getDisplayName());
-                    }
-                }
-            }
-
-            for (Map.Entry<ClientNode, String> entry : nodeToEmailMap.entrySet()) {
-                final String email = entry.getValue();
-                final String displayName = emailToDisplayNameMap.getOrDefault(email, "");
-                meeting.upsertParticipantNode(email, displayName, entry.getKey());
-            }
-
-            LOG.info("Received JOINACK with " + nodeToEmailMap.size() + " participant mappings");
-
-            final ClientNode localNode = getLocalClientNode();
-            final List<ClientNode> recipients = new ArrayList<>();
-            for (ClientNode node : nodeToEmailMap.keySet()) {
-                if (!node.equals(localNode)) {
-                    recipients.add(node);
-                }
-            }
-
-            broadcastILeave(recipients);
         } else {
             System.out.println("handleIncoming ILeave client");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
