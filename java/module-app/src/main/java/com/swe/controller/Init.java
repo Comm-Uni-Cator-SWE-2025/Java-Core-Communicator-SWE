@@ -215,7 +215,7 @@ public class Init {
                 controllerServices.getCanvasManager().setSelfClientNode(localClientNode);
                 controllerServices.getCanvasManager().setHostClientNode(serverClientNode);
 
-                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
+                MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
                 LOG.error("Error getting server client node", e);
                 throw new RuntimeException(e);
@@ -245,12 +245,12 @@ public class Init {
                 LOG.info("Meeting ended successfully");
                 // Clear the meeting session from context
                 controllerServices.getContext().setMeetingSession(null);
-                
+
                 String id = controllerServices.getContext().getMeetingSession().getMeetingId();
-                
+
                 final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
-                
-                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
+
+                MeetingNetworkingCoordinator.handleMeetingLeave(id, serverClientNode);
                 Networking.getNetwork().closeNetworking();
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
