@@ -1,9 +1,0 @@
-"Developer 1 will handle the backend deployment scripts and ensure the new API endpoints are tested.",
-
-"Developer 2 will update the UI for the feedback module and push the changes to the staging branch by tonight.",
-
-"The QA Engineer will start regression testing and prepare the report by Thursday evening.",
-
-"Developer 2 will update the API documentation and share it in the internal wiki by Thursday morning.",
-
-"The QA Engineer will re-run smoke tests after deployment to verify user login and feedback submission workflows."
