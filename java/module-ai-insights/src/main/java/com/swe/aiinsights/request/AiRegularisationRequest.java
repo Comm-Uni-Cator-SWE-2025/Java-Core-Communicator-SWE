@@ -70,7 +70,8 @@ public class AiRegularisationRequest implements AiRequestable {
                      * The **top-left corner** $(X_{\\text{min}}, Y_{\\text{min}})$ of the minimum bounding rectangle.
                      * The **bottom-right corner** $(X_{\\text{max}}, Y_{\\text{max}})$ of the minimum bounding rectangle.
                  3.  **Do not modify** the `ShapeId`, `Color`, `Thickness`, `CreatedBy`, `LastModifiedBy`, or `IsDeleted` fields.
-                 4.  **The output must be a JSON string and nothing else.**""");
+                 4.  **The output must be a JSON string and nothing else.**
+                """);
 
         type = "REG";
     }
