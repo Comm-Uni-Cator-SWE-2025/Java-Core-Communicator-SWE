@@ -42,7 +42,7 @@ public class ILeavePacket {
     private static final int MIN_PACKET_SIZE = 15;
 
     /**
-     * Constructs a new IamPacket.
+     * Constructs a new LEAVEPacket.
      *
      * @param emailParam       The email address of the participant
      * @param displayNameParam The display name of the participant
@@ -92,9 +92,9 @@ public class ILeavePacket {
     }
 
     /**
-     * Serializes the IamPacket into a byte array.
+     * Serializes the LEAVEPacket into a byte array.
      * Format:
-     * - 1 byte: packet type (MeetingPacketType.IAM.ordinal())
+     * - 1 byte: packet type (MeetingPacketType.LEAVE.ordinal())
      * - 4 bytes: IP address (as int, network byte order)
      * - 2 bytes: port (as short)
      * - 4 bytes: email length (int)
@@ -117,7 +117,7 @@ public class ILeavePacket {
             final ByteBuffer buffer = ByteBuffer.allocate(1 + IPV4_BYTE_SIZE + 2 + IPV4_BYTE_SIZE
                     + emailBytes.length + IPV4_BYTE_SIZE + displayNameBytes.length);
 
-            buffer.put((byte) MeetingPacketType.IAM.ordinal());
+            buffer.put((byte) MeetingPacketType.LEAVE.ordinal());
             buffer.put(ipBytes); // 4 bytes for IPv4
             buffer.putShort((short) clientNode.port()); // 2 bytes for port
             buffer.putInt(emailBytes.length); // 4 bytes for email length
@@ -132,18 +132,18 @@ public class ILeavePacket {
     }
 
     /**
-     * Deserializes a byte array into an IamPacket.
+     * Deserializes a byte array into an LEAVEPacket.
      *
      * @param data The byte array to deserialize
-     * @return The deserialized IamPacket
+     * @return The deserialized LEAVEPacket
      * @throws InvalidParameterException If the packet type is invalid or data is
      *                                   malformed
      */
     /**
-     * Deserializes a byte array into an IamPacket.
+     * Deserializes a byte array into an LEAVEPacket.
      *
      * @param data The byte array to deserialize
-     * @return The deserialized IamPacket
+     * @return The deserialized LEAVEPacket
      * @throws InvalidParameterException If the packet type is invalid or data is
      *                                   malformed
      */
@@ -151,16 +151,16 @@ public class ILeavePacket {
     // CHECKSTYLE:OFF: NPathComplexity
     public static ILeavePacket deserialize(final byte[] data) {
         if (data == null || data.length < MIN_PACKET_SIZE) {
-            throw new InvalidParameterException("Invalid data: too short for IamPacket (need at least "
+            throw new InvalidParameterException("Invalid data: too short for LEAVEPacket (need at least "
                     + MIN_PACKET_SIZE + " bytes)");
         }
 
         final ByteBuffer buffer = ByteBuffer.wrap(data);
 
         final byte packetType = buffer.get();
-        if (packetType != MeetingPacketType.IAM.ordinal()) {
+        if (packetType != MeetingPacketType.LEAVE.ordinal()) {
             throw new InvalidParameterException(
-                    "Invalid packet type: Expected " + MeetingPacketType.IAM.ordinal() + " got: " + packetType);
+                    "Invalid packet type: Expected " + MeetingPacketType.LEAVE.ordinal() + " got: " + packetType);
         }
 
         // Read IP address (4 bytes)

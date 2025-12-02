@@ -103,7 +103,11 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
 
-        final byte ordinal = data[0];
+        // final byte ordinal = data[0];
+
+        LOG.debug("Raw packet bytes: " + java.util.Arrays.toString(data));
+        final int ordinal = Byte.toUnsignedInt(data[0]);
+        LOG.debug("First byte (unsigned ordinal): " + ordinal + " (as signed: " + data[0] + ")");
         if (ordinal < 0 || ordinal >= PACKET_TYPES.length) {
             LOG.warn("Unknown packet ordinal: " + ordinal);
             return;
@@ -113,9 +117,9 @@ public final class MeetingNetworkingCoordinator {
         LOG.debug("Handling packet type: " + type);
 
         switch (type) {
+            case LEAVE -> handleLeavePacket(data);
             case IAM -> handleIamPacket(data);
             case JOINACK -> handleJoinAckPacket(data);
-            case LEAVE -> handleLeavePacket(data);
             default -> LOG.warn("Unhandled packet type: " + type);
         }
 
@@ -309,7 +313,11 @@ public final class MeetingNetworkingCoordinator {
         final ILeavePacket iLeavePacket = new ILeavePacket(services.getContext().getSelf().getEmail(),
                 services.getContext().getSelf().getDisplayName(),
                 localNode);
-        sendBytes(iLeavePacket.serialize(), new ClientNode[] { serverNode });
+        byte[] data = iLeavePacket.serialize();
+        final int ordinal = Byte.toUnsignedInt(data[0]);
+        LOG.info("LEAVE Ordinal is " + ordinal);
+
+        sendBytes(data, new ClientNode[] { serverNode });
     }
 
     private static void handleLeavePacket(byte[] data) {
@@ -326,33 +334,21 @@ public final class MeetingNetworkingCoordinator {
 
         if (isServer) {
             // Server receives IAM as a join request
-            System.out.println("handleIncoming Iam server");
-            System.out.println("handleIncoming ILeave server leave");
-            System.out.println("handleIncoming ILeave server checking node"+ packet.getClientNode());
-            System.out.println("handleIncoming ILeave server checking node"+ meeting.getParticipants().keySet());
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
-                System.out.println("handleIncoming ILeave server leave");
                 // LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
                 // Convert participants map to the two separate maps for leaveBrodcast
-                System.out.println("broadcasting leave packet server");
                 meeting.removeParticipantByNode(packet.getClientNode());
-                System.out.println("broadcasting leave packet server");
                 final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
                 for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
-                    System.out.println("broadcasting leave packet server inside");
                     final UserProfile profile = entry.getValue();
                     if (profile.getEmail() != null) {
-                        System.out.println("broadcasting leave packet server inside email not null");
                         nodeToEmailMap.put(entry.getKey(), profile.getEmail());
                     }
                 }
                 final ClientNode localNode = getLocalClientNode();
-                System.out.println("broadcasting leave packet server after get local node");
                 final List<ClientNode> recipients = new ArrayList<>();
                 for (ClientNode node : nodeToEmailMap.keySet()) {
-                    System.out.println("broadcasting leave packet server inside for");
                     if (!node.equals(localNode)) {
-                        System.out.println("broadcasting leave packet server inside for not equal");
                         recipients.add(node);
                     }
                 }

@@ -247,16 +247,21 @@ public class Init {
             try {
 
                 LOG.info("Meeting ended successfully");
-                // Clear the meeting session from context
-                controllerServices.getContext().setMeetingSession(null);
 
                 String id = controllerServices.getContext().getMeetingSession().getMeetingId();
 
                 final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
 
                 MeetingNetworkingCoordinator.handleMeetingLeave(id, serverClientNode);
-                
-                Networking.getNetwork().closeNetworking();
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (Exception e) {
+                        LOG.error("Error in sleep");
+                    }
+                    Networking.getNetwork().closeNetworking();
+                });
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOG.error("Error ending meeting", e);
