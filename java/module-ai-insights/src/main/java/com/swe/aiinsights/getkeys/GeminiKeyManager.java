@@ -84,7 +84,7 @@ public final class GeminiKeyManager {
                 -1, new TimeRange(0, 0), null
         );
         try {
-            CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+            final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
             return  cloud.cloudGet(req).thenAccept(response -> response.data()).get().toString();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);

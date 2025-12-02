@@ -65,11 +65,15 @@ public class AiRegularisationRequest implements AiRequestable {
                  Then, generate a single, complete **JSON string** that represents the processed shape.
                   This output must strictly adhere to the following rules:
 
-                 1.  Replace the original shape `Type` (e.g., 'FREEHAND') with the **identified shape** (e.g., 'RECTANGLE').
+                 1.  Replace the original shape `Type` (e.g., 'FREEHAND') with the **identified shape**
+                        (e.g., 'RECTANGLE').
                  2.  Replace the entire original `Points` list with only **two** new point objects:
-                     * The **top-left corner** $(X_{\\text{min}}, Y_{\\text{min}})$ of the minimum bounding rectangle.
-                     * The **bottom-right corner** $(X_{\\text{max}}, Y_{\\text{max}})$ of the minimum bounding rectangle.
-                 3.  **Do not modify** the `ShapeId`, `Color`, `Thickness`, `CreatedBy`, `LastModifiedBy`, or `IsDeleted` fields.
+                     * The **top-left corner** $(X_{\\text{min}}, Y_{\\text{min}})$ of the
+                      minimum bounding rectangle.
+                     * The **bottom-right corner** $(X_{\\text{max}}, Y_{\\text{max}})$ of the
+                      minimum bounding rectangle.
+                 3.  **Do not modify** the `ShapeId`, `Color`, `Thickness`, `CreatedBy`, `LastModifiedBy`,
+                  or `IsDeleted` fields.
                  4.  **The output must be a JSON string and nothing else.**
                 """);
 
