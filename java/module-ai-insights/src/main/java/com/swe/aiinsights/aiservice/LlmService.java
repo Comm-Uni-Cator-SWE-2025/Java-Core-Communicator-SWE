@@ -31,5 +31,5 @@ public interface LlmService {
      * @return AiResponse, returns the response from AI
      * @throws IOException in case of error in reading AI response
      */
-    AiResponse runProcess(RequestGeneraliser request) throws IOException;
+    AiResponse runProcess(RequestGeneraliser request) throws IOException, Exception;
 }
