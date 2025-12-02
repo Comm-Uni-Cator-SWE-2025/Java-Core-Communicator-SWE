@@ -20,11 +20,11 @@
 
 package com.swe.aiinsights.getkeys;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -33,7 +33,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 /**
  * EncryptKey class used to encrypt the keys before storing in cloud.
  */
-public final class EncryptKeys{
+public final class EncryptKeys {
     /**
      * Loads environment variables from the .env file.
      */
@@ -44,48 +44,65 @@ public final class EncryptKeys{
      */
     private static final SecretKey SECRET_KEY = loadKey();
 
+    /**
+     * Change the key type from string to base64 encoding.
+     * @return SecretKey
+     */
     private static SecretKey loadKey() {
-        String keyString = dotenv.get("SECRET_KEY");
-        byte[] keyBytes = Base64.getDecoder().decode(keyString);
+        final String keyString = dotenv.get("SECRET_KEY");
+        final byte[] keyBytes = Base64.getDecoder().decode(keyString);
         return new SecretKeySpec(keyBytes, "AES");
     }
 
+    /**
+     * Generates an IV.
+     * @return IV
+     */
     private static byte[] generateIv() {
-        byte[] iv = new byte[12]; // recommended size for GCM
+        final int numBytes = 12;
+        final byte[] iv = new byte[numBytes];
         new SecureRandom().nextBytes(iv);
         return iv;
     }
 
     /**
-     * Method used to encrypt the keys
-     * @param key
-     * @return encrypted key
-     * @throws NoSuchPaddingException
-     * @throws NoSuchAlgorithmException
+     * Method used to encrypt the keys.
+     * @param key key
+     * @return encrypted key is returned.
+     * @throws Exception when the algorithm is invalid.
      */
-    public static String encrypt(String key) throws Exception {
-        byte[] iv = generateIv();
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, SECRET_KEY, new GCMParameterSpec(128, iv));
-        byte[] encryptedBytes = cipher.doFinal(key.getBytes());
-        ByteBuffer buffer = ByteBuffer.allocate(iv.length + encryptedBytes.length);
+    public static String encrypt(final String key) throws Exception {
+        final byte[] iv = generateIv();
+        final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        final int paramLen = 128;
+        cipher.init(Cipher.ENCRYPT_MODE, SECRET_KEY, new GCMParameterSpec(paramLen, iv));
+        final byte[] encryptedBytes = cipher.doFinal(key.getBytes());
+        final ByteBuffer buffer = ByteBuffer.allocate(iv.length + encryptedBytes.length);
         buffer.put(iv);
         buffer.put(encryptedBytes);
         return Base64.getEncoder().encodeToString(buffer.array());
     }
 
-    public static String decrypt (String key) throws Exception {
-        byte[] base = Base64.getDecoder().decode(key);
-        ByteBuffer buffer = ByteBuffer.wrap(base);
+    /**
+     * Method used to decrypt the keys.
+     * @param key key
+     * @return decrypted key is returned.
+     * @throws Exception when algorithm is invalid.
+     */
+    public static String decrypt(final String key) throws Exception {
+        final byte[] base = Base64.getDecoder().decode(key);
+        final ByteBuffer buffer = ByteBuffer.wrap(base);
 
-        byte[] iv = new byte[12];
+        final int numBytes = 12;
+        final byte[] iv = new byte[numBytes];
         buffer.get(iv);
 
-        byte[] keyCipherText = new byte[buffer.remaining()];
+        final byte[] keyCipherText = new byte[buffer.remaining()];
         buffer.get(keyCipherText);
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(Cipher.DECRYPT_MODE, SECRET_KEY, new GCMParameterSpec(128, iv));
+        final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        final int bytesLen = 128;
+        cipher.init(Cipher.DECRYPT_MODE, SECRET_KEY, new GCMParameterSpec(bytesLen, iv));
         return new String(cipher.doFinal(keyCipherText));
     }
 }

@@ -33,6 +33,7 @@ import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.GeminiAdapter;
 import com.swe.aiinsights.modeladapter.ModelAdapter;
 import com.swe.aiinsights.getkeys.EncryptKeys;
+import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.Request;
 import okhttp3.Response;
