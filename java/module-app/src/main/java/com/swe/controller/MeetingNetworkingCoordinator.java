@@ -32,6 +32,7 @@ import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.networking.ModuleType;
+import com.swe.networking.Networking;
 
 /**
  * Coordinates networking responsibilities for meeting lifecycle messages.
@@ -399,6 +400,7 @@ public final class MeetingNetworkingCoordinator {
                         services.getContext().getRpc().call("core/LeaveMeeting",
                                 new byte[0])
                                 .get();
+                        Networking.getNetwork().closeNetworking();
                     } catch (InterruptedException | ExecutionException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
