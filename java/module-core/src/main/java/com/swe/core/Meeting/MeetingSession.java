@@ -4,16 +4,16 @@
 
 package com.swe.core.Meeting;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.swe.core.ClientNode;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a meeting created by an instructor.
@@ -204,8 +204,10 @@ public class MeetingSession {
      */
     public void removeParticipantByNode(final ClientNode node) {
         if (node == null) {
+            System.out.println("Node is null, cannot remove participant.");
             return;
         }
+        System.out.println("Removing participant at node: " + node);
         participants.remove(node);
     }
 

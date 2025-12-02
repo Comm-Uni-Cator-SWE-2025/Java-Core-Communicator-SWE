@@ -56,7 +56,7 @@ public final class Topology implements AbstractTopology {
     /**
      * The maximum size of a cluster.
      */
-    private final int singleClusterSize = 6;
+    private final int singleClusterSize = 10;
     /**
      * The variable to iterate through the clusters.
      */

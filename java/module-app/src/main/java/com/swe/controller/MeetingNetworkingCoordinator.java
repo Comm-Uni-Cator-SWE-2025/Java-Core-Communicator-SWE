@@ -10,19 +10,6 @@
 
 package com.swe.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.swe.controller.serializer.IamPacket;
-import com.swe.controller.serializer.JoinAckPacket;
-import com.swe.controller.serializer.MeetingPacketType;
-import com.swe.core.ClientNode;
-import com.swe.core.Meeting.MeetingSession;
-import com.swe.core.Meeting.SessionMode;
-import com.swe.core.Meeting.UserProfile;
-import com.swe.core.serialize.DataSerializer;
-import com.swe.networking.ModuleType;
-import com.swe.core.logging.SweLogger;
-import com.swe.core.logging.SweLoggerFactory;
-
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +18,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.swe.controller.serializer.ILeavePacket;
+import com.swe.controller.serializer.IamPacket;
+import com.swe.controller.serializer.JoinAckPacket;
+import com.swe.controller.serializer.MeetingPacketType;
+import com.swe.core.ClientNode;
+import com.swe.core.Meeting.MeetingSession;
+import com.swe.core.Meeting.SessionMode;
+import com.swe.core.Meeting.UserProfile;
+import com.swe.core.logging.SweLogger;
+import com.swe.core.logging.SweLoggerFactory;
+import com.swe.core.serialize.DataSerializer;
+import com.swe.networking.ModuleType;
+import com.swe.networking.Networking;
 
 /**
  * Coordinates networking responsibilities for meeting lifecycle messages.
@@ -81,7 +83,7 @@ public final class MeetingNetworkingCoordinator {
      * @param meetingId  target meeting identifier
      * @param serverNode server coordinates
      */
-    public static void handleMeetingJoinLeave(final String meetingId, final ClientNode serverNode) {
+    public static void handleMeetingJoin(final String meetingId, final ClientNode serverNode) {
         final ControllerServices services = ControllerServices.getInstance();
         final MeetingSession session = ensureMeetingSession(services, meetingId);
         final ClientNode localNode = getLocalClientNode();
@@ -102,7 +104,11 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
 
-        final byte ordinal = data[0];
+        // final byte ordinal = data[0];
+
+        LOG.debug("Raw packet bytes: " + java.util.Arrays.toString(data));
+        final int ordinal = Byte.toUnsignedInt(data[0]);
+        LOG.debug("First byte (unsigned ordinal): " + ordinal + " (as signed: " + data[0] + ")");
         if (ordinal < 0 || ordinal >= PACKET_TYPES.length) {
             LOG.warn("Unknown packet ordinal: " + ordinal);
             return;
@@ -112,6 +118,7 @@ public final class MeetingNetworkingCoordinator {
         LOG.debug("Handling packet type: " + type);
 
         switch (type) {
+            case LEAVE -> handleLeavePacket(data);
             case IAM -> handleIamPacket(data);
             case JOINACK -> handleJoinAckPacket(data);
             default -> LOG.warn("Unhandled packet type: " + type);
@@ -144,24 +151,6 @@ public final class MeetingNetworkingCoordinator {
             System.out.println("handleIncoming Iam server");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
                 LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
-                // Convert participants map to the two separate maps for leaveBrodcast
-                meeting.removeParticipantByNode(packet.getClientNode());
-                final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
-                for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
-                    final UserProfile profile = entry.getValue();
-                    if (profile.getEmail() != null) {
-                        nodeToEmailMap.put(entry.getKey(), profile.getEmail());
-                    }
-                }
-                final ClientNode localNode = getLocalClientNode();
-                final List<ClientNode> recipients = new ArrayList<>();
-                for (ClientNode node : nodeToEmailMap.keySet()) {
-                    if (!node.equals(localNode)) {
-                        recipients.add(node);
-                    }
-                }
-
-                broadcastIam(recipients);
                 return;
             }
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
@@ -186,20 +175,6 @@ public final class MeetingNetworkingCoordinator {
         } else {
             System.out.println("handleIncoming Iam client");
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
-                System.out.println("handleIncoming Iam client leave");
-                meeting.removeParticipantByNode(packet.getClientNode());
-
-                try {
-                    services.getContext().getRpc().call("core/updateParticipants",
-                            DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants()))
-                            .get();
-                } catch (JsonProcessingException | InterruptedException | ExecutionException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-
-                LOG.info("Received delete (announcement) from " + packet.getEmail()
-                        + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
                 return;
             }
             // Peer receives IAM as an announcement
@@ -311,5 +286,157 @@ public final class MeetingNetworkingCoordinator {
         } catch (UnknownHostException e) {
             throw new IllegalStateException("Unable to determine local client node", e);
         }
+    }
+
+    // Leave meet functions
+
+    public static void handleMeetingLeave(final String meetingId, final ClientNode serverNode) {
+        final ControllerServices services = ControllerServices.getInstance();
+        final MeetingSession session = ensureMeetingSession(services, meetingId);
+        final ClientNode localNode = getLocalClientNode();
+
+        if (services.getContext().getSelf() != null) {
+            session.removeParticipantByEmail(services.getContext().getSelf().getEmail());
+        }
+
+        System.out.println("handeling meeting leave");
+        sendILeavePacket(serverNode, localNode);
+    }
+
+    private static void sendILeavePacket(final ClientNode serverNode, final ClientNode localNode) {
+        final ControllerServices services = ControllerServices.getInstance();
+        if (services.getNetworking() == null || services.getContext().getSelf() == null) {
+            LOG.warn("Cannot send IAM: networking or self profile not initialized");
+            return;
+        }
+
+        System.out.println("sending ILeave packet");
+        final ILeavePacket iLeavePacket = new ILeavePacket(services.getContext().getSelf().getEmail(),
+                services.getContext().getSelf().getDisplayName(),
+                localNode);
+        byte[] data = iLeavePacket.serialize();
+        final int ordinal = Byte.toUnsignedInt(data[0]);
+        LOG.info("LEAVE Ordinal is " + ordinal);
+
+        sendBytes(data, new ClientNode[] { serverNode });
+    }
+
+    private static void handleLeavePacket(byte[] data) {
+        final ControllerServices services = ControllerServices.getInstance();
+        final MeetingSession meeting = services.getContext().getMeetingSession();
+        if (meeting == null) {
+            LOG.warn("No active meeting to process IAM packet");
+            return;
+        }
+
+        final ILeavePacket packet = ILeavePacket.deserialize(data);
+        final boolean isServer = services.getContext().getSelf() != null
+                && meeting.getCreatedBy().equals(services.getContext().getSelf().getEmail());
+
+        if (isServer) {
+            // Server receives IAM as a join request
+            if (meeting.getParticipants().containsKey(packet.getClientNode())) {
+                // LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
+                // Convert participants map to the two separate maps for leaveBrodcast
+                meeting.removeParticipantByNode(packet.getClientNode());
+                final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+                for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
+                    final UserProfile profile = entry.getValue();
+                    // if (profile.getEmail() != null) {
+                        nodeToEmailMap.put(entry.getKey(), profile.getEmail());
+                    // }
+                }
+                final ClientNode localNode = getLocalClientNode();
+                final List<ClientNode> recipients = new ArrayList<>();
+                for (ClientNode node : nodeToEmailMap.keySet()) {
+                    if (!node.equals(localNode)) {
+                        recipients.add(node);
+                    }
+                }
+
+                System.out.println("broadcasting leave packet :" + recipients.size());
+
+                broadcastILeave(recipients);
+            }
+            LOG.info("Received ILeave (leave request) from " + packet.getEmail()
+                    + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+
+            // Convert participants map to the two separate maps for JoinAckPacket
+            final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+            final Map<String, String> emailToDisplayNameMap = new HashMap<>();
+            for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
+                final UserProfile profile = entry.getValue();
+                if (profile.getEmail() != null) {
+                    nodeToEmailMap.put(entry.getKey(), profile.getEmail());
+                    if (profile.getDisplayName() != null) {
+                        emailToDisplayNameMap.put(profile.getEmail(), profile.getDisplayName());
+                    }
+                }
+            }
+
+            for (Map.Entry<ClientNode, String> entry : nodeToEmailMap.entrySet()) {
+                final String email = entry.getValue();
+                final String displayName = emailToDisplayNameMap.getOrDefault(email, "");
+                meeting.upsertParticipantNode(email, displayName, entry.getKey());
+            }
+
+            LOG.info("Received JOINACK with " + nodeToEmailMap.size() + " participant mappings");
+
+            final ClientNode localNode = getLocalClientNode();
+            final List<ClientNode> recipients = new ArrayList<>();
+            for (ClientNode node : nodeToEmailMap.keySet()) {
+                if (!node.equals(localNode)) {
+                    recipients.add(node);
+                }
+            }
+
+            broadcastILeave(recipients);
+        } else {
+            System.out.println("handleIncoming ILeave client");
+            if (meeting.getParticipants().containsKey(packet.getClientNode())) {
+                if (packet.getClientNode().hostName() == ControllerServices.getInstance().getContext().getMainServerIP()
+                        .hostName()) {
+                    try {
+                        services.getContext().getRpc().call("core/LeaveMeeting",
+                                new byte[0])
+                                .get();
+                        Networking.getNetwork().closeNetworking();
+                    } catch (InterruptedException | ExecutionException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("handleIncoming ILeave client leave");
+                meeting.removeParticipantByNode(packet.getClientNode());
+
+                LOG.info("Received delete (announcement) from " + packet.getEmail()
+                        + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+            }
+        }
+        try {
+            services.getContext().getRpc().call("core/updateParticipants",
+                    DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants()))
+                    .get();
+        } catch (JsonProcessingException | InterruptedException | ExecutionException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    private static void broadcastILeave(final Collection<ClientNode> recipients) {
+        final ControllerServices services = ControllerServices.getInstance();
+        if (recipients == null || recipients.isEmpty()) {
+            return;
+        }
+        if (services.getNetworking() == null || services.getContext().getSelf() == null) {
+            LOG.warn("Cannot broadcast IAM: networking or self profile not initialized");
+            return;
+        }
+
+        final ClientNode localNode = getLocalClientNode();
+        final ILeavePacket packet = new ILeavePacket(services.getContext().getSelf().getEmail(),
+                services.getContext().getSelf().getDisplayName(),
+                localNode);
+        sendBytes(packet.serialize(), recipients.toArray(new ClientNode[0]));
     }
 }

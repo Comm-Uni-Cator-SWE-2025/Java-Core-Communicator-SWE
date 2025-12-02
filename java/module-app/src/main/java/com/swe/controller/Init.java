@@ -89,6 +89,10 @@ public class Init {
 
         final RPC rpc = new RPC();
         final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
+
+        // CrashHandler crashHandler = new CrashHandler(cloud);
+        // crashHandler.startCrashHandler();
+
         final AiClientService service = AiInstance.getInstance();
 
         final ControllerServices controllerServices = ControllerServices.getInstance();
@@ -215,7 +219,7 @@ public class Init {
                 controllerServices.getCanvasManager().setSelfClientNode(localClientNode);
                 controllerServices.getCanvasManager().setHostClientNode(serverClientNode);
 
-                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
+                MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
             } catch (Exception e) {
                 LOG.error("Error getting server client node", e);
                 throw new RuntimeException(e);
@@ -243,15 +247,21 @@ public class Init {
             try {
 
                 LOG.info("Meeting ended successfully");
-                // Clear the meeting session from context
-                controllerServices.getContext().setMeetingSession(null);
-                
+
                 String id = controllerServices.getContext().getMeetingSession().getMeetingId();
-                
+
                 final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
-                
-                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
-                Networking.getNetwork().closeNetworking();
+
+                MeetingNetworkingCoordinator.handleMeetingLeave(id, serverClientNode);
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (Exception e) {
+                        LOG.error("Error in sleep");
+                    }
+                    Networking.getNetwork().closeNetworking();
+                }).start();
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOG.error("Error ending meeting", e);

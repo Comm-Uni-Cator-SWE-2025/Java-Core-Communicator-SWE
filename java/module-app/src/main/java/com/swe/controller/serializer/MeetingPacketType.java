@@ -14,6 +14,10 @@ public enum MeetingPacketType {
      * Packet sent by the server in response to an IAM request,
      * containing the mapping from IP address to email address.
      */
-    JOINACK
+    JOINACK,
+    /**
+     * Packet sent by the participents to announce their leave,
+     * containing the mapping from IP address to email address.
+     */
+    LEAVE,
 }
-

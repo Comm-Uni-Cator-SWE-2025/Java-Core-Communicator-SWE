@@ -120,7 +120,7 @@ public class VideoComponents {
     }
 
     VideoComponents(final int fps, final int portArgs, final CaptureComponents captureComponentsArgs,
-                    final BackgroundCaptureManager bgCapManagerArgs) {
+            final BackgroundCaptureManager bgCapManagerArgs) {
         this.rpc = Context.getInstance().getRpc();
         this.port = portArgs;
         this.captureComponents = captureComponentsArgs;
@@ -129,7 +129,8 @@ public class VideoComponents {
         videoCodec = new JpegCodec();
         audioEncoder = new ADPCMEncoder();
         patchGenerator = new PacketGenerator(videoCodec, hasher);
-        // initialize bounded queue and start worker thread that reads from the queue and updates the UI
+        // initialize bounded queue and start worker thread that reads from the queue
+        // and updates the UI
         this.uiQueue = new ArrayBlockingQueue<>(UI_QUEUE_CAPACITY);
         final Thread uiWorkerThread = new Thread(this::uiWorkLoop, "MediaCaptureManager-UI-Worker");
         uiWorkerThread.setDaemon(true);
@@ -149,14 +150,14 @@ public class VideoComponents {
 
         final FeedPatch patches = patchGenerator.generateFullImage(feed);
 
-        final CPackets compressedNetworkPackets =
-            new CPackets(videoFeedNumber, localIp, true, true, feed.length, feed[0].length,
+        final CPackets compressedNetworkPackets = new CPackets(videoFeedNumber, localIp, true, true, feed.length,
+                feed[0].length,
                 patches.compressedPatches());
         LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
-        final CPackets unCompressedNetworkPackets =
-            new CPackets(videoFeedNumber, localIp, true, false, feed.length, feed[0].length,
+        final CPackets unCompressedNetworkPackets = new CPackets(videoFeedNumber, localIp, true, false, feed.length,
+                feed[0].length,
                 patches.unCompressedPatches());
         final byte[] unCompressedEncodedPatches = serializeFeed(unCompressedNetworkPackets);
 
@@ -164,13 +165,12 @@ public class VideoComponents {
     }
 
     private void uiWorkLoop() {
-//        int count = 0;
-//        long prev = 0;
+        // int count = 0;
+        // long prev = 0;
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 final int[][] frame = uiQueue.take(); // blocks until a frame is available
                 try {
-
 
                     final RImage rImage = new RImage(frame, localIp, 0);
                     final byte[] serializedImage = rImage.serialize();
@@ -178,16 +178,16 @@ public class VideoComponents {
                     if (serializedImage == null) {
                         continue;
                     }
-//                    LOG.info("Time from previous send: " + (System.nanoTime() - prev)
-//                        / ((double) Utils.MSEC_IN_NS));
+                    // LOG.info("Time from previous send: " + (System.nanoTime() - prev)
+                    // / ((double) Utils.MSEC_IN_NS));
                     try {
                         rpc.call(Utils.UPDATE_UI, serializedImage);
                     } catch (final Exception e) {
                         LOG.error("Video component failure", e);
                     }
-//                        LOG.info("UI RPC Time : "
-//                            + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
-//                        prev = System.nanoTime();
+                    // LOG.info("UI RPC Time : "
+                    // + (System.nanoTime() - curr) / ((double) Utils.MSEC_IN_NS));
+                    // prev = System.nanoTime();
                 } catch (final Exception e) {
                     LOG.error("Video component failure", e);
                 }
@@ -216,7 +216,8 @@ public class VideoComponents {
      */
     private final ArrayBlockingQueue<int[][]> uiQueue;
 
-    // Submit an RImage serialization + RPC task to the background worker queue. If the queue is full,
+    // Submit an RImage serialization + RPC task to the background worker queue. If
+    // the queue is full,
     // this method will drop the frame (non-blocking) to keep capture smooth.
     private void submitUIUpdate(final int[][] frame) {
         if (frame == null) {
@@ -231,6 +232,7 @@ public class VideoComponents {
 
     /**
      * Captures the Audio, encode it and return back the bytes.
+     * 
      * @return encoded audio packet, or null if audio is unavailable
      */
     protected byte[] captureAudio() {
@@ -238,7 +240,7 @@ public class VideoComponents {
         if (audioFeed == null) {
             return null;
         }
-        final byte[] encodedfeed = audioEncoder.encode(audioFeed);
+        final byte[] encodedfeed = (audioFeed);
         final APackets audioPacket = new APackets(audioFeedNumber, encodedfeed, localIp,
                 audioEncoder.getPredictor(), audioEncoder.getIndex());
         audioFeedNumber += 1;
@@ -258,7 +260,8 @@ public class VideoComponents {
     }
 
     /**
-     * Captures the Video using CaptureComponents, handles overlay ,diffing and converting it to bytes  .
+     * Captures the Video using CaptureComponents, handles overlay ,diffing and
+     * converting it to bytes .
      *
      * @return encoded Patches to be sent through the network
      */
@@ -268,8 +271,8 @@ public class VideoComponents {
         if (diff < timeDelay) {
             return null;
         }
-//            LOG.info("Time Delay " + ((currTime - prev)
-//                / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
+        // LOG.info("Time Delay " + ((currTime - prev)
+        // / ((double) Utils.MSEC_IN_NS)) + " " + (diff / ((double) Utils.MSEC_IN_NS)));
         start = System.nanoTime();
 
         final int[][] newFeed = captureComponents.getFeed();
@@ -282,13 +285,15 @@ public class VideoComponents {
             return null;
         }
 
-//        submitUIUpdate(newFeed);
+        // submitUIUpdate(newFeed);
 
-//        final boolean toCompress = captureComponents.isVideoCaptureOn() && !captureComponents.isScreenCaptureOn();
+        // final boolean toCompress = captureComponents.isVideoCaptureOn() &&
+        // !captureComponents.isScreenCaptureOn();
         LOG.info("Server FPS : "
-            + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
+                + (int) ((double) (Utils.SEC_IN_MS) / (diff / ((double) (Utils.MSEC_IN_NS)))));
 
-//        LOG.info("Time to get feed : " + (start - currTime) / ((double) (Utils.MSEC_IN_NS)));
+        // LOG.info("Time to get feed : " + (start - currTime) / ((double)
+        // (Utils.MSEC_IN_NS)));
 
         final long curr1 = System.nanoTime();
         videoCodec.setQuantTime(0);
@@ -298,18 +303,17 @@ public class VideoComponents {
         final FeedPatch patches = patchGenerator.generatePackets(newFeed);
         runCount++;
 
-
         // update the feed
         feed = newFeed;
 
-        final CPackets compressedNetworkPackets =
-            new CPackets(videoFeedNumber, localIp, false, true, feed.length, feed[0].length,
+        final CPackets compressedNetworkPackets = new CPackets(videoFeedNumber, localIp, false, true, feed.length,
+                feed[0].length,
                 patches.compressedPatches());
         LOG.info("Feed number : " + compressedNetworkPackets.packetNumber());
         final byte[] compressedEncodedPatches = serializeFeed(compressedNetworkPackets);
 
-        final CPackets unCompressedNetworkPackets =
-            new CPackets(videoFeedNumber, localIp, false, false, feed.length, feed[0].length,
+        final CPackets unCompressedNetworkPackets = new CPackets(videoFeedNumber, localIp, false, false, feed.length,
+                feed[0].length,
                 patches.unCompressedPatches());
         final byte[] unCompressedEncodedPatches = serializeFeed(unCompressedNetworkPackets);
 
@@ -329,7 +333,8 @@ public class VideoComponents {
             return null;
         }
 
-        // make it zero. This will fill up to 500 in case no diff is detected from long time
+        // make it zero. This will fill up to 500 in case no diff is detected from long
+        // time
         runCount = 0;
 
         videoFeedNumber++;
@@ -350,7 +355,7 @@ public class VideoComponents {
     private byte[] serializeFeed(final CPackets networkPackets) {
         byte[] encodedPatches = null;
         if (networkPackets.packets().isEmpty()) {
-//            LOG.info("Empty");
+            // LOG.info("Empty");
             return null;
         }
         int tries = Utils.MAX_TRIES_TO_SERIALIZE;
@@ -372,5 +377,3 @@ public class VideoComponents {
         return encodedPatches;
     }
 }
-
-
