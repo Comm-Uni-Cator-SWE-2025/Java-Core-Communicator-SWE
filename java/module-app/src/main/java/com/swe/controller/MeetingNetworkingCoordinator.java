@@ -10,6 +10,7 @@
 
 package com.swe.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.swe.controller.serializer.IamPacket;
 import com.swe.controller.serializer.JoinAckPacket;
 import com.swe.controller.serializer.MeetingPacketType;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Coordinates networking responsibilities for meeting lifecycle messages.
@@ -66,9 +68,9 @@ public final class MeetingNetworkingCoordinator {
         final ControllerServices services = ControllerServices.getInstance();
         final ClientNode localNode = getLocalClientNode();
         if (services.getContext().getSelf() != null) {
-            meeting.upsertParticipantNode(services.getContext().getSelf().getEmail(), 
-                                         services.getContext().getSelf().getDisplayName(), 
-                                         localNode);
+            meeting.upsertParticipantNode(services.getContext().getSelf().getEmail(),
+                    services.getContext().getSelf().getDisplayName(),
+                    localNode);
         }
         LOG.info("Server registered local node " + localNode + " for meeting " + meeting.getMeetingId());
     }
@@ -76,18 +78,18 @@ public final class MeetingNetworkingCoordinator {
     /**
      * Handles networking bookkeeping when a user joins a meeting.
      *
-     * @param meetingId target meeting identifier
+     * @param meetingId  target meeting identifier
      * @param serverNode server coordinates
      */
-    public static void handleMeetingJoin(final String meetingId, final ClientNode serverNode) {
+    public static void handleMeetingJoinLeave(final String meetingId, final ClientNode serverNode) {
         final ControllerServices services = ControllerServices.getInstance();
         final MeetingSession session = ensureMeetingSession(services, meetingId);
         final ClientNode localNode = getLocalClientNode();
 
         if (services.getContext().getSelf() != null) {
-            session.upsertParticipantNode(services.getContext().getSelf().getEmail(), 
-                                         services.getContext().getSelf().getDisplayName(), 
-                                         localNode);
+            session.upsertParticipantNode(services.getContext().getSelf().getEmail(),
+                    services.getContext().getSelf().getDisplayName(),
+                    localNode);
         }
 
         sendIamPacket(serverNode, localNode);
@@ -117,7 +119,7 @@ public final class MeetingNetworkingCoordinator {
         final ControllerServices services = ControllerServices.getInstance();
         try {
             services.getContext().getRpc().call("core/updateParticipants",
-                DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants())).get();
+                    DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants())).get();
         } catch (Exception e) {
             LOG.error("Error calling core/updateParticipants", e);
         }
@@ -134,17 +136,35 @@ public final class MeetingNetworkingCoordinator {
 
         final IamPacket packet = IamPacket.deserialize(data);
         final boolean isServer = services.getContext().getSelf() != null
-                                  && meeting.getCreatedBy().equals(services.getContext().getSelf().getEmail());
+                && meeting.getCreatedBy().equals(services.getContext().getSelf().getEmail());
 
         if (isServer) {
             // Server receives IAM as a join request
             if (meeting.getParticipants().containsKey(packet.getClientNode())) {
-                LOG.info("User already in meeting, ignoring IAM join request");
+                LOG.info("User wants to leave meeting having mail: " + packet.getEmail());
+                // Convert participants map to the two separate maps for leaveBrodcast
+                meeting.removeParticipantByNode(packet.getClientNode());
+                final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
+                for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
+                    final UserProfile profile = entry.getValue();
+                    if (profile.getEmail() != null) {
+                        nodeToEmailMap.put(entry.getKey(), profile.getEmail());
+                    }
+                }
+                final ClientNode localNode = getLocalClientNode();
+                final List<ClientNode> recipients = new ArrayList<>();
+                for (ClientNode node : nodeToEmailMap.keySet()) {
+                    if (!node.equals(localNode)) {
+                        recipients.add(node);
+                    }
+                }
+
+                broadcastIam(recipients);
                 return;
             }
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
             LOG.info("Received IAM (join request) from " + packet.getEmail()
-                + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+                    + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
 
             // Convert participants map to the two separate maps for JoinAckPacket
             final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
@@ -158,14 +178,30 @@ public final class MeetingNetworkingCoordinator {
                     }
                 }
             }
-            
+
             final JoinAckPacket ackPacket = new JoinAckPacket(nodeToEmailMap, emailToDisplayNameMap);
-            sendBytes(ackPacket.serialize(), new ClientNode[]{packet.getClientNode()});
+            sendBytes(ackPacket.serialize(), new ClientNode[] { packet.getClientNode() });
         } else {
+            if (meeting.getParticipants().containsKey(packet.getClientNode())) {
+                meeting.removeParticipantByNode(packet.getClientNode());
+
+                try {
+                    services.getContext().getRpc().call("core/updateParticipants",
+                            DataSerializer.serialize(services.getContext().getMeetingSession().getParticipants()))
+                            .get();
+                } catch (JsonProcessingException | InterruptedException | ExecutionException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+                LOG.info("Received delete (announcement) from " + packet.getEmail()
+                        + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+                return;
+            }
             // Peer receives IAM as an announcement
             meeting.upsertParticipantNode(packet.getEmail(), packet.getDisplayName(), packet.getClientNode());
             LOG.info("Received IAM (announcement) from " + packet.getEmail()
-                + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
+                    + " (" + packet.getDisplayName() + ") at " + packet.getClientNode());
         }
     }
 
@@ -176,7 +212,7 @@ public final class MeetingNetworkingCoordinator {
         final JoinAckPacket joinAckPacket = JoinAckPacket.deserialize(data);
         final Map<ClientNode, String> nodeToEmailMap = joinAckPacket.getNodeToEmailMap();
         final Map<String, String> emailToDisplayNameMap = joinAckPacket.getEmailToDisplayNameMap();
-        
+
         // Convert the two maps to participants map
         for (Map.Entry<ClientNode, String> entry : nodeToEmailMap.entrySet()) {
             final String email = entry.getValue();
@@ -204,10 +240,10 @@ public final class MeetingNetworkingCoordinator {
             return;
         }
 
-        final IamPacket iamPacket = new IamPacket(services.getContext().getSelf().getEmail(), 
-                                                  services.getContext().getSelf().getDisplayName(), 
-                                                  localNode);
-        sendBytes(iamPacket.serialize(), new ClientNode[]{serverNode});
+        final IamPacket iamPacket = new IamPacket(services.getContext().getSelf().getEmail(),
+                services.getContext().getSelf().getDisplayName(),
+                localNode);
+        sendBytes(iamPacket.serialize(), new ClientNode[] { serverNode });
     }
 
     private static void broadcastIam(final Collection<ClientNode> recipients) {
@@ -221,9 +257,9 @@ public final class MeetingNetworkingCoordinator {
         }
 
         final ClientNode localNode = getLocalClientNode();
-        final IamPacket packet = new IamPacket(services.getContext().getSelf().getEmail(), 
-                                              services.getContext().getSelf().getDisplayName(), 
-                                              localNode);
+        final IamPacket packet = new IamPacket(services.getContext().getSelf().getEmail(),
+                services.getContext().getSelf().getDisplayName(),
+                localNode);
         sendBytes(packet.serialize(), recipients.toArray(new ClientNode[0]));
     }
 
@@ -258,8 +294,7 @@ public final class MeetingNetworkingCoordinator {
                 creatorEmail,
                 System.currentTimeMillis(),
                 SessionMode.CLASS,
-                null
-        );
+                null);
         services.getContext().setMeetingSession(newSession);
         LOG.info("Created placeholder MeetingSession for networking with ID " + id);
         return services.getContext().getMeetingSession();
@@ -273,4 +308,3 @@ public final class MeetingNetworkingCoordinator {
         }
     }
 }
-

@@ -106,8 +106,8 @@ public class Init {
         chatmanager = new ChatManager(Networking.getNetwork(), chatLogger);
         controllerServices.setCanvasManager(new CanvasManager(Networking.getNetwork(), canvasLogger));
 
-        final MediaCaptureManager mediaCaptureManager =
-            new MediaCaptureManager(Networking.getNetwork(), DEFAULT_MEDIA_PORT, screenLogger);
+        final MediaCaptureManager mediaCaptureManager = new MediaCaptureManager(Networking.getNetwork(),
+                DEFAULT_MEDIA_PORT, screenLogger);
         final Thread mediaCaptureManagerThread = new Thread(() -> {
             try {
                 mediaCaptureManager.startCapture(DEFAULT_CAPTURE_FPS);
@@ -163,7 +163,7 @@ public class Init {
         rpc.subscribe("core/createMeeting", (byte[] meetMode) -> {
             LOG.info("[CONTROLLER] Creating meeting");
             final MeetingSession meetingSession = MeetingServices.createMeeting(
-                controllerServices.getContext().getSelf(), SessionMode.CLASS);
+                    controllerServices.getContext().getSelf(), SessionMode.CLASS);
             controllerServices.getContext().setMeetingSession(meetingSession);
 
             try {
@@ -186,7 +186,7 @@ public class Init {
                 LOG.info("Returning meeting session");
                 final byte[] serializedMeetingSession = DataSerializer.serialize(meetingSession);
                 LOG.debug("Serialized meeting session: "
-                    + new String(serializedMeetingSession, StandardCharsets.UTF_8));
+                        + new String(serializedMeetingSession, StandardCharsets.UTF_8));
                 return serializedMeetingSession;
             } catch (Exception e) {
                 LOG.error("Error serializing meeting session", e);
@@ -206,8 +206,7 @@ public class Init {
 
             try {
                 final ClientNode localClientNode = Utils.getLocalClientNode();
-                final ClientNode serverClientNode =
-                    Utils.getServerClientNode(id, controllerServices.getCloud());
+                final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
                 LOG.debug("Server client node: " + serverClientNode);
 
                 controllerServices.getNetworking().addUser(localClientNode, serverClientNode);
@@ -216,7 +215,7 @@ public class Init {
                 controllerServices.getCanvasManager().setSelfClientNode(localClientNode);
                 controllerServices.getCanvasManager().setHostClientNode(serverClientNode);
 
-                MeetingNetworkingCoordinator.handleMeetingJoin(id, serverClientNode);
+                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
             } catch (Exception e) {
                 LOG.error("Error getting server client node", e);
                 throw new RuntimeException(e);
@@ -242,10 +241,17 @@ public class Init {
         rpc.subscribe("core/endMeeting", (byte[] data) -> {
             LOG.info("Ending meeting");
             try {
+
                 Networking.getNetwork().closeNetworking();
                 LOG.info("Meeting ended successfully");
                 // Clear the meeting session from context
                 controllerServices.getContext().setMeetingSession(null);
+
+                String id = controllerServices.getContext().getMeetingSession().getMeetingId();
+
+                final ClientNode serverClientNode = Utils.getServerClientNode(id, controllerServices.getCloud());
+
+                MeetingNetworkingCoordinator.handleMeetingJoinLeave(id, serverClientNode);
                 return "Meeting ended successfully".getBytes(StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOG.error("Error ending meeting", e);
