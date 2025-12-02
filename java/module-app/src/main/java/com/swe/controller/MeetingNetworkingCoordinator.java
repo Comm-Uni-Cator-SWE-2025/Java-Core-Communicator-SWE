@@ -342,9 +342,9 @@ public final class MeetingNetworkingCoordinator {
                 final Map<ClientNode, String> nodeToEmailMap = new HashMap<>();
                 for (Map.Entry<ClientNode, UserProfile> entry : meeting.getParticipants().entrySet()) {
                     final UserProfile profile = entry.getValue();
-                    if (profile.getEmail() != null) {
+                    // if (profile.getEmail() != null) {
                         nodeToEmailMap.put(entry.getKey(), profile.getEmail());
-                    }
+                    // }
                 }
                 final ClientNode localNode = getLocalClientNode();
                 final List<ClientNode> recipients = new ArrayList<>();
