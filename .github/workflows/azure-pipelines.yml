@@ -22,7 +22,7 @@ pr:
       - '**/*.md'
 
 pool:
-  name: Default
+  name: Default   # Self-hosted agent on your Mac
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -56,14 +56,14 @@ jobs:
       continueOnError: true
 
     # ---------------------------------------
-    # Test + Coverage — skip module-screen-video
+    # Test + Coverage — failures allowed
     # ---------------------------------------
     - script: |
-        mvn -f java/pom.xml' -B test jacoco:report \
+        mvn -f java/pom.xml -B test jacoco:report \
           -DforkCount=1 \
           -DreuseForks=false \
           -Dparallel=none
-      displayName: "Run Tests with Coverage "
+      displayName: "Run Tests with Coverage (NO PARALLEL)"
       continueOnError: true
 
     # ---------------------------------------
@@ -98,7 +98,7 @@ jobs:
         failIfCoverageEmpty: false
 
     # ---------------------------------------
-    # Copy Artifacts — run even if tests failed
+    # Copy Artifacts — run even if test failed
     # ---------------------------------------
     - task: CopyFiles@2
       displayName: "Copy Build Artifacts"
@@ -125,10 +125,13 @@ jobs:
     # Build Summary — always
     # ---------------------------------------
     - script: |
-        echo "Build Summary"
-        echo "Build completed"
-        echo "Tests executed for all modules except module-screen-video"
-        echo "Coverage report generated"
-        echo "Artifacts uploaded"
+        echo "##[section]Build Summary"
+        echo "🧱 Build completed"
+        echo "🧪 Tests executed (non-parallel, safe for networking)"
+        echo "📊 Coverage report generated / attempted"
+        echo ""
+        echo "Artifacts uploaded:"
+        echo "  ✔ JaCoCo: java/target/site/jacoco/index.html"
+        echo "  ✔ JAR Files under published artifacts"
       displayName: "Display Build Summary"
       condition: always()
