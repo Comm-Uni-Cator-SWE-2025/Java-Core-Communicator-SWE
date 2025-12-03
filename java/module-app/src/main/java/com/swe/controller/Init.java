@@ -22,8 +22,9 @@ import com.swe.core.serialize.DataSerializer;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
 import com.swe.networking.Networking;
-import functionlibrary.CloudFunctionLibrary;
-
+import com.swe.cloud.functionlibrary.CloudFunctionLibrary;
+import com.swe.cloud.functionlibrary.CloudLogger;
+import com.swe.cloud.crashhandler.CrashHandler;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -93,8 +94,8 @@ public class Init {
         final RPC rpc = new RPC();
         final CloudFunctionLibrary cloud = new CloudFunctionLibrary();
 
-        // CrashHandler crashHandler = new CrashHandler(cloud);
-        // crashHandler.startCrashHandler();
+         CrashHandler crashHandler = new CrashHandler(cloud);
+         crashHandler.startCrashHandler();
 
         final AiClientService service = AiInstance.getInstance();
 
@@ -153,6 +154,8 @@ public class Init {
             try {
                 registeredUser = AuthService.register();
                 LOG.info("Registered user with emailId: " + registeredUser.getEmail());
+                CloudLogger logger = CloudLogger.getLogger("Controller");
+                logger.info("User logged in with the username"+ registeredUser.getEmail());
             } catch (GeneralSecurityException | IOException e) {
                 LOG.error("Error registering user", e);
                 return new byte[0];

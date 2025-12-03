@@ -68,6 +68,15 @@
         <version>3.1.0</version>
         <configuration>
           <mainClass>com.swe.controller.Init</mainClass>
+          <additionalClasspathElements>
+            <additionalClasspathElement>${project.basedir}/../module-core/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-networking/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-chat/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-cloud/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-canvas/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-ai-insights/target/classes</additionalClasspathElement>
+            <additionalClasspathElement>${project.basedir}/../module-screen-video/target/classes</additionalClasspathElement>
+          </additionalClasspathElements>
         </configuration>
       </plugin>
     </plugins>

@@ -6,7 +6,7 @@
  * Description = Defines a common data structure for the cloud API requests.
  *****************************************************************************/
 
-package datastructures;
+package com.swe.cloud.datastructures;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

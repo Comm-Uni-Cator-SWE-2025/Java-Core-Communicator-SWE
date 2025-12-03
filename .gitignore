@@ -427,5 +427,15 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-
 tokens/
+
+# Maven/Java build outputs
+**/target/
+java/module-app/dist/
+packing/
+**/*.dylib
+**/*.dmg
+
+# Local log artifacts
+exception_log.jsonl
+*.log.lck

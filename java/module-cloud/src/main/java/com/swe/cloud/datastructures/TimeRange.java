@@ -6,7 +6,7 @@
  * Description = Defines a helper data structure for Entity.java.
  *****************************************************************************/
 
-package datastructures;
+package com.swe.cloud.datastructures;
 
 public record TimeRange(float fromTime, float toTime) {
 }
