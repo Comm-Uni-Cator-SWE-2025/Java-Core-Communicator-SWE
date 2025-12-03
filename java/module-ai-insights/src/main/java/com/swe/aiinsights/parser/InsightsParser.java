@@ -47,10 +47,10 @@ public class InsightsParser {
 
     /**
      * The regular expression pattern to match the expected format.
-     * Time is in the format YYYY-MM-DDTHH:MM:SSZ
+     * Time is in the format YYYY-MM-DDTHH:MM:SS
      */
     private static final Pattern TIME_PATTERN = Pattern.compile(
-            "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+            "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
     );
 
     /**
