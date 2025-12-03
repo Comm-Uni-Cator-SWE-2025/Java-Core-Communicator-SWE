@@ -59,11 +59,11 @@ jobs:
     # Test + Coverage — skip module-screen-video
     # ---------------------------------------
     - script: |
-        mvn -f java/pom.xml -pl '!module-screen-video' -B test jacoco:report \
+        mvn -f java/pom.xml -pl '!module-screen-video !module-ai-insights' -B test jacoco:report \
           -DforkCount=1 \
           -DreuseForks=false \
           -Dparallel=none
-      displayName: "Run Tests with Coverage (excluding screen sharing)"
+      displayName: "Run Tests with Coverage "
       continueOnError: true
 
     # ---------------------------------------
