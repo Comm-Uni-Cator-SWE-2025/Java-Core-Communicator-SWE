@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swe.ScreenNVideo.MediaCaptureManager;
+import com.swe.ScreenNVideo.Telemetry.Telemetry;
 import com.swe.aiinsights.aiinstance.AiInstance;
 import com.swe.aiinsights.apiendpoints.AiClientService;
 import com.swe.canvas.CanvasManager;
@@ -15,6 +16,8 @@ import com.swe.core.Meeting.MeetingSession;
 import com.swe.core.Meeting.SessionMode;
 import com.swe.core.Meeting.UserProfile;
 import com.swe.core.RPC;
+import com.swe.core.Analytics.ScreenVideoTelemetry;
+import com.swe.core.Analytics.ScreenVideoTelemetryModel;
 import com.swe.core.serialize.DataSerializer;
 import com.swe.core.logging.SweLogger;
 import com.swe.core.logging.SweLoggerFactory;
@@ -123,7 +126,7 @@ public class Init {
         mediaCaptureManagerThread.start();
         LOG.info("Media Capture Manager started.");
 
-        addRPCSubscriptions(rpc);
+        addRPCSubscriptions(rpc, mediaCaptureManager);
 
         // We need to get all subscriptions from frontend to also finish before this
         final Thread rpcThread = rpc.connect(portNumber);
@@ -141,7 +144,7 @@ public class Init {
     // CHECKSTYLE:OFF: MethodLength
     // CHECKSTYLE:OFF: JavaNCSS
     // CHECKSTYLE:OFF: NPathComplexity
-    private static void addRPCSubscriptions(final RPC rpc) {
+    private static void addRPCSubscriptions(final RPC rpc, MediaCaptureManager mediaCaptureManager) {
         final ControllerServices controllerServices = ControllerServices.getInstance();
 
         rpc.subscribe("core/register", (byte[] userData) -> {
@@ -301,6 +304,32 @@ public class Init {
 
                 LOG.info("Action Analysis Result: " + val);
                 return DataSerializer.serialize(val);
+            } catch (Exception e) {
+                LOG.error("Action item generation failed", e);
+                return new byte[0];
+            }
+        });
+
+        rpc.subscribe("core/AiSummary", (byte[] data) -> {
+            try {
+                String endMeeting = "The meeting is ending, you can give the final summary using the Accumulated summary";
+                final String val = controllerServices.getAi().summariseText(endMeeting).get();
+
+                String clearSummary = controllerServices.getAi().clearSummary().get();
+                LOG.info("Action Analysis Result: " + clearSummary);
+                return DataSerializer.serialize(val);
+            } catch (Exception e) {
+                LOG.error("Action item generation failed", e);
+                return new byte[0];
+            }
+        });
+
+        rpc.subscribe("core/ScreenTelemetry", (byte[] data) -> {
+            try {
+                List<ScreenVideoTelemetryModel> screenData = Telemetry.getTelemetry().getAllScreenVideosTelemetry();
+
+                LOG.info("Screen Analysis Result: " + screenData);
+                return DataSerializer.serialize(screenData);
             } catch (Exception e) {
                 LOG.error("Action item generation failed", e);
                 return new byte[0];
