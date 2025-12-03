@@ -108,7 +108,9 @@ public class CanvasManager {
 
     private byte[] handleDescribe(final byte[] data) {
         try {
-            final String input = new String(data, StandardCharsets.UTF_8);
+            // final String input = new String(data, StandardCharsets.UTF_8);
+            final String input = DataSerializer.deserialize(data, String.class);
+
             logger.info("[CanvasManager] Canvas Describe requested for: " + input);
 
             final CompletableFuture<String> resp = AiInstance.getInstance().describe(input);
