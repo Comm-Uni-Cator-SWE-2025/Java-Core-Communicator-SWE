@@ -7,11 +7,14 @@ import com.swe.core.ClientNode;
 
 import java.io.IOException;
 
+/**
+ * Serializer to convert a client node key into a string representation.
+ */
 public class ClientNodeKeySerializer extends JsonSerializer<ClientNode> {
 
     @Override
-    public void serialize(ClientNode value, JsonGenerator gen, SerializerProvider serializers)
-            throws IOException {
+    public void serialize(final ClientNode value, final JsonGenerator gen,
+                          final SerializerProvider serializers) throws IOException {
         // convert key to a single string (your choice)
         gen.writeFieldName(value.hostName() + ":" + value.port());
     }
