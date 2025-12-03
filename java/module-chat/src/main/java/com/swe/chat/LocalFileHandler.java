@@ -2,6 +2,7 @@ package com.swe.chat;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.zip.Deflater;
 
@@ -22,14 +23,16 @@ public class LocalFileHandler implements IChatFileHandler {
             filePath = filePath.substring(1).trim();
         }
 
-        if (!Files.exists(Paths.get(filePath))) {
+        Path sourcePath = Paths.get(filePath);
+        if (!Files.exists(sourcePath)) {
             throw new IllegalArgumentException("File does not exist: " + filePath);
         }
 
-        // Read and Compress (Uses existing Utilities class)
-        byte[] uncompressedData = Files.readAllBytes(Paths.get(filePath));
+        // Read and Compress
+        byte[] uncompressedData = Files.readAllBytes(sourcePath);
         long originalSize = uncompressedData.length;
 
+        // Assuming Utilities.Compress exists as per your original code
         byte[] compressedData = Utilities.Compress(uncompressedData, Deflater.BEST_SPEED);
         if (compressedData == null) {
             throw new IOException("Failed to compress file");
@@ -39,16 +42,25 @@ public class LocalFileHandler implements IChatFileHandler {
     }
 
     @Override
-    public void decompressAndSaveFile(String messageId, String fileName, byte[] compressedData) throws Exception {
-        // Decompression (Uses existing Utilities class)
+    public void decompressAndSaveFile(String messageId, String fileName, Path compressedSourcePath) throws Exception {
+        // 1. Read the compressed bytes from the TEMP file (Disk -> RAM)
+        // We only hold this in memory for the split second required to decompress it.
+        if (!Files.exists(compressedSourcePath)) {
+            throw new IOException("Temp cache file not found: " + compressedSourcePath);
+        }
+
+        byte[] compressedData = Files.readAllBytes(compressedSourcePath);
+
+        // 2. Decompress (RAM processing)
+        // Assuming Utilities.Decompress exists as per your original code
         byte[] decompressedData = Utilities.Decompress(compressedData);
         if (decompressedData == null) {
             throw new Exception("Failed to decompress file");
         }
 
-        // Save to Downloads folder with conflict resolution
+        // 3. Save to Downloads folder with conflict resolution
         String homeDir = System.getProperty("user.home");
-        java.nio.file.Path downloadsDir = Paths.get(homeDir, "Downloads");
+        Path downloadsDir = Paths.get(homeDir, "Downloads");
 
         if (!Files.exists(downloadsDir)) {
             Files.createDirectories(downloadsDir);
@@ -57,7 +69,7 @@ public class LocalFileHandler implements IChatFileHandler {
         // Conflict resolution logic
         String originalName = fileName;
         String finalName = originalName;
-        java.nio.file.Path savePath = downloadsDir.resolve(finalName);
+        Path savePath = downloadsDir.resolve(finalName);
         int counter = 1;
 
         while (Files.exists(savePath)) {
@@ -73,7 +85,7 @@ public class LocalFileHandler implements IChatFileHandler {
             counter++;
         }
 
-        // Write file
+        // 4. Write final file
         Files.write(savePath, decompressedData);
         System.out.println("[Core.FileHandler] Saved message " + messageId + " to: " + savePath.toString());
     }

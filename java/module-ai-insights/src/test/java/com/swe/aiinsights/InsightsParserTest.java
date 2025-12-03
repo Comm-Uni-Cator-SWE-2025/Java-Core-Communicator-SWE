@@ -25,14 +25,14 @@ class InsightsParserTest {
     @Test
     void testParseValidInput() throws JsonProcessingException {
         final String validInput = "```json["
-                + "{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5},"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5},"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2},"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "]```";
 
         final String result = InsightsParser.parse(validInput);
         assertNotNull(result);
-        assertTrue(result.contains("2025-01-15T10:30:00Z"));
+        assertTrue(result.contains("2025-01-15T10:30:00"));
         assertTrue(result.contains("5.5"));
         assertTrue(result.contains("-3.2"));
     }
@@ -41,9 +41,9 @@ class InsightsParserTest {
     @Test
     void testInvalidStart() throws JsonProcessingException {
         final String invalidInput = "```json"
-                + "{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5},"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5},"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2},"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "]```";
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -56,14 +56,14 @@ class InsightsParserTest {
     @Test
     void testParseValidInputTicks() throws JsonProcessingException {
         final String validInput = "```["
-                + "{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5},"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5},"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2},"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "]```";
 
         final String result = InsightsParser.parse(validInput);
         assertNotNull(result);
-        assertTrue(result.contains("2025-01-15T10:30:00Z"));
+        assertTrue(result.contains("2025-01-15T10:30:00"));
         assertTrue(result.contains("5.5"));
         assertTrue(result.contains("-3.2"));
     }
@@ -72,9 +72,9 @@ class InsightsParserTest {
     @Test
     void testInvalidEnd() throws JsonProcessingException {
         final String invalidInput = "```json["
-                + "{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5},"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5},"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2},"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "```";
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -87,9 +87,9 @@ class InsightsParserTest {
     @Test
     void testInvalidSentimentField() throws JsonProcessingException {
         final String invalidInput = "```json["
-                + "{\"time\":\"2025-01-15T10:30:00Z\"},"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\"},"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2},"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "```";
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -103,7 +103,7 @@ class InsightsParserTest {
     void testInvalidTimeField() throws JsonProcessingException {
         final String invalidInput = "```json["
                 + "{\"sentiment\":-3.2},"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "```";
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
@@ -115,7 +115,7 @@ class InsightsParserTest {
     // check if the json format is valid
     @Test
     void testParseInvalidJson() {
-        final String input = "[{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5";
+        final String input = "[{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5";
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             InsightsParser.parse(input);
         });
@@ -133,7 +133,7 @@ class InsightsParserTest {
 
     @Test
     void testParseSentimentBelowMinBoundary() {
-        final String input = "[{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":-11}]";
+        final String input = "[{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":-11}]";
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             InsightsParser.parse(input);
         });
@@ -142,7 +142,7 @@ class InsightsParserTest {
 
     @Test
     void testParseSentimentAboveMaxBoundary() {
-        final String input = "[{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":11}]";
+        final String input = "[{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":11}]";
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             InsightsParser.parse(input);
         });
@@ -152,10 +152,10 @@ class InsightsParserTest {
     @Test
     void testSentimentEntryGetAndSet() {
         final InsightsParser.SentimentEntry entry = new InsightsParser.SentimentEntry();
-        entry.setTime("2025-01-15T10:30:00Z");
+        entry.setTime("2025-01-15T10:30:00");
         final int sentiment = 7;
         entry.setSentiment(sentiment);
-        assertEquals("2025-01-15T10:30:00Z", entry.getTime());
+        assertEquals("2025-01-15T10:30:00", entry.getTime());
         final double delta = 0.001;
         assertEquals(sentiment, entry.getSentiment(), delta);
     }
@@ -172,9 +172,9 @@ class InsightsParserTest {
     @Test
     void testListInvalid()throws JsonProcessingException {
         final String input = "```json["
-                + "{\"time\":\"2025-01-15T10:30:00Z\",\"sentiment\":5.5}"
-                + "{\"time\":\"2025-01-15T11:30:00Z\",\"sentiment\":-3.2}"
-                + "{\"time\":\"2025-01-15T12:30:00Z\",\"sentiment\":8.9}"
+                + "{\"time\":\"2025-01-15T10:30:00\",\"sentiment\":5.5}"
+                + "{\"time\":\"2025-01-15T11:30:00\",\"sentiment\":-3.2}"
+                + "{\"time\":\"2025-01-15T12:30:00\",\"sentiment\":8.9}"
                 + "]```";
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {

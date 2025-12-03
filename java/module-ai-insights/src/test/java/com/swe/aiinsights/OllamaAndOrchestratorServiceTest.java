@@ -8,15 +8,14 @@
  */
 
 package com.swe.aiinsights;
-
 import com.swe.aiinsights.aiservice.LlmOrchestratorService;
 import com.swe.aiinsights.aiservice.LlmService;
 import com.swe.aiinsights.aiservice.OllamaService;
+import com.swe.aiinsights.getkeys.GeminiKeyManager;
 import com.swe.aiinsights.customexceptions.RateLimitException;
 import com.swe.aiinsights.generaliser.RequestGeneraliser;
 import com.swe.aiinsights.modeladapter.OllamaAdapter;
 import com.swe.aiinsights.response.AiResponse;
-import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
@@ -47,12 +46,6 @@ import static org.mockito.Mockito.never;
  */
 @ExtendWith(MockitoExtension.class)
 class OllamaAndOrchestratorServiceTest {
-
-    /**
-     * mock dotenv object.
-     */
-    @Mock
-    private Dotenv mockDotenv;
 
     /**
      * mock http client.
@@ -106,9 +99,8 @@ class OllamaAndOrchestratorServiceTest {
     // test constructor of Ollama service
     @Test
     void testOllamaServiceConstructor() {
-        try (MockedStatic<Dotenv> dotenvMock = mockStatic(Dotenv.class)) {
-            dotenvMock.when(Dotenv::load).thenReturn(mockDotenv);
-            lenient().when(mockDotenv.get("OLLAMA_URL")).thenReturn("http://localhost:11434/api/generate");
+        try (MockedStatic<GeminiKeyManager> keyMock = mockStatic(GeminiKeyManager.class)) {
+            keyMock.when(GeminiKeyManager::getOllamaUrl).thenReturn("http://localhost:11434/api/generate");
 
             final OllamaService service = new OllamaService();
             assertNotNull(service);
@@ -118,9 +110,8 @@ class OllamaAndOrchestratorServiceTest {
     //test successful execution of run process in Ollama Service
     @Test
     void testOllamaServiceRunProcessSuccess() throws Exception {
-        try (MockedStatic<Dotenv> dotenvMock = mockStatic(Dotenv.class)) {
-            dotenvMock.when(Dotenv::load).thenReturn(mockDotenv);
-            lenient().when(mockDotenv.get("OLLAMA_URL")).thenReturn("http://localhost:11434/api/generate");
+        try (MockedStatic<GeminiKeyManager> keyMock = mockStatic(GeminiKeyManager.class)) {
+            keyMock.when(GeminiKeyManager::getOllamaUrl).thenReturn("http://localhost:11434/api/generate");
 
             final OllamaService service = new OllamaService();
 
@@ -152,9 +143,8 @@ class OllamaAndOrchestratorServiceTest {
     // test failure of Ollama service run process
     @Test
     void testOllamaServiceRunProcessFailure() throws Exception {
-        try (MockedStatic<Dotenv> dotenvMock = mockStatic(Dotenv.class)) {
-            dotenvMock.when(Dotenv::load).thenReturn(mockDotenv);
-            lenient().when(mockDotenv.get("OLLAMA_URL")).thenReturn("http://localhost:11434/api/generate");
+        try (MockedStatic<GeminiKeyManager> keyMock = mockStatic(GeminiKeyManager.class)) {
+            keyMock.when(GeminiKeyManager::getOllamaUrl).thenReturn("http://localhost:11434/api/generate");
 
             final OllamaService service = new OllamaService();
 

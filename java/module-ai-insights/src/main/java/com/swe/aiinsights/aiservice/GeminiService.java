@@ -46,10 +46,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.swe.aiinsights.customexceptions.RateLimitException;
+
 /**
  * Gemini Service builds the request and calls the AI api.
  * Receives the AI response.
  */
+
 public final class GeminiService implements LlmService {
 
     /**

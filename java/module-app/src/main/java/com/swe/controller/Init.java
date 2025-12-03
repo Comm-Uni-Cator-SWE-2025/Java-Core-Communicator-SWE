@@ -206,7 +206,8 @@ public class Init {
             try {
                 id = DataSerializer.deserialize(meetId, String.class);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException(
+                    e);
             }
 
             LOG.info("Joining meeting with id: " + id);

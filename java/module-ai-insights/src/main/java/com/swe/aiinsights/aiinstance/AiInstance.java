@@ -48,6 +48,7 @@ import com.swe.aiinsights.apiendpoints.AiClientService;
  * THis class is used ot create a singleton instance of AI.
  * Across requests, it will remain same in a client.
  */
+
 public class AiInstance {
     /**
      * Get the log file path.
@@ -87,8 +88,8 @@ public class AiInstance {
                 if (localReference == null) { // 2nd check: with locking
                     try {
                         LOG.debug("No AI instance found! Creating a new instance ..");
-                        // localReference = new AiClientService();
-                        // aiClientService = localReference;
+                         localReference = new AiClientService();
+                         aiClientService = localReference;
                     } catch (Exception e) {
                         LOG.error("Failure in initialising AI service");
                         LOG.error("Error is " + e.getMessage());
