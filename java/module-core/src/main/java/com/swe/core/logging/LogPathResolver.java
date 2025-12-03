@@ -8,36 +8,53 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Determines where log files should live on each operating system.
+ * Resolves where logs should be stored on the file system for the current
+ * operating system and application name.
+ *
  * <p>
- * A custom directory can be provided via the {@code swecomm.logdir} system property which
- * is mainly useful for tests and CI runs. When the property is absent the resolver attempts
- * to follow the platform conventions described in the product spec.
+ * A custom directory may be provided via the {@code swecomm.logdir} system
+ * property (useful for tests and CI). When that property is absent the
+ * resolver follows platform conventions for Linux, macOS and Windows.
+ * </p>
  */
-final class LogPathResolver {
+public final class LogPathResolver {
 
-    static final String LOG_DIR_OVERRIDE_PROP = "swecomm.logdir";
+    /**
+     * System property used to override log directory location (mainly for tests).
+     */
+    public static final String LOG_DIR_OVERRIDE_PROP = "swecomm.logdir";
 
     private final String appName;
 
-    LogPathResolver(final String appName) {
-        this.appName = Objects.requireNonNull(appName, "appName");
+    /**
+     * Creates a new resolver for the given application name.
+     *
+     * @param applicationName application name used in the resolved path
+     */
+    public LogPathResolver(final String applicationName) {
+        this.appName = Objects.requireNonNull(applicationName, "applicationName");
     }
 
     /**
-     * Resolves the final log file location for a given start timestamp.
+     * Resolve the final log file path for a specific application start timestamp.
+     * The method ensures the parent directories exist.
      *
      * @param appStartMillis application start timestamp in epoch millis
-     * @return path to the log file, guaranteed to have its parent directories created
+     * @return path to the log file
      * @throws IOException if the directories cannot be created
      */
-    Path resolve(final long appStartMillis) throws IOException {
+    public Path resolve(final long appStartMillis) throws IOException {
         final Path baseDir = resolveBaseDirectory();
         Files.createDirectories(baseDir);
         return baseDir.resolve(appStartMillis + ".log").toAbsolutePath();
     }
 
-    private Path resolveBaseDirectory() {
+    /**
+     * Determine the base directory where logs should be written.
+     *
+     * @return the base directory path (not including the filename)
+     */
+    public Path resolveBaseDirectory() {
         final String override = System.getProperty(LOG_DIR_OVERRIDE_PROP);
         if (override != null && !override.isBlank()) {
             return Paths.get(override).toAbsolutePath();
@@ -51,35 +68,51 @@ final class LogPathResolver {
         return resolveBaseDirectory(osName, Paths.get(home), localAppData, appData, appName);
     }
 
+    /**
+     * Helper to test whether a string is non-empty (not null and not blank).
+     *
+     * @param value candidate string
+     * @return {@code true} if the value is non-null and not blank
+     */
     private static boolean nonEmpty(final String value) {
         return value != null && !value.isBlank();
     }
 
-    static Path resolveBaseDirectory(
-        final String osName,
-        final Path homePath,
-        final String localAppData,
-        final String appData,
-        final String appName
-    ) {
-        final String normalizedOs = osName == null
-            ? "generic"
-            : osName.toLowerCase(Locale.ROOT);
+    /**
+     * Platform-specific base directory resolver.
+     *
+     * @param osName       operating system name (may be null)
+     * @param homePath     home directory path
+     * @param localAppData LOCALAPPDATA environment variable
+     * @param appData      APPDATA environment variable
+     * @param appNameParam application name to include in path
+     * @return resolved base directory path
+     */
+    public static Path resolveBaseDirectory(
+            final String osName,
+            final Path homePath,
+            final String localAppData,
+            final String appData,
+            final String appNameParam) {
+
+        final String normalizedOs = osName == null ? "generic" : osName.toLowerCase(Locale.ROOT);
 
         if (normalizedOs.contains("linux")) {
-            return homePath.resolve(".local/share").resolve(appName).resolve("logs");
+            return homePath.resolve(".local/share").resolve(appNameParam).resolve("logs");
         }
         if (normalizedOs.contains("mac") || normalizedOs.contains("darwin")) {
-            return homePath.resolve("Library/Logs").resolve(appName);
+            return homePath.resolve("Library/Logs").resolve(appNameParam);
         }
         if (normalizedOs.contains("win")) {
             final Path base = nonEmpty(localAppData)
-                ? Paths.get(localAppData)
-                : nonEmpty(appData) ? Paths.get(appData) : homePath;
-            return base.resolve(appName).resolve("logs");
+                    ? Paths.get(localAppData)
+                    : nonEmpty(appData) ? Paths.get(appData) : homePath;
+            return base.resolve(appNameParam).resolve("logs");
         }
 
-        return homePath.resolve(appName).resolve("logs");
+        return homePath.resolve(appNameParam).resolve("logs");
     }
-}
 
+    // Prevent instantiation without app name
+    // (constructor above already enforces non-null appName).
+}

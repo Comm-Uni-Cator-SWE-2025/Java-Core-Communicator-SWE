@@ -31,6 +31,7 @@ import java.util.List;
  */
 public class GoogleAuthServices {
 
+    /** Logger for this file. */
     private static final SweLogger LOG = SweLoggerFactory.getLogger("CORE");
 
     /** Port for the local server receiver used during OAuth flow. */
@@ -59,7 +60,7 @@ public class GoogleAuthServices {
      * @throws GeneralSecurityException if transport setup fails
      */
     public Credential getCredentials() throws IOException, GeneralSecurityException {
-        InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        final InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
@@ -95,7 +96,7 @@ public class GoogleAuthServices {
      * @throws GeneralSecurityException if transport setup fails
      */
     public void logout() throws IOException, GeneralSecurityException {
-        InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        final InputStream in = GoogleAuthServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }

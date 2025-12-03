@@ -1,13 +1,14 @@
-/**
- *  Contributed by Ram charan.
- */
-
 package com.swe.core.Analytics;
 
+/**
+ * Telemetry API for canvas.
+ */
 public interface CanvasTelemetry {
+
     /**
-     * Get the current canvas telemetry model.
-     * @return The current canvas telemetry model.
+     * Returns the current canvas telemetry model.
+     *
+     * @return the current canvas telemetry model
      */
-    public CanvasTelemetryModel getCanvasTelemetry();
+    CanvasTelemetryModel getCanvasTelemetry();
 }

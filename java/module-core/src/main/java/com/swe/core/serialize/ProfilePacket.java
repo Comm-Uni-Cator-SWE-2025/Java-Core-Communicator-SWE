@@ -10,7 +10,7 @@ public class ProfilePacket {
     String meetingId;
     UserProfile userProfile;
 
-    public ProfilePacket(String meetingId, UserProfile userProfile) {
+    public ProfilePacket(final String meetingId, final UserProfile userProfile) {
         this.meetingId = meetingId;
         this.userProfile = userProfile;
     }

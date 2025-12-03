@@ -12,5 +12,5 @@ public interface ScreenVideoTelemetry {
      * The implementer of this class will have to keep track of all the telemetry models in some internal data structure.
      * @return List of all telemetry data.
      */
-    public List<ScreenVideoTelemetryModel> getAllScreenVideosTelemetry();
+    List<ScreenVideoTelemetryModel> getAllScreenVideosTelemetry();
 }
